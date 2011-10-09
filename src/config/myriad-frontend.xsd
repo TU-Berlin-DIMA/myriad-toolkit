@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad" xmlns:myriad="http://www.dima.tu-berlin.de/myriad" elementFormDefault="qualified">
+  <xs:element name="myriad" type="myriad:root-type">
+    <xs:key name="cloud-env-key">
+      <xs:selector xpath=".//myriad:cloud-env" />
+      <xs:field xpath="@id"></xs:field>
+    </xs:key>
+    <xs:key name="dgen-config-key">
+      <xs:selector xpath=".//myriad:dgen-config" />
+      <xs:field xpath="@id"></xs:field>
+    </xs:key>
+    <xs:key name="qgen-config-key">
+      <xs:selector xpath=".//myriad:qgen-config" />
+      <xs:field xpath="@id"></xs:field>
+    </xs:key>
+    <xs:key name="test-key">
+      <xs:selector xpath=".//myriad:test" />
+      <xs:field xpath="@id"></xs:field>
+    </xs:key>
+    <xs:keyref name="dgen-config-cloud" refer="myriad:cloud-env-key">
+      <xs:selector xpath=".//myriad:dgen-config" />
+      <xs:field xpath="@cloud" />
+    </xs:keyref>
+    <xs:keyref name="test-ref-ref" refer="myriad:test-key">
+      <xs:selector xpath=".//myriad:test-ref" />
+      <xs:field xpath="@ref" />
+    </xs:keyref>
+  </xs:element>
+
+  <!-- root element type -->
+  <xs:complexType name="root-type">
+    <xs:sequence>
+      <xs:element name="cloud-environments">
+        <xs:annotation>
+          <xs:documentation>A list of cloud environments. Each environment represent a set of hosts where the data generator can be executed.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="cloud-env" type="myriad:cloud-env-type" maxOccurs="unbounded" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="dgen-configurations">
+        <xs:annotation>
+          <xs:documentation>A list of data generator configuration. Each configuration operates on a specific cloud environment.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="dgen-config" type="myriad:dgen-config-type" maxOccurs="unbounded" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- cloud-env type -->
+  <xs:complexType name="cloud-env-type">
+    <xs:sequence>
+      <xs:element name="master">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="host" type="myriad:host-type" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="slaves">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="host" type="myriad:host-type" maxOccurs="unbounded" />
+          </xs:sequence>
+        </xs:complexType>
+        <xs:key name="slave-host-key">
+          <xs:selector xpath=".//myriad:host" />
+          <xs:field xpath="@name" />
+        </xs:key>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:NCName" use="required" />
+    <xs:attribute name="dgen" type="xs:string" />
+  </xs:complexType>
+
+  <!-- host type -->
+  <xs:complexType name="host-type">
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+
+  <!-- dgen-config type -->
+  <xs:complexType name="dgen-config-type">
+    <xs:sequence>
+      <xs:element name="nodes-per-host" type="xs:integer" />
+      <xs:element name="output-base" type="xs:string" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:NCName" use="required" />
+    <xs:attribute name="cloud" type="xs:NCName" use="required" />
+  </xs:complexType>
+</xs:schema>
