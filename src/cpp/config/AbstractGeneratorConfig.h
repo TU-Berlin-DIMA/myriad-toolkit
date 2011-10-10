@@ -87,7 +87,7 @@ public:
 
 	Decimal scalingFactor()
 	{
-		return getInt("application.scaling-factor");
+		return getDouble("application.scaling-factor");
 	}
 
 	I16u numberOfChunks()
