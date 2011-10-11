@@ -105,13 +105,9 @@ public:
 
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
 
-	DeterministicSetDumpTask(DeterministicSetGenerator<RecordType>& generator, bool dryRun = false) :
-		StageTask<RecordType> (generator.name() + "::dump_records", dryRun), _generator(generator)
+	DeterministicSetDumpTask(DeterministicSetGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
+		StageTask<RecordType> (generator.name() + "::dump_records", generator.name(), config, dryRun), _generator(generator)
 	{
-		Path outputPath(generator.config().getString("generator." + generator.name() + ".output-file", generator.name() + string(".tbl")));
-		outputPath.makeAbsolute(generator.config().getString("application.output-dir"));
-
-		StageTask<RecordType>::initialize(outputPath);
 	}
 
 	bool runnable()
@@ -228,7 +224,7 @@ template<class RecordType> void DeterministicSetDumpTask<RecordType>::run()
 
 		if (!StageTask<RecordType>::_dryRun)
 		{
-			out.emit(*recordPtr);
+			out.collect(*recordPtr);
 		}
 
 		++current;

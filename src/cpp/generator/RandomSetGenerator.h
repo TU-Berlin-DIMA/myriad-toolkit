@@ -179,13 +179,9 @@ public:
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
 
-	RandomSetDefaultGeneratingTask(RandomSetGenerator<RecordType>& generator, bool dryRun = false) :
-		StageTask<RecordType> (generator.name() + "::generate_records", dryRun), _generator(generator), _random(generator.random()), _logger(Logger::get("task.random.default."+generator.name()))
+	RandomSetDefaultGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
+		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun), _generator(generator), _random(generator.random()), _logger(Logger::get("task.random.default."+generator.name()))
 	{
-		Path outputPath(generator.config().getString("generator." + generator.name() + ".output-file", generator.name() + string(".tbl")));
-		outputPath.makeAbsolute(generator.config().getString("application.output-dir"));
-
-		StageTask<RecordType>::initialize(outputPath);
 	}
 
 	bool runnable()
@@ -315,7 +311,7 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run()
 {
 	Logger& logger = StageTask<RecordType>::_logger;
-	GeneratorOutputCollector& out = StageTask<RecordType>::_out;
+	OutputCollector& out = StageTask<RecordType>::_out;
 
 	if (logger.debug())
 	{
@@ -342,7 +338,7 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 
 		if (!StageTask<RecordType>::_dryRun)
 		{
-			out.emit(*recordPtr);
+			out.collect(*recordPtr);
 		}
 
 		++current;

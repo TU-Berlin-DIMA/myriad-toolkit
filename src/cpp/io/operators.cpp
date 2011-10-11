@@ -16,7 +16,7 @@
  * @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
  */
 
-#include "io/GeneratorOutputStream.h"
+#include "io/OutputCollector.h"
 #include "record/Record.h"
 
 using namespace Poco;

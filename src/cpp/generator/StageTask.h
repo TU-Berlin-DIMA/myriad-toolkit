@@ -20,7 +20,7 @@
 #define STAGETASK_H_
 
 #include "communication/Notifications.h"
-#include "io/GeneratorOutputStream.h"
+#include "io/OutputCollector.h"
 #include "record/Record.h"
 
 #include <Poco/Logger.h>
@@ -107,37 +107,29 @@ public:
 
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
 
-	StageTask(const string& name, bool dryRun = false) :
-		AbstractStageTask(name), _dryRun(dryRun), _logger(Logger::get("task."+name)), _initialized(false)
+	StageTask(const string& name, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
+		AbstractStageTask(name), _out(generatorName, config), _dryRun(dryRun), _logger(Logger::get("task."+name))
 	{
+		if (!_dryRun)
+		{
+			_out.open();
+		}
 	}
 
 	~StageTask()
 	{
-		if (_initialized && !_dryRun)
+		if (!_dryRun)
 		{
-			_logger.debug(format("Closing output file %s", _outputPath));
 			_out.close();
 		}
 	}
 
 protected:
 
-	void initialize(Path& outputPath, std::ios::openmode mode = std::ios::trunc | std::ios::binary)
-	{
-		if (!_initialized)
-		{
-			_outputPath = outputPath.toString();
-
-			if (!_dryRun)
-			{
-				_logger.debug(format("Opening output file %s", _outputPath));
-				_out.open(_outputPath, mode);
-			}
-		}
-
-		_initialized = true;
-	}
+	/**
+	 * An output stream used for writing the task output data.
+	 */
+	OutputCollector _out;
 
 	/**
 	 * A flag indicating whether writing the output is required.
@@ -145,20 +137,9 @@ protected:
 	bool _dryRun;
 
 	/**
-	 * An output stream used for writing the task output data.
-	 */
-	GeneratorOutputCollector _out;
-
-	/**
 	 * Logger instance.
 	 */
 	Logger& _logger;
-
-private:
-
-	std::string _outputPath;
-
-	bool _initialized;
 };
 
 } // namespace Myriad
