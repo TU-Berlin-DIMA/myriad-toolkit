@@ -58,11 +58,6 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	File jobDir(getString("application.job-dir"));
 	jobDir.createDirectories();
 
-	// output-dir
-	// TODO: this is MyriadOutputFormat specific
-	File outputDir(getString("application.output-dir"));
-	outputDir.createDirectories();
-
 	// log-path
 	File logPath(getString("application.log-path"));
 	if (logPath.exists())

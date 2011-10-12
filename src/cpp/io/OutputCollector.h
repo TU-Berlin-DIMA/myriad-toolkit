@@ -22,6 +22,8 @@
 #include "config/GeneratorConfig.h"
 #include "record/Record.h"
 
+#include <Poco/File.h>
+#include <Poco/Path.h>
 #include <Poco/FileStream.h>
 #include <Poco/Logger.h>
 
@@ -40,6 +42,11 @@ public:
 	OutputCollector(const String& generatorName, const GeneratorConfig& config) :
 		_isOpen(false), _logger(Logger::get("collector."+generatorName))
 	{
+		// make sure that the output-dir exists
+		File outputDir(config.getString("application.output-dir"));
+		outputDir.createDirectories();
+
+		// compute the output path
 		Path path(config.getString(format("generator.%s.output-file", generatorName)));
 		path.makeAbsolute(config.getString("application.output-dir"));
 
