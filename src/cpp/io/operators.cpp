@@ -23,7 +23,7 @@ using namespace Poco;
 
 namespace Myriad {
 
-inline MyriadOutputStream& operator<<(MyriadOutputStream& out, const Record& record)
+inline OutputCollector::StreamType& operator<<(OutputCollector::StreamType& out, const Record& record)
 {
 	out << "abstract record #" << record.genID() << std::endl;
 	return out;

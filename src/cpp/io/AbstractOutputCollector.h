@@ -16,15 +16,51 @@
  * @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
  */
 
-#ifndef OUTPUTCOLLECTOR_H_
-#define OUTPUTCOLLECTOR_H_
+#ifndef ABSTRACTOUTPUTCOLLECTOR_H_
+#define ABSTRACTOUTPUTCOLLECTOR_H_
 
-#include "io/LocalFileOutputCollector.h"
+#include "config/GeneratorConfig.h"
+#include "record/Record.h"
+
+using namespace Poco;
 
 namespace Myriad {
 
-typedef LocalFileOutputCollector OutputCollector;
+class AbstractOutputCollector
+{
+public:
+
+	AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config)
+	{
+	}
+
+	AbstractOutputCollector(const AbstractOutputCollector& o)
+	{
+	}
+
+	virtual ~AbstractOutputCollector()
+	{
+	}
+
+	/**
+	 * Open the underlying stream.
+	 */
+	virtual void open() = 0;
+
+	/**
+	 * Close the underlying stream.
+	 */
+	virtual void close() = 0;
+
+	/**
+	 * Output collection method.
+	 */
+	template<typename RecordType> void collect(const RecordType& record)
+	{
+		throw new NotImplementedException("");
+	}
+};
 
 } // namespace Myriad
 
-#endif /* OUTPUTCOLLECTOR_H_ */
+#endif /* ABSTRACTOUTPUTCOLLECTOR_H_ */
