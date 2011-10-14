@@ -36,7 +36,7 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
     
     def _initArgsParser(self):
         self._argsParser.add_positional_argument("--name", metavar="NAME", dest="config", type="str",
-                             help="name of the new generator")
+                             help="name of the new project")
         self._argsParser.add_option("--ns", metavar="NS", dest="config", type="str",
                                      help="namespace for the C++ generator extensions")
 
@@ -53,8 +53,8 @@ class InitializeRecordTask(myriad.task.common.AbstractTask):
         super(InitializeRecordTask, self).__init__(*args, **kwargs)
     
     def _initArgsParser(self):
-        print "Y"
-        print "Y"
+        self._argsParser.add_positional_argument("--name", metavar="NAME", dest="config", type="str",
+                             help="name of the new record")
 
 
 class InitializeGeneratorTask(myriad.task.common.AbstractTask):
@@ -70,4 +70,6 @@ class InitializeGeneratorTask(myriad.task.common.AbstractTask):
         super(InitializeGeneratorTask, self).__init__(*args, **kwargs)
     
     def _initArgsParser(self):
-        print "Z"
+        self._argsParser.add_positional_argument("--name", metavar="NAME", dest="config", type="str",
+                     help="name of the new generator")
+

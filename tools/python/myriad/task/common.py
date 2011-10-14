@@ -167,6 +167,7 @@ class AbstractTask(object):
         if self._argsParser == None:
             self._argsParser = TaskOptions(qname=self.qname(), dispatcher=self.__dispatcher, description=self.__description)
             self._initArgsParser()
+            self._argsParser.remove_option("--version")
         return self._argsParser
     
     def _initArgsParser(self):
