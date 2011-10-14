@@ -1,0 +1,3 @@
+# ignore compiled python files
+tools/python/**/*.pyc
+
