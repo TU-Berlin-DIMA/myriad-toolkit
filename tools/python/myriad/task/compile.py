@@ -13,44 +13,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  
-Created on Mar 2, 2011
+Created on Oct 14, 2011
 
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
 
 import myriad.task.common
 
-class ProjectTask(myriad.task.common.AbstractTask):
+TASK_PREFIX = "compile"
+
+class CompileModelTask(myriad.task.common.AbstractTask):
     '''
     classdocs
     '''
 
-    def __init__(self, dispatcher):
+    def __init__(self, *args, **kwargs):
         '''
         Constructor
         '''
-        super(ProjectTask, self).__init__(dispatcher)
+        kwargs.update(group=TASK_PREFIX, name="model", description="Compile XML model specification.")
 
-
-class RecordTask(myriad.task.common.AbstractTask):
-    '''
-    classdocs
-    '''
-
-    def __init__(self, dispatcher):
-        '''
-        Constructor
-        '''
-        super(RecordTask, self).__init__(dispatcher)
-
-
-class GeneratorTask(myriad.task.common.AbstractTask):
-    '''
-    classdocs
-    '''
-
-    def __init__(self, dispatcher):
-        '''
-        Constructor
-        '''
-        super(GeneratorTask, self).__init__(dispatcher)
+        super(CompileModelTask, self).__init__(*args, **kwargs)

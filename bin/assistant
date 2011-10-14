@@ -23,11 +23,11 @@ import sys, os
 
 # append ./lib/python to path 
 try:
-	filePath = os.readlink(__file__)
+	fileName = os.readlink(__file__)
 except:
-	filePath = __file__
+	fileName = __file__
 	
-basePath = os.path.dirname(os.path.dirname((filePath)))
+basePath = os.path.dirname(os.path.dirname((fileName)))
 sys.path.append("%s/tools/python" % (basePath))
 
 import myriad.assistant
@@ -36,7 +36,7 @@ def main(*args):
 	try:
 		# run script
 		
-		dgen = myriad.assistant.Assistant(basePath, sys.argv[1:])
+		dgen = myriad.assistant.Assistant(basePath, os.path.basename(fileName), sys.argv[1:])
 		dgen.run()
 	except:
 		return 1 # something went wrong

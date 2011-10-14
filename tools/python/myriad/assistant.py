@@ -13,67 +13,81 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  
-Created on Mar 2, 2011
+Created on Oct 14, 2011
 
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
 
 import os, sys, tempfile, optparse, datetime, time
 
-import myriad.task.bootstrap
+import myriad.task.initialize
+import myriad.task.compile
 import myriad.event
+
+class UnknownTaskException(Exception):
+    '''
+    classdocs
+    '''
+    __qname = None
+    
+    def __init__(self, qname):
+        super(UnknownTaskException, self).__init__()
+        self.__qname = qname
+
+    def __str__(self):
+        return "Unknown task `%s`" % (self.__qname)
 
 class Assistant(object):
     '''
     classdocs
     '''
     __basePath = None
-    __tasks = []
+    __fileName = None
+    __tasks = {}
     
-    __isSummary = False
+    __isUsage = False
     __isTaskHelp = False
     __isTaskExecute = False
     __taskArgs = []
     
-    __taskName = None
+    __taskQName = None
     
     __events = {}
     
     VERSION = "0.1.0"
     
-    def __init__(self, basePath, argv):
+    def __init__(self, basePath, fileName, argv):
         '''
         Constructor
         '''
         
         self.__basePath = basePath
+        self.__fileName = fileName 
         self.initialize(argv)
     
     def initialize(self, argv):
 
         try:
-            # initialize events
-            self.__events["task.summary"] = myriad.event.Event()
-            self.__events["task.help"] = myriad.event.Event()
-            self.__events["task.execute"] = myriad.event.Event()
-            
-            self.__registerTask(myriad.task.bootstrap.ProjectTask(self))
-            self.__registerTask(myriad.task.bootstrap.RecordTask(self))
-            self.__registerTask(myriad.task.bootstrap.GeneratorTask(self))
+            # initialize `initialize:*` tasks
+            self.registerTask(myriad.task.initialize.InitializeProjectTask(self))
+            self.registerTask(myriad.task.initialize.InitializeRecordTask(self))
+            self.registerTask(myriad.task.initialize.InitializeGeneratorTask(self))
+            # initialize `compile:*` tasks
+            self.registerTask(myriad.task.compile.CompileModelTask(self))
             
             if len(argv) == 0:
-                self.__isSummary = True
+                self.__isUsage = True
             elif len(argv) == 2 and argv[0] == "help":
                 self.__isTaskHelp = True
-                self.__taskName = argv[1]
+                self.__taskQName = argv[1]
             elif len(argv) > 1:
                 self.__isTaskExecute = True
-                self.__taskName = argv[1]
+                self.__taskQName = argv[1]
                 self.__taskArgs = argv[2:]
 
         except:
             e = sys.exc_info()[1]
-            self.error("unexpected error: %s" % (str(e)), True)
+            self.__printError("unexpected __printError: %s" % (str(e)), True)
             raise
             
     def run(self):
@@ -82,23 +96,28 @@ class Assistant(object):
         '''
 
         try:
-            print "running assistant"
-            
-            if (self.__isSummary):
-                self.event("task.summary").fire()
-                print "render summary"
+            if (self.__isUsage):
+                self.__printHeader()
+                self.__printUsage()
 
             elif (self.__isTaskHelp):
-                self.event("task.help").fire(taskName=self.__taskName)
-                print "render task help"
+                try:
+                    task = self.currentTask()
+                    
+                    self.__printHeader()
+                    self.__printTaskHelp(task)
+                except UnknownTaskException, e:
+                    self.__printHeader(sys.stderr)
+                    self.__printErrorLine(str(e), sys.stderr)
+                    self.__printUsage(sys.stderr)
                 
             elif (self.__isTaskExecute):
-                self.event("task.execute").fire(taskName=self.__taskName)
+                self.event("task.execute").fire(taskName=self.__taskQName)
                 print "render task execute"
                 
         except:
             e = sys.exc_info()[1]
-            self.error("unexpected error: %s" % (str(e)), True)
+            self.__printError("unexpected error: %s" % (str(e)), False)
             raise
         
     def event(self, name):
@@ -106,12 +125,74 @@ class Assistant(object):
             return self.__events.get(name)
         else:
             raise myriad.event.UndefinedEventException()
-
-    def error(self, message=None, withUsage = False):
-        if (withUsage):
-            self.parser.print_usage(sys.stderr)
-        if (message != None):
-            self.log.error("%s: error: %s", self.parser.get_prog_name(), message)
             
-    def __registerTask(self, task):
-        self.__tasks.append(task)
+    def registerTask(self, task):
+        self.__tasks[task.qname()] = task
+        
+    def tasks(self):
+        return self.__tasks.values()
+    
+    def currentTask(self):
+        if self.__tasks.has_key(self.__taskQName):
+            return self.__tasks[self.__taskQName]
+        else:
+            raise UnknownTaskException(self.__taskQName)
+
+    def __printHeader(self, out=sys.stdout):
+        print >> out, "Myriad Assistant Tool"
+        print >> out, "Version %s" % (self.VERSION)
+        print >> out, ""
+        
+    def __printErrorLine(self, errorMessage, out=sys.stderr):
+        print >> out, "ERROR: %s " % (errorMessage)
+        print >> out, ""
+
+    def __printError(self, out=sys.stderr, errorMessage=None, withUsage = False):
+        self.__printHeader(out)
+        self.__printErrorLine(errorMessage, out)
+        if (withUsage):
+            self.__printUsage(out)
+        
+    def __printUsage(self, out=sys.stdout):
+        print >> out, "Usage:"
+        print >> out, "    %s              - print this message" % (self.__fileName)
+        print >> out, "    %s [help] task  - print information about s specific task" % (self.__fileName)
+        print >> out, "    %s task [args]  - execute a specific task" % (self.__fileName)
+        print >> out, ""
+        print >> out, "Task names obey the group:name format."
+        print >> out, "Here is the list of the currently supported tasks:"
+        print >> out, ""
+        
+        P = list(set([t.group() for t in self.tasks()]))
+        P.sort()
+        
+        for g in P:
+            print >> out, "%s:*" % (g)
+            
+            N = [t.name() for t in self.tasks() if t.group() == g]
+            D = [t.description() for t in self.tasks() if t.group() == g]
+        
+            for n, d in zip(N, D):
+                print >> out, "  %-16s - %s" % (n, d)
+            
+            print >> out, ""
+            
+    def __printTaskHelp(self, task, out=sys.stdout):
+        
+        print >> out, "Usage:"
+        print >> out, "    %s %s [args]" % (self.__fileName, task.qname())
+        print >> out, ""
+        print >> out, "Description:"
+        print >> out, "    %s" % (task.description())
+        print >> out, ""
+        print >> out, "Available options:"
+        
+        parser = task.argsParser()
+
+        formatter = optparse.IndentedHelpFormatter(width=80)
+        formatter.store_option_strings(parser)
+        formatter.indent()
+
+        optHelp = [formatter.format_option(opt) for opt in parser.option_list]
+
+        print >> out, ''.join(optHelp)

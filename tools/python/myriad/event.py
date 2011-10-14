@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  
-Created on Mar 2, 2011
+Created on Oct 14, 2011
 
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
@@ -33,11 +33,11 @@ class Event(object):
     def __init__(self):
         self.__handlers = []
 
-    def __iadd__(self, handler):
+    def registerHandler(self, handler):
         self.__handlers.append(handler)
         return self
 
-    def __isub__(self, handler):
+    def unregisterHandler(self, handler):
         self.__handlers.remove(handler)
         return self
 
@@ -48,4 +48,4 @@ class Event(object):
     def clearObjectHandlers(self, inObject):
         for theHandler in self.__handlers:
             if theHandler.im_self == inObject:
-                self -= theHandler
+                self.unregisterHandler(theHandler)
