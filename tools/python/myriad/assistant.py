@@ -18,7 +18,7 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
 
-import os, sys, tempfile, optparse, datetime, time
+import sys, optparse
 
 import myriad.task.initialize
 import myriad.task.compile
@@ -84,7 +84,7 @@ class Assistant(object):
                 self.__isTaskExecute = True
                 self.__taskQName = argv[1]
                 self.__taskArgs = argv[2:]
-
+                
         except:
             e = sys.exc_info()[1]
             self.__printError("unexpected __printError: %s" % (str(e)), True)
@@ -155,44 +155,33 @@ class Assistant(object):
         
     def __printUsage(self, out=sys.stdout):
         print >> out, "Usage:"
-        print >> out, "    %s              - print this message" % (self.__fileName)
-        print >> out, "    %s [help] task  - print information about s specific task" % (self.__fileName)
-        print >> out, "    %s task [args]  - execute a specific task" % (self.__fileName)
+        print >> out, "  %s                - print this message" % (self.__fileName)
+        print >> out, "  %s help [task]    - print information about s specific task" % (self.__fileName)
+        print >> out, "  %s task [args]    - execute a specific task" % (self.__fileName)
         print >> out, ""
-        print >> out, "Task names obey the group:name format."
-        print >> out, "Here is the list of the currently supported tasks:"
+        print >> out, "Task names follow the {group}:{name} format."
         print >> out, ""
+        print >> out, "Available tasks:"
         
         P = list(set([t.group() for t in self.tasks()]))
         P.sort()
         
         for g in P:
-            print >> out, "%s:*" % (g)
+            print >> out, "  %s" % (g)
             
             N = [t.name() for t in self.tasks() if t.group() == g]
             D = [t.description() for t in self.tasks() if t.group() == g]
         
             for n, d in zip(N, D):
-                print >> out, "  %-16s - %s" % (n, d)
+                print >> out, "    :%-22s - %s" % (n, d)
             
             print >> out, ""
             
     def __printTaskHelp(self, task, out=sys.stdout):
-        
-        print >> out, "Usage:"
-        print >> out, "    %s %s [args]" % (self.__fileName, task.qname())
-        print >> out, ""
-        print >> out, "Description:"
-        print >> out, "    %s" % (task.description())
-        print >> out, ""
-        print >> out, "Available options:"
-        
+
         parser = task.argsParser()
 
-        formatter = optparse.IndentedHelpFormatter(width=80)
-        formatter.store_option_strings(parser)
-        formatter.indent()
-
-        optHelp = [formatter.format_option(opt) for opt in parser.option_list]
-
-        print >> out, ''.join(optHelp)
+        print >> out, "".join(parser.formatUsage())
+        print >> out, "".join(parser.formatDescription())
+        print >> out, "".join(parser.formatArgsHelp())
+        print >> out, "".join(parser.formatOptionsHelp())

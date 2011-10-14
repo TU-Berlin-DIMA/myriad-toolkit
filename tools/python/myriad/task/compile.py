@@ -31,6 +31,6 @@ class CompileModelTask(myriad.task.common.AbstractTask):
         '''
         Constructor
         '''
-        kwargs.update(group=TASK_PREFIX, name="model", description="Compile XML model specification.")
+        kwargs.update(group=TASK_PREFIX, name="model", description="Compile a XML model specification.")
 
         super(CompileModelTask, self).__init__(*args, **kwargs)
