@@ -56,7 +56,6 @@ class TaskOptions(optparse.OptionParser):
         formatter = optparse.IndentedHelpFormatter(width=80)
 
         formatter.indent()
-        max_len = 0
         for opt in self.args_list:
             metavar = opt.metavar or opt.dest.upper()
             strings = metavar.upper()
