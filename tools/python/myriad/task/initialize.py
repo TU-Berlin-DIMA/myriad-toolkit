@@ -34,11 +34,29 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
         kwargs.update(group=TASK_PREFIX, name="project", description="Bootstrap a new project.")
         super(InitializeProjectTask, self).__init__(*args, **kwargs)
     
-    def _initArgsParser(self):
-        self._argsParser.add_positional_argument("--name", metavar="NAME", dest="config", type="str",
-                             help="name of the new project")
-        self._argsParser.add_option("--ns", metavar="NS", dest="config", type="str",
-                                     help="namespace for the C++ generator extensions")
+    def argsParser(self):
+        parser = super(InitializeProjectTask, self).argsParser()
+        
+        # arguments
+        parser.add_argument("--name", metavar="NAME", dest="project_name", type="str",
+                            help="name of the new project")
+        # options
+        parser.add_option("--ns", metavar="NS", dest="project_ns", type="str",
+                          help="namespace for the C++ generator extensions")
+
+        return parser
+        
+    def _fixArgs(self, args):
+        if args.project_ns == None:
+            args.project_ns = "__%s" % (args.project_name)
+        
+        return args
+
+    def _do(self, args):
+        
+        # TODO
+        
+        print args
 
 class InitializeRecordTask(myriad.task.common.AbstractTask):
     '''
@@ -52,9 +70,15 @@ class InitializeRecordTask(myriad.task.common.AbstractTask):
         kwargs.update(group=TASK_PREFIX, name="record", description="Generate extensions for a new record.")
         super(InitializeRecordTask, self).__init__(*args, **kwargs)
     
-    def _initArgsParser(self):
-        self._argsParser.add_positional_argument("--name", metavar="NAME", dest="config", type="str",
+    def argsParser(self):
+        parser = super(InitializeRecordTask, self).argsParser()
+        
+        # arguments
+        parser.add_argument("--name", metavar="NAME", dest="config", type="str",
                              help="name of the new record")
+        # options
+
+        return parser
 
 
 class InitializeGeneratorTask(myriad.task.common.AbstractTask):
@@ -69,7 +93,13 @@ class InitializeGeneratorTask(myriad.task.common.AbstractTask):
         kwargs.update(group=TASK_PREFIX, name="generator", description="Generate extensions for a new generator.")
         super(InitializeGeneratorTask, self).__init__(*args, **kwargs)
     
-    def _initArgsParser(self):
-        self._argsParser.add_positional_argument("--name", metavar="NAME", dest="config", type="str",
-                     help="name of the new generator")
+    def argsParser(self):
+        parser = super(InitializeGeneratorTask, self).argsParser()
+
+        # arguments
+        parser.add_argument("--name", metavar="NAME", dest="config", type="str",
+                            help="name of the new generator")
+        # options
+
+        return parser
 

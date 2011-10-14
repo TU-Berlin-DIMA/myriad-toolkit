@@ -27,10 +27,9 @@ class TaskOptions(optparse.OptionParser):
     classdocs
     '''
     
-    args_list = []
-    
     def __init__(self, qname, dispatcher, description=None):
         optparse.OptionParser.__init__(self, usage="%prog "+qname+" [opts] [args]", description=description, version=dispatcher.VERSION, add_help_option=False)
+        self.args_list = []
 
     def formatUsage(self):
         formatter = optparse.IndentedHelpFormatter(width=80)
@@ -87,25 +86,12 @@ class TaskOptions(optparse.OptionParser):
         lines = [formatter.format_option(opt) for opt in self.option_list]
         formatter.dedent()
 
-        return [ formatter.format_heading("Options") ] + lines
+        if len(lines) > 0:
+            return [ formatter.format_heading("Options") ] + lines
+        else:
+            return []
 
-    def format_help(self, formatter=None):
-        class Positional(object):
-            def __init__(self, args):
-                self.option_groups = []
-                self.option_list = args
-
-        positional = Positional(self.positional)
-        formatter = optparse.IndentedHelpFormatter()
-        formatter.store_option_strings(positional)
-        output = ['\n', formatter.format_heading("Positional Arguments")]
-        formatter.indent()
-        pos_help = [formatter.format_option(opt) for opt in self.positional]
-        pos_help = [line.replace('--', '') for line in pos_help]
-        output += pos_help
-        return optparse.OptionParser.format_help(self, formatter) + ''.join(output)
-
-    def add_positional_argument(self, *args, **kwargs):
+    def add_argument(self, *args, **kwargs):
         
         if type(args[0]) in types.StringTypes:
             option = self.option_class(*args, **kwargs)
@@ -128,6 +114,26 @@ class TaskOptions(optparse.OptionParser):
                 self.defaults[option.dest] = None
 
         return option
+
+    def check_values(self, values, args):
+        
+        if (len(args) < len(self.args_list)):
+            raise self.error("Not enough arguments supplied for this task")
+        if (len(args) > len(self.args_list)):
+            raise self.error("Too much arguments supplied for this task")
+        
+        
+        try:
+            i = 0
+            for (option, value) in zip(self.args_list, args):
+                # process a single long option (possibly with value(s))
+                option.process("--arg%02d" % (i), value, values, self)
+                i += 1
+                
+        except (optparse.BadOptionError, optparse.OptionValueError), err:
+            self.error(str(err))
+        
+        return (values, args)
     
 
 class AbstractTask(object):
@@ -140,8 +146,6 @@ class AbstractTask(object):
     __name = None
     __description = None
     
-    _argsParser = None
-
     def __init__(self, dispatcher, group="default", name="default", description=""):
         '''
         Constructor
@@ -159,16 +163,29 @@ class AbstractTask(object):
         
     def qname(self):
         return "%s:%s" % (self.__group, self.__name)
-        
-    def description(self, *args, **keywargs):
+    
+    def description(self):
         return self.__description
         
     def argsParser(self):
-        if self._argsParser == None:
-            self._argsParser = TaskOptions(qname=self.qname(), dispatcher=self.__dispatcher, description=self.__description)
-            self._initArgsParser()
-            self._argsParser.remove_option("--version")
-        return self._argsParser
+        parser = TaskOptions(qname=self.qname(), dispatcher=self.__dispatcher, description=self.__description)
+        parser.remove_option("--version")
+        return parser
     
-    def _initArgsParser(self):
-        pass
+    def execute(self, argv):
+        parser = self.argsParser()
+        
+        args, remainder = parser.parse_args(argv)
+        
+        # fix arguments
+        print "X"
+        self._fixArgs(args)
+        # process
+        print "Y"
+        self._do(args)
+        
+    def _fixArgs(self, args):
+        return args
+
+    def _do(self, args):
+        print args

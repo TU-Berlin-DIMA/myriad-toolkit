@@ -48,7 +48,7 @@ class Assistant(object):
     __isUsage = False
     __isTaskHelp = False
     __isTaskExecute = False
-    __taskArgs = []
+    __taskArgv = []
     
     __taskQName = None
     
@@ -75,15 +75,15 @@ class Assistant(object):
             # initialize `compile:*` tasks
             self.registerTask(myriad.task.compile.CompileModelTask(self))
             
-            if len(argv) == 0:
-                self.__isUsage = True
-            elif len(argv) == 2 and argv[0] == "help":
+            if len(argv) == 2 and argv[0] == "help":
                 self.__isTaskHelp = True
                 self.__taskQName = argv[1]
-            elif len(argv) > 1:
+            elif len(argv) > 0:
                 self.__isTaskExecute = True
-                self.__taskQName = argv[1]
-                self.__taskArgs = argv[2:]
+                self.__taskQName = argv[0]
+                self.__taskArgv = argv[1:]
+            else: # len(argv) == 0
+                self.__isUsage = True
                 
         except:
             e = sys.exc_info()[1]
@@ -112,8 +112,22 @@ class Assistant(object):
                     self.__printUsage(sys.stderr)
                 
             elif (self.__isTaskExecute):
-                self.event("task.execute").fire(taskName=self.__taskQName)
-                print "render task execute"
+                
+                task = None
+                
+                try:
+                    task = self.currentTask()
+
+                    task.execute(self.__taskArgv)
+                
+                except UnknownTaskException, e:
+                    self.__printHeader(sys.stderr)
+                    self.__printErrorLine(str(e), sys.stderr)
+                    self.__printUsage(sys.stderr)
+                except optparse.OptParseError, e:
+                    self.__printHeader()
+                    self.__printErrorLine(str(e), sys.stderr)
+                    self.__printTaskHelp(task)
                 
         except:
             e = sys.exc_info()[1]
