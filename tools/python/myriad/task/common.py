@@ -18,7 +18,12 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
 
-import optparse, types
+import logging
+import optparse
+import types
+
+import ConfigParser
+import os.path
 
 TASK_PREFIX = "abstract"
 
@@ -27,8 +32,8 @@ class TaskOptions(optparse.OptionParser):
     classdocs
     '''
     
-    def __init__(self, qname, dispatcher, description=None):
-        optparse.OptionParser.__init__(self, usage="%prog "+qname+" [opts] [args]", description=description, version=dispatcher.VERSION, add_help_option=False)
+    def __init__(self, qname, assistant, description=None):
+        optparse.OptionParser.__init__(self, usage="%prog "+qname+" [opts] [args]", description=description, version=assistant.VERSION, add_help_option=False)
         self.args_list = []
 
     def formatUsage(self):
@@ -134,26 +139,32 @@ class TaskOptions(optparse.OptionParser):
             self.error(str(err))
         
         return (values, args)
-    
+
 
 class AbstractTask(object):
     '''
     classdocs
     '''
     
-    __dispatcher = None
+    __assistant = None
+    __basePath = None
     __group = None
     __name = None
     __description = None
     
-    def __init__(self, dispatcher, group="default", name="default", description=""):
+    _log = None
+    
+    def __init__(self, assistant, group="default", name="default", description=""):
         '''
         Constructor
         '''
-        self.__dispatcher = dispatcher
+        self.__assistant = assistant
+        self.__basePath = assistant.basePath()
         self.__group = group
         self.__name = name
         self.__description = description
+        
+        self._log = logging.getLogger(self.qname())
         
     def group(self):
         return self.__group
@@ -168,24 +179,171 @@ class AbstractTask(object):
         return self.__description
         
     def argsParser(self):
-        parser = TaskOptions(qname=self.qname(), dispatcher=self.__dispatcher, description=self.__description)
+        parser = TaskOptions(qname=self.qname(), assistant=self.__assistant, description=self.__description)
         parser.remove_option("--version")
         return parser
     
     def execute(self, argv):
         parser = self.argsParser()
         
+        self._log.info("Parsing task arguments.")
         args, remainder = parser.parse_args(argv)
         
-        # fix arguments
-        print "X"
+        
+        # fix the parsed arguments
+        self._log.info("Fixing parsed values.")
         self._fixArgs(args)
-        # process
-        print "Y"
+
+        # perform the task, throws a TaskExecutionException on error 
+        self._log.info("Executing task logic.")
         self._do(args)
+        self._log.info("Task execution finished sucessfully.")
         
     def _fixArgs(self, args):
-        return args
+        args.base_path = self.__basePath
 
     def _do(self, args):
         print args
+
+
+class ParametersProcessor(object):
+    '''
+    classdocs
+    '''
+    
+    __params = None
+    __log = None
+    
+    def __init__(self, params):
+        '''
+        Constructor
+        '''
+        self.__keys = [ "${{%s}}" % (p) for p in params.__dict__.keys() ]
+        self.__vals = [ p for p in params.__dict__.values() ]
+        self.__log = logging.getLogger("template.processor")
+    
+    def processString(self, s):
+        for (k, v) in zip(self.__keys, self.__vals):
+            s = s.replace(k, v)
+
+        return s
+    
+    def processTemplate(self, sourcePath, targetPath):
+        # open file descriptors to source and target
+        s = open(sourcePath, 'r')
+        t = open(targetPath, 'w')
+        
+        # process the contents
+        for l in s:
+            t.write(self.processString(l))
+        
+        # close file descriptors
+        s.close()
+        t.close()
+        
+        # fix file mode
+        stat = os.stat(sourcePath)
+        os.chmod(targetPath, stat.st_mode)
+        
+
+class SkeletonProcessor(object):
+    '''
+    classdocs
+    '''
+    
+    __skeletonBase = None
+    __log = None
+    
+    def __init__(self, skeletonBase):
+        '''
+        Constructor
+        '''
+        self.__skeletonBase = skeletonBase
+        self.__log = logging.getLogger("skeleton.processor")
+        
+    def process(self, targetBase, params):
+        '''
+        Process a skeleton. Initializes the skeleton directory structure at the 
+        specified target location and process all skeleton files using the 
+        provided set of parameters.
+        '''
+        
+        # create a parameters processor
+        paramsProcessor = ParametersProcessor(params)
+        
+        # create directories
+        self.__createDirs(targetBase)
+        
+        # create files
+        self.__createFiles(targetBase, paramsProcessor)
+        
+    def __createDirs(self, targetBase):
+        '''
+        Create the skeleton's directory structure at the specified target 
+        location. 
+        '''
+        for t in os.walk(self.__skeletonBase):
+            prefix = t[0].replace(self.__skeletonBase, "").lstrip("/")
+            
+            for d in t[1]:
+                if (len(prefix) > 0):
+                    dirPath = "%s/%s/%s" % (targetBase, prefix, d)
+                else:
+                    dirPath = "%s/%s" % (targetBase, d)
+                
+                if (not os.path.isdir(dirPath)):
+                    self.__log.info("Create dir: %s" % (dirPath))
+                    os.mkdir(dirPath)
+                else:
+                    self.__log.info("Skip existing dir: %s" % (dirPath))
+                    
+    def __createFiles(self, targetBase, paramsProcessor):
+        '''
+        Instantiate the skeleton's files at the specified target location using
+        the set of provided parameters. 
+        '''
+        for t in os.walk(self.__skeletonBase):
+            prefix = t[0].replace(self.__skeletonBase, "").lstrip("/")
+            
+            metaConfig = self.__loadMeta(t[0], paramsProcessor)
+            
+            for sourceName in t[2]:
+                if sourceName == ".meta":
+                    continue
+                
+                # compute source path
+                sourcePath = "%s/%s" % (t[0], sourceName)
+            
+                # compute target path
+                if (metaConfig.has_option("filenames", sourceName)):
+                    targetName = metaConfig.get("filenames", sourceName)
+                else:
+                    targetName = sourceName
+                
+                if (len(prefix) > 0):
+                    targetPath = "%s/%s/%s" % (targetBase, prefix, targetName)
+                else:
+                    targetPath = "%s/%s" % (targetBase, targetName)
+                
+                # process template
+                if (True or not os.path.isfile(targetPath)):
+                    self.__log.info("Create file: %s" % (targetPath))
+                    paramsProcessor.processTemplate(sourcePath, targetPath)
+                else:
+                    self.__log.info("Skip existing file: %s" % (targetPath))
+            
+    def __loadMeta(self, path, paramsProcessor):
+        '''
+        Load the skeleton meta information from the specified path.  
+        '''
+        metaConfig = ConfigParser.RawConfigParser()
+        
+        metaPath = "%s/.meta" % (path)
+        if os.path.exists(metaPath):
+            metaConfig.readfp(open(metaPath))
+        
+        if metaConfig.has_section("filenames"):
+            for (n, v) in metaConfig.items("filenames"):
+                metaConfig.set("filenames", n, paramsProcessor.processString(v))
+
+        return metaConfig

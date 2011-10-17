@@ -18,6 +18,8 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
 
+import os
+
 import myriad.task.common
 
 TASK_PREFIX = "initialize"
@@ -47,16 +49,19 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
         return parser
         
     def _fixArgs(self, args):
+        super(InitializeProjectTask, self)._fixArgs(args)
+        
         if args.project_ns == None:
             args.project_ns = "__%s" % (args.project_name)
-        
-        return args
 
     def _do(self, args):
         
-        # TODO
-        
-        print args
+        skeletonBase = "%s/tools/skeleton/task/%s/%s" % (args.base_path, self.group(), self.name())
+        targetBase = "%s/../.." % (args.base_path)
+
+        self._log.info("Processing skeleton for task.")
+        skeletonProcessor = myriad.task.common.SkeletonProcessor(skeletonBase)
+        skeletonProcessor.process(targetBase, args);
 
 class InitializeRecordTask(myriad.task.common.AbstractTask):
     '''

@@ -18,11 +18,13 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
 
-import sys, optparse
+import logging.config
+import optparse
+import sys
 
-import myriad.task.initialize
-import myriad.task.compile
 import myriad.event
+import myriad.task.compile
+import myriad.task.initialize
 
 class UnknownTaskException(Exception):
     '''
@@ -43,17 +45,27 @@ class Assistant(object):
     '''
     __basePath = None
     __fileName = None
-    __tasks = {}
     
+    # a flag indicating the `print usage` scenario 
     __isUsage = False
+    # a flag indicating the `print task help` scenario 
     __isTaskHelp = False
+    # a flag indicating the `execute task` scenario
     __isTaskExecute = False
+    # an array of arguments for the task to be executed
     __taskArgv = []
-    
+    # the qualified name of the currently processed task
     __taskQName = None
     
+    # a list of events supported by the assistant 
     __events = {}
+    # a list of task objects supported by the assistant 
+    __tasks = {}
     
+    # a logger instance
+    __log = None
+    
+    # assistant version
     VERSION = "0.1.0"
     
     def __init__(self, basePath, fileName, argv):
@@ -62,17 +74,23 @@ class Assistant(object):
         '''
         
         self.__basePath = basePath
-        self.__fileName = fileName 
+        self.__fileName = fileName
+        
+        # initialize the logging subsystem
+        logging.config.fileConfig("%s/tools/config/assistant_logging.conf" % (self.__basePath))
+        
+        self.__log = logging.getLogger("assistant")
+        
         self.initialize(argv)
     
     def initialize(self, argv):
 
         try:
-            # initialize `initialize:*` tasks
+            # register `initialize:*` tasks
             self.registerTask(myriad.task.initialize.InitializeProjectTask(self))
             self.registerTask(myriad.task.initialize.InitializeRecordTask(self))
             self.registerTask(myriad.task.initialize.InitializeGeneratorTask(self))
-            # initialize `compile:*` tasks
+            # register `compile:*` tasks
             self.registerTask(myriad.task.compile.CompileModelTask(self))
             
             if len(argv) == 2 and argv[0] == "help":
@@ -112,18 +130,22 @@ class Assistant(object):
                     self.__printUsage(sys.stderr)
                 
             elif (self.__isTaskExecute):
+                self.__log.info("Running task %s." % (self.__taskQName))
                 
                 task = None
                 
                 try:
                     task = self.currentTask()
 
+                    # execute the task
                     task.execute(self.__taskArgv)
                 
+                # thrown if the task doesn't exist
                 except UnknownTaskException, e:
                     self.__printHeader(sys.stderr)
                     self.__printErrorLine(str(e), sys.stderr)
                     self.__printUsage(sys.stderr)
+                # thrown by the option parser of the task
                 except optparse.OptParseError, e:
                     self.__printHeader()
                     self.__printErrorLine(str(e), sys.stderr)
@@ -151,6 +173,9 @@ class Assistant(object):
             return self.__tasks[self.__taskQName]
         else:
             raise UnknownTaskException(self.__taskQName)
+
+    def basePath(self):
+        return self.__basePath
 
     def __printHeader(self, out=sys.stdout):
         print >> out, "Myriad Assistant Tool"
@@ -187,7 +212,7 @@ class Assistant(object):
             D = [t.description() for t in self.tasks() if t.group() == g]
         
             for n, d in zip(N, D):
-                print >> out, "    :%-22s - %s" % (n, d)
+                print >> out, "    :%-21s - %s" % (n, d)
             
             print >> out, ""
             
