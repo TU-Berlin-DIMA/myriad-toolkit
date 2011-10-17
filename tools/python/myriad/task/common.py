@@ -326,7 +326,7 @@ class SkeletonProcessor(object):
                     targetPath = "%s/%s" % (targetBase, targetName)
                 
                 # process template
-                if (True or not os.path.isfile(targetPath)):
+                if (not os.path.isfile(targetPath)):
                     self.__log.info("Create file: %s" % (targetPath))
                     paramsProcessor.processTemplate(sourcePath, targetPath)
                 else:
