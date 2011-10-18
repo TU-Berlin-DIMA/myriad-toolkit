@@ -24,6 +24,7 @@ import types
 
 import ConfigParser
 import os.path
+import re
 
 TASK_PREFIX = "abstract"
 
@@ -187,8 +188,7 @@ class AbstractTask(object):
         parser = self.argsParser()
         
         self._log.info("Parsing task arguments.")
-        args, remainder = parser.parse_args(argv)
-        
+        args = parser.parse_args(argv)[0]
         
         # fix the parsed arguments
         self._log.info("Fixing parsed values.")
@@ -211,21 +211,31 @@ class ParametersProcessor(object):
     classdocs
     '''
     
-    __params = None
+    __pats = None
+    __keys = None
+    __vals = None
     __log = None
     
     def __init__(self, params):
         '''
         Constructor
         '''
+        self.__pats = [ re.compile(r".*(\${(uc|lc)?{%s}}).*" % (p)) for p in params.__dict__.keys() ]
         self.__keys = [ "${{%s}}" % (p) for p in params.__dict__.keys() ]
         self.__vals = [ p for p in params.__dict__.values() ]
         self.__log = logging.getLogger("template.processor")
     
     def processString(self, s):
-        for (k, v) in zip(self.__keys, self.__vals):
-            s = s.replace(k, v)
-
+        for (p, v) in zip(self.__pats, self.__vals):
+            for m in p.finditer(s):
+                expr = m.group(1)
+                func = m.group(2)
+                if func == "uc": 
+                    s = s.replace(expr, v.upper())
+                elif func == "lc": 
+                    s = s.replace(expr, v.lower())
+                else:
+                    s = s.replace(expr, v)
         return s
     
     def processTemplate(self, sourcePath, targetPath):
@@ -251,6 +261,9 @@ class SkeletonProcessor(object):
     classdocs
     '''
     
+    PROCESS_DIRS  = 0x1
+    PROCESS_FILES = 0x2
+    
     __skeletonBase = None
     __log = None
     
@@ -261,7 +274,7 @@ class SkeletonProcessor(object):
         self.__skeletonBase = skeletonBase
         self.__log = logging.getLogger("skeleton.processor")
         
-    def process(self, targetBase, params):
+    def process(self, targetBase, params, flags = PROCESS_FILES | PROCESS_DIRS):
         '''
         Process a skeleton. Initializes the skeleton directory structure at the 
         specified target location and process all skeleton files using the 
@@ -272,10 +285,12 @@ class SkeletonProcessor(object):
         paramsProcessor = ParametersProcessor(params)
         
         # create directories
-        self.__createDirs(targetBase)
+        if (flags & SkeletonProcessor.PROCESS_DIRS == SkeletonProcessor.PROCESS_DIRS):
+            self.__createDirs(targetBase)
         
         # create files
-        self.__createFiles(targetBase, paramsProcessor)
+        if (flags & SkeletonProcessor.PROCESS_FILES == SkeletonProcessor.PROCESS_FILES):
+            self.__createFiles(targetBase, paramsProcessor)
         
     def __createDirs(self, targetBase):
         '''
@@ -308,7 +323,8 @@ class SkeletonProcessor(object):
             metaConfig = self.__loadMeta(t[0], paramsProcessor)
             
             for sourceName in t[2]:
-                if sourceName == ".meta":
+                # skip meta sources
+                if self.__isMeta(sourceName):
                     continue
                 
                 # compute source path
@@ -320,13 +336,20 @@ class SkeletonProcessor(object):
                 else:
                     targetName = sourceName
                 
+                # fix target names of snippets
+                if (self.__isSnippets(sourceName)):
+                    targetName = targetName.replace(".snippets", "")
+                
                 if (len(prefix) > 0):
                     targetPath = "%s/%s/%s" % (targetBase, prefix, targetName)
                 else:
                     targetPath = "%s/%s" % (targetBase, targetName)
                 
+                # process snippet
+                if (self.__isSnippets(sourceName)):
+                    self.__log.info("Process snippets for: %s" % (targetPath))
                 # process template
-                if (not os.path.isfile(targetPath)):
+                elif (not os.path.isfile(targetPath)):
                     self.__log.info("Create file: %s" % (targetPath))
                     paramsProcessor.processTemplate(sourcePath, targetPath)
                 else:
@@ -347,3 +370,9 @@ class SkeletonProcessor(object):
                 metaConfig.set("filenames", n, paramsProcessor.processString(v))
 
         return metaConfig
+    
+    def __isMeta(self, fileName):
+        return fileName == ".meta"
+    
+    def __isSnippets(self, fileName):
+        return fileName.endswith(".snippets")
