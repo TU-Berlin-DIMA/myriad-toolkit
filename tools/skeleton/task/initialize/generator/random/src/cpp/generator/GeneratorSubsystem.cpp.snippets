@@ -1,0 +1,7 @@
+// snippet:`generator.include` after:`#include "generator/GeneratorSubsystem.h"`
+#include "generator/${{record_name}}Generator.h"
+// snippet:`generator.include`
+
+// snippet:`generator.register` after:`// register generators`
+	_generatorPool.set(new ${{project_ns}}::${{record_name}}Generator("${cc2us{record_name}}", _config, _notificationCenter));
+// snippet:`generator.register`

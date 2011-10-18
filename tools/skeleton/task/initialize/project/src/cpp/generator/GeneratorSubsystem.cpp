@@ -17,7 +17,6 @@
  */
 
 #include "generator/GeneratorSubsystem.h"
-// include generator headers
 
 using namespace std;
 using namespace Poco;

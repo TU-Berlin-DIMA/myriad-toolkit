@@ -1,20 +1,11 @@
-<?xml version="1.0"?>
-<generator-config>
-
-  <!-- configurable properties -->
-  <properties>
-  </properties>
+<!-- snippet:`record.properties` after:`<properties>` -->
+    <property-group type="${cc2us{record_name}}">
+      <!-- a list of ${cc2us{record_name}}-specific options -->
+    </property-group>
+<!-- snippet:`record.properties` -->
   
-  <!-- function configuration -->
-  <functions>
-  </functions>
-  
-  <!-- partitioning configuration -->
-  <partitioning>
-  </partitioning>
-  
-  <!-- string sets -->
-  <string-sets>
-  </string-sets>
-
-</generator-config>
+<!-- snippet:`record.partitioning` after:`<partitioning>` -->
+    <partition type="${cc2us{record_name}}" method="simple">
+      <base-cardinality>1000</base-cardinality>
+    </partition>
+<!-- snippet:`record.partitioning` -->

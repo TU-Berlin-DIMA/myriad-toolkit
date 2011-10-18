@@ -18,10 +18,7 @@
 
 #include "io/OutputCollector.h"
 #include "record/Record.h"
-// assistant: {include.record}
 
 namespace Myriad {
-
-// assistant: {operator.stub}
 
 }  // namespace Myriad

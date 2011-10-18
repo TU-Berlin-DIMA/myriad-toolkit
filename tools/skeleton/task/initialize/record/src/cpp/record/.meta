@@ -1,2 +1,2 @@
 [filenames]
-Record.h: ${{record_name}}.h
+RecordType.h: ${{record_name}}.h

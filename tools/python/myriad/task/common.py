@@ -210,30 +210,46 @@ class ParametersProcessor(object):
     '''
     classdocs
     '''
+    class Snippet(object):
+        name = None
+        pos = None
+        match = None
+        contents = None
+        
+        def __init__(self, m):
+            self.name = m.group(1)
+            self.pos = m.group(2)
+            self.match = m.group(3)
+            self.contents = []
     
-    __pats = None
-    __keys = None
-    __vals = None
+    __patterns = None
+    __values = None
     __log = None
     
     def __init__(self, params):
         '''
         Constructor
         '''
-        self.__pats = [ re.compile(r".*(\${(uc|lc)?{%s}}).*" % (p)) for p in params.__dict__.keys() ]
-        self.__keys = [ "${{%s}}" % (p) for p in params.__dict__.keys() ]
-        self.__vals = [ p for p in params.__dict__.values() ]
+        self.__cc2us_pattern1 = re.compile('(.)([A-Z][a-z]+)')
+        self.__cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
+        
+        self.__snippetStart = re.compile(r".*`(.+)` (before|after):`(.+)`.*")
+        self.__snippetEnd = re.compile(r".*`(.+)`.*")
+        self.__patterns = [ re.compile(r".*(\${(uc|lc|cc2us)?{%s}}).*" % (p)) for p in params.__dict__.keys() ]
+        self.__values = [ p for p in params.__dict__.values() ]
         self.__log = logging.getLogger("template.processor")
     
     def processString(self, s):
-        for (p, v) in zip(self.__pats, self.__vals):
+        for (p, v) in zip(self.__patterns, self.__values):
             for m in p.finditer(s):
                 expr = m.group(1)
                 func = m.group(2)
                 if func == "uc": 
-                    s = s.replace(expr, v.upper())
+                    s = s.replace(expr, self.__lc(v))
                 elif func == "lc": 
-                    s = s.replace(expr, v.lower())
+                    s = s.replace(expr, self.__lc(v))
+                elif func == "cc2us": 
+                    s = s.replace(expr, self.__cc2us(v))
                 else:
                     s = s.replace(expr, v)
         return s
@@ -255,6 +271,75 @@ class ParametersProcessor(object):
         stat = os.stat(sourcePath)
         os.chmod(targetPath, stat.st_mode)
         
+    def processSnippets(self, sourcePath, targetPath):
+
+        # snippets list
+        snippets = []
+        # current snippet
+        snippet = None
+        # open file descriptors to source and target
+        state = 0
+
+        # open source file descriptor
+        f = open(sourcePath, 'r')
+        # phase 1: fetch snippets
+        for l in f:
+            # expand variables in the current line
+            l = self.processString(l)
+            # awaiting opening snippet
+            if state == 0:
+                m = self.__snippetStart.match(l)
+                if m == None:
+                    pass # ignore this line
+                else:
+                    snippet = ParametersProcessor.Snippet(m)
+                    state = 1
+            # construct open snippet
+            elif state == 1:
+                m = self.__snippetEnd.match(l)
+                if m == None:
+                    snippet.contents.append(l)
+                else:
+                    # make sure that snippet name matches
+                    if m.group(1) != snippet.name:
+                        raise SyntaxError, "closing snippet does not match name `%s`" % (snippet.name)
+                    snippets.append(snippet)
+                    state = 0
+        # close file descriptor
+        f.close()
+        
+        # initialize target buffer
+        buf = []
+        # open target file descriptor
+        f = open(targetPath, 'r')
+        # phase 2: expand snippets
+        for l in f:
+            # expansion lines before and after the current line
+            pre = []
+            post = []
+            for c in snippets:
+                if c.match in l:
+                    if c.pos == "before":
+                        pre += c.contents
+                    elif c.pos == "after":
+                        post += c.contents
+            buf += pre + [l] + post
+        # close file descriptor
+        f.close()
+        
+        # save expanded target contents
+        f = open(targetPath, 'w')
+        f.writelines(buf)
+        f.close()
+        
+    def __uc(self, s):
+        return s.upper()
+
+    def __lc(self, s):
+        return s.lower()
+
+    def __cc2us(self, s):
+        return self.__cc2us_pattern2.sub(r'\1_\2', self.__cc2us_pattern1.sub(r'\1_\2', s)).lower()
 
 class SkeletonProcessor(object):
     '''
@@ -336,7 +421,7 @@ class SkeletonProcessor(object):
                 else:
                     targetName = sourceName
                 
-                # fix target names of snippets
+                # fix target name of *.snippets files
                 if (self.__isSnippets(sourceName)):
                     targetName = targetName.replace(".snippets", "")
                 
@@ -345,10 +430,11 @@ class SkeletonProcessor(object):
                 else:
                     targetPath = "%s/%s" % (targetBase, targetName)
                 
-                # process snippet
+                # process *.snippets file
                 if (self.__isSnippets(sourceName)):
                     self.__log.info("Process snippets for: %s" % (targetPath))
-                # process template
+                    paramsProcessor.processSnippets(sourcePath, targetPath)
+                # process template file
                 elif (not os.path.isfile(targetPath)):
                     self.__log.info("Create file: %s" % (targetPath))
                     paramsProcessor.processTemplate(sourcePath, targetPath)

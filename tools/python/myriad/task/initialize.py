@@ -116,11 +116,32 @@ class InitializeGeneratorTask(myriad.task.common.AbstractTask):
     
     def argsParser(self):
         parser = super(InitializeGeneratorTask, self).argsParser()
-
+        
         # arguments
-        parser.add_argument("--name", metavar="NAME", dest="config", type="str",
-                            help="name of the new generator")
+        parser.add_argument("--project_name", metavar="NAME", dest="project_name", type="str",
+                            help="name of the new project")
+        parser.add_argument("--record_name", metavar="NAME", dest="record_name", type="str",
+                            help="name of the record")
         # options
+        parser.add_option("--ns", metavar="NS", dest="project_ns", type="str",
+                          help="namespace for the C++ generator extensions")
+        parser.add_option("--type", metavar="TYPE", dest="generator_type", type="choice",
+                          choices=["static", "deterministic", "random"], default="random",
+                          help="generator type -- one of `static`, `deterministic` or `random` (default)")
 
         return parser
+        
+    def _fixArgs(self, args):
+        super(InitializeGeneratorTask, self)._fixArgs(args)
+        
+        if args.project_ns == None:
+            args.project_ns = "__%s" % (args.project_name)
+
+    def _do(self, args):
+        skeletonBase = "%s/tools/skeleton/task/%s/%s/%s" % (args.base_path, self.group(), self.name(), args.generator_type)
+        targetBase = "%s/../.." % (args.base_path)
+
+        self._log.info("Processing skeleton for task.")
+        skeletonProcessor = myriad.task.common.SkeletonProcessor(skeletonBase)
+        skeletonProcessor.process(targetBase, args, myriad.task.common.SkeletonProcessor.PROCESS_FILES)
 
