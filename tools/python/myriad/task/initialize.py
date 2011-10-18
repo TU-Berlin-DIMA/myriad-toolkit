@@ -18,8 +18,6 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
 '''
 
-import os
-
 import myriad.task.common
 
 TASK_PREFIX = "initialize"
@@ -55,13 +53,13 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
             args.project_ns = "__%s" % (args.project_name)
 
     def _do(self, args):
-        
         skeletonBase = "%s/tools/skeleton/task/%s/%s" % (args.base_path, self.group(), self.name())
         targetBase = "%s/../.." % (args.base_path)
 
         self._log.info("Processing skeleton for task.")
         skeletonProcessor = myriad.task.common.SkeletonProcessor(skeletonBase)
-        skeletonProcessor.process(targetBase, args);
+        skeletonProcessor.process(targetBase, args)
+
 
 class InitializeRecordTask(myriad.task.common.AbstractTask):
     '''
@@ -79,11 +77,29 @@ class InitializeRecordTask(myriad.task.common.AbstractTask):
         parser = super(InitializeRecordTask, self).argsParser()
         
         # arguments
-        parser.add_argument("--name", metavar="NAME", dest="config", type="str",
-                             help="name of the new record")
+        parser.add_argument("--project_name", metavar="NAME", dest="project_name", type="str",
+                            help="name of the new project")
+        parser.add_argument("--record_name", metavar="NAME", dest="record_name", type="str",
+                            help="name of the new record")
         # options
+        parser.add_option("--ns", metavar="NS", dest="project_ns", type="str",
+                          help="namespace for the C++ generator extensions")
 
         return parser
+        
+    def _fixArgs(self, args):
+        super(InitializeRecordTask, self)._fixArgs(args)
+        
+        if args.project_ns == None:
+            args.project_ns = "__%s" % (args.project_name)
+
+    def _do(self, args):
+        skeletonBase = "%s/tools/skeleton/task/%s/%s" % (args.base_path, self.group(), self.name())
+        targetBase = "%s/../.." % (args.base_path)
+
+        self._log.info("Processing skeleton for task.")
+        skeletonProcessor = myriad.task.common.SkeletonProcessor(skeletonBase)
+        skeletonProcessor.process(targetBase, args, myriad.task.common.SkeletonProcessor.PROCESS_FILES)
 
 
 class InitializeGeneratorTask(myriad.task.common.AbstractTask):

@@ -1,0 +1,2 @@
+[filenames]
+dgen-node.xml.snippets: ${{project_name}}-node.xml
