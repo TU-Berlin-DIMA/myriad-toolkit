@@ -44,6 +44,11 @@ class RNG
 {
 public:
 
+	virtual ~RNG()
+	{
+	}
+
+
 	/**
 	 * Return the next random double from the RNG stream. This method must be
 	 * provided by all implementations.
