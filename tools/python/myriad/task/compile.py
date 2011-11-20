@@ -19,6 +19,9 @@ Created on Oct 14, 2011
 '''
 
 import myriad.task.common
+import myriad.compiler.ast
+import os
+from myriad.compiler.ast import ASTReader
 
 TASK_PREFIX = "compile"
 
@@ -31,6 +34,28 @@ class CompileModelTask(myriad.task.common.AbstractTask):
         '''
         Constructor
         '''
-        kwargs.update(group=TASK_PREFIX, name="model", description="Compile a XML model specification.")
+        kwargs.update(group=TASK_PREFIX, name="model", description="Compile generator extensions from XML model specification.")
 
         super(CompileModelTask, self).__init__(*args, **kwargs)
+    
+    def argsParser(self):
+        parser = super(CompileModelTask, self).argsParser()
+        
+        # arguments
+        parser.add_option("--input-spec", metavar="SPECIFICATION", dest="model_spec_path", type="str", 
+                            default="specification.xml", help="path to the model specification XML file")
+
+        return parser
+        
+    def _fixArgs(self, args):
+        super(CompileModelTask, self)._fixArgs(args)
+        
+        if (not os.path.isabs(args.model_spec_path)):
+            args.model_spec_path = "%s/../../model/%s" % (args.base_path, args.model_spec_path) 
+        
+    def _do(self, args):
+        print args.model_spec_path
+
+        reader = ASTReader(path=args.model_spec_path)
+        reader.read()
+        

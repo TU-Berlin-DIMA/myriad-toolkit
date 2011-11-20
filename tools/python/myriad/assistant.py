@@ -86,12 +86,12 @@ class Assistant(object):
     def initialize(self, argv):
 
         try:
+            # register `compile:*` tasks
+            self.registerTask(myriad.task.compile.CompileModelTask(self))
             # register `initialize:*` tasks
             self.registerTask(myriad.task.initialize.InitializeProjectTask(self))
             self.registerTask(myriad.task.initialize.InitializeRecordTask(self))
             self.registerTask(myriad.task.initialize.InitializeGeneratorTask(self))
-            # register `compile:*` tasks
-            self.registerTask(myriad.task.compile.CompileModelTask(self))
             
             if len(argv) == 2 and argv[0] == "help":
                 self.__isTaskHelp = True
