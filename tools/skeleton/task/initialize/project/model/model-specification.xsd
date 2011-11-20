@@ -1,16 +1,22 @@
 <?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/specification" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/specification"
   elementFormDefault="qualified">
+
+  <!-- model-specification root type -->
+
   <xs:element name="model-specification" type="myriad:model-specification-type">
   </xs:element>
 
-  <!-- root element type -->
   <xs:complexType name="model-specification-type">
     <xs:sequence>
       <xs:element name="properties" type="myriad:properties-type">
         <xs:annotation>
           <xs:documentation>A list of property values.</xs:documentation>
         </xs:annotation>
+        <xs:key name="property-group-key">
+          <xs:selector xpath=".//myriad:property-group" />
+          <xs:field xpath="@type"></xs:field>
+        </xs:key>
       </xs:element>
       <xs:element name="functions" type="myriad:functions-type">
         <xs:annotation>
@@ -35,7 +41,8 @@
     </xs:sequence>
   </xs:complexType>
 
-  <!-- cloud-env type -->
+  <!-- properties -->
+
   <xs:complexType name="properties-type">
     <xs:sequence>
       <xs:element name="property-group" minOccurs="0" maxOccurs="unbounded">
@@ -45,10 +52,13 @@
           </xs:sequence>
           <xs:attribute name="type" type="xs:NCName" use="required" />
         </xs:complexType>
+        <xs:key name="property-key">
+          <xs:selector xpath=".//myriad:property" />
+          <xs:field xpath="@name"></xs:field>
+        </xs:key>
       </xs:element>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="property-type">
     <xs:simpleContent>
       <xs:extension base="xs:string">
@@ -57,10 +67,46 @@
     </xs:simpleContent>
   </xs:complexType>
 
+  <!-- functions -->
+
   <xs:complexType name="functions-type">
     <xs:sequence>
-      <xs:element name="function" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="function" type="myriad:function-type" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
+  </xs:complexType>
+  
+  <!-- function types -->
+  <xs:complexType name="function-type" abstract="true">
+    <xs:attribute name="name" type="xs:NCName" use="required" />
+  </xs:complexType>
+  <!-- custom-discrete-probability -->
+  <xs:complexType name="custom-discrete-probability">
+    <xs:complexContent>
+      <xs:extension base="myriad:function-type">
+        <xs:sequence>
+          <xs:element name="probability" minOccurs="0" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:simpleContent>
+                <xs:extension base="xs:string">
+                  <xs:attribute name="argument" type="xs:int" use="required" />
+                  <xs:attribute name="value" type="xs:double" use="required" />
+                </xs:extension>
+              </xs:simpleContent>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <!-- pareto probability -->
+  <xs:complexType name="pareto">
+    <xs:complexContent>
+      <xs:extension base="myriad:function-type">
+        <xs:sequence>
+          <xs:element name="param" type="myriad:property-type" minOccurs="2" maxOccurs="2" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
   </xs:complexType>
 
   <xs:complexType name="partitioning-type">
@@ -69,11 +115,15 @@
     </xs:sequence>
   </xs:complexType>
 
+  <!-- string-sets -->
+
   <xs:complexType name="string-sets-type">
     <xs:sequence>
       <xs:element name="string-set" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
+
+  <!-- enumerations -->
 
   <xs:complexType name="enumerations-type">
     <xs:sequence>
