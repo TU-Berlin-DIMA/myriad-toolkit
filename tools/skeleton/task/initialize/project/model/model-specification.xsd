@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/specification" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/specification"
+  elementFormDefault="qualified">
+  <xs:element name="model-specification" type="myriad:model-specification-type">
+  </xs:element>
+
+  <!-- root element type -->
+  <xs:complexType name="model-specification-type">
+    <xs:sequence>
+      <xs:element name="properties" type="myriad:properties-type">
+        <xs:annotation>
+          <xs:documentation>A list of property values.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="functions" type="myriad:functions-type">
+        <xs:annotation>
+          <xs:documentation>A list of named function definitions.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="partitioning" type="myriad:partitioning-type">
+        <xs:annotation>
+          <xs:documentation>The sequence partitioning configuration used for parallel execution.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="string-sets" type="myriad:string-sets-type">
+        <xs:annotation>
+          <xs:documentation>The sequence partitioning configuration used for parallel execution.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="enumerations" type="myriad:enumerations-type">
+        <xs:annotation>
+          <xs:documentation>The sequence partitioning configuration used for parallel execution.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- cloud-env type -->
+  <xs:complexType name="properties-type">
+    <xs:sequence>
+      <xs:element name="property-group" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="property" type="myriad:property-type" maxOccurs="unbounded" />
+          </xs:sequence>
+          <xs:attribute name="type" type="xs:NCName" use="required" />
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="property-type">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:NCName" use="required" />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="functions-type">
+    <xs:sequence>
+      <xs:element name="function" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="partitioning-type">
+    <xs:sequence>
+      <xs:element name="partition" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="string-sets-type">
+    <xs:sequence>
+      <xs:element name="string-set" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="enumerations-type">
+    <xs:sequence>
+      <xs:element name="enumeration" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
