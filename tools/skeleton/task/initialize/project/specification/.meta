@@ -1,0 +1,2 @@
+[filenames]
+dgen-specification.xml: ${{project_name}}-specification.xml

@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <generator_specification xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/specification" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/specification specification.xsd">
 
-  <!-- configurable properties -->
+  <!-- catalogue imports -->
+  <import path="catalogue/census.us.xml" namespace="census.us" />
+  
+  <!-- configurable parameters -->
   <parameters>
-    <!-- user properties -->
+    <!-- user parameters -->
     <parameter key="user.output_file">user.json</parameter>
-    <!-- user_connections properties -->
+    <!-- user_connections parameters -->
     <parameter key="user_connections.output_file">user_connections.json</parameter>
     <parameter key="user_connections.connections_cardinality">100</parameter>
     <parameter key="user_connections.cluster_size">200</parameter>
@@ -14,41 +17,17 @@
 
   <!-- function configuration -->
   <functions>
-    <function key="Pr[male_name]" type="custom_discrete_probability" />
-    <function key="Pr[female_name]" type="custom_discrete_probability" />
-    <function key="Pr[surname]" type="custom_discrete_probability" />
-    <function key="Pr[gender]" type="custom_discrete_probability" />
-    <function key="Pr[uc:cluster_connection]" type="pareto_probability">
+    <function key="Pr[in_cluster_connection]" type="pareto_probability">
       <argument key="x_min">1</argument>
       <argument key="alpha">1</argument>
     </function>
   </functions>
 
-  <!-- string sets -->
-  <string_sets>
-    <!-- us male firstnames -->
-    <string_set key="male_names">
-      <item value="James">
-        <probability function="Pr[male_name]" value='0.0372726560947861000' />
-      </item>
-      <item value="John">
-        <probability function="Pr[male_name]" value='0.0367004386998328000' />
-      </item>
-      <item value="Robert">
-        <probability function="Pr[male_name]" value='0.0352642857944282000' />
-      </item>
-    </string_set>
-  </string_sets>
-
   <!-- enumeration types -->
   <enumerations>
     <enumeration key="Gender">
-      <item value="Male">
-        <probability function="Pr[gender]" value='0.493' />
-      </item>
-      <item value="Female">
-        <probability function="Pr[gender]" value='0.507' />
-      </item>
+      <item value="Male" />
+      <item value="Female" />
     </enumeration>
   </enumerations>
 
@@ -68,25 +47,25 @@
         </hydrator>
         <hydrator key="gender_hydrator" type="enum_set_hydrator">
           <argument key="field" type="field_ref" ref="id" />
-          <argument key="probability" type="function_ref" ref="Pr[myriad:uniform]" />
+          <argument key="probability" type="function_ref" ref="census.us:Pr[gender]" />
         </hydrator>
         <hydrator key="first_name_hydrator" type="conditional_hydrator">
           <argument key="field" type="field_ref" ref="first_name" />
           <argument key="condition_field" type="field_ref" ref="gender" />
           <argument key="choices" type="map">
-            <argument key="Male" type="hydrator_ref" ref="first_name_male_hydrator" />
-            <argument key="Female" type="hydrator_ref" ref="first_name_female_hydrator" />
+            <argument key="Male" type="hydrator_ref" ref="male_name_hydrator" />
+            <argument key="Female" type="hydrator_ref" ref="female_name_hydrator" />
           </argument>
         </hydrator>
-        <hydrator key="first_name_male_hydrator" type="static_set_hydrator">
+        <hydrator key="male_name_hydrator" type="static_set_hydrator">
           <argument key="field" type="field_ref" ref="first_name" />
           <argument key="set" type="set_ref" ref="male_names" />
-          <argument key="probability" type="function_ref" ref="Pr[male_names]" />
+          <argument key="probability" type="function_ref" ref="census.us:Pr[male_names]" />
         </hydrator>
-        <hydrator key="first_name_female_hydrator" type="static_set_hydrator">
+        <hydrator key="female_name_hydrator" type="static_set_hydrator">
           <argument key="field" type="field_ref" ref="first_name" />
           <argument key="set" type="set_ref" ref="female_names" />
-          <argument key="probability" type="function_ref" ref="Pr[female_names]" />
+          <argument key="probability" type="function_ref" ref="census.us:Pr[female_names]" />
         </hydrator>
       </hydrators>
       <hydration_plan>
@@ -124,7 +103,7 @@
           <argument key="interval_field" type="field_ref" ref="cluster_interval" />
           <argument key="const_value" type="I16u" value="%user_connections.connections_count%" />
           <argument key="cardinality" type="I16u" value="${ %user_connections.sequence.cardinality% / %user_connections.cluster_size% }" />
-          <argument key="probability" type="function_ref" ref="Pr[myriad:uniform]" />
+          <argument key="probability" type="function_ref" ref="core:Pr[uniform]" />
         </hydrator>
         <hydrator key="connections_hydrator" type="repeated_hydrator">
           <argument key="field" type="field_ref" ref="connections" />
@@ -134,7 +113,7 @@
         <hydrator key="connection_hydrator" type="clustered_reference_hydrator">
           <argument key="field" type="field_ref" ref="connections" />
           <argument key="restriction_interval_field" type="field_ref" ref="cluster_interval" />
-          <argument key="probability" type="function_ref" ref="Pr[uc:cluster_connection]" />
+          <argument key="probability" type="function_ref" ref="Pr[in_cluster_connection]" />
         </hydrator>
       </hydrators>
       <hydration_plan>

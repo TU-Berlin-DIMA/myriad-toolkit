@@ -4,50 +4,114 @@
   <!-- permitted root elements -->
 
   <xs:element name="generator_specification" type="myriad:generator_specification" />
+  <xs:element name="generator_catalogue" type="myriad:generator_catalogue" />
 
-  <!-- model-specification root type -->
+  <!-- generator_specification root type -->
 
   <xs:complexType name="generator_specification">
     <xs:sequence>
-      <xs:element name="parameters" type="myriad:parameters_conatiner">
+      <xs:group ref="myriad:imports" />
+      <xs:element name="parameters" type="myriad:parameters_conatiner" minOccurs="0">
         <xs:annotation>
           <xs:documentation>A list of global generator parameters.</xs:documentation>
         </xs:annotation>
-        <xs:unique name="parameter_name">
+        <xs:unique name="specification_parameter_name">
           <xs:selector xpath=".//myriad:parameter" />
           <xs:field xpath="@key"></xs:field>
         </xs:unique>
       </xs:element>
-      <xs:element name="functions" type="myriad:functions">
+      <xs:element name="functions" type="myriad:functions" minOccurs="0">
         <xs:annotation>
           <xs:documentation>A list of named probability functions.</xs:documentation>
         </xs:annotation>
-        <xs:unique name="function_name">
+        <xs:unique name="specification_function_name">
           <xs:selector xpath=".//myriad:function" />
           <xs:field xpath="@key"></xs:field>
         </xs:unique>
       </xs:element>
-      <xs:element name="string_sets" type="myriad:string_sets">
+      <xs:element name="string_sets" type="myriad:string_sets" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Finite string sets used in the described domain model.</xs:documentation>
         </xs:annotation>
-        <xs:key name="string_set_name">
+        <xs:unique name="specification_string_set_name">
           <xs:selector xpath=".//myriad:string-set" />
           <xs:field xpath="@key" />
-        </xs:key>
+        </xs:unique>
       </xs:element>
-      <xs:element name="enumerations" type="myriad:enumerations">
+      <xs:element name="enumerations" type="myriad:enumerations" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Enumertions used in the described domain model.</xs:documentation>
         </xs:annotation>
-        <xs:key name="enumeration_name">
+        <xs:unique name="specification_enumeration_name">
           <xs:selector xpath=".//myriad:enumeration" />
           <xs:field xpath="@key" />
-        </xs:key>
+        </xs:unique>
       </xs:element>
       <xs:element name="record_sequences" type="myriad:record_sequences">
+        <xs:annotation>
+          <xs:documentation>The record sequences produced by this generator.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="specification_record_sequence_name">
+          <xs:selector xpath="./*" />
+          <xs:field xpath="@key" />
+        </xs:unique>
       </xs:element>
     </xs:sequence>
+  </xs:complexType>
+  
+  <!-- generator_catalogue root type -->
+
+  <xs:complexType name="generator_catalogue">
+    <xs:sequence>
+      <xs:group ref="myriad:imports" />
+      <xs:element name="parameters" type="myriad:parameters_conatiner" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>A list of generator parameters for this catalogue.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="catalogue_parameter_name">
+          <xs:selector xpath=".//myriad:parameter" />
+          <xs:field xpath="@key"></xs:field>
+        </xs:unique>
+      </xs:element>
+      <xs:element name="functions" type="myriad:functions" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>A list of functions for this catalogue.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="catalogue_function_name">
+          <xs:selector xpath=".//myriad:function" />
+          <xs:field xpath="@key"></xs:field>
+        </xs:unique>
+      </xs:element>
+      <xs:element name="string_sets" type="myriad:string_sets" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Finite string sets for this calalogue.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="catalogue_string_set_name">
+          <xs:selector xpath=".//myriad:string-set" />
+          <xs:field xpath="@key" />
+        </xs:unique>
+      </xs:element>
+      <xs:element name="enumerations" type="myriad:enumerations" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Enumertions for this catalogue.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="catalogue_enumeration_name">
+          <xs:selector xpath=".//myriad:enumeration" />
+          <xs:field xpath="@key" />
+        </xs:unique>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- imports -->
+  <xs:group name="imports">
+    <xs:sequence>
+      <xs:element name="import" type="myriad:import" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="import">
+    <xs:attribute name="path" type="xs:string" use="required" />
+    <xs:attribute name="namespace" type="xs:NCName" use="required" />
   </xs:complexType>
 
   <!-- parameters and arguments -->
@@ -141,10 +205,10 @@
   <xs:complexType name="string_sets">
     <xs:sequence>
       <xs:element name="string_set" type="myriad:string_set" minOccurs="0" maxOccurs="unbounded">
-        <xs:key name="string_set_item_value">
+        <xs:unique name="string_set_item_value">
           <xs:selector xpath=".//myriad:item" />
           <xs:field xpath="@value" />
-        </xs:key>
+        </xs:unique>
       </xs:element>
     </xs:sequence>
   </xs:complexType>

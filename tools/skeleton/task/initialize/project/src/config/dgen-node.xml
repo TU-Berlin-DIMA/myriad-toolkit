@@ -1,17 +1,13 @@
 <?xml version="1.0"?>
 <generator-config>
 
-  <!-- configurable properties -->
-  <properties>
-  </properties>
+  <!-- configurable parameters -->
+  <parameters>
+  </parameters>
   
   <!-- function configuration -->
   <functions>
   </functions>
-  
-  <!-- partitioning configuration -->
-  <partitioning>
-  </partitioning>
   
   <!-- string sets -->
   <string-sets>
