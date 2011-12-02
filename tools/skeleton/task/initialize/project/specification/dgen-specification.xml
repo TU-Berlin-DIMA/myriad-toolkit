@@ -24,18 +24,23 @@
   </functions>
 
   <!-- enumeration types -->
-  <enumerations>
-    <enumeration key="Gender">
+  <enum_sets>
+    <enum_set key="Gender">
       <item value="Male" />
       <item value="Female" />
-    </enumeration>
-  </enumerations>
+    </enum_set>
+    <enum_set key="Locale">
+      <item value="US" />
+      <item value="CA" />
+    </enum_set>
+  </enum_sets>
 
   <record_sequences>
     <!-- users -->
     <random_sequence key="user">
       <record_type>
         <field name="id" type="I64u" />
+        <field name="locale" type="Locale" />
         <field name="gender" type="Gender" />
         <field name="first_name" type="String" />
         <field name="last_name" type="String" />
@@ -45,8 +50,12 @@
           <argument key="field" type="field_ref" ref="id" />
           <argument key="cardinality" type="long" value="%user.sequence.cardinality%" />
         </hydrator>
+        <hydrator key="locale_hydrator" type="enum_set_hydrator">
+          <argument key="field" type="field_ref" ref="locale" />
+          <argument key="probability" type="function_ref" ref="Pr[locale]" />
+        </hydrator>
         <hydrator key="gender_hydrator" type="enum_set_hydrator">
-          <argument key="field" type="field_ref" ref="id" />
+          <argument key="field" type="field_ref" ref="gender" />
           <argument key="probability" type="function_ref" ref="census.us:Pr[gender]" />
         </hydrator>
         <hydrator key="first_name_hydrator" type="conditional_hydrator">

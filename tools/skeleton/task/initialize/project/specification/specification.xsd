@@ -38,12 +38,12 @@
           <xs:field xpath="@key" />
         </xs:unique>
       </xs:element>
-      <xs:element name="enumerations" type="myriad:enumerations" minOccurs="0">
+      <xs:element name="enum_sets" type="myriad:enum_sets" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Enumertions used in the described domain model.</xs:documentation>
         </xs:annotation>
-        <xs:unique name="specification_enumeration_name">
-          <xs:selector xpath=".//myriad:enumeration" />
+        <xs:unique name="specification_enum_set_name">
+          <xs:selector xpath=".//myriad:enum_set" />
           <xs:field xpath="@key" />
         </xs:unique>
       </xs:element>
@@ -91,12 +91,12 @@
           <xs:field xpath="@key" />
         </xs:unique>
       </xs:element>
-      <xs:element name="enumerations" type="myriad:enumerations" minOccurs="0">
+      <xs:element name="enum_sets" type="myriad:enum_sets" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Enumertions for this catalogue.</xs:documentation>
         </xs:annotation>
-        <xs:unique name="catalogue_enumeration_name">
-          <xs:selector xpath=".//myriad:enumeration" />
+        <xs:unique name="catalogue_enum_set_name">
+          <xs:selector xpath=".//myriad:enum_set" />
           <xs:field xpath="@key" />
         </xs:unique>
       </xs:element>
@@ -152,7 +152,7 @@
     <xs:attribute name="value" type="xs:string" />
   </xs:complexType>
 
-  <!-- set and enumeration items -->
+  <!-- string / enum set items -->
   <xs:group name="items">
     <xs:sequence>
       <xs:element name="item" type="myriad:item" maxOccurs="unbounded" />
@@ -217,14 +217,19 @@
     <xs:attribute name="key" type="xs:NCName" use="required" />
   </xs:complexType>
 
-  <!-- enumerations -->
+  <!-- enum_sets -->
 
-  <xs:complexType name="enumerations">
+  <xs:complexType name="enum_sets">
     <xs:sequence>
-      <xs:element name="enumeration" type="myriad:enumeration" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="enum_set" type="myriad:enum_set" minOccurs="0" maxOccurs="unbounded">
+        <xs:unique name="enum_set_item_value">
+          <xs:selector xpath=".//myriad:item" />
+          <xs:field xpath="@value" />
+        </xs:unique>
+      </xs:element>
     </xs:sequence>
   </xs:complexType>
-  <xs:complexType name="enumeration">
+  <xs:complexType name="enum_set">
     <xs:sequence>
       <xs:element name="item" type="myriad:item" maxOccurs="unbounded" />
     </xs:sequence>
