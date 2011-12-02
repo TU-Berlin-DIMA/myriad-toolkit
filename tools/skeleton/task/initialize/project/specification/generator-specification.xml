@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <generator_specification xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/specification" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/specification specification.xsd">
 
   <!-- configurable properties -->
@@ -54,7 +54,7 @@
 
   <record_sequences>
     <!-- users -->
-    <random_sequence key="user" base_cardinality="%user_connections.sequence.base_cardinality%">
+    <random_sequence key="user">
       <record_type>
         <field name="id" type="I64u" />
         <field name="gender" type="Gender" />
@@ -95,12 +95,14 @@
         <hydrator_ref ref="first_name_hydrator" />
       </hydration_plan>
       <generator_tasks>
-        <generator_task key="user.generate" type="partitioned_iterator" />
+        <generator_task key="user.generate" type="partitioned_iterator">
+          <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
+        </generator_task>
       </generator_tasks>
     </random_sequence>
 
     <!-- user connections -->
-    <random_sequence key="user_connections" base_cardinality="750000">
+    <random_sequence key="user_connections">
       <record_type>
         <field name="id" type="I64u" />
         <field name="cluster_id" type="I64u" />
@@ -121,7 +123,7 @@
           <argument key="field" type="field_ref" ref="cluster_id" />
           <argument key="interval_field" type="field_ref" ref="cluster_interval" />
           <argument key="const_value" type="I16u" value="%user_connections.connections_count%" />
-          <argument key="cardinality" type="I16u" value="${%user_connections.sequence.cardinality% / %user_connections.cluster_size%}" />
+          <argument key="cardinality" type="I16u" value="${ %user_connections.sequence.cardinality% / %user_connections.cluster_size% }" />
           <argument key="probability" type="function_ref" ref="Pr[myriad:uniform]" />
         </hydrator>
         <hydrator key="connections_hydrator" type="repeated_hydrator">
@@ -142,6 +144,9 @@
         <hydrator_ref ref="connections_hydrator" />
       </hydration_plan>
       <generator_tasks>
+        <generator_task key="user_connections.generate" type="partitioned_iterator">
+          <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
+        </generator_task>
       </generator_tasks>
     </random_sequence>
   </record_sequences>

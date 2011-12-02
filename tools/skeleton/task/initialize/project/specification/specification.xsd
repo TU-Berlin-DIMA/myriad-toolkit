@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/specification" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/specification" elementFormDefault="qualified">
 
   <!-- permitted root elements -->
@@ -182,7 +182,6 @@
       <xs:element name="generator_tasks" type="myriad:generator_tasks" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="key" type="xs:NCName" use="required" />
-    <xs:attribute name="base_cardinality" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="record_type">
     <xs:sequence>
