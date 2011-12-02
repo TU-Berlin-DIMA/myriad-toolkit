@@ -9,13 +9,13 @@
 
   <xs:complexType name="generator_specification">
     <xs:sequence>
-      <xs:element name="parameters" type="parameters_conatiner">
+      <xs:element name="parameters" type="myriad:parameters_conatiner">
         <xs:annotation>
           <xs:documentation>A list of global generator parameters.</xs:documentation>
         </xs:annotation>
         <xs:unique name="parameter_name">
           <xs:selector xpath=".//myriad:parameter" />
-          <xs:field xpath="@name"></xs:field>
+          <xs:field xpath="@key"></xs:field>
         </xs:unique>
       </xs:element>
       <xs:element name="functions" type="myriad:functions">
@@ -24,7 +24,7 @@
         </xs:annotation>
         <xs:unique name="function_name">
           <xs:selector xpath=".//myriad:function" />
-          <xs:field xpath="@name"></xs:field>
+          <xs:field xpath="@key"></xs:field>
         </xs:unique>
       </xs:element>
       <xs:element name="string_sets" type="myriad:string_sets">
@@ -33,7 +33,7 @@
         </xs:annotation>
         <xs:key name="string_set_name">
           <xs:selector xpath=".//myriad:string-set" />
-          <xs:field xpath="@name" />
+          <xs:field xpath="@key" />
         </xs:key>
       </xs:element>
       <xs:element name="enumerations" type="myriad:enumerations">
@@ -42,7 +42,7 @@
         </xs:annotation>
         <xs:key name="enumeration_name">
           <xs:selector xpath=".//myriad:enumeration" />
-          <xs:field xpath="@name" />
+          <xs:field xpath="@key" />
         </xs:key>
       </xs:element>
       <xs:element name="record_sequences" type="myriad:record_sequences">
@@ -55,38 +55,51 @@
   <!-- parameters -->
   <xs:group name="parameters">
     <xs:sequence>
-      <xs:element name="parameter" type="myriad:parameter" maxOccurs="unbounded" />
+      <xs:element name="parameter" type="myriad:parameter" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:group>
   <xs:complexType name="parameters_conatiner">
-    <xs:group ref="parameters" />
+    <xs:group ref="myriad:parameters" />
   </xs:complexType>
   <xs:complexType name="parameter">
     <xs:simpleContent>
       <xs:extension base="xs:string">
-        <xs:attribute name="name" type="xs:NCName" use="required" />
+        <xs:attribute name="key" type="xs:NCName" use="required" />
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-  
+
   <!-- arguments -->
   <xs:group name="arguments">
     <xs:sequence>
-      <xs:element name="argument" type="myriad:argument" maxOccurs="unbounded" />
+      <xs:element name="argument" type="myriad:argument" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:group>
   <xs:complexType name="arguments_conatiner">
-    <xs:group ref="parameters" />
+    <xs:group ref="myriad:arguments" />
   </xs:complexType>
-  <xsd:complexType name="argument" mixed="true">
-    <xsd:choice minOccurs="0" maxOccurs="unbounded">
-      <xsd:element name="parameter" type="parameter" />
-    </xsd:choice>
-    <xsd:attribute name="type" type="parameter_type" />
-    <xsd:attribute name="id" type="xsd:string" />
-    <xsd:attribute name="key" type="xsd:string" />
-    <xsd:attribute name="on-invalid" type="invalid_sequence" />
-  </xsd:complexType>
+  <xs:complexType name="argument" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="argument" type="myriad:argument" />
+    </xs:choice>
+    <xs:attribute name="key" type="xs:string" />
+    <xs:attribute name="type" type="xs:string" />
+    <xs:attribute name="ref" type="xs:string" />
+    <xs:attribute name="value" type="xs:string" />
+  </xs:complexType>
+
+  <!-- set and enumeration items -->
+  <xs:group name="items">
+    <xs:sequence>
+      <xs:element name="item" type="myriad:item" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:group>
+  <xs:complexType name="item">
+    <xs:sequence>
+      <xs:element name="probability" type="myriad:probability-point-context" minOccurs="0" />
+    </xs:sequence>
+    <xs:attribute name="value" type="xs:string" use="required" />
+  </xs:complexType>
 
   <!-- functions -->
 
@@ -101,7 +114,7 @@
       <xs:element name="argument" type="myriad:argument" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="probability" type="myriad:probability-point-inline" minOccurs="0" maxOccurs="unbounded" />
     </xs:choice>
-    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="key" type="xs:string" use="required" />
     <xs:attribute name="type" type="xs:Name" use="required" />
   </xs:complexType>
   <!-- probability points for the custom discrete probability type -->
@@ -123,19 +136,6 @@
     </xs:simpleContent>
   </xs:complexType>
 
-  <!-- partitioning configs -->
-  <xs:complexType name="partitioners">
-    <xs:sequence>
-      <xs:element name="partitioner" type="myriad:partitioner" minOccurs="0" maxOccurs="unbounded" />
-    </xs:sequence>
-  </xs:complexType>
-  <!-- base partition type -->
-  <xs:complexType name="partitioner">
-    <xs:group ref="myriad:parameters" />
-    <xs:attribute name="sequence" type="xs:NCName" use="required" />
-    <xs:attribute name="type" type="xs:NCName" use="required" />
-  </xs:complexType>
-
   <!-- string-sets -->
 
   <xs:complexType name="string_sets">
@@ -149,10 +149,8 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="string_set">
-    <xs:sequence>
-      <xs:element name="item" type="myriad:item" maxOccurs="unbounded" />
-    </xs:sequence>
-    <xs:attribute name="name" type="xs:NCName" use="required" />
+    <xs:group ref="myriad:items" />
+    <xs:attribute name="key" type="xs:NCName" use="required" />
   </xs:complexType>
 
   <!-- enumerations -->
@@ -166,16 +164,7 @@
     <xs:sequence>
       <xs:element name="item" type="myriad:item" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:NCName" use="required" />
-  </xs:complexType>
-
-  <!-- set and enumeration items -->
-
-  <xs:complexType name="item">
-    <xs:sequence>
-      <xs:element name="probability" type="myriad:probability-point-context" minOccurs="0" />
-    </xs:sequence>
-    <xs:attribute name="value" type="xs:string" use="required" />
+    <xs:attribute name="key" type="xs:NCName" use="required" />
   </xs:complexType>
 
   <!-- record sequences -->
@@ -189,11 +178,11 @@
     <xs:sequence>
       <xs:element name="record_type" type="myriad:record_type" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="hydrators" type="myriad:hydrators" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="hydrator_chain" type="myriad:hydrator_chain" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="hydration_plan" type="myriad:hydration_plan" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="generator_tasks" type="myriad:generator_tasks" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:NCName" use="required" />
-    <xs:attribute name="base_cardinality" type="parameter_reference" use="required" />
+    <xs:attribute name="key" type="xs:NCName" use="required" />
+    <xs:attribute name="base_cardinality" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="record_type">
     <xs:sequence>
@@ -201,20 +190,26 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="field_type">
-    <xs:attribute name="name" type="xs:NCName" />
-    <xs:attribute name="type" type="xs:NCName" />
+    <xs:attribute name="name" type="xs:string" />
+    <xs:attribute name="type" type="xs:string" />
   </xs:complexType>
   <xs:complexType name="hydrators">
     <xs:sequence>
-      <xs:element name="hydrator" type="myriad:hydrator" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="hydrator" type="myriad:hydrator" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="hydrator">
-    <xs:group ref="myriad:parameters" />
-    <xs:attribute name="name" type="xs:NCName" />
-    <xs:attribute name="type" type="xs:NCName" />
+    <xs:group ref="myriad:arguments" />
+    <xs:attribute name="key" type="xs:NCName" use="required" />
+    <xs:attribute name="type" type="xs:NCName" use="required" />
   </xs:complexType>
-  <xs:complexType name="hydrator_chain">
+  <xs:complexType name="hydration_plan">
+    <xs:sequence>
+      <xs:element name="hydrator_ref" type="myriad:hydrator_ref" minOccurs="1" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="hydrator_ref">
+    <xs:attribute name="ref" type="xs:NCName" />
   </xs:complexType>
   <xs:complexType name="generator_tasks">
     <xs:sequence>
@@ -222,19 +217,8 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="generator_task">
+    <xs:group ref="myriad:arguments" />
+    <xs:attribute name="key" type="xs:NCName" use="required" />
+    <xs:attribute name="type" type="xs:NCName" use="required" />
   </xs:complexType>
-
-
-
-  <!-- OLD <xs:complexType name="record-type-type"> <xs:sequence> <xs:element name="fields"> <xs:complexType> <xs:sequence> <xs:element name="field" type="myriad:field-type" maxOccurs="64" /> </xs:sequence> </xs:complexType> </xs:element> <xs:element name="hydrator-chain"> <xs:complexType> <xs:sequence> 
-    <xs:element name="hydrator" type="myriad:hydrator-type" maxOccurs="128" /> </xs:sequence> </xs:complexType> </xs:element> </xs:sequence> <xs:attribute name="name" type="xs:NCName" use="required" /> </xs:complexType> <!- - field type - -> <xs:complexType name="field-type"> <xs:attribute name="name" type="xs:NCName" 
-    use="required" /> <xs:attribute name="type" type="xs:string" use="required" /> <xs:attribute name="references" type="xs:string" /> </xs:complexType> <!- - hydrator types - -> <xs:complexType name="hydrator-type" abstract="true"> <xs:attribute name="field" type="xs:NCName" use="required" /> </xs:complexType> 
-    <xs:complexType name="const-hydrator"> <xs:complexContent> <xs:extension base="myriad:hydrator-type"> <xs:attribute name="value" type="xs:string" /> </xs:extension> </xs:complexContent> </xs:complexType> <xs:complexType name="clustered-sequence-hydrator"> <xs:complexContent> <xs:extension base="myriad:hydrator-type"> 
-    <xs:attribute name="interval-field" type="xs:NCName" /> <xs:attribute name="cardinality" type="xs:string" /> <xs:attribute name="probability" type="xs:string" /> </xs:extension> </xs:complexContent> </xs:complexType> <xs:complexType name="clustered-reference-hydrator"> <xs:complexContent> <xs:extension 
-    base="myriad:hydrator-type"> <xs:attribute name="cluster-interval-field" type="xs:NCName" /> <xs:attribute name="probability" type="xs:string" /> </xs:extension> </xs:complexContent> </xs:complexType> <xs:complexType name="randomized-sequence-hydrator"> <xs:complexContent> <xs:extension base="myriad:hydrator-type"> 
-    <xs:attribute name="cardinality" type="xs:string" /> </xs:extension> </xs:complexContent> </xs:complexType> <xs:complexType name="enum-set-hydrator"> <xs:complexContent> <xs:extension base="myriad:hydrator-type"> <xs:attribute name="probability" type="xs:string" /> </xs:extension> </xs:complexContent> 
-    </xs:complexType> <xs:complexType name="static-set-hydrator"> <xs:complexContent> <xs:extension base="myriad:hydrator-type"> <xs:attribute name="set" type="xs:string" /> <xs:attribute name="probability" type="xs:string" /> </xs:extension> </xs:complexContent> </xs:complexType> <xs:complexType name="repeated-hydrator"> 
-    <xs:complexContent> <xs:extension base="myriad:hydrator-type"> <xs:sequence> <xs:element name="hydrator" type="myriad:hydrator-type" /> </xs:sequence> <xs:attribute name="count-field" type="xs:NCName" /> </xs:extension> </xs:complexContent> </xs:complexType> <xs:complexType name="conditional-hydrator"> 
-    <xs:complexContent> <xs:extension base="myriad:hydrator-type"> <xs:sequence> <xs:element name="if" maxOccurs="64"> <xs:complexType> <xs:sequence> <xs:element name="hydrator" type="myriad:hydrator-type" /> </xs:sequence> <xs:attribute name="cond-value" type="xs:string" use="required" /> </xs:complexType> 
-    </xs:element> </xs:sequence> <xs:attribute name="cond-field" type="xs:string" /> </xs:extension> </xs:complexContent> </xs:complexType> STUFF -->
 </xs:schema>

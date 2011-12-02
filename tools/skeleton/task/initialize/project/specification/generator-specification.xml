@@ -4,30 +4,30 @@
   <!-- configurable properties -->
   <parameters>
     <!-- user properties -->
-    <parameter name="user.output_file">user.json</parameter>
+    <parameter key="user.output_file">user.json</parameter>
     <!-- user_connections properties -->
-    <parameter name="user_connections.output_file">user_connections.json</parameter>
-    <parameter name="user_connections.connections_cardinality">100</parameter>
-    <parameter name="user_connections.cluster_size">200</parameter>
-    <parameter name="user_connections.cluster_connections_factor">0.8</parameter>
+    <parameter key="user_connections.output_file">user_connections.json</parameter>
+    <parameter key="user_connections.connections_cardinality">100</parameter>
+    <parameter key="user_connections.cluster_size">200</parameter>
+    <parameter key="user_connections.cluster_connections_factor">0.8</parameter>
   </parameters>
 
   <!-- function configuration -->
   <functions>
-    <function name="Pr[male_name]" type="custom_discrete_probability" />
-    <function name="Pr[female_name]" type="custom_discrete_probability" />
-    <function name="Pr[surname]" type="custom_discrete_probability" />
-    <function name="Pr[gender]" type="custom_discrete_probability" />
-    <function name="Pr[uc:cluster_connection]" type="pareto_probability">
-      <argument name="x_min">1</argument>
-      <argument name="alpha">1</argument>
+    <function key="Pr[male_name]" type="custom_discrete_probability" />
+    <function key="Pr[female_name]" type="custom_discrete_probability" />
+    <function key="Pr[surname]" type="custom_discrete_probability" />
+    <function key="Pr[gender]" type="custom_discrete_probability" />
+    <function key="Pr[uc:cluster_connection]" type="pareto_probability">
+      <argument key="x_min">1</argument>
+      <argument key="alpha">1</argument>
     </function>
   </functions>
 
   <!-- string sets -->
   <string_sets>
     <!-- us male firstnames -->
-    <string_set name="male_names">
+    <string_set key="male_names">
       <item value="James">
         <probability function="Pr[male_name]" value='0.0372726560947861000' />
       </item>
@@ -42,7 +42,7 @@
 
   <!-- enumeration types -->
   <enumerations>
-    <enumeration name="Gender">
+    <enumeration key="Gender">
       <item value="Male">
         <probability function="Pr[gender]" value='0.493' />
       </item>
@@ -54,7 +54,7 @@
 
   <record_sequences>
     <!-- users -->
-    <random_sequence name="user" base_cardinality="%user_connections.sequence.base_cardinality%">
+    <random_sequence key="user" base_cardinality="%user_connections.sequence.base_cardinality%">
       <record_type>
         <field name="id" type="I64u" />
         <field name="gender" type="Gender" />
@@ -62,63 +62,86 @@
         <field name="last_name" type="String" />
       </record_type>
       <hydrators>
-        <hydrator name="id_hydrator" type="randomized_sequence_hydrator">
-          <argument type="field_ref" name="field" ref="id" />
-          <argument type="" name="cardinality">%user.sequence.cardinality%</parameter>
+        <hydrator key="id_hydrator" type="randomized_sequence_hydrator">
+          <argument key="field" type="field_ref" ref="id" />
+          <argument key="cardinality" type="long" value="%user.sequence.cardinality%" />
         </hydrator>
-        <hydrator name="gender_hydrator" type="enum_set_hydrator" field="gender">
-          <parameter name="probability">Pr[myriad:uniform]</parameter>
+        <hydrator key="gender_hydrator" type="enum_set_hydrator">
+          <argument key="field" type="field_ref" ref="id" />
+          <argument key="probability" type="function_ref" ref="Pr[myriad:uniform]" />
         </hydrator>
-        <hydrator name="first_name_hydrator" type="conditional_hydrator" field="first_name" condition_field="gender">
+        <hydrator key="first_name_hydrator" type="conditional_hydrator">
+          <argument key="field" type="field_ref" ref="first_name" />
+          <argument key="condition_field" type="field_ref" ref="gender" />
+          <argument key="choices" type="map">
+            <argument key="Male" type="hydrator_ref" ref="first_name_male_hydrator" />
+            <argument key="Female" type="hydrator_ref" ref="first_name_female_hydrator" />
+          </argument>
         </hydrator>
-        <hydrator name="first_name_male_hydrator" field="first_name" type="static_set_hydrator">
-          <parameter name="set">male_names</parameter>
-          <parameter name="probability">Pr[male_names]</parameter>
+        <hydrator key="first_name_male_hydrator" type="static_set_hydrator">
+          <argument key="field" type="field_ref" ref="first_name" />
+          <argument key="set" type="set_ref" ref="male_names" />
+          <argument key="probability" type="function_ref" ref="Pr[male_names]" />
         </hydrator>
-        <hydrator name="first_name_female_hydrator" field="first_name" type="static_set_hydrator">
-          <parameter name="set">female_names</parameter>
-          <parameter name="probability">Pr[female_names]</parameter>
+        <hydrator key="first_name_female_hydrator" type="static_set_hydrator">
+          <argument key="field" type="field_ref" ref="first_name" />
+          <argument key="set" type="set_ref" ref="female_names" />
+          <argument key="probability" type="function_ref" ref="Pr[female_names]" />
         </hydrator>
       </hydrators>
-      <hydrator_chain>
-      </hydrator_chain>
+      <hydration_plan>
+        <hydrator_ref ref="id_hydrator" />
+        <hydrator_ref ref="gender_hydrator" />
+        <hydrator_ref ref="first_name_hydrator" />
+      </hydration_plan>
       <generator_tasks>
-        <generator_task name="user.generate" type="partitioned_iterator" />
+        <generator_task key="user.generate" type="partitioned_iterator" />
       </generator_tasks>
     </random_sequence>
 
     <!-- user connections -->
-    <random_sequence name="user_connections" base_cardinality="750000">
+    <random_sequence key="user_connections" base_cardinality="750000">
       <record_type>
         <field name="id" type="I64u" />
         <field name="cluster_id" type="I64u" />
         <field name="cluster_interval" type="Interval" />
         <field name="connections_count" type="vector[I64u]" />
-        <field name="connections" type="vector[I64u]" references="user.id" />
+        <field name="connections" type="vector[I64u]" />
       </record_type>
       <hydrators>
-        <hydrator name="id_hydrator" type="randomized_sequence_hydrator" field="id">
-          <parameter name="cardinality">%user_connections.sequence.cardinality%</parameter>
+        <hydrator key="id_hydrator" type="randomized_sequence_hydrator">
+          <argument key="field" type="field_ref" ref="id" />
+          <argument key="cardinality" type="long" value="%user_connections.sequence.cardinality%" />
         </hydrator>
-        <hydrator name="connections_count_hydrator" type="const_hydrator" field="connections_count">
-          <parameter name="const_value">%user_connections.connections_count%</parameter>
+        <hydrator key="connections_count_hydrator" type="const_hydrator">
+          <argument key="field" type="field_ref" ref="connections_count" />
+          <argument key="const_value" type="I64u" value="%user_connections.connections_count%" />
         </hydrator>
-        <hydrator name="cluster_id_hydrator" type="clustered_sequence_hydrator" field="cluster_id" interval-field="cluster_interval">
-          <parameter name="cardinality">${%user_connections.sequence.cardinality% / %user_connections.cluster_size%}</parameter>
-          <parameter name="probability">Pr[myriad:uniform]</parameter>
+        <hydrator key="cluster_id_hydrator" type="clustered_sequence_hydrator">
+          <argument key="field" type="field_ref" ref="cluster_id" />
+          <argument key="interval_field" type="field_ref" ref="cluster_interval" />
+          <argument key="const_value" type="I16u" value="%user_connections.connections_count%" />
+          <argument key="cardinality" type="I16u" value="${%user_connections.sequence.cardinality% / %user_connections.cluster_size%}" />
+          <argument key="probability" type="function_ref" ref="Pr[myriad:uniform]" />
         </hydrator>
-        <hydrator name="connections_hydrator" type="repeated_hydrator" field="connections" count_field="connections_count">
-          <parameter name="inner_hydrator">@connection_hydrator</parameter>
+        <hydrator key="connections_hydrator" type="repeated_hydrator">
+          <argument key="field" type="field_ref" ref="connections" />
+          <argument key="count_field" type="field_ref" ref="connections_count" />
+          <argument key="inner_hydrator" type="hydrator_ref" />
         </hydrator>
-        <hydrator name="connection_hydrator" type="clustered_reference_hydrator" field="connections" cluster-interval-field="cluster_interval">
-          <parameter name="probability">Pr[uc:cluster_connection]</parameter>
+        <hydrator key="connection_hydrator" type="clustered_reference_hydrator">
+          <argument key="field" type="field_ref" ref="connections" />
+          <argument key="restriction_interval_field" type="field_ref" ref="cluster_interval" />
+          <argument key="probability" type="function_ref" ref="Pr[uc:cluster_connection]" />
         </hydrator>
       </hydrators>
-      <hydrator_chain>
-        <parameter name="cardinality" />
-      </hydrator_chain>
+      <hydration_plan>
+        <hydrator_ref ref="id_hydrator" />
+        <hydrator_ref ref="cluster_id_hydrator" />
+        <hydrator_ref ref="connections_count_hydrator" />
+        <hydrator_ref ref="connections_hydrator" />
+      </hydration_plan>
       <generator_tasks>
-        <generator_task />
       </generator_tasks>
     </random_sequence>
   </record_sequences>
