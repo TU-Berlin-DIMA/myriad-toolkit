@@ -42,15 +42,20 @@ class CompileModelTask(myriad.task.common.AbstractTask):
         
         # arguments
         parser.add_option("--input-spec", metavar="SPECIFICATION", dest="model_spec_path", type="str", 
-                            default="specification.xml", help="path to the model specification XML file")
+                            default=None, help="path to the model specification XML file")
 
         return parser
         
     def _fixArgs(self, args):
         super(CompileModelTask, self)._fixArgs(args)
         
+        if (args.model_spec_path == None):
+            args.model_spec_path = "%s-specification.xml" % (args.dgen_name)
+                    
         if (not os.path.isabs(args.model_spec_path)):
-            args.model_spec_path = "%s/../../model/%s" % (args.base_path, args.model_spec_path) 
+            args.model_spec_path = "%s/../../specification/%s" % (args.base_path, args.model_spec_path)
+            
+        args.model_spec_path = os.path.realpath(args.model_spec_path) 
         
     def _do(self, args):
         print args.model_spec_path

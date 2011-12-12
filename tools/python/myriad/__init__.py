@@ -1,1 +1,1 @@
-__all__ = [ "assistant", "event" ]
+__all__ = [ "assistant", "event", "error" ]

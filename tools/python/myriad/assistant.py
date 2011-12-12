@@ -23,6 +23,7 @@ import optparse
 import sys
 
 import myriad.event
+import myriad.error
 import myriad.task.compile
 import myriad.task.initialize
 
@@ -147,6 +148,11 @@ class Assistant(object):
                     self.__printUsage(sys.stderr)
                 # thrown by the option parser of the task
                 except optparse.OptParseError, e:
+                    self.__printHeader()
+                    self.__printErrorLine(str(e), sys.stderr)
+                    self.__printTaskHelp(task)
+                # thrown if the enclosing project is not initialized
+                except myriad.error.UninitializedProjectError, e:
                     self.__printHeader()
                     self.__printErrorLine(str(e), sys.stderr)
                     self.__printTaskHelp(task)

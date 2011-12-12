@@ -25,6 +25,7 @@ import types
 import ConfigParser
 import os.path
 import re
+import myriad.error
 import myriad.util.properties
 
 TASK_PREFIX = "abstract"
@@ -203,16 +204,26 @@ class AbstractTask(object):
     def _fixArgs(self, args):
         args.base_path = self.__basePath
         
-        # try to add the .myriad-settings contents to the list of args
-        myriadSettingsPath = "%s/../../.myriad-settings" % (args.base_path)
-        
-        if (os.path.exists(myriadSettingsPath)):
-            p = myriad.util.properties.Properties();
-            p.load(open(myriadSettingsPath))
+        if (self._requiresMyriadSettings()):
             
-            # add extra args from the .myriad-settings file
-            args.dgen_name = p.getProperty("MYRIAD_DGEN_NAME");
-            args.dgen_ns = p.getProperty("MYRIAD_DGEN_NS");
+            # try to add the .myriad-settings contents to the list of args
+            myriadProjectPath = os.path.realpath("%s/../.." % (args.base_path))
+            myriadSettingsPath = "%s/.myriad-settings" % (myriadProjectPath)
+            
+            if (os.path.exists(myriadSettingsPath)):
+                p = myriad.util.properties.Properties();
+                p.load(open(myriadSettingsPath))
+                
+                # add extra args from the .myriad-settings file
+                args.dgen_name = p.getProperty("MYRIAD_DGEN_NAME");
+                args.dgen_ns = p.getProperty("MYRIAD_DGEN_NS");
+                args.dgen_project_path = myriadProjectPath
+            else:
+                raise myriad.error.UninitializedProjectError(myriadProjectPath)
+                
+            
+    def _requiresMyriadSettings(self):
+        return True
 
     def _do(self, args):
         print args

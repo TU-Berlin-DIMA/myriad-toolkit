@@ -51,14 +51,17 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
         
         if args.dgen_ns == None:
             args.dgen_ns = "__%s" % (args.dgen_name)
+            
+    def _requiresMyriadSettings(self):
+        return False
 
     def _do(self, args):
         skeletonBase = "%s/tools/skeleton/task/%s/%s" % (args.base_path, self.group(), self.name())
-        targetBase = "%s/../.." % (args.base_path)
+        projectBase = "%s/../.." % (args.base_path)
 
         self._log.info("Processing skeleton for task.")
         skeletonProcessor = myriad.task.common.SkeletonProcessor(skeletonBase)
-        skeletonProcessor.process(targetBase, args)
+        skeletonProcessor.process(projectBase, args)
 
 
 class InitializeRecordTask(myriad.task.common.AbstractTask):
