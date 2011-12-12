@@ -246,6 +246,7 @@
   <xs:complexType name="random_sequence">
     <xs:sequence>
       <xs:element name="record_type" type="myriad:record_type" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="cardinality_estimator" type="myriad:cardinality_estimator" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="hydrators" type="myriad:hydrators" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="hydration_plan" type="myriad:hydration_plan" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="generator_tasks" type="myriad:generator_tasks" minOccurs="0" maxOccurs="unbounded" />
@@ -265,6 +266,10 @@
     <xs:sequence>
       <xs:element name="hydrator" type="myriad:hydrator" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="cardinality_estimator">
+    <xs:group ref="myriad:arguments" />
+    <xs:attribute name="type" type="xs:string" />
   </xs:complexType>
   <xs:complexType name="hydrator">
     <xs:group ref="myriad:arguments" />

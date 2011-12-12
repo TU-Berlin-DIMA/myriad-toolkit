@@ -3,7 +3,7 @@
 
   <!-- catalogue imports -->
   <import path="catalogue/census.us.xml" namespace="census.us" />
-  
+
   <!-- configurable parameters -->
   <parameters>
     <!-- user parameters -->
@@ -45,6 +45,9 @@
         <field name="first_name" type="String" />
         <field name="last_name" type="String" />
       </record_type>
+      <cardinality_estimator type="linear_scale_estimator">
+        <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
+      </cardinality_estimator>
       <hydrators>
         <hydrator key="id_hydrator" type="randomized_sequence_hydrator">
           <argument key="field" type="field_ref" ref="id" />
@@ -83,9 +86,7 @@
         <hydrator_ref ref="first_name_hydrator" />
       </hydration_plan>
       <generator_tasks>
-        <generator_task key="user.generate" type="partitioned_iterator">
-          <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
-        </generator_task>
+        <generator_task key="user.generate" type="partitioned_iterator" />
       </generator_tasks>
     </random_sequence>
 
@@ -98,6 +99,9 @@
         <field name="connections_count" type="vector[I64u]" />
         <field name="connections" type="vector[I64u]" />
       </record_type>
+      <cardinality_estimator type="linear_scale_estimator">
+        <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
+      </cardinality_estimator>
       <hydrators>
         <hydrator key="id_hydrator" type="randomized_sequence_hydrator">
           <argument key="field" type="field_ref" ref="id" />
@@ -132,9 +136,7 @@
         <hydrator_ref ref="connections_hydrator" />
       </hydration_plan>
       <generator_tasks>
-        <generator_task key="user_connections.generate" type="partitioned_iterator">
-          <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
-        </generator_task>
+        <generator_task key="user_connections.generate" type="partitioned_iterator" />
       </generator_tasks>
     </random_sequence>
   </record_sequences>

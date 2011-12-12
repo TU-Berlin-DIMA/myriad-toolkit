@@ -15,7 +15,7 @@ limitations under the License.
  
 Created on Oct 14, 2011
 
-@author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+@author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
 import myriad.task.common
@@ -38,10 +38,10 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
         parser = super(InitializeProjectTask, self).argsParser()
         
         # arguments
-        parser.add_argument("--name", metavar="NAME", dest="project_name", type="str",
+        parser.add_argument("--name", metavar="NAME", dest="dgen_name", type="str",
                             help="name of the new project")
         # options
-        parser.add_option("--ns", metavar="NS", dest="project_ns", type="str",
+        parser.add_option("--ns", metavar="NS", dest="dgen_ns", type="str",
                           help="namespace for the C++ generator extensions")
 
         return parser
@@ -49,8 +49,8 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
     def _fixArgs(self, args):
         super(InitializeProjectTask, self)._fixArgs(args)
         
-        if args.project_ns == None:
-            args.project_ns = "__%s" % (args.project_name)
+        if args.dgen_ns == None:
+            args.dgen_ns = "__%s" % (args.dgen_name)
 
     def _do(self, args):
         skeletonBase = "%s/tools/skeleton/task/%s/%s" % (args.base_path, self.group(), self.name())
@@ -77,12 +77,12 @@ class InitializeRecordTask(myriad.task.common.AbstractTask):
         parser = super(InitializeRecordTask, self).argsParser()
         
         # arguments
-        parser.add_argument("--project_name", metavar="NAME", dest="project_name", type="str",
+        parser.add_argument("--dgen_name", metavar="NAME", dest="dgen_name", type="str",
                             help="name of the new project")
         parser.add_argument("--record_name", metavar="NAME", dest="record_name", type="str",
                             help="name of the new record")
         # options
-        parser.add_option("--ns", metavar="NS", dest="project_ns", type="str",
+        parser.add_option("--ns", metavar="NS", dest="dgen_ns", type="str",
                           help="namespace for the C++ generator extensions")
 
         return parser
@@ -90,8 +90,8 @@ class InitializeRecordTask(myriad.task.common.AbstractTask):
     def _fixArgs(self, args):
         super(InitializeRecordTask, self)._fixArgs(args)
         
-        if args.project_ns == None:
-            args.project_ns = "__%s" % (args.project_name)
+        if args.dgen_ns == None:
+            args.dgen_ns = "__%s" % (args.dgen_name)
 
     def _do(self, args):
         skeletonBase = "%s/tools/skeleton/task/%s/%s" % (args.base_path, self.group(), self.name())
@@ -118,12 +118,12 @@ class InitializeGeneratorTask(myriad.task.common.AbstractTask):
         parser = super(InitializeGeneratorTask, self).argsParser()
         
         # arguments
-        parser.add_argument("--project_name", metavar="NAME", dest="project_name", type="str",
+        parser.add_argument("--dgen_name", metavar="NAME", dest="dgen_name", type="str",
                             help="name of the new project")
         parser.add_argument("--record_name", metavar="NAME", dest="record_name", type="str",
                             help="name of the record")
         # options
-        parser.add_option("--ns", metavar="NS", dest="project_ns", type="str",
+        parser.add_option("--ns", metavar="NS", dest="dgen_ns", type="str",
                           help="namespace for the C++ generator extensions")
         parser.add_option("--type", metavar="TYPE", dest="generator_type", type="choice",
                           choices=["static", "deterministic", "random"], default="random",
@@ -134,8 +134,8 @@ class InitializeGeneratorTask(myriad.task.common.AbstractTask):
     def _fixArgs(self, args):
         super(InitializeGeneratorTask, self)._fixArgs(args)
         
-        if args.project_ns == None:
-            args.project_ns = "__%s" % (args.project_name)
+        if args.dgen_ns == None:
+            args.dgen_ns = "__%s" % (args.dgen_name)
 
     def _do(self, args):
         skeletonBase = "%s/tools/skeleton/task/%s/%s/%s" % (args.base_path, self.group(), self.name(), args.generator_type)

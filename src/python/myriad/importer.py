@@ -15,7 +15,7 @@ limitations under the License.
  
 Created on Mar 7, 2011
 
-@author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+@author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 import sys, tempfile, optparse
 import config

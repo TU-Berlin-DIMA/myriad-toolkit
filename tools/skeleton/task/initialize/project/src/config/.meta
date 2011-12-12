@@ -1,3 +1,3 @@
 [filenames]
-dgen-node.properties: ${{project_name}}-node.properties
-dgen-node.xml: ${{project_name}}-node.xml
+dgen-node.properties: ${{dgen_name}}-node.properties
+dgen-node.xml: ${{dgen_name}}-node.xml

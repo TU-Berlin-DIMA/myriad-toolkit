@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #include "core/constants.h"
@@ -24,7 +24,7 @@ namespace Myriad {
 /**
  * Application name.
  */
-const String Constant::APP_NAME = "${{project_name}} - Parallel Data Generator";
+const String Constant::APP_NAME = "${{dgen_name}} - Parallel Data Generator";
 
 /**
  * Application version.

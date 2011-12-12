@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef ${uc{record_name}}_H_
@@ -23,7 +23,7 @@
 
 using namespace Myriad;
 
-namespace ${{project_ns}} {
+namespace ${{dgen_ns}} {
 
 // forward declarations
 class ${{record_name}}Generator;
@@ -42,20 +42,20 @@ private:
 
 };
 
-} // namespace ${{project_ns}}
+} // namespace ${{dgen_ns}}
 
 
 namespace Myriad {
 
 // record traits specialization
-template<> struct RecordTraits<${{project_ns}}::${{record_name}}>
+template<> struct RecordTraits<${{dgen_ns}}::${{record_name}}>
 {
-	typedef ${{project_ns}}::${{record_name}}Generator GeneratorType;
-	typedef ${{project_ns}}::${{record_name}}HydratorChain HydratorChainType;
+	typedef ${{dgen_ns}}::${{record_name}}Generator GeneratorType;
+	typedef ${{dgen_ns}}::${{record_name}}HydratorChain HydratorChainType;
 };
 
 // forward declaration of operator<<
-OutputCollector::StreamType& operator<<(OutputCollector::StreamType& out, const ${{project_ns}}::${{record_name}}& record);
+OutputCollector::StreamType& operator<<(OutputCollector::StreamType& out, const ${{dgen_ns}}::${{record_name}}& record);
 
 } // namespace Myriad
 

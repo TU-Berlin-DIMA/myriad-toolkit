@@ -1,0 +1,3 @@
+# the data generator name
+MYRIAD_DGEN_NAME = ${{dgen_name}}
+MYRIAD_DGEN_NS   = ${{dgen_ns}}

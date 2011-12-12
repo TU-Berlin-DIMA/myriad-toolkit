@@ -15,7 +15,7 @@ limitations under the License.
  
 Created on Oct 14, 2011
 
-@author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+@author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
 import logging
@@ -25,6 +25,7 @@ import types
 import ConfigParser
 import os.path
 import re
+import myriad.util.properties
 
 TASK_PREFIX = "abstract"
 
@@ -197,10 +198,21 @@ class AbstractTask(object):
         # perform the task, throws a TaskExecutionException on error 
         self._log.info("Executing task logic.")
         self._do(args)
-        self._log.info("Task execution finished sucessfully.")
+        self._log.info("Task execution finished successfully.")
         
     def _fixArgs(self, args):
         args.base_path = self.__basePath
+        
+        # try to add the .myriad-settings contents to the list of args
+        myriadSettingsPath = "%s/../../.myriad-settings" % (args.base_path)
+        
+        if (os.path.exists(myriadSettingsPath)):
+            p = myriad.util.properties.Properties();
+            p.load(open(myriadSettingsPath))
+            
+            # add extra args from the .myriad-settings file
+            args.dgen_name = p.getProperty("MYRIAD_DGEN_NAME");
+            args.dgen_ns = p.getProperty("MYRIAD_DGEN_NS");
 
     def _do(self, args):
         print args

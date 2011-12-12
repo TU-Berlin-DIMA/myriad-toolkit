@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef ABSTRACTGENERATORCONFIG_H_

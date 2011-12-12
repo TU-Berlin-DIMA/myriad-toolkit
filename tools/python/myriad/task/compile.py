@@ -15,13 +15,12 @@ limitations under the License.
  
 Created on Oct 14, 2011
 
-@author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+@author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
 import myriad.task.common
 import myriad.compiler.ast
 import os
-from myriad.compiler.ast import ASTReader
 
 TASK_PREFIX = "compile"
 
@@ -56,6 +55,6 @@ class CompileModelTask(myriad.task.common.AbstractTask):
     def _do(self, args):
         print args.model_spec_path
 
-        reader = ASTReader(path=args.model_spec_path)
+        reader = myriad.compiler.ast.ASTReader(path=args.model_spec_path)
         reader.read()
         

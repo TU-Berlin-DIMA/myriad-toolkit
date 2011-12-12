@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.s.alexandrov@campus.tu-berlin.de>
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef ${uc{record_name}}GENERATOR_H_
@@ -25,7 +25,7 @@
 using namespace Myriad;
 using namespace Poco;
 
-namespace ${{project_ns}} {
+namespace ${{dgen_ns}} {
 
 class ${{record_name}}HydratorChain;
 
@@ -89,7 +89,7 @@ protected:
 	Logger& _logger;
 };
 
-} // namespace ${{project_ns}}
+} // namespace ${{dgen_ns}}
 
 #endif /* ${uc{record_name}}GENERATOR_H_ */
 

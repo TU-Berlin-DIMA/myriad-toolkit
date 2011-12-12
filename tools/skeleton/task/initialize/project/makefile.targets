@@ -2,8 +2,8 @@
 # Additional makefile targets
 ################################################################################
 
-# project-specific variables
-MYRIAD_DGEN_NAME = ${{project_name}}
+# include project-specific variables
+include ../.myriad-settings
 
 # include the following files in the package
 # ./config/*properties  -- properties config files

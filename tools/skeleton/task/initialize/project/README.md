@@ -1,10 +1,10 @@
 Getting Started
 ===================================
 
-This document contains a brief description of the project layout and instructions for building and running the *${{project_name}}* data generator. Users that are not familiar with the build and setup specifics of Myriad based data generators should read the following text carefully before they start using the downloaded software.
+This document contains a brief description of the project layout and instructions for building and running the *${{dgen_name}}* data generator. Users that are not familiar with the build and setup specifics of Myriad based data generators should read the following text carefully before they start using the downloaded software.
 
 In the following discussion, we refer to the set of core components comprising the Myriad toolkit as *toolkit* and to the set of toolkit extensions 
-comprising the *${{project_name}}* data generator as *${{project_name}} extensions* or *generator extensions*.
+comprising the *${{dgen_name}}* data generator as *${{dgen_name}} extensions* or *generator extensions*.
 
 Folder Structure
 ================
@@ -68,7 +68,7 @@ A brief installation guide for the POCO C++ Libraries, please refer to Appendix 
 Python
 ------
 
-The parallel deployment script generated under `bin/${{project_name}}-frontend` as well as some other utility scripts are written in Python. For those to work, you have to make sure that the build host and the master node in your distributed build environment (normally the same machine) have Python >= 2.4.3 installed.
+The parallel deployment script generated under `bin/${{dgen_name}}-frontend` as well as some other utility scripts are written in Python. For those to work, you have to make sure that the build host and the master node in your distributed build environment (normally the same machine) have Python >= 2.4.3 installed.
 
 
 Building on UNIX / Linux distributions
@@ -92,13 +92,13 @@ Upon configuration, go to the `build` folder and issue the following commands:
 <project-root>/build> make -s all
 <project-root>/build> make -s install
 
-This should build and install the data generator under `<install-path>/${{project_name}}`. For the remainder of this document, we will use `<${{project_name}}-install>` as an alias for `<install-path>/${{project_name}}`.
+This should build and install the data generator under `<install-path>/${{dgen_name}}`. For the remainder of this document, we will use `<${{dgen_name}}-install>` as an alias for `<install-path>/${{dgen_name}}`.
 
 
 Manually Starting Generator Nodes
 =================================
 
-If you look at the contents of the `<${{project_name}}-install>/bin` folder, you will find two files -- `${{project_name}}-frontend` and `${{project_name}}-node`. 
+If you look at the contents of the `<${{dgen_name}}-install>/bin` folder, you will find two files -- `${{dgen_name}}-frontend` and `${{dgen_name}}-node`. 
 
 The first file is the CLI frontend to the simple parallel deployment script that comes bundled with the generator build (to be discussed in the next section). 
 
@@ -125,7 +125,7 @@ The second file is the C++ executable that represents a single data generator no
 
 Once the values for these parameters are specified, you can start node `<i>` of your `<N>`-node parallel generation setup manually by typing:
 
-    <${{project_name}}-install>$ bin/${{project_name}}-node -m<DATASET_ID> -s<SF> -i<i> -N<N> -o<PATH>
+    <${{dgen_name}}-install>$ bin/${{dgen_name}}-node -m<DATASET_ID> -s<SF> -i<i> -N<N> -o<PATH>
 
 The data generator instance will store its output into the `<PATH>/<DATASET_ID>/node<i>` folder. The folder will contain a horizontal partition of each table in a separate text file. The logical concatenation of all `node<i>/table.txt` files represents the entire table.
 
@@ -133,7 +133,7 @@ The data generator instance will store its output into the `<PATH>/<DATASET_ID>/
 Parallel Generation With The Python Frontend
 ============================================
 
-If you want to use the Python parallel deployment frontend, you have to setup your parallel environment. For this purpose, you need to create a `${{project_name}}-frontend.xml` configuration inside the `<${{project_name}}-install>/config` folder (you can use `${{project_name}}-config.template.xml` bundled during the build process as a basis). The Python frontend config files has the following structure:
+If you want to use the Python parallel deployment frontend, you have to setup your parallel environment. For this purpose, you need to create a `${{dgen_name}}-frontend.xml` configuration inside the `<${{dgen_name}}-install>/config` folder (you can use `${{dgen_name}}-config.template.xml` bundled during the build process as a basis). The Python frontend config files has the following structure:
 
     <?xml version="1.0" encoding="utf-8"?>
     <myriad xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
@@ -160,7 +160,7 @@ The `<cloud-enviroments>` section consists of a list of <cloud-env> elements, ea
 
 For instance, consider a scenario where you have a 10 node cluster but only want to use the first five nodes for the data generation process. This will translate into the following `<cloud-env>` entry:
 
-    <cloud-env id="mycloud-05" dgen="<${{project_name}}-install>">
+    <cloud-env id="mycloud-05" dgen="<${{dgen_name}}-install>">
       <master>
         <host name="myhost01.example.com" />
       </master>
@@ -175,7 +175,7 @@ For instance, consider a scenario where you have a 10 node cluster but only want
 
 Now suppose that at a later point you want to use all 10 nodes. You can add a second `<cloud-env>` to reflect this: 
 
-    <cloud-env id="mycloud-10" dgen="<${{project_name}}-install>">
+    <cloud-env id="mycloud-10" dgen="<${{dgen_name}}-install>">
       <master>
         <host name="myhost01.example.com" />
       </master>
@@ -196,7 +196,7 @@ Now suppose that at a later point you want to use all 10 nodes. You can add a se
 In other words, you can use different `<cloud-env>` elements to configure multiple parallelization environments operating on the same network. The only requirements for the configured environments are:
 
 * The master node should be able to communicate with all the slave nodes through a password-less ssh connection (similar to a Hadoop setup).
-* The `<${{project_name}}-install>` should be is accessible from all nodes (this is best achieved through NFS exported install path).
+* The `<${{dgen_name}}-install>` should be is accessible from all nodes (this is best achieved through NFS exported install path).
 
 
 Deployment Configurations
@@ -213,7 +213,7 @@ So if, for instance, we want to use the `mycloud-05` environment from above and 
 
 We recommend choosing a `nodes-per-host` value in the range [X,2X] where X is the number of processor cores in each host in the referenced environment. You can start the parallel deployment script for a particular <DATASET_ID> and scaling factor <SF> with this command:
 
-    <${{project_name}}-install>$ bin/${{project_name}}-frontend -m<DATASET_ID> -s<SF> <DGEN-CONFIG-ID>
+    <${{dgen_name}}-install>$ bin/${{dgen_name}}-frontend -m<DATASET_ID> -s<SF> <DGEN-CONFIG-ID>
 
 
 Appendix
