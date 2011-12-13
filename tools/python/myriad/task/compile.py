@@ -55,11 +55,12 @@ class CompileModelTask(myriad.task.common.AbstractTask):
         if (not os.path.isabs(args.model_spec_path)):
             args.model_spec_path = "%s/../../specification/%s" % (args.base_path, args.model_spec_path)
             
-        args.model_spec_path = os.path.realpath(args.model_spec_path) 
+        args.model_spec_path = os.path.realpath(args.model_spec_path)
         
     def _do(self, args):
-        print args.model_spec_path
-
-        reader = myriad.compiler.ast.ASTReader(path=args.model_spec_path)
-        reader.read()
+        # reed the AST
+        reader = myriad.compiler.ast.XMLReader(args)
+        astRoot = reader.read()
         
+        astPrinter = myriad.compiler.ast.PrintVisitor()
+        astPrinter.traverse(astRoot)

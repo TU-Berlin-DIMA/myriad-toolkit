@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <generator_specification xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/specification" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/specification specification.xsd">
 
-  <!-- catalogue imports -->
-  <import path="catalogue/census.us.xml" namespace="census.us" />
+  <!-- catalog imports -->
+  <imports>
+    <import path="catalog/census.us.xml" namespace="census.us" />
+  </imports>
 
   <!-- configurable parameters -->
   <parameters>
