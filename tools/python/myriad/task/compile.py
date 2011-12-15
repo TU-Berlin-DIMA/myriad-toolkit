@@ -18,13 +18,15 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
-import myriad.task.common
-import myriad.compiler.ast
+from myriad.compiler.debug import PrintVisitor
+from myriad.compiler.reader import XMLReader
+from myriad.task.common import AbstractTask
 import os
+
 
 TASK_PREFIX = "compile"
 
-class CompileModelTask(myriad.task.common.AbstractTask):
+class CompileModelTask(AbstractTask):
     '''
     classdocs
     '''
@@ -59,8 +61,8 @@ class CompileModelTask(myriad.task.common.AbstractTask):
         
     def _do(self, args):
         # reed the AST
-        reader = myriad.compiler.ast.XMLReader(args)
+        reader = XMLReader(args)
         astRoot = reader.read()
         
-        astPrinter = myriad.compiler.ast.PrintVisitor()
+        astPrinter = PrintVisitor()
         astPrinter.traverse(astRoot)
