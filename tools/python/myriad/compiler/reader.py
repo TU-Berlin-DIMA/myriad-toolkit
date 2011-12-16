@@ -19,6 +19,7 @@ Created on Dec 15, 2011
 '''
 
 import os
+import sys
 import logging
 import libxml2
 from myriad.compiler.ast import * #@UnusedWildImport
@@ -53,10 +54,16 @@ class XMLReader(object):
         self.__astRoot.getSpecification().setAttribute("xmlLocation", self.__args.model_spec_path)
         
         # load the XML
-        xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("xmlLocation"))
-        
-        # construct the remainder of the AST
-        self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
+        try:
+            # open the model specification XML
+            xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("xmlLocation"))
+            # construct the remainder of the AST
+            self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
+            
+        except:
+            e = sys.exc_info()[1]
+            print "Unexpected error: %s" % (e)
+            raise
         
         # return the final version AST
         return self.__astRoot
@@ -68,11 +75,15 @@ class XMLReader(object):
         return context
 
     def __readSpecification(self, astContext, xmlContext):
+        # basic tree areas
+        print "X"
         self.__readImports(astContext, xmlContext)
         self.__readParameters(astContext, xmlContext)
         self.__readFunctions(astContext, xmlContext)
         self.__readEnumSets(astContext, xmlContext)
         self.__readStringSets(astContext, xmlContext)
+        # record related tree areas
+        self.__readRecordSequences(astContext, xmlContext)
         
     def __readImports(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
@@ -111,13 +122,13 @@ class XMLReader(object):
 
         # attach FunctionNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:functions/m:function"):
-            function = self.__functionFactory(element)
+            functionNode = self.__functionFactory(element)
             
             childContext = self.__createXPathContext(element)
             for child in childContext.xpathEval("./m:argument"):
-                function.setArgument(self.__argumentFactory(child))
+                functionNode.setArgument(self.__argumentFactory(child))
 
-            astContext.getFunctions().setFunction(function)
+            astContext.getFunctions().setFunction(functionNode)
 
     def __readEnumSets(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
@@ -146,6 +157,25 @@ class XMLReader(object):
                 enumSet.addItem(SetItemNode(element.prop("value")))
             
             astContext.getStringSets().setSet(enumSet)
+            
+    def __readRecordSequences(self, astContext, xmlContext):
+        # derive xPath context from the given xmlContext node
+        xPathContext = self.__createXPathContext(xmlContext)
+
+        # attach FunctionNode for each function in the XML document
+        for element in xPathContext.xpathEval(".//m:record_sequences/m:*"):
+            recordSequenceType = element.get_name()
+        
+            if (recordSequenceType == "random_sequence"):
+                self.__readRandomSequence(astContext, element)
+            else:
+                raise RuntimeError('Invalid record sequence type `%s`' % (recordSequenceType))
+            
+    def __readRandomSequence(self, astContext, xmlContext):
+        
+        recordSequenceNode = RandomSequenceNode(key=xmlContext.prop("key"))
+        
+        astContext.getRecordSequences().setRecordSequence(recordSequenceNode)
 
     def __functionFactory(self, functionXMLNode):
         functionType = functionXMLNode.prop("type")

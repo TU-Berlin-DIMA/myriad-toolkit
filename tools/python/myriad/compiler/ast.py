@@ -113,6 +113,7 @@ class SpecificationNode(AbstractNode):
     __functions = None
     __enumSets = None
     __stringSets = None
+    __recordSequences = None
     
     def __init__(self, *args, **kwargs):
         super(SpecificationNode, self).__init__(*args, **kwargs)
@@ -121,6 +122,7 @@ class SpecificationNode(AbstractNode):
         self.__functions = FunctionsNode()
         self.__enumSets = EnumSetsNode()
         self.__stringSets = StringSetsNode()
+        self.__recordSequences = RecordSequencesNode()
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -129,6 +131,7 @@ class SpecificationNode(AbstractNode):
         self.__functions.accept(visitor)
         self.__enumSets.accept(visitor)
         self.__stringSets.accept(visitor)
+        self.__recordSequences.accept(visitor)
         visitor.postVisit(self)
         
     def getNamespaces(self):
@@ -145,6 +148,9 @@ class SpecificationNode(AbstractNode):
     
     def getStringSets(self):
         return self.__stringSets
+    
+    def getRecordSequences(self):
+        return self.__recordSequences
 
 
 class ValidNamespacesNode(AbstractNode):
@@ -360,6 +366,69 @@ class SetItemNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(SetItemNode, self).__init__(*args, **kwargs)
+
+
+#
+# Record Sequences
+# 
+
+class RecordSequencesNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __sequences = {}
+    
+    def __init__(self, *args, **kwargs):
+        super(RecordSequencesNode, self).__init__(*args, **kwargs)
+        self.__sequences = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__sequences.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setRecordSequence(self, node):
+        self.__sequences[node.getAttribute('key')] = node
+    
+    def getRecordSequence(self, key):
+        return self.__sequences.get(key)
+    
+    def hasRecordSequence(self, key):
+        return self.__sequences.has_key(key)
+
+
+class RecordSequenceNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    _recordType = None
+    
+    def __init__(self, *args, **kwargs):
+        super(RecordSequenceNode, self).__init__(*args, **kwargs)
+        
+    def setRecordType(self, node):
+        self._recordType = node
+
+
+class RandomSequenceNode(RecordSequenceNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(RandomSequenceNode, self).__init__(*args, **kwargs)
+
+
+class RecordTypeNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(ArgumentNode, self).__init__(*args, **kwargs)
 
 
 #
