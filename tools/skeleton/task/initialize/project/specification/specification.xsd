@@ -33,21 +33,21 @@
           <xs:field xpath="@key"></xs:field>
         </xs:unique>
       </xs:element>
-      <xs:element name="string_sets" type="myriad:string_sets" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation>Finite string sets used in the described domain model.</xs:documentation>
-        </xs:annotation>
-        <xs:unique name="specification_string_set_name">
-          <xs:selector xpath=".//myriad:string-set" />
-          <xs:field xpath="@key" />
-        </xs:unique>
-      </xs:element>
       <xs:element name="enum_sets" type="myriad:enum_sets" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Enumerations used in the described domain model.</xs:documentation>
         </xs:annotation>
         <xs:unique name="specification_enum_set_name">
           <xs:selector xpath=".//myriad:enum_set" />
+          <xs:field xpath="@key" />
+        </xs:unique>
+      </xs:element>
+      <xs:element name="string_sets" type="myriad:string_sets" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Finite string sets used in the described domain model.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="specification_string_set_name">
+          <xs:selector xpath=".//myriad:string-set" />
           <xs:field xpath="@key" />
         </xs:unique>
       </xs:element>
@@ -149,12 +149,12 @@
   <xs:complexType name="arguments_container">
     <xs:group ref="myriad:arguments" />
   </xs:complexType>
-  <xs:complexType name="argument" mixed="true">
+  <xs:complexType name="argument">
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:element name="argument" type="myriad:argument" />
     </xs:choice>
-    <xs:attribute name="key" type="xs:string" />
-    <xs:attribute name="type" type="xs:string" />
+    <xs:attribute name="key" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
     <xs:attribute name="ref" type="xs:string" />
     <xs:attribute name="value" type="xs:string" />
   </xs:complexType>
