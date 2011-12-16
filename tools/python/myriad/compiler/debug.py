@@ -50,6 +50,12 @@ class PrintVisitor(AbstractVisitor):
 
     def _postVisitAbstractNode(self, node):
         self._decreaseIndent()
+        
+#    def _preVisitSetItemNode(self, node):
+#        pass
+#    
+#    def _postVisitSetItemNode(self, node):
+#        pass
     
     def _increaseIndent(self):
         self.__indent = self.__indent + 1

@@ -18,10 +18,6 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
-import os
-import logging
-import libxml2
-
 
 class AbstractNode(object):
     '''
@@ -86,6 +82,7 @@ class ImportsNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(ImportsNode, self).__init__(*args, **kwargs)
+        self.__imports = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -114,18 +111,24 @@ class SpecificationNode(AbstractNode):
     __namespaces = None
     __parameters = None
     __functions = None
+    __enumSets = None
+    __stringSets = None
     
     def __init__(self, *args, **kwargs):
         super(SpecificationNode, self).__init__(*args, **kwargs)
         self.__namespaces = ValidNamespacesNode()
         self.__parameters = ParametersNode()
         self.__functions = FunctionsNode()
+        self.__enumSets = EnumSetsNode()
+        self.__stringSets = StringSetsNode()
     
     def accept(self, visitor):
         visitor.preVisit(self)
         self.__namespaces.accept(visitor)
         self.__parameters.accept(visitor)
         self.__functions.accept(visitor)
+        self.__enumSets.accept(visitor)
+        self.__stringSets.accept(visitor)
         visitor.postVisit(self)
         
     def getNamespaces(self):
@@ -136,6 +139,12 @@ class SpecificationNode(AbstractNode):
     
     def getFunctions(self):
         return self.__functions
+    
+    def getEnumSets(self):
+        return self.__enumSets
+    
+    def getStringSets(self):
+        return self.__stringSets
 
 
 class ValidNamespacesNode(AbstractNode):
@@ -174,6 +183,10 @@ class ParametersNode(AbstractNode):
         return self.hasAttribute(value)
 
 
+#
+# Functions
+# 
+
 class FunctionsNode(AbstractNode):
     '''
     classdocs
@@ -183,6 +196,7 @@ class FunctionsNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(FunctionsNode, self).__init__(*args, **kwargs)
+        self.__functions = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -199,7 +213,7 @@ class FunctionsNode(AbstractNode):
     def hasFunction(self, key):
         return self.__functions.has_key(key)
 
-
+    
 class FunctionNode(AbstractNode):
     '''
     classdocs
@@ -209,6 +223,7 @@ class FunctionNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(FunctionNode, self).__init__(*args, **kwargs)
+        self._arguments = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -222,6 +237,7 @@ class FunctionNode(AbstractNode):
     def getArgument(self, key):
         return self._arguments.get(key)
     
+
 class ParetoProbabilityFunctionNode(FunctionNode):
     '''
     classdocs
@@ -229,6 +245,126 @@ class ParetoProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
+
+    
+class NormalProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
+    
+
+class CustomDiscreteProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(CustomDiscreteProbabilityFunctionNode, self).__init__(*args, **kwargs)
+    
+
+#
+# Enum and String Sets
+# 
+
+class SetsNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __sets = {}
+    
+    def __init__(self, *args, **kwargs):
+        super(SetsNode, self).__init__(*args, **kwargs)
+        self.__sets = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__sets.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setSet(self, node):
+        self.__sets[node.getAttribute('key')] = node
+    
+    def getSet(self, key):
+        return self.__sets.get(key)
+    
+    def hasSet(self, key):
+        return self.__sets.has_key(key)
+
+
+class EnumSetsNode(SetsNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(EnumSetsNode, self).__init__(*args, **kwargs)
+
+
+class StringSetsNode(SetsNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(StringSetsNode, self).__init__(*args, **kwargs)
+    
+    
+class SetNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    _items = []
+    
+    def __init__(self, *args, **kwargs):
+        super(SetNode, self).__init__(*args, **kwargs)
+        self._items = []
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self._items:
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def addItem(self, node):
+        self._items.append(node)
+
+
+class EnumSetNode(SetNode):
+    '''
+    classdocs
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super(EnumSetNode, self).__init__(*args, **kwargs)
+
+
+class StringSetNode(SetNode):
+    '''
+    classdocs
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super(StringSetNode, self).__init__(*args, **kwargs)
+
+
+class SetItemNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(SetItemNode, self).__init__(*args, **kwargs)
+
+
+#
+# Arguments
+# 
     
 class ArgumentNode(AbstractNode):
     '''
@@ -237,7 +373,8 @@ class ArgumentNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(ArgumentNode, self).__init__(*args, **kwargs)
-        
+
+
 class LiteralArgumentNode(ArgumentNode):
     '''
     classdocs
@@ -245,7 +382,8 @@ class LiteralArgumentNode(ArgumentNode):
     
     def __init__(self, *args, **kwargs):
         super(LiteralArgumentNode, self).__init__(*args, **kwargs)
-        
+
+
 class FieldRefArgumentNode(ArgumentNode):
     '''
     classdocs
@@ -253,7 +391,8 @@ class FieldRefArgumentNode(ArgumentNode):
     
     def __init__(self, *args, **kwargs):
         super(FieldRefArgumentNode, self).__init__(*args, **kwargs)
-        
+
+
 class FunctionRefArgumentNode(ArgumentNode):
     '''
     classdocs

@@ -18,6 +18,9 @@ Created on Dec 15, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
+import os
+import logging
+import libxml2
 from myriad.compiler.ast import * #@UnusedWildImport
 
 
@@ -68,6 +71,8 @@ class XMLReader(object):
         self.__readImports(astContext, xmlContext)
         self.__readParameters(astContext, xmlContext)
         self.__readFunctions(astContext, xmlContext)
+        self.__readEnumSets(astContext, xmlContext)
+        self.__readStringSets(astContext, xmlContext)
         
     def __readImports(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
@@ -76,7 +81,7 @@ class XMLReader(object):
         baseDir = os.path.dirname(astContext.getAttribute("xmlLocation"))
         
         # attach UnresolvedImportNode for each import in the XML document
-        for element in xPathContext.xpathEval("//m:generator_specification/m:imports/m:import"):
+        for element in xPathContext.xpathEval(".//m:imports/m:import"):
             # get the namespace for the current import
             namespace = element.prop("namespace")
             # get the path for the current import
@@ -96,7 +101,7 @@ class XMLReader(object):
         xPathContext = self.__createXPathContext(xmlContext)
         
         # read the parameters for this astContext
-        for element in xPathContext.xpathEval("//m:generator_specification/m:parameters/m:parameter"):
+        for element in xPathContext.xpathEval(".//m:parameters/m:parameter"):
             # add the parameter to the astContext
             astContext.getParameters().setParameter(element.prop("key"), element.prop("key"))
         
@@ -105,14 +110,42 @@ class XMLReader(object):
         xPathContext = self.__createXPathContext(xmlContext)
 
         # attach FunctionNode for each function in the XML document
-        for element in xPathContext.xpathEval("//m:generator_specification/m:functions/m:function"):
+        for element in xPathContext.xpathEval(".//m:functions/m:function"):
             function = self.__functionFactory(element)
             
             childContext = self.__createXPathContext(element)
-            for child in childContext.xpathEval("m:argument"):
+            for child in childContext.xpathEval("./m:argument"):
                 function.setArgument(self.__argumentFactory(child))
 
             astContext.getFunctions().setFunction(function)
+
+    def __readEnumSets(self, astContext, xmlContext):
+        # derive xPath context from the given xmlContext node
+        xPathContext = self.__createXPathContext(xmlContext)
+
+        # attach FunctionNode for each function in the XML document
+        for element in xPathContext.xpathEval(".//m:enum_sets/m:enum_set"):
+            enumSet = EnumSetNode(key=element.prop("key"))
+            
+            childContext = self.__createXPathContext(element)
+            for child in childContext.xpathEval("./m:item"):
+                enumSet.addItem(SetItemNode(element.prop("value")))
+            
+            astContext.getEnumSets().setSet(enumSet)
+
+    def __readStringSets(self, astContext, xmlContext):
+        # derive xPath context from the given xmlContext node
+        xPathContext = self.__createXPathContext(xmlContext)
+
+        # attach FunctionNode for each function in the XML document
+        for element in xPathContext.xpathEval(".//m:string_sets/m:string_set"):
+            enumSet = StringSetNode(key=element.prop("key"))
+            
+            childContext = self.__createXPathContext(element)
+            for child in childContext.xpathEval("./m:item"):
+                enumSet.addItem(SetItemNode(element.prop("value")))
+            
+            astContext.getStringSets().setSet(enumSet)
 
     def __functionFactory(self, functionXMLNode):
         functionType = functionXMLNode.prop("type")
@@ -120,7 +153,11 @@ class XMLReader(object):
         functionNode = None
         
         if (functionType == "pareto_probability"):
-            functionNode = ParetoProbabilityFunctionNode()
+            functionNode = ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        elif (functionType == "normal_probability"):
+            functionNode = NormalProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        elif (functionType == "custom_discrete_probability"):
+            functionNode = CustomDiscreteProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         else:
             raise RuntimeError('Invalid function type `%s`' % (functionType))
         
@@ -135,9 +172,7 @@ class XMLReader(object):
             argumentNode = FieldRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
         elif (argumentType == "function_ref"):
             argumentNode = FunctionRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
-        elif (argumentType == "value"):
-            argumentNode = LiteralArgumentNode(key=argumentXMLNode.prop("key"), value=argumentXMLNode.content)
         else:
-            argumentNode = LiteralArgumentNode(key=argumentXMLNode.prop("key"), value=argumentXMLNode.content)
+            argumentNode = LiteralArgumentNode(key=argumentXMLNode.prop("key"), value=argumentXMLNode.prop("value"))
         
         return argumentNode
