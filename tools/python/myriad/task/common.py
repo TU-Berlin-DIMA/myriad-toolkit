@@ -258,7 +258,7 @@ class ParametersProcessor(object):
         
         self.__snippetStart = re.compile(r".*`(.+)` (before|after):`(.+)`.*")
         self.__snippetEnd = re.compile(r".*`(.+)`.*")
-        self.__patterns = [ re.compile(r".*(\${(uc|lc|cc2us)?{%s}}).*" % (p)) for p in params.__dict__.keys() ]
+        self.__patterns = [ re.compile(r"(\${(uc|lc|cc2us)?{%s}})" % (p)) for p in params.__dict__.keys() ]
         self.__values = [ p for p in params.__dict__.values() ]
         self.__log = logging.getLogger("template.processor")
     
@@ -267,8 +267,9 @@ class ParametersProcessor(object):
             for m in p.finditer(s):
                 expr = m.group(1)
                 func = m.group(2)
+                
                 if func == "uc": 
-                    s = s.replace(expr, self.__lc(v))
+                    s = s.replace(expr, self.__uc(v))
                 elif func == "lc": 
                     s = s.replace(expr, self.__lc(v))
                 elif func == "cc2us": 
