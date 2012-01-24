@@ -1,2 +1,2 @@
 [filenames]
-RecordTypeGenerator.cpp: ${{record_name}}Generator.cpp
+RecordTypeGenerator.h: ${{record_name}}Generator.h

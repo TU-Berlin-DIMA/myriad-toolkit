@@ -74,6 +74,10 @@ public:
 	{
 	}
 
+	virtual ~HydratorChain<RecordType>()
+	{
+	}
+
 	/**
 	 * Object hydrating function (external PRNG).
 	 */
