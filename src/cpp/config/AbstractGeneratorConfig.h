@@ -119,7 +119,7 @@ protected:
 	 *
 	 * @param doc
 	 */
-	void configureProperties(const AutoPtr<XML::Document>& doc);
+	void configureParameters(const AutoPtr<XML::Document>& doc);
 
 	/**
 	 * Helper function - loads functions from XML.
@@ -191,6 +191,13 @@ protected:
 	 * @param key
 	 */
 	void computeMirroredPartitioning(const string& key);
+
+	/**
+	 * Helper partitioning function for mirror-partitioned subsequences.
+	 *
+	 * @param key
+	 */
+	void computeNestedPartitioning(const string& key);
 
 	/**
 	 * Helper partitioning function for nested block partitioned subsequences.

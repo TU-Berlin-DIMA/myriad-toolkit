@@ -90,30 +90,21 @@ void AbstractGeneratorConfig::loadXMLConfig(const Path& path)
 	AutoPtr<Document> doc = parser.parse(path.toString());
 	doc->normalize();
 
-	configureProperties(doc);
+	configureParameters(doc);
 	configureFunctions(doc);
 	configurePartitioning(doc);
 	configureSets(doc);
 }
 
-void AbstractGeneratorConfig::configureProperties(const AutoPtr<Document>& doc)
+void AbstractGeneratorConfig::configureParameters(const AutoPtr<Document>& doc)
 {
-	Element* propertiesEl = static_cast<Element*> (doc->getElementsByTagName("properties")->item(0));
+	Element* parametersEl = static_cast<Element*> (doc->getElementsByTagName("parameters")->item(0));
 
-	AutoPtr<NodeList> propertyGroups = propertiesEl->getElementsByTagName("property-group");
-	for (unsigned long int i = 0; i < propertyGroups->length(); i++)
+	AutoPtr<NodeList> parameters = parametersEl->getElementsByTagName("parameter");
+	for (unsigned long int j = 0; j < parameters->length(); j++)
 	{
-		Element* g = static_cast<Element*> (propertyGroups->item(i));
-
-		// read name and type
-		String prefix = g->hasAttribute("type") ? "generator." + g->getAttribute("type") + "." : "generator.global-properties";
-
-		AutoPtr<NodeList> properties = g->getElementsByTagName("property");
-		for (unsigned long int j = 0; j < properties->length(); j++)
-		{
-			Element* p = static_cast<Element*> (properties->item(j));
-			setString(prefix + p->getAttribute("name"), p->innerText());
-		}
+		Element* p = static_cast<Element*> (parameters->item(j));
+		setString("generator." + p->getAttribute("name"), p->innerText());
 	}
 }
 
@@ -182,7 +173,14 @@ void AbstractGeneratorConfig::configureFunctions(const AutoPtr<Document>& doc)
 
 void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc)
 {
-	Element* partitioningEl = static_cast<Element*> (doc->getElementsByTagName("partitioning")->item(0));
+	NodeList* partitioningElements = doc->getElementsByTagName("partitioning");
+
+	if (partitioningElements->length() == 0)
+	{
+		return;
+	}
+
+	Element* partitioningEl = static_cast<Element*> (partitioningElements->item(0));
 
 	AutoPtr<NodeList> partitionConfigs = partitioningEl->getElementsByTagName("partition");
 	for (unsigned long int i = 0; i < partitionConfigs->length(); i++)
@@ -203,6 +201,12 @@ void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc
 			// TODO: determine cardinality from the loaded object set size
 			setString("partitioning." + type + ".cardinality", f->getChildElement("cardinality")->innerText());
 			computeMirroredPartitioning(type);
+		}
+		else if (method == "nested")
+		{
+			setString("partitioning." + type + ".parent", f->getChildElement("parent")->innerText());
+			setString("partitioning." + type + ".items-per-parent", f->getChildElement("items-per-parent")->innerText());
+			computeNestedPartitioning(type);
 		}
 		else if (method == "mirrored")
 		{
@@ -289,6 +293,20 @@ void AbstractGeneratorConfig::computeMirroredPartitioning(const string& key)
 	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
 	setString("generator." + key + ".partition.begin", toString(genIDBegin));
 	setString("generator." + key + ".partition.end", toString(genIDEnd));
+}
+
+void AbstractGeneratorConfig::computeNestedPartitioning(const string& key)
+{
+	string parentKey = getString("partitioning." + key + ".parent");
+	I32u itemsPerParent = getInt("partitioning." + key + ".items-per-parent");
+
+	I64u cardinality = fromString<I64u> (getString("generator." + parentKey + ".sequence.cardinality"));
+	I64u genIDBegin = fromString<I64u> (getString("generator." + parentKey + ".partition.begin"));
+	I64u genIDEnd = fromString<I64u> (getString("generator." + parentKey + ".partition.end"));
+
+	setString("generator." + key + ".sequence.cardinality", toString(cardinality * itemsPerParent));
+	setString("generator." + key + ".partition.begin", toString(genIDBegin * itemsPerParent));
+	setString("generator." + key + ".partition.end", toString(genIDEnd * itemsPerParent));
 }
 
 void AbstractGeneratorConfig::computeNestedBlockPartitioning(const string& key)
