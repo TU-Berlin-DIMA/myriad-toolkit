@@ -93,6 +93,15 @@ protected:
 	Logger& _logger;
 };
 
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// base method definitions (don't modify)
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+inline ${{record_name}}HydratorChain ${{record_name}}Generator::hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random)
+{
+	return ${{record_name}}HydratorChain(opMode, random, _config);
+}
+
 } // namespace ${{dgen_ns}}
 
 #endif /* ${uc{record_name}}GENERATOR_H_ */
