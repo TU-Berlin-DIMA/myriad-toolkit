@@ -80,11 +80,11 @@ class InitializeRecordTask(myriad.task.common.AbstractTask):
         parser = super(InitializeRecordTask, self).argsParser()
         
         # arguments
-        parser.add_argument("--dgen_name", metavar="NAME", dest="dgen_name", type="str",
-                            help="name of the new project")
         parser.add_argument("--record_name", metavar="NAME", dest="record_name", type="str",
-                            help="name of the new record")
+                            help="name of the new record (CamelCase)")
         # options
+        parser.add_option("--dgen_name", metavar="NAME", dest="dgen_name", type="str",
+                            help="name of the new project")
         parser.add_option("--ns", metavar="NS", dest="dgen_ns", type="str",
                           help="namespace for the C++ generator extensions")
 
@@ -121,11 +121,11 @@ class InitializeGeneratorTask(myriad.task.common.AbstractTask):
         parser = super(InitializeGeneratorTask, self).argsParser()
         
         # arguments
-        parser.add_argument("--dgen_name", metavar="NAME", dest="dgen_name", type="str",
-                            help="name of the new project")
         parser.add_argument("--record_name", metavar="NAME", dest="record_name", type="str",
-                            help="name of the record")
+                            help="name of the record for the new generator (CamelCase)")
         # options
+        parser.add_option("--dgen_name", metavar="NAME", dest="dgen_name", type="str",
+                            help="name of the new project")
         parser.add_option("--ns", metavar="NS", dest="dgen_ns", type="str",
                           help="namespace for the C++ generator extensions")
         parser.add_option("--type", metavar="TYPE", dest="generator_type", type="choice",
