@@ -317,7 +317,7 @@ inline void CompoundEICG::adjustSeed()
 {
 	for (int i = 0; i < 6; i++)
 	{
-		_elementS.v[i] = (_elementS.v[i]++) % PERIOD.v[i];
+		_elementS.v[i] = (_elementS.v[i]+1) % PERIOD.v[i];
 	}
 }
 
