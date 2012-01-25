@@ -69,6 +69,10 @@ public:
 	{
 	}
 
+	virtual ~${{record_name}}HydratorChain()
+	{
+	}
+
 	/**
 	 * Object hydrating function.
 	 */
