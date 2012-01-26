@@ -39,14 +39,14 @@ public:
 	LocalFileOutputCollector(const String& generatorName, const GeneratorConfig& config) :
 		AbstractOutputCollector(generatorName, config),
 		_isOpen(false),
-		_logger(Logger::get("collector."+generatorName))
+		_logger(Logger::get("collector." + generatorName))
 	{
 		// make sure that the output-dir exists
 		File outputDir(config.getString("application.output-dir"));
 		outputDir.createDirectories();
 
 		// compute the output path
-		Path path(config.getString(format("generator.%s.output-file", generatorName)));
+		Path path(config.getString(format("generator.%s.output-file", generatorName), generatorName));
 		path.makeAbsolute(config.getString("application.output-dir"));
 
 		_path = path.toString();
