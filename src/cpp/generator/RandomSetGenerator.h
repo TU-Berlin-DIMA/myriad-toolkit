@@ -209,6 +209,52 @@ protected:
 	Logger& _logger;
 };
 
+/**
+ * Default random set task implementation.
+ */
+template<class RecordType, class ProbabilityType> class RandomSetTimeSpanGeneratingTask: public StageTask<RecordType>
+{
+public:
+
+	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
+	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
+
+	RandomSetTimeSpanGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
+		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
+		_generator(generator),
+		_random(generator.random()),
+		_probability(config.func<ProbabilityType>(config.getString("generator." + generator.name() + ".timespan.pattern.probability"))),
+		_logger(Logger::get("task.random.timespan."+generator.name()))
+	{
+	}
+
+	bool runnable()
+	{
+		return true;
+	}
+
+	void run();
+
+protected:
+
+	/**
+	 * A reference to the generator creating the stage.
+	 */
+	RandomSetGenerator<RecordType>& _generator;
+
+	/**
+	 * A copy of the generator's random stream.
+	 */
+	RandomStream _random;
+
+	ProbabilityType& _probability;
+
+	/**
+	 * Logger instance.
+	 */
+	Logger& _logger;
+};
+
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // method definitions
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -331,6 +377,115 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 	{
 		AutoPtr<RecordType> recordPtr = _generator();
 		recordPtr->genID(current);
+
+		hydrate(recordPtr);
+
+		_generator.newRecord.notify(&_generator, recordPtr);
+
+		if (!StageTask<RecordType>::_dryRun)
+		{
+			out.collect(*recordPtr);
+		}
+
+		++current;
+		_random.nextChunk();
+
+		if(++progressCounter >= 100)
+		{
+			progressCounter = 0;
+			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
+		}
+	}
+
+	StageTask<RecordType>::_progress = 1.0;
+
+	if (logger.debug())
+	{
+		logger.debug(format("Finishing stage task `%s`", StageTask<RecordType>::name()));
+	}
+}
+
+template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGeneratingTask<RecordType, ProbabilityType>::run()
+{
+	Logger& logger = StageTask<RecordType>::_logger;
+	OutputCollector& out = StageTask<RecordType>::_out;
+
+	if (logger.debug())
+	{
+		logger.debug(format("Running stage task `%s`", StageTask<RecordType>::name()));
+	}
+
+	/*
+	 * read input parameters for this iterator task
+	 */
+
+	ID first = _generator.config().genIDBegin(_generator.name());
+	ID current = _generator.config().genIDBegin(_generator.name());
+	ID last = _generator.config().genIDEnd(_generator.name());
+
+	// start and end date
+	int minDateTimeTzd, maxDateTimeTzd;
+	DateTime minDateTime, maxDateTime;
+	DateTimeParser::parse("%Y-%m-%d %H:%M", _generator.config().getString("generator." + _generator.name() + ".timespan.min-date"), minDateTime, minDateTimeTzd);
+	DateTimeParser::parse("%Y-%m-%d %H:%M", _generator.config().getString("generator." + _generator.name() + ".timespan.max-date"), maxDateTime, maxDateTimeTzd);
+	I32u period = _generator.config().getInt("generator." + _generator.name() + ".timespan.pattern.period");
+
+	double delta = 0.0001;
+	double totalProbability = 1.0 - 2*delta;
+
+	/*
+	 * compute derived parameters
+	 */
+
+	// how many seconds do we have in our timespan
+	Timespan timespan = maxDateTime - minDateTime;
+	// how many periods fit into the specified timespan
+	double numberOfPeriods = timespan.totalSeconds() / (double) period;
+	// get the number of generated records per period
+	double recordsPerPeriod = last / numberOfPeriods;
+	// get the conversion factor between a record in a period an a point on the x-axis of the period probability
+	Interval<Decimal> xRange(_probability.invcdf(delta), _probability.invcdf(1.0 - delta));
+	double xAxisRatio = xRange.length() / period;
+
+	/*
+	 * initialize current period related parameters
+	 */
+
+	// find the period of the current record
+	I32u currentPeriod = first / recordsPerPeriod;
+	// find the ID of the first and last records for the current period
+	I32u currentPeriodFirst = recordsPerPeriod * currentPeriod;
+	I32u currentPeriodLast  = recordsPerPeriod * (currentPeriod + 1);
+	double yAxisRatio = totalProbability / (currentPeriodLast - currentPeriodFirst);
+
+	/*
+	 * generate the assigned record substream
+	 */
+
+	I32u progressCounter = 0;
+
+	_random.atChunk(current);
+
+	HydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
+	while (current < last)
+	{
+		if (current >= currentPeriodLast)
+		{
+			// entering new period, update relevant entries
+			currentPeriod++;
+			// find the ID of the first and last records for the current period
+			currentPeriodFirst = recordsPerPeriod * currentPeriod;
+			currentPeriodLast  = recordsPerPeriod * (currentPeriod + 1);
+			yAxisRatio = totalProbability / (currentPeriodLast - currentPeriodFirst);
+		}
+
+		// get the DateTime associated with the current record
+		I32u currentPeriodXPosition = (_probability.invcdf((current - currentPeriodFirst) * yAxisRatio + delta) - xRange.min()) / xAxisRatio;
+		DateTime currentDateTime = minDateTime + Timespan(period * currentPeriod + currentPeriodXPosition, 0);
+
+		AutoPtr<RecordType> recordPtr = _generator();
+		recordPtr->genID(current);
+		recordPtr->setSessionStart(currentDateTime);
 
 		hydrate(recordPtr);
 
