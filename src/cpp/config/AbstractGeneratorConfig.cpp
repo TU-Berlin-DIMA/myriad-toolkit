@@ -118,15 +118,15 @@ void AbstractGeneratorConfig::configureFunctions(const AutoPtr<Document>& doc)
 	{
 		Element* f = static_cast<Element*> (functions->item(i));
 		// read name and type
-		String name = f->getAttribute("name");
+		String key = f->getAttribute("key");
 		String type = f->getAttribute("type");
 
 		// read function parameters
-		AutoPtr<NodeList> parameters = f->getElementsByTagName("param");
+		AutoPtr<NodeList> parameters = f->getElementsByTagName("argument");
 		for (unsigned long int j = 0; j < parameters->length(); j++)
 		{
 			Element* p = static_cast<Element*> (parameters->item(j));
-			builder.addParameter(p->getAttribute("name"), fromString<Decimal>(p->innerText()));
+			builder.addParameter(p->getAttribute("key"), fromString<Decimal>(p->innerText()));
 		}
 
 		// create function of the specified type
@@ -140,31 +140,31 @@ void AbstractGeneratorConfig::configureFunctions(const AutoPtr<Document>& doc)
 				builder.addParameter(p->getAttribute("argument"), fromString<Decimal>(p->getAttribute("value")));
 			}
 
-			addFunction(builder.create<CustomDiscreteProbability> (name));
+			addFunction(builder.create<CustomDiscreteProbability> (key));
 		}
 		else if (type == "interval-map")
 		{
-			addFunction(builder.create<IntervalMap<ID, ID> > (name));
+			addFunction(builder.create<IntervalMap<ID, ID> > (key));
 		}
 		else if (type == "id-range-map")
 		{
-			addFunction(builder.create<DiscreteMap<ID, Interval<ID> > > (name));
+			addFunction(builder.create<DiscreteMap<ID, Interval<ID> > > (key));
 		}
 		else if (type == "pareto")
 		{
-			addFunction(builder.create<ParetoPrFunction> (name));
+			addFunction(builder.create<ParetoPrFunction> (key));
 		}
 		else if (type == "normal")
 		{
-			addFunction(builder.create<NormalPrFunction> (name));
+			addFunction(builder.create<NormalPrFunction> (key));
 		}
 		else if (type == "bounded-normal")
 		{
-			addFunction(builder.create<BoundedNormalPrFunction> (name));
+			addFunction(builder.create<BoundedNormalPrFunction> (key));
 		}
 		else
 		{
-			throw FeatureConfigurationException(format("Unsupported function type '%s' for function", type, name));
+			throw FeatureConfigurationException(format("Unsupported function type '%s' for function", type, key));
 		}
 
 		builder.clear();
