@@ -219,10 +219,13 @@ public:
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
 
-	RandomSetTimeSpanGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
+	typedef void (RecordType::*DateTimeSetter)(const DateTime&);
+
+	RandomSetTimeSpanGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, DateTimeSetter dateTimeSetter, bool dryRun = false) :
 		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
 		_generator(generator),
 		_random(generator.random()),
+		_dateTimeSetter(dateTimeSetter),
 		_probability(config.func<ProbabilityType>(config.getString("generator." + generator.name() + ".timespan.pattern.probability"))),
 		_logger(Logger::get("task.random.timespan."+generator.name()))
 	{
@@ -247,6 +250,14 @@ protected:
 	 */
 	RandomStream _random;
 
+	/**
+	 * The setter for the DateTime field of the generated objects.
+	 */
+	DateTimeSetter _dateTimeSetter;
+
+	/**
+	 * Probability function describing the frequency of occurrence inside a single period.
+	 */
 	ProbabilityType& _probability;
 
 	/**
@@ -426,8 +437,8 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 	// start and end date
 	int minDateTimeTzd, maxDateTimeTzd;
 	DateTime minDateTime, maxDateTime;
-	DateTimeParser::parse("%Y-%m-%d %H:%M", _generator.config().getString("generator." + _generator.name() + ".timespan.min-date"), minDateTime, minDateTimeTzd);
-	DateTimeParser::parse("%Y-%m-%d %H:%M", _generator.config().getString("generator." + _generator.name() + ".timespan.max-date"), maxDateTime, maxDateTimeTzd);
+	DateTimeParser::parse("%Y-%m-%d %H:%M:%S", _generator.config().getString("generator." + _generator.name() + ".timespan.min-date"), minDateTime, minDateTimeTzd);
+	DateTimeParser::parse("%Y-%m-%d %H:%M:%S", _generator.config().getString("generator." + _generator.name() + ".timespan.max-date"), maxDateTime, maxDateTimeTzd);
 	I32u period = _generator.config().getInt("generator." + _generator.name() + ".timespan.pattern.period");
 
 	double delta = 0.0001;
@@ -485,8 +496,10 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 
 		AutoPtr<RecordType> recordPtr = _generator();
 		recordPtr->genID(current);
-		recordPtr->setSessionStart(currentDateTime);
 
+		(recordPtr->*_dateTimeSetter)(currentDateTime);
+
+		// hydrate random values
 		hydrate(recordPtr);
 
 		_generator.newRecord.notify(&_generator, recordPtr);
