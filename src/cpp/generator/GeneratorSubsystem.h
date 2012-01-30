@@ -85,6 +85,13 @@ private:
 	void cleanupStage(RecordGenerator::Stage stage);
 
 	/**
+	 * Helper method. Adds a single generator to the generator pool.
+	 *
+	 * @param generator
+	 */
+	template<class T> void registerGenerator(const string& name);
+
+	/**
 	 * A reference to the application wide notification center.
 	 */
 	NotificationCenter& _notificationCenter;
@@ -124,6 +131,15 @@ private:
 	 */
 	Logger& _ui;
 };
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// method definitions
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<class T> void GeneratorSubsystem::registerGenerator(const string& name)
+{
+	_generatorPool.set(new T(name, _config, _notificationCenter));
+}
 
 } // namespace Myriad
 
