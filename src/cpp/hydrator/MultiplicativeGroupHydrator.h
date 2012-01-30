@@ -42,13 +42,14 @@ public:
 
 	typedef void (RecordType::*ValueSetter)(const ID&);
 
-	MultiplicativeGroupHydrator(ValueSetter valueSetter, ID cardinality, ID beginID, ID endID) :
+	MultiplicativeGroupHydrator(ValueSetter valueSetter, ID cardinality, ID beginID, ID endID, bool randomMode = false) :
 		_valueSetter(valueSetter),
 		_G(cardinality),
 		_iterG(_G[beginID]),
 		_beginID(beginID),
 		_currentID(beginID),
-		_endID(beginID)
+		_endID(beginID),
+		_randomMode(randomMode)
 	{
 	}
 
@@ -56,8 +57,15 @@ public:
 	{
 		if (RecordHydrator<RecordType>::_enabled)
 		{
-			(recordPtr->*_valueSetter)(static_cast<ID>(const_cast<MultiplicativeGroupHydrator<RecordType>*>(this)->_iterG++));
-			const_cast<MultiplicativeGroupHydrator<RecordType>*>(this)->_currentID++;
+			if (_randomMode)
+			{
+				(recordPtr->*_valueSetter)(_G(recordPtr->genID()));
+			}
+			else
+			{
+				(recordPtr->*_valueSetter)(static_cast<ID>(const_cast<MultiplicativeGroupHydrator<RecordType>*>(this)->_iterG++));
+				const_cast<MultiplicativeGroupHydrator<RecordType>*>(this)->_currentID++;
+			}
 		}
 	}
 
@@ -76,6 +84,8 @@ private:
 	ID _beginID;
 	ID _currentID;
 	ID _endID;
+
+	bool _randomMode;
 };
 
 } // namespace Myriad
