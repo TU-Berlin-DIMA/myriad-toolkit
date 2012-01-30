@@ -30,6 +30,7 @@
 #include <Poco/Exception.h>
 #include <Poco/Logger.h>
 #include <Poco/Path.h>
+#include <Poco/RegularExpression.h>
 #include <Poco/Util/LayeredConfiguration.h>
 #include <Poco/SAX/XMLReader.h>
 #include <Poco/DOM/Document.h>
@@ -53,6 +54,7 @@ class AbstractGeneratorConfig: public LayeredConfiguration
 public:
 
 	AbstractGeneratorConfig() :
+		_pattern_param_ref("\\$\\{(.+)\\}"),
 		_masterPRNG("master_prng"),
 		_logger(Logger::get("generator.config"))
 	{
@@ -172,13 +174,6 @@ protected:
 	void setProbability(const ID genID, const XML::Element* probability);
 
 	/**
-	 * Helper partitioning function for equi-partitioned subsequences.
-	 *
-	 * @param key
-	 */
-	void computeSimplePartitioning(const string& key);
-
-	/**
 	 * Helper partitioning function for fixed size subsequences.
 	 *
 	 * @param key
@@ -186,11 +181,25 @@ protected:
 	void computeFixedPartitioning(const string& key);
 
 	/**
+	 * Helper partitioning function for equi-partitioned subsequences.
+	 *
+	 * @param key
+	 */
+	void computeSimplePartitioning(const string& key);
+
+	/**
 	 * Helper partitioning function for mirror-partitioned subsequences.
 	 *
 	 * @param key
 	 */
 	void computeMirroredPartitioning(const string& key);
+
+	/**
+	 * Helper partitioning function for mirror-partitioned subsequences.
+	 *
+	 * @param key
+	 */
+	void computePeriodBoundPartitioning(const string& key);
 
 	/**
 	 * Helper partitioning function for mirror-partitioned subsequences.
@@ -205,6 +214,18 @@ protected:
 	 * @param key
 	 */
 	void computeNestedBlockPartitioning(const string& key);
+
+	/**
+	 * Resolves values of the form ${param_name} to the corresponding parameter name.
+	 *
+	 * @param value
+	 */
+	const string resolveValue(const string& value);
+
+	/**
+	 * A regular expression that matches parameter references (i.e. "${...}" strings).
+	 */
+	RegularExpression _pattern_param_ref;
 
 	/**
 	 * The master PRNG instance.

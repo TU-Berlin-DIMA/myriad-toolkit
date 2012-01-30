@@ -130,7 +130,7 @@ void AbstractGeneratorConfig::configureFunctions(const AutoPtr<Document>& doc)
 		}
 
 		// create function of the specified type
-		if (type == "custom-discrete-probability")
+		if (type == "custom_discrete_probability")
 		{
 			// read function parameters
 			AutoPtr<NodeList> probabilities = f->getElementsByTagName("probability");
@@ -142,23 +142,23 @@ void AbstractGeneratorConfig::configureFunctions(const AutoPtr<Document>& doc)
 
 			addFunction(builder.create<CustomDiscreteProbability> (key));
 		}
-		else if (type == "interval-map")
+		else if (type == "interval_map")
 		{
 			addFunction(builder.create<IntervalMap<ID, ID> > (key));
 		}
-		else if (type == "id-range-map")
+		else if (type == "id_range_map")
 		{
 			addFunction(builder.create<DiscreteMap<ID, Interval<ID> > > (key));
 		}
-		else if (type == "pareto")
+		else if (type == "pareto_probability")
 		{
 			addFunction(builder.create<ParetoPrFunction> (key));
 		}
-		else if (type == "normal")
+		else if (type == "normal_probability")
 		{
 			addFunction(builder.create<NormalPrFunction> (key));
 		}
-		else if (type == "bounded-normal")
+		else if (type == "bounded_normal")
 		{
 			addFunction(builder.create<BoundedNormalPrFunction> (key));
 		}
@@ -191,16 +191,28 @@ void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc
 		String type = f->getAttribute("type");
 		String method = f->getAttribute("method");
 
-		if (method == "simple")
-		{
-			setString("partitioning." + type + ".base-cardinality", f->getChildElement("base-cardinality")->innerText());
-			computeSimplePartitioning(type);
-		}
-		else if (method == "fixed")
+		if (method == "fixed")
 		{
 			// TODO: determine cardinality from the loaded object set size
 			setString("partitioning." + type + ".cardinality", f->getChildElement("cardinality")->innerText());
 			computeMirroredPartitioning(type);
+		}
+		else if (method == "simple")
+		{
+			setString("partitioning." + type + ".base-cardinality", f->getChildElement("base-cardinality")->innerText());
+			computeSimplePartitioning(type);
+		}
+		else if (method == "mirrored")
+		{
+			setString("partitioning." + type + ".master", f->getChildElement("master")->innerText());
+			computeFixedPartitioning(type);
+		}
+		else if (method == "period-bound")
+		{
+			setString("partitioning." + type + ".period-min", resolveValue(f->getChildElement("period-min")->innerText()));
+			setString("partitioning." + type + ".period-max", resolveValue(f->getChildElement("period-max")->innerText()));
+			setString("partitioning." + type + ".items-per-second", resolveValue(f->getChildElement("items-per-second")->innerText()));
+			computePeriodBoundPartitioning(type);
 		}
 		else if (method == "nested")
 		{
@@ -208,23 +220,18 @@ void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc
 			setString("partitioning." + type + ".items-per-parent", f->getChildElement("items-per-parent")->innerText());
 			computeNestedPartitioning(type);
 		}
-		else if (method == "mirrored")
-		{
-			setString("partitioning." + type + ".master", f->getChildElement("master")->innerText());
-			computeFixedPartitioning(type);
-		}
 	}
 }
 
 void AbstractGeneratorConfig::bindStringSet(const AutoPtr<Document>& doc, const string& id, vector<string>& set)
 {
-	Element* containerEl = doc->getElementById(id, "id");
-	if (containerEl == NULL || containerEl->tagName() != "string-set")
+	Element* containerEl = doc->getElementById(id, "key");
+	if (containerEl == NULL || containerEl->tagName() != "string_set")
 	{
 		throw ConfigException(format("No <string-set> element found for `%s`", id));
 	}
 
-	AutoPtr<NodeList> strings = containerEl->getElementsByTagName("string");
+	AutoPtr<NodeList> strings = containerEl->getElementsByTagName("item");
 
 	set.resize(strings->length());
 	for (unsigned long int i = 0; i < strings->length(); i++)
@@ -244,19 +251,6 @@ void AbstractGeneratorConfig::setProbability(const ID x, const Element* probabil
 {
 	CustomDiscreteProbability& f = func<CustomDiscreteProbability>(probability->getAttribute("function"));
 	f.define(x, fromString<Decimal>(probability->getAttribute("value")));
-}
-
-void AbstractGeneratorConfig::computeSimplePartitioning(const string& key)
-{
-	I64u cardinality = static_cast<I64u>(scalingFactor() * getInt("partitioning." + key + ".base-cardinality"));
-	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
-
-	I64u genIDBegin = static_cast<ID> ((chunkSize * chunkID()) + 0.5);
-	I64u genIDEnd = static_cast<ID> ((chunkSize * (chunkID() + 1) + 0.5));
-
-	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
-	setString("generator." + key + ".partition.begin", toString(genIDBegin));
-	setString("generator." + key + ".partition.end", toString(genIDEnd));
 }
 
 void AbstractGeneratorConfig::computeFixedPartitioning(const string& key)
@@ -282,6 +276,19 @@ void AbstractGeneratorConfig::computeFixedPartitioning(const string& key)
 	setString("generator." + key + ".partition.end", toString(genIDEnd));
 }
 
+void AbstractGeneratorConfig::computeSimplePartitioning(const string& key)
+{
+	I64u cardinality = static_cast<I64u>(scalingFactor() * getInt("partitioning." + key + ".base-cardinality"));
+	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
+
+	I64u genIDBegin = static_cast<ID> ((chunkSize * chunkID()) + 0.5);
+	I64u genIDEnd = static_cast<ID> ((chunkSize * (chunkID() + 1) + 0.5));
+
+	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
+	setString("generator." + key + ".partition.begin", toString(genIDBegin));
+	setString("generator." + key + ".partition.end", toString(genIDEnd));
+}
+
 void AbstractGeneratorConfig::computeMirroredPartitioning(const string& key)
 {
 	string masterKey = getString("partitioning." + key + ".master");
@@ -289,6 +296,34 @@ void AbstractGeneratorConfig::computeMirroredPartitioning(const string& key)
 	I64u cardinality = fromString<I64u> (getString("generator." + masterKey + ".sequence.cardinality"));
 	I64u genIDBegin = fromString<I64u> (getString("generator." + masterKey + ".partition.begin"));
 	I64u genIDEnd = fromString<I64u> (getString("generator." + masterKey + ".partition.end"));
+
+	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
+	setString("generator." + key + ".partition.begin", toString(genIDBegin));
+	setString("generator." + key + ".partition.end", toString(genIDEnd));
+}
+
+void AbstractGeneratorConfig::computePeriodBoundPartitioning(const string& key)
+{
+	// start and end date
+	int minDateTimeTzd, maxDateTimeTzd;
+	DateTime minDateTime, maxDateTime;
+	DateTimeParser::parse("%Y-%m-%d %H:%M:%S", getString("partitioning." + key + ".period-min"), minDateTime, minDateTimeTzd);
+	DateTimeParser::parse("%Y-%m-%d %H:%M:%S", getString("partitioning." + key + ".period-max"), maxDateTime, maxDateTimeTzd);
+	I64u itemsPerSecond = fromString<I64u>(getString("partitioning." + key + ".items-per-second"));
+
+	Timespan span = maxDateTime - minDateTime;
+
+	Logger& ui = Logger::get("ui");
+
+	ui.information(format("period-min is %s", getString("partitioning." + key + ".period-min")));
+	ui.information(format("period-max is %s", getString("partitioning." + key + ".period-max")));
+	ui.information(format("span seconds are %d", span.totalSeconds()));
+
+	I64u cardinality = static_cast<I64u>(scalingFactor() * itemsPerSecond * span.totalSeconds());
+	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
+
+	I64u genIDBegin = static_cast<ID> ((chunkSize * chunkID()) + 0.5);
+	I64u genIDEnd = static_cast<ID> ((chunkSize * (chunkID() + 1) + 0.5));
 
 	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
 	setString("generator." + key + ".partition.begin", toString(genIDBegin));
@@ -343,6 +378,20 @@ void AbstractGeneratorConfig::computeNestedBlockPartitioning(const string& key)
 	_logger.information(format("Configuring `%s` nested block sizing, %Lu full blocks, %Lu items before begin", key, parentGenIDBegin / blockSize, parentGenIDBegin % blockSize));
 	_logger.information(format("Configuring `%s` nested block sizing, %Lu full blocks, %Lu items before end", key, parentGenIDEnd / blockSize, parentGenIDEnd % blockSize));
 	_logger.information(format("Configuring `%s` nested block sizing: %Lu [%Lu, %Lu) of total %Lu", key, genIDEnd - genIDBegin, genIDBegin, genIDEnd, cardinality));
+}
+
+const string AbstractGeneratorConfig::resolveValue(const string& value)
+{
+	RegularExpression::MatchVec posVec;
+	if (_pattern_param_ref.match(value, 0, posVec))
+	{
+		string key = value.substr(posVec[1].offset, posVec[1].length);
+		return getString("generator." + key);
+	}
+	else
+	{
+		return value;
+	}
 }
 
 } // namespace Myriad
