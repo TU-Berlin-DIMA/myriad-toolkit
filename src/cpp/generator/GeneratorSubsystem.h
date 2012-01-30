@@ -43,6 +43,7 @@ public:
 	GeneratorSubsystem(NotificationCenter& notificationCenter, const vector<bool>& executeStages) :
 		_notificationCenter(notificationCenter),
 		_executeStages(executeStages),
+		_config(_generatorPool),
 		_threadPool("GeneratorPool", 4, 32),
 		_initialized(false),
 		_logger(Logger::get("generator.driver")),
@@ -102,14 +103,14 @@ private:
 	const vector<bool>& _executeStages;
 
 	/**
-	 * An application wide generator config instance.
-	 */
-	GeneratorConfig _config;
-
-	/**
 	 * A pool for the registered generators.
 	 */
 	GeneratorPool _generatorPool;
+
+	/**
+	 * An application wide generator config instance.
+	 */
+	GeneratorConfig _config;
 
 	/**
 	 * A pool for the runnable generator task threads.

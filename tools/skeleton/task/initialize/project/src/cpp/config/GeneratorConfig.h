@@ -27,6 +27,10 @@ class GeneratorConfig: public AbstractGeneratorConfig
 {
 public:
 
+	GeneratorConfig(GeneratorPool& generatorPool) : AbstractGeneratorConfig(generatorPool)
+	{
+	}
+
 	// define const reference getters for each member
 
 protected:

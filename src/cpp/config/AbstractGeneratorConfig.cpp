@@ -18,6 +18,7 @@
 
 #include "config/AbstractGeneratorConfig.h"
 #include "core/exceptions.h"
+#include "generator/GeneratorPool.h"
 
 #include <Poco/File.h>
 #include <Poco/FormattingChannel.h>

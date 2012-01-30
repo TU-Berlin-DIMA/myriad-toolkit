@@ -44,6 +44,8 @@ using namespace Poco::Util;
 
 namespace Myriad {
 
+class GeneratorPool;
+
 /**
  * A layered configuration used by the generator objects both as storage
  * v as well as an access point to some relevant sections from the
@@ -53,9 +55,10 @@ class AbstractGeneratorConfig: public LayeredConfiguration
 {
 public:
 
-	AbstractGeneratorConfig() :
+	AbstractGeneratorConfig(GeneratorPool& generatorPool) :
 		_pattern_param_ref("\\$\\{(.+)\\}"),
 		_masterPRNG("master_prng"),
+		_generatorPool(generatorPool),
 		_logger(Logger::get("generator.config"))
 	{
 	}
@@ -100,6 +103,11 @@ public:
 	I16u chunkID()
 	{
 		return getInt("common.partitioning.chunks-id");
+	}
+
+	GeneratorPool& generatorPool() const
+	{
+		return _generatorPool;
 	}
 
 	RandomStream& masterPRNG()
@@ -231,6 +239,11 @@ protected:
 	 * The master PRNG instance.
 	 */
 	RandomStream _masterPRNG;
+
+	/**
+	 * A pool for the registered generators.
+	 */
+	GeneratorPool& _generatorPool;
 
 	/**
 	 * A global function pool.
