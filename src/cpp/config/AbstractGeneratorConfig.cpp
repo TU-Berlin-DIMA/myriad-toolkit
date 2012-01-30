@@ -195,7 +195,7 @@ void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc
 		{
 			// TODO: determine cardinality from the loaded object set size
 			setString("partitioning." + type + ".cardinality", f->getChildElement("cardinality")->innerText());
-			computeMirroredPartitioning(type);
+			computeFixedPartitioning(type);
 		}
 		else if (method == "simple")
 		{
@@ -205,7 +205,7 @@ void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc
 		else if (method == "mirrored")
 		{
 			setString("partitioning." + type + ".master", f->getChildElement("master")->innerText());
-			computeFixedPartitioning(type);
+			computeMirroredPartitioning(type);
 		}
 		else if (method == "period-bound")
 		{
@@ -312,12 +312,6 @@ void AbstractGeneratorConfig::computePeriodBoundPartitioning(const string& key)
 	I64u itemsPerSecond = fromString<I64u>(getString("partitioning." + key + ".items-per-second"));
 
 	Timespan span = maxDateTime - minDateTime;
-
-	Logger& ui = Logger::get("ui");
-
-	ui.information(format("period-min is %s", getString("partitioning." + key + ".period-min")));
-	ui.information(format("period-max is %s", getString("partitioning." + key + ".period-max")));
-	ui.information(format("span seconds are %d", span.totalSeconds()));
 
 	I64u cardinality = static_cast<I64u>(scalingFactor() * itemsPerSecond * span.totalSeconds());
 	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
