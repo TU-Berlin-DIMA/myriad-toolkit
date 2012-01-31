@@ -216,7 +216,6 @@ inline I64u nextPrime(const I64u l)
 			N++;
 		}
 
-
 		if (isPrime(N))
 		{
 			return N;
@@ -224,6 +223,8 @@ inline I64u nextPrime(const I64u l)
 
 		N += 2;
 	}
+
+	throw std::exception();
 }
 
 inline I64u power(I32u x, I16u e)
