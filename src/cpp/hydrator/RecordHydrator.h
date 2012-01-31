@@ -36,6 +36,10 @@ public:
 	{
 	}
 
+	virtual ~RecordHydrator()
+	{
+	}
+
 	/**
 	 * Object hydrating function (external PRNG).
 	 */
