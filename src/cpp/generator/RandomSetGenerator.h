@@ -357,7 +357,8 @@ template<class RecordType> inline AutoPtr<RecordType> RandomSetGenerator<RecordT
 
 template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<RecordType>::at(const I64u genID)
 {
-	_random.atChunk(genID);
+//	TODO: remove this, chunk adjustment is handled by the hydration chain
+//	_random.atChunk(genID);
 
 	_recordPtr->genID(genID);
 	_hydrate(_recordPtr);
