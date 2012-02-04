@@ -402,11 +402,11 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 		++current;
 		_random.nextChunk();
 
-		if(++progressCounter >= 100)
-		{
-			progressCounter = 0;
-			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
-		}
+//		if(++progressCounter >= 100)
+//		{
+//			progressCounter = 0;
+//			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
+//		}
 	}
 
 	StageTask<RecordType>::_progress = 1.0;
@@ -434,6 +434,7 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 	ID first = _generator.config().genIDBegin(_generator.name());
 	ID current = _generator.config().genIDBegin(_generator.name());
 	ID last = _generator.config().genIDEnd(_generator.name());
+	ID cardinality = _generator.config().cardinality(_generator.name());
 
 	// start and end date
 	int minDateTimeTzd, maxDateTimeTzd;
@@ -454,7 +455,7 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 	// how many periods fit into the specified timespan
 	double numberOfPeriods = timespan.totalSeconds() / (double) period;
 	// get the number of generated records per period
-	double recordsPerPeriod = last / numberOfPeriods;
+	double recordsPerPeriod = cardinality / numberOfPeriods;
 	// get the conversion factor between a record in a period an a point on the x-axis of the period probability
 	Interval<Decimal> xRange(_probability.invcdf(delta), _probability.invcdf(1.0 - delta));
 	double xAxisRatio = xRange.length() / period;
@@ -469,6 +470,13 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 	I32u currentPeriodFirst = recordsPerPeriod * currentPeriod;
 	I32u currentPeriodLast  = recordsPerPeriod * (currentPeriod + 1);
 	double yAxisRatio = totalProbability / (currentPeriodLast - currentPeriodFirst);
+
+//	_logger.information(format("timespan is %d", timespan.totalSeconds()));
+//	_logger.information(format("totalProbability is %f", totalProbability));
+//	_logger.information(format("recordsPerPeriod period is %f", recordsPerPeriod));
+//	_logger.information(format("[currentPeriodFirst, currentPeriodLast) period is [%u, %u)", currentPeriodFirst, currentPeriodLast));
+//	_logger.information(format("yaxisratio is %f", yAxisRatio));
+//	_logger.information(format("delta is %f", delta));
 
 	/*
 	 * generate the assigned record substream
@@ -513,11 +521,11 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 		++current;
 		_random.nextChunk();
 
-		if(++progressCounter >= 100)
-		{
-			progressCounter = 0;
-			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
-		}
+//		if(++progressCounter >= 100)
+//		{
+//			progressCounter = 0;
+//			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
+//		}
 	}
 
 	StageTask<RecordType>::_progress = 1.0;
