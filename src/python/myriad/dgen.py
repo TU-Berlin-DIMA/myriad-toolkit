@@ -509,7 +509,6 @@ class DGenNode(config.Node):
     def start(self, dgen, nodesTotal):
         self.lock.acquire();
         
-        print ("ssh -f %s '%s/bin/%s-node -s%.3f -m%s -i%d -N%d -H%s -P%d -o%s -n%s %s > /dev/null 2> /dev/null &'" % (self.host, self.dgenPath, self.dgenName, dgen.sf, dgen.datasetID, self.id, nodesTotal, dgen.dgenMaster.name, dgen.dgenMaster.coorServerPort, self.outputBase, self.nodeConfig, ' '.join(map(lambda s: '-x%s' % s, dgen.executeStages))))
         os.system("ssh -f %s '%s/bin/%s-node -s%.3f -m%s -i%d -N%d -H%s -P%d -o%s -n%s %s > /dev/null 2> /dev/null &'" % (self.host, self.dgenPath, self.dgenName, dgen.sf, dgen.datasetID, self.id, nodesTotal, dgen.dgenMaster.name, dgen.dgenMaster.coorServerPort, self.outputBase, self.nodeConfig, ' '.join(map(lambda s: '-x%s' % s, dgen.executeStages))))
 
         self.attempt += 1
