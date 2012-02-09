@@ -296,7 +296,9 @@ template<class ConfigType> void RandomSetGenerator<ConfigType>::initialize()
 	// the initialization of the generator subsystem
 	_config.masterPRNG().nextSubstream();
 
-	_logger.information(format("Configured sizing for generator `%s` # %05hu of %05hu: generating segment [%Lu, %Lu) of %Lu", name(), _config.chunkID(), _config.numberOfChunks(), _config.genIDBegin(name()), _config.genIDEnd(name()), _config.cardinality(name())));
+	string s1 = format("substream cardinality is %Lu", _config.cardinality(name()));
+	string s2 = format("generating segment [%Lu, %Lu) of %Lu", _config.genIDBegin(name()), _config.genIDEnd(name()), _config.cardinality(name()));
+	_logger.information(format("Configured sizing for generator `%s` # %05hu of %05hu: %s, %s", name(), _config.chunkID(), _config.numberOfChunks(), s1, s2));
 	_logger.information(format("Substream seed for the generator `%s` set to [%s]", name(), _random.seed().toString()));
 }
 
@@ -402,11 +404,11 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 		++current;
 		_random.nextChunk();
 
-//		if(++progressCounter >= 100)
-//		{
-//			progressCounter = 0;
-//			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
-//		}
+		if(++progressCounter >= 1000)
+		{
+			progressCounter = 0;
+			AbstractStageTask::_progress = (current - first) / static_cast<Decimal>(last - first);
+		}
 	}
 
 	StageTask<RecordType>::_progress = 1.0;
@@ -521,11 +523,11 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 		++current;
 		_random.nextChunk();
 
-//		if(++progressCounter >= 100)
-//		{
-//			progressCounter = 0;
-//			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
-//		}
+		if(++progressCounter >= 1000)
+		{
+			progressCounter = 0;
+			AbstractStageTask::_progress = (current - first) / static_cast<Decimal>(last - first);
+		}
 	}
 
 	StageTask<RecordType>::_progress = 1.0;

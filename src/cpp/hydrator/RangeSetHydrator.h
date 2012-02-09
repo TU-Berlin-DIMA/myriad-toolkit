@@ -68,7 +68,7 @@ public:
 		{
 			if (_uniform)
 			{
-				(recordPtr->*_setter)(_range[random(0, _rangeCardinality-1)]);
+				(recordPtr->*_setter)(_range[random(0UL, _rangeCardinality-1)]);
 			}
 			else
 			{

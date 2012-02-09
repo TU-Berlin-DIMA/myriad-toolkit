@@ -75,7 +75,7 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	_logger.setChannel(logChannel);
 
 	// get the path of the master config xml file
-	Path configPath(getString("common.config.master-file", getString("application.baseName")+".xml"));
+	Path configPath(getString("application.node-config", getString("common.defaults.config.node-config")));
 	configPath.makeAbsolute(getString("application.config-dir"));
 
 	_logger.information("Loading generator configuration from " + configPath.toString());

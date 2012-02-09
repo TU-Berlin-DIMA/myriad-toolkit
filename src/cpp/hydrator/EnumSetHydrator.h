@@ -63,7 +63,7 @@ public:
 		{
 			if (_uniform)
 			{
-				(recordPtr->*_setter)(static_cast<T>(random(0, _enumCardinality-1)));
+				(recordPtr->*_setter)(static_cast<T>(random(0U, _enumCardinality-1)));
 			}
 			else
 			{

@@ -154,6 +154,12 @@ void Frontend::defineOptions(OptionSet& options)
 			.argument("<path>")
 			.binding("application.config-dir"));
 
+	options.addOption(Option("node-config", "n", "the default XML node config files (residing in the config directory)")
+			.required(false)
+			.repeatable(false)
+			.argument("<filename>")
+			.binding("application.node-config"));
+
 	options.addOption(Option("output-base", "o", "base path for writing the output")
 			.required(false)
 			.repeatable(false)

@@ -43,6 +43,7 @@ class DGen(object):
     cleanup = None
     sf = None
     configPath = None
+    nodeConfig = None
     datasetID = None
     executeStages = None
     configName = None
@@ -77,7 +78,9 @@ class DGen(object):
                           help="ID of the generated Myriad dataset")
         parser.add_option("-x", dest="execute_stages", action="append", type="str", default=[],
                           help="Specify a specific stage to execute")
-        parser.add_option("--config-dir", dest="config", type="str", default="%s/config" % (self.basePath),
+        parser.add_option("-n", dest="node_config", type="str", default="%s-node.xml" % (self.dgenName),
+                          help="name of the node config file (should reside in the config dir)")
+        parser.add_option("--config-dir", dest="config_path", type="str", default="%s/config" % (self.basePath),
                           help="path to the myriad config folder (TODO)")
         parser.add_option("--log-dir", dest="log_dir", type="str", default=None, 
                           help="base directory for output logging")
@@ -97,13 +100,14 @@ class DGen(object):
             self.cleanup = args.cleanup
             self.sf = args.sf
             self.datasetID = args.dataset_id
-            self.configPath = args.config
+            self.configPath = args.config_path
+            self.nodeConfig = args.node_config
             self.logBase = args.log_dir
             self.executeStages = args.execute_stages
             self.configName = remainder.pop()
             
             # load myriad config 
-            self.config = config.readConfig(self.dgenName, "%s/%s-frontend.xml" % (self.configPath, self.dgenName))
+            self.config = config.readConfig(self.dgenName, self.nodeConfig, "%s/%s-frontend.xml" % (self.configPath, self.dgenName))
             # load sizing config
             self.dgenConfig = config.readDGenConfig("%s/%s-node.properties" % (self.configPath, self.dgenName))
             
@@ -494,6 +498,7 @@ class DGenNode(config.Node):
         self.dgenPath = envNode.dgenPath
         self.dgenName = envNode.dgenName
         self.outputBase = envNode.outputBase
+        self.nodeConfig = envNode.nodeConfig
         
         self.attempt = 0
         self.resetState()
@@ -504,7 +509,8 @@ class DGenNode(config.Node):
     def start(self, dgen, nodesTotal):
         self.lock.acquire();
         
-        os.system("ssh -f %s '%s/bin/%s-node -s%.3f -m%s -i%d -N%d -H%s -P%d -o%s %s > /dev/null 2> /dev/null &'" % (self.host, self.dgenPath, self.dgenName, dgen.sf, dgen.datasetID, self.id, nodesTotal, dgen.dgenMaster.name, dgen.dgenMaster.coorServerPort, self.outputBase, ' '.join(map(lambda s: '-x%s' % s, dgen.executeStages))))
+        print ("ssh -f %s '%s/bin/%s-node -s%.3f -m%s -i%d -N%d -H%s -P%d -o%s -n%s %s > /dev/null 2> /dev/null &'" % (self.host, self.dgenPath, self.dgenName, dgen.sf, dgen.datasetID, self.id, nodesTotal, dgen.dgenMaster.name, dgen.dgenMaster.coorServerPort, self.outputBase, self.nodeConfig, ' '.join(map(lambda s: '-x%s' % s, dgen.executeStages))))
+        os.system("ssh -f %s '%s/bin/%s-node -s%.3f -m%s -i%d -N%d -H%s -P%d -o%s -n%s %s > /dev/null 2> /dev/null &'" % (self.host, self.dgenPath, self.dgenName, dgen.sf, dgen.datasetID, self.id, nodesTotal, dgen.dgenMaster.name, dgen.dgenMaster.coorServerPort, self.outputBase, self.nodeConfig, ' '.join(map(lambda s: '-x%s' % s, dgen.executeStages))))
 
         self.attempt += 1
         self.resetState()
@@ -516,7 +522,7 @@ class DGenNode(config.Node):
         
         if (self.attempt < DGenNode.MAX_ATTEMPTS):
             os.system("ssh -f %s '%s/bin/%s-kill %d %s > /dev/null 2> /dev/null'" % (self.host, self.dgenPath, self.dgenName, self.id, dgen.datasetID))
-            os.system("ssh -f %s '%s/bin/%s-node -s%.3f -m%s -i%d -N%d -H%s -P%d -o%s %s > /dev/null 2> /dev/null &'" % (self.host, self.dgenPath, self.dgenName, dgen.sf, dgen.datasetID, self.id, nodesTotal, dgen.dgenMaster.name, dgen.dgenMaster.coorServerPort, self.outputBase, ' '.join(map(lambda s: '-x%s' % s, dgen.executeStages))))
+            os.system("ssh -f %s '%s/bin/%s-node -s%.3f -m%s -i%d -N%d -H%s -P%d -o%s -n%s %s > /dev/null 2> /dev/null &'" % (self.host, self.dgenPath, self.dgenName, dgen.sf, dgen.datasetID, self.id, nodesTotal, dgen.dgenMaster.name, dgen.dgenMaster.coorServerPort, self.outputBase, self.nodeConfig, ' '.join(map(lambda s: '-x%s' % s, dgen.executeStages))))
 
             self.attempt += 1
             self.resetState()

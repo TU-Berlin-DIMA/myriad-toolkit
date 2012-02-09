@@ -112,7 +112,7 @@ public:
 	 * is out of the available range. If the hierarchical RNG doesn't support
 	 * random skips, the method should throw a Poco::NotImplementedException.
 	 */
-	virtual double atChunk(UInt64 i) = 0;
+	virtual HierarchicalRNG& atChunk(UInt64 i) = 0;
 };
 
 }  // namespace Myriad

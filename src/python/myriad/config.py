@@ -121,8 +121,9 @@ class Node(object):
     dgenPath = None
     dgenName = None
     outputBase = None
+    nodeConfig = None
     
-    def __init__(self, id, host, dgenPath, dgenName, outputBase):
+    def __init__(self, id, host, dgenPath, dgenName, outputBase, nodeConfig):
         '''
         Constructor
         '''
@@ -131,6 +132,7 @@ class Node(object):
         self.dgenPath = dgenPath
         self.dgenName = dgenName
         self.outputBase = outputBase
+        self.nodeConfig = nodeConfig
 
 
 class Config(object):
@@ -139,16 +141,18 @@ class Config(object):
     '''
     cloudEnvs = {}
     dgenName = None
+    nodeConfig = None
     dgenConfigs = {}
     testConfigs = {}
     qgenConfigs = {}
 
-    def __init__(self, dgenName, doc):
+    def __init__(self, dgenName, nodeConfig, doc):
         '''
         Constructor
         '''
         
         self.dgenName = dgenName
+        self.nodeConfig = nodeConfig
         
         context = doc.xpathNewContext()
         context.xpathRegisterNs("m", NAMESPACE)
@@ -297,7 +301,7 @@ class Config(object):
         cloudEnv = config["environment"]
         m = config["nodesPerHost"]
         
-        return [Node(i, cloudEnv["slaves"][int(i / m)], cloudEnv["dgenPath"], self.dgenName, config["outputBase"]) for i in xrange(0, config["nodesTotal"])] 
+        return [Node(i, cloudEnv["slaves"][int(i / m)], cloudEnv["dgenPath"], self.dgenName, config["outputBase"], self.nodeConfig) for i in xrange(0, config["nodesTotal"])] 
 
     def slaves(self, configName):
         '''
@@ -330,8 +334,10 @@ class Config(object):
 
         return testRef
 
-
 class SizingConfig(object):
+    '''
+    TODO: this is model specific an probably not required for the next version of the frontend script
+    '''
     
     sf = None
     cardinalities = None
@@ -359,8 +365,9 @@ class SizingConfig(object):
     def cardinality(self, name):
         return self.cardinalities[name]
 
-def readConfig(dgenName, configPath):
-    return Config(dgenName, libxml2.parseFile(configPath))
+def readConfig(dgenName, nodeConfig, configPath):
+    print configPath
+    return Config(dgenName, nodeConfig, libxml2.parseFile(configPath))
 
 def readDGenConfig(configPath):
     try:

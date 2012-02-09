@@ -110,9 +110,9 @@ public:
 		return next();
 	}
 
-	Int32 operator()(Int32 min, Int32 max)
+	template<class T> T operator()(T min, T max)
 	{
-		return min + static_cast<Int32> ((max - min + 1.0) * next());
+		return min + static_cast<T> ((max - min + 1.0) * next());
 	}
 
 	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -187,13 +187,13 @@ public:
 		return *this;
 	}
 
-	double atChunk(UInt64 pos)
+	CompoundEICG& atChunk(UInt64 pos)
 	{
 		appendToSeed(_chunkS, _substreamS, OFFSET_CHUNK, pos);
 		_elementS = _chunkS;
 		_currentSum = updateResults();
 
-		return next();
+		return *this;
 	}
 
 	void dumpState()
