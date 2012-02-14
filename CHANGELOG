@@ -1,0 +1,83 @@
+0.1.7 - 20011-10-07
+
+* adjusted constructor signature of the MultiplicativeGroupHydrator
+* cleaned up SurrogateKeyGenerator related logic from FunctionPool, GeneratorConfig and ClusteredSelfReferenceHydrator
+* added direct value inspection function method to the MultiplicativeGroupHydrator
+* added value inspection based reference computation in ClusteredSelfReferenceHydrator
+* removed default argument values from the name parameter in the GeneratorConfig::genIDBegin(), GeneratorConfig::genIDEnd() and GeneratorConfig::cardinality() methods
+* refactored the configuration logic - now maintaining a single GeneratorConfig per node
+* simplified build logic for non-C++ package components (python scripts, config files, etc)
+* adapted the frontend python script to the changes in the -x parameter type in the toolkit Frontend
+* removed obsolete configure() method from all generators
+* merged SizingConfigurator logic to the new AbstractGeneratorConfig (simplifies extension creation)
+* moved main.cpp from extensions to toolkit source folder (simplifies extension creation)
+* added XML support for generator specific properties and partitioning configurations
+* moved application constant from Frontend to a separate class (Constants)
+* removed obsolete file TODO.txt
+
+0.1.6 - 20011-10-05
+
+* changed iteration logic in the CompoundEICG test - all componens are now adjusted at each step (a bit slower now, but should provide more robust random behavior)
+* refactored substream initialization logic - RandomSetGenerator seeds are assigned iteratively from a master seed
+* added configurable master seed via the 'common.defaults.master.seed' property
+* added new hydrators: ClusteredRangeSetHydrator, NestedClusteredEnumSetHydrator, StaticSetReferenceHydrator
+* simplified constructor of the EnumSetHydrator
+* changed ObjectBuilder configuration logic - now using Any instead of DynamicAny
+* refactored stage logic - stages are now class instanes with unique name and id instead of a simple enum type
+* fixed bug in the GeneratorPool::get() method
+* added support for bounded normal probability (not ideal as the implementation method skews the probabilities)
+
+0.1.5 - 20011-09-30
+
+* simplified myriad-config.xsd schema
+* added new hydrators: ClusteredSelfReferenceHydrator and MultiplicativeGroupHydrator
+* refactored the RecordHydrator interface - RandomStream references now as RecordHydrator members
+* added new base RandomRecordHydrator type type for hydrators working with RandomStreams
+* RandomSetGenerator, DeterministicSetGenerator and StaticSetGenerator now parameterized by RecordType, not ConfigType
+* simplified HydratorChain extension logic
+* removed duplicated log messages from the Communication and the Generator subsystems
+* fixed bad format string bug in GeneratorSubsystem.cpp
+
+0.1.4 - 20011-08-02
+
+* added logger to the default record inspector
+* replaced std::cout with '\n' in operators.cpp (use of std::cout implicitly flushes the buffer)
+* refactored sizing configuration logic: sizing config for all generators is now accessable via any GeneratorConfig subclass
+* added initial hydrator logic (common components for hydrating record fields)
+* new hydrators: ClusteredEnumHydrator, ConditionalHydrator, ConstValueHydrator, EnumSetHydrator and RangeSetHydrator
+* integrating new RecordHydrator classes into the default HydratorChain
+* added integration definition in RecordHydrator.h
+* added convenience template function getter to the FunctionPool and the GeneratorConfig
+* fixed some bugs in the Interval class and in the IntervalMap
+* added domainCardinality getter to DiscreteMap.h, IntervalMap.h and CustomDiscreteProbability.h
+* integrated dgen python frontend to the toolkit
+* added lookback caching of size 1 in the IntervalMap
+
+0.1.3 - 20011-05-30
+
+* refactored PRNG interface - now an exchangeable component
+* added CompoundEICG - an alternative PRNG (used as default) 
+* cleared extension specific dependencies in GeneratorPool.h
+
+0.1.2 - 20011-05-13
+
+* updaed documentation in the README file
+* added EPQ04 query (filter + project on the product_offer relation) 
+* added batch dgen/import script (generates multiple datasets at once)
+* reduced dead node timeout to 45 secs (should work OK with precomputed skGen generators) 
+* added precomputed generator values for some scaling factors in the SurrogateKeyGenerator
+* added custom log dir ("/myriad/logs") to the JAQL / Hive query templates
+* added logger component to the dgen / importer / qgen python fronend scripts 
+
+0.1.1 - 2011-04-21
+
+* added JAQL implementations for the EPQ*, PA*, PJ* and BL02 tasks
+* template processing in the qgen now stores the result on the hard disc 
+* fixed a bug in the restart logic in dgen.py
+* FunctionPool.h: skGenerators map now stores actual SurrogateKeyGenerators instead of references 
+* added JAQL versions of PA01 and PA02
+* fixed a bug in the EPQ03.jaql syntax (using / instead of div() for division) 
+
+0.1.0 - 2011-04-12
+
+* first public release

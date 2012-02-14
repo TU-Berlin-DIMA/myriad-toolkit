@@ -1,0 +1,2 @@
+[filenames]
+dgen-node.xml.snippets: ${{dgen_name}}-node.xml
