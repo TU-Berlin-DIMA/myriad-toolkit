@@ -408,9 +408,17 @@ class RecordSequenceNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(RecordSequenceNode, self).__init__(*args, **kwargs)
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        self._recordType.accept(visitor)
+        visitor.postVisit(self)
         
     def setRecordType(self, node):
         self._recordType = node
+        
+    def getRecordType(self):
+        return self._recordType
 
 
 class RandomSequenceNode(RecordSequenceNode):
@@ -418,18 +426,207 @@ class RandomSequenceNode(RecordSequenceNode):
     classdocs
     '''
     
+    __cardinalityEstimator = None
+    __hydrators = None
+    __hydrationPlan = None
+    __generatorTasks = None
+    
     def __init__(self, *args, **kwargs):
         super(RandomSequenceNode, self).__init__(*args, **kwargs)
-
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        self._recordType.accept(visitor)
+        self.__cardinalityEstimator.accept(visitor)
+        self.__hydrators.accept(visitor)
+        self.__hydrationPlan.accept(visitor)
+        self.__generatorTasks.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setCardinalityEstimator(self, node):
+        self.__cardinalityEstimator = node
+        
+    def getCardinalityEstimator(self):
+        return self.__cardinalityEstimator
+        
+    def setHydrators(self, node):
+        self.__hydrators = node
+        
+    def getHydrators(self):
+        return self.__hydrators
+        
+    def setHydrationPlan(self, node):
+        self.__hydrationPlan = node
+        
+    def getHydrationPlan(self):
+        return self.__hydrationPlan
+        
+    def setGeneratorTasks(self, node):
+        self.__generatorTasks = node
+        
+    def getGeneratorTasks(self):
+        return self.__generatorTasks
+        
 
 class RecordTypeNode(AbstractNode):
     '''
     classdocs
     '''
     
+    _fields = {}
+    
     def __init__(self, *args, **kwargs):
-        super(ArgumentNode, self).__init__(*args, **kwargs)
+        super(RecordTypeNode, self).__init__(*args, **kwargs)
+        self._fields = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self._fields.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setField(self, node):
+        self._fields[node.getAttribute('name')] = node
+    
+    def getField(self, key):
+        return self._fields.get(key)
 
+
+class RecordFieldNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(RecordFieldNode, self).__init__(*args, **kwargs)
+
+
+class CardinalityEstimatorNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __arguments = {}
+    
+    def __init__(self, *args, **kwargs):
+        super(CardinalityEstimatorNode, self).__init__(*args, **kwargs)
+        self.__arguments = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__arguments.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+    
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+
+
+class HydratorsNode(RecordSequenceNode):
+    '''
+    classdocs
+    '''
+    
+    __hydrators = {}
+    
+    def __init__(self, *args, **kwargs):
+        super(HydratorsNode, self).__init__(*args, **kwargs)
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__hydrators.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setHydrator(self, node):
+        self.__hydrators[node.getAttribute('key')] = node
+    
+    def getHydrator(self, key):
+        return self.__hydrators.get(key)
+    
+    def hasHydrator(self, key):
+        return self.__hydrators.has_key(key)
+    
+    
+class HydrationPlanNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    _hydrators = []
+    
+    def __init__(self, *args, **kwargs):
+        super(HydrationPlanNode, self).__init__(*args, **kwargs)
+        self._hydrators = []
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self._hydrators:
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def addHydrator(self, node):
+        self._hydrators.append(node)
+    
+    
+class HydratorNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __arguments = {}
+    
+    def __init__(self, *args, **kwargs):
+        super(HydratorNode, self).__init__(*args, **kwargs)
+        self.__arguments = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__arguments.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+    
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+
+
+class GeneratorTasksNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __tasks = {}
+    
+    def __init__(self, *args, **kwargs):
+        super(GeneratorTasksNode, self).__init__(*args, **kwargs)
+        self.__tasks = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__tasks.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setTask(self, node):
+        self.__tasks[node.getAttribute('key')] = node
+    
+    def getTask(self, key):
+        return self.__tasks.get(key)
+
+
+class GeneratorTaskNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(GeneratorTaskNode, self).__init__(*args, **kwargs)
 
 #
 # Arguments
