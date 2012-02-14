@@ -17,8 +17,6 @@ Created on Oct 14, 2011
 
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
-from timeit import itertools
-from unohelper import inspect
 
 
 class AbstractNode(object):
@@ -95,10 +93,6 @@ class ImportsNode(AbstractNode):
     def addImport(self, node):
         self.__imports[node.getAttribute('path')] = node
         
-    def getUnresolvedImports(self):
-        return filter(lambda x: isinstance(x, UnresolvedImportNode), self.__imports.itervalues()) 
-
-    
 
 class UnresolvedImportNode(AbstractNode):
     '''
@@ -107,50 +101,6 @@ class UnresolvedImportNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(UnresolvedImportNode, self).__init__(*args, **kwargs)
-
-
-class ResolvedImportNode(AbstractNode):
-    '''
-    classdocs
-    '''
-
-    __namespaces = None
-    __parameters = None
-    __functions = None
-    __enumSets = None
-    __stringSets = None
-    
-    def __init__(self, *args, **kwargs):
-        super(ResolvedImportNode, self).__init__(*args, **kwargs)
-        self.__namespaces = ValidNamespacesNode()
-        self.__parameters = ParametersNode()
-        self.__functions = FunctionsNode()
-        self.__enumSets = EnumSetsNode()
-        self.__stringSets = StringSetsNode()
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        self.__namespaces.accept(visitor)
-        self.__parameters.accept(visitor)
-        self.__functions.accept(visitor)
-        self.__enumSets.accept(visitor)
-        self.__stringSets.accept(visitor)
-        visitor.postVisit(self)
-        
-    def getNamespaces(self):
-        return self.__namespaces
-        
-    def getParameters(self):
-        return self.__parameters
-    
-    def getFunctions(self):
-        return self.__functions
-    
-    def getEnumSets(self):
-        return self.__enumSets
-    
-    def getStringSets(self):
-        return self.__stringSets
 
 
 class SpecificationNode(AbstractNode):

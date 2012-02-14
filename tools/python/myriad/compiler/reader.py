@@ -45,37 +45,20 @@ class XMLReader(object):
         self.__log = logging.getLogger("ast.reader")
     
     def read(self):
+        self.__log.info("Reading XML specification from: `%s`." % (self.__args.model_spec_path))
+        
         # assemble the initial AST 
         self.__astRoot = RootNode()
         self.__astRoot.getSpecification().setAttribute("generatorName", self.__args.dgen_name)
         self.__astRoot.getSpecification().setAttribute("generatorNameSpace", self.__args.dgen_ns)
-        self.__astRoot.getSpecification().setAttribute("path", self.__args.model_spec_path)
+        self.__astRoot.getSpecification().setAttribute("xmlLocation", self.__args.model_spec_path)
         
         # load the XML
         try:
-            self.__log.info("Reading XML specification from: `%s`." % (self.__args.model_spec_path))
-        
             # open the model specification XML
-            xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("path"))
+            xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("xmlLocation"))
             # construct the remainder of the AST
             self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
-            
-            # resolve imports
-            importsNode = self.__astRoot.getImports()
-            unresolvedImports = importsNode.getUnresolvedImports()
-            while unresolvedImports:
-                for unresolvedImportNode in unresolvedImports:
-                    path = unresolvedImportNode.getAttribute('path')
-                    self.__log.info("Resolving XML import `%s`." % (path))
-                    
-                    # open the catalog XML
-                    xmlDoc = libxml2.parseFile(path)
-                    # construct and read the catalog node
-                    resolvedImportNode = ResolvedImportNode(path=path)
-                    self.__readCatalogImport(resolvedImportNode, xmlDoc)
-                    
-                    importsNode.addImport(resolvedImportNode)
-                unresolvedImports = importsNode.getUnresolvedImports()
             
         except:
             e = sys.exc_info()[1]
@@ -101,19 +84,11 @@ class XMLReader(object):
         # record related tree areas
         self.__readRecordSequences(astContext, xmlContext)
         
-    def __readCatalogImport(self, astContext, xmlContext):
-        # basic tree areas
-        self.__readImports(astContext, xmlContext)
-        self.__readParameters(astContext, xmlContext)
-        self.__readFunctions(astContext, xmlContext)
-        self.__readEnumSets(astContext, xmlContext)
-        self.__readStringSets(astContext, xmlContext)
-        
     def __readImports(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
         xPathContext = self.__createXPathContext(xmlContext)
         # get the directory containing the parsed specification XML document
-        baseDir = os.path.dirname(astContext.getAttribute("path"))
+        baseDir = os.path.dirname(astContext.getAttribute("xmlLocation"))
         
         # attach UnresolvedImportNode for each import in the XML document
         for element in xPathContext.xpathEval(".//m:imports/m:import"):
