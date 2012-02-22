@@ -101,8 +101,6 @@ public:
 	/**
 	 * Move the RNG position to the beginning of the current chunk and
 	 * return a reference to this RNG object with the adjusted position.
-	 *
-	 * @return
 	 */
 	virtual HierarchicalRNG& resetChunk() = 0;
 
