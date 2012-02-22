@@ -64,10 +64,10 @@ public:
 	{
 		seed.append(",");
 
-		int i = 0;
+		unsigned int i = 0;
 		size_t l = 0, r;
 
-		while (i < 6 && string::npos != (r = seed.find(',', l)))
+		while (i < x && string::npos != (r = seed.find(',', l)))
 		{
 			v[i] = readComponent<T> (seed.substr(l, r - l));
 
