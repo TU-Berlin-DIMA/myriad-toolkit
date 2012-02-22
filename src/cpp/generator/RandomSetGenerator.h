@@ -371,7 +371,7 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run()
 {
 	Logger& logger = StageTask<RecordType>::_logger;
-	OutputCollector& out = StageTask<RecordType>::_out;
+	typename OutputCollector<RecordType>::CollectorType& out = StageTask<RecordType>::_out;
 
 	if (logger.debug())
 	{
@@ -422,7 +422,7 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGeneratingTask<RecordType, ProbabilityType>::run()
 {
 	Logger& logger = StageTask<RecordType>::_logger;
-	OutputCollector& out = StageTask<RecordType>::_out;
+	typename OutputCollector<RecordType>::Type& out = StageTask<RecordType>::_out;
 
 	if (logger.debug())
 	{

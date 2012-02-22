@@ -25,7 +25,6 @@ C_UPPER_DEPS :=
 SUBDIRS := \
 vendor/myriad/src/cpp/math/random \
 vendor/myriad/src/cpp/math/probability \
-vendor/myriad/src/cpp/io \
 vendor/myriad/src/cpp/generator \
 vendor/myriad/src/cpp/core \
 vendor/myriad/src/cpp/config \

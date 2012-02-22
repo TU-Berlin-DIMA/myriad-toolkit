@@ -106,6 +106,7 @@ template<class RecordType> class StageTask: public AbstractStageTask
 public:
 
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
+	typedef typename OutputCollector<RecordType>::CollectorType CollectorType;
 
 	StageTask(const string& name, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
 		AbstractStageTask(name), _out(generatorName, config), _dryRun(dryRun), _logger(Logger::get("task."+name))
@@ -129,7 +130,7 @@ protected:
 	/**
 	 * An output stream used for writing the task output data.
 	 */
-	OutputCollector _out;
+	CollectorType _out;
 
 	/**
 	 * A flag indicating whether writing the output is required.

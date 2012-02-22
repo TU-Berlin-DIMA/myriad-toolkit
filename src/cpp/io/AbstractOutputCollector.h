@@ -24,9 +24,10 @@
 
 using namespace Poco;
 
-namespace Myriad {
+namespace Myriad
+{
 
-class AbstractOutputCollector
+template<typename RecordType> class AbstractOutputCollector
 {
 public:
 
@@ -53,9 +54,19 @@ public:
 	virtual void close() = 0;
 
 	/**
+	 * Output header method.
+	 */
+	virtual void writeHeader() = 0;
+
+	/**
+	 * Output footer method.
+	 */
+	virtual void writeFooter() = 0;
+
+	/**
 	 * Output collection method.
 	 */
-	template<typename RecordType> void collect(const RecordType& record)
+	void collect(const RecordType& record)
 	{
 		throw new NotImplementedException("");
 	}

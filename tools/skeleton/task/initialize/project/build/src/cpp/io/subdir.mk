@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../src/cpp/io/operators.cpp 
+../src/cpp/io/OutputCollector.cpp 
 
 OBJS += \
-./src/cpp/io/operators.o 
+./src/cpp/io/OutputCollector.o 
 
 CPP_DEPS += \
-./src/cpp/io/operators.d 
+./src/cpp/io/OutputCollector.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

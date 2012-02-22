@@ -21,9 +21,14 @@
 
 #include "io/LocalFileOutputCollector.h"
 
-namespace Myriad {
+namespace Myriad
+{
 
-typedef LocalFileOutputCollector OutputCollector;
+template<class RecordType> struct OutputCollector
+{
+	typedef LocalFileOutputCollector<RecordType> CollectorType;
+	typedef typename CollectorType::StreamType StreamType;
+};
 
 } // namespace Myriad
 

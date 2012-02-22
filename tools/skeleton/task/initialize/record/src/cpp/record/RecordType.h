@@ -54,8 +54,8 @@ template<> struct RecordTraits<${{dgen_ns}}::${{record_name}}>
 	typedef ${{dgen_ns}}::${{record_name}}HydratorChain HydratorChainType;
 };
 
-// forward declaration of operator<<
-OutputCollector::StreamType& operator<<(OutputCollector::StreamType& out, const ${{dgen_ns}}::${{record_name}}& record);
+// forward declaration of the collector method specialization
+template<> void OutputCollector<${{dgen_ns}}::${{record_name}}>::CollectorType::collect(const ${{dgen_ns}}::${{record_name}}& record);
 
 } // namespace Myriad
 

@@ -4,10 +4,8 @@
 
 // snippet:`record.operator.stub` after:`namespace Myriad {`
 
-OutputCollector::StreamType& operator<<(OutputCollector::StreamType& out, const ${{dgen_ns}}::${{record_name}}& record)
+template<> void OutputCollector<${{dgen_ns}}::${{record_name}}>::CollectorType::collect(const ${{dgen_ns}}::${{record_name}}& record)
 {
-	// TODO: serialize the record into the output stream
-	
-	return out;
+	// TODO: serialize the record into the collector output stream (_out)
 }
 // snippet:`record.operator.stub`
