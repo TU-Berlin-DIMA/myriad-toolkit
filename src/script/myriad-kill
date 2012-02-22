@@ -26,7 +26,7 @@ fi
 nodeID=$1
 datasetID=$2
 baseName=`basename $0`
-dgenName=${baseName%%-*}
+dgenName=${baseName%%-kill}
 
 for pid in `ps -ef | grep "${dgenName}-node" | grep "\-i${nodeID}" | grep "\-m${datasetID}" | awk '{ print $2 }'`; do
 	echo "killing process ${pid}"

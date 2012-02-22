@@ -370,6 +370,7 @@ def readConfig(dgenName, nodeConfig, configPath):
     return Config(dgenName, nodeConfig, libxml2.parseFile(configPath))
 
 def readDGenConfig(configPath):
+    f = None
     try:
         f = open(configPath)
         properties = util.properties.Properties()
