@@ -52,7 +52,7 @@ public:
 			AbstractStageTask* task = (*it);
 			if (task->runnable())
 			{
-				caller._threadPool.start(*task);
+				caller._threadPool.start(*task, task->name());
 			}
 		}
 	}

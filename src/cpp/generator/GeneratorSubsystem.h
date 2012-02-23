@@ -19,6 +19,7 @@
 #ifndef GENERATORSUBSYSTEM_H_
 #define GENERATORSUBSYSTEM_H_
 
+#include "generator/RecordGenerator.h"
 #include "generator/GeneratorPool.h"
 
 #include <string>

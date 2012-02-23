@@ -21,9 +21,11 @@ Created on Feb 1, 2011
 
 import sys, os
 
-# append ./lib/python to path 
-basePath = os.path.dirname(os.path.dirname(os.path.abspath( __file__ )))
-dgenName = os.path.basename(os.path.abspath( __file__ )).split("-")[0]
+dgenPath = os.path.abspath( __file__ )
+basePath = os.path.dirname(os.path.dirname(dgenPath))
+dgenName = os.path.basename(dgenPath[0:dgenPath.rfind("-frontend")])
+
+# append ./lib/python to path
 sys.path.append("%s/lib/python/vendor" % (basePath))
 
 import myriad.dgen

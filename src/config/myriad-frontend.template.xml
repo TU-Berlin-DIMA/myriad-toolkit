@@ -15,12 +15,17 @@
   
   <!-- a set of data generator environments -->
   <dgen-configurations>
-    <dgen-config id="localhost-01x2" cloud="localhost">
+    <dgen-config id="localhost-x1" cloud="localhost">
       <nodes-per-host>2</nodes-per-host>
       <output-base>/path/to/data</output-base>
     </dgen-config>
     
-    <dgen-config id="localhost-01x4" cloud="localhost">
+    <dgen-config id="localhost-x2" cloud="localhost">
+      <nodes-per-host>2</nodes-per-host>
+      <output-base>/path/to/data</output-base>
+    </dgen-config>
+    
+    <dgen-config id="localhost-x4" cloud="localhost">
       <nodes-per-host>4</nodes-per-host>
       <output-base>/path/to/data</output-base>
     </dgen-config>

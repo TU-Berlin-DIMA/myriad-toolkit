@@ -28,18 +28,17 @@
 
 using namespace Poco;
 
-namespace Myriad {
+namespace Myriad
+{
 
-class LocalFileOutputCollector : public AbstractOutputCollector
+template<typename RecordType> class LocalFileOutputCollector: public AbstractOutputCollector<RecordType>
 {
 public:
 
 	typedef FileOutputStream StreamType;
 
 	LocalFileOutputCollector(const String& generatorName, const GeneratorConfig& config) :
-		AbstractOutputCollector(generatorName, config),
-		_isOpen(false),
-		_logger(Logger::get("collector." + generatorName))
+			AbstractOutputCollector<RecordType>(generatorName, config), _isOpen(false), _logger(Logger::get("collector." + generatorName))
 	{
 		// make sure that the output-dir exists
 		File outputDir(config.getString("application.output-dir"));
@@ -53,10 +52,7 @@ public:
 	}
 
 	LocalFileOutputCollector(const LocalFileOutputCollector& o) :
-		AbstractOutputCollector(o),
-		_path(o._path),
-		_isOpen(false),
-		_logger(Logger::get(o._logger.name()))
+			AbstractOutputCollector<RecordType>(o), _path(o._path), _isOpen(false), _logger(Logger::get(o._logger.name()))
 	{
 		if (o._isOpen)
 		{
@@ -73,7 +69,10 @@ public:
 	{
 		if (!_isOpen)
 		{
+			_logger.debug(format("Opening local file output `%s`", _path));
+
 			_out.open(_path, std::ios::trunc | std::ios::binary);
+			writeHeader();
 			_isOpen = true;
 		}
 		else
@@ -86,15 +85,27 @@ public:
 	{
 		if (_isOpen)
 		{
-			_logger.debug(format("Closing output file %s", _path));
+			_logger.debug(format("Closing local file output `%s`", _path));
+			writeFooter();
 			_out.close();
 		}
+	}
+
+	void writeHeader()
+	{
+	}
+
+	void writeFooter()
+	{
 	}
 
 	/**
 	 * Output collection method.
 	 */
-	template<typename RecordType> void collect(const RecordType& record);
+	void collect(const RecordType& record)
+	{
+		_out << "abstract record #" << record.genID() << "\n";
+	}
 
 private:
 
@@ -118,11 +129,6 @@ private:
 	 */
 	Logger& _logger;
 };
-
-template<typename RecordType> inline void LocalFileOutputCollector::collect(const RecordType& record)
-{
-	_out << record;
-}
 
 } // namespace Myriad
 

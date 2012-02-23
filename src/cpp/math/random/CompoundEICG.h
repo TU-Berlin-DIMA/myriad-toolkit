@@ -81,7 +81,7 @@ public:
 
 	~CompoundEICG()
 	{
-		for (int i = 0; i < 6; i++)
+		for (unsigned int i = 0; i < 6; i++)
 		{
 			delete _eicg[i];
 		}
@@ -199,28 +199,28 @@ public:
 	void dumpState()
 	{
 		std::cout << "element   : [ ";
-		for (int i = 0; i < 5; i++)
+		for (unsigned int i = 0; i < 5; i++)
 		{
 			std::cout << _elementS.v[i] << ", ";
 		}
 		std::cout << _elementS.v[5] << " ]" << std::endl;
 
 		std::cout << "chunk     : [ ";
-		for (int i = 0; i < 5; i++)
+		for (unsigned int i = 0; i < 5; i++)
 		{
 			std::cout << _chunkS.v[i] << ", ";
 		}
 		std::cout << _chunkS.v[5] << " ]" << std::endl;
 
 		std::cout << "substream : [ ";
-		for (int i = 0; i < 5; i++)
+		for (unsigned int i = 0; i < 5; i++)
 		{
 			std::cout << _substreamS.v[i] << ", ";
 		}
 		std::cout << _substreamS.v[5] << " ]" << std::endl;
 
 		std::cout << "master:     [ ";
-		for (int i = 0; i < 5; i++)
+		for (unsigned int i = 0; i < 5; i++)
 		{
 			std::cout << _masterS.v[i] << ", ";
 		}
@@ -291,7 +291,7 @@ private:
 
 inline void CompoundEICG::initialize()
 {
-	for (int i = 0; i < 6; i++)
+	for (unsigned int i = 0; i < 6; i++)
 	{
 		_eicg[i] = new EICG(PERIOD.v[i], 32, 0, 0, _elementS.v[i]);
 		_currentResults[i] = 0.0;
@@ -304,7 +304,7 @@ inline double CompoundEICG::updateResults()
 {
 	double s = 0.0;
 
-	for (int i = 0; i < 6; i++)
+	for (unsigned int i = 0; i < 6; i++)
 	{
 		_currentResults[i] = _eicg[i]->at(_elementS.v[i]);
 		s += _currentResults[i];
@@ -315,15 +315,15 @@ inline double CompoundEICG::updateResults()
 
 inline void CompoundEICG::adjustSeed()
 {
-	for (int i = 0; i < 6; i++)
+	for (unsigned int i = 0; i < 6; i++)
 	{
-		_elementS.v[i] = (_elementS.v[i]+1) % PERIOD.v[i];
+		_elementS.v[i] = (_elementS.v[i] + 1) % PERIOD.v[i];
 	}
 }
 
 inline void CompoundEICG::appendToSeed(Seed& y, const Seed& o, const Seed& x)
 {
-	for (int i = 0; i < 6; i++)
+	for (unsigned int i = 0; i < 6; i++)
 	{
 		y.v[i] = ((o.v[i] + x.v[i]) % PERIOD.v[i]);
 	}
@@ -331,7 +331,7 @@ inline void CompoundEICG::appendToSeed(Seed& y, const Seed& o, const Seed& x)
 
 inline void CompoundEICG::appendToSeed(Seed& y, const Seed& o, const Seed& x, const Int64 f)
 {
-	for (int i = 0; i < 6; i++)
+	for (unsigned int i = 0; i < 6; i++)
 	{
 		y.v[i] = ((o.v[i] + mult64(x.v[i], f, PERIOD.v[i])) % PERIOD.v[i]);
 	}
