@@ -17,9 +17,6 @@ Created on Oct 14, 2011
 
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
-from timeit import itertools
-from unohelper import inspect
-
 
 class AbstractNode(object):
     '''
@@ -447,6 +444,9 @@ class RecordSequencesNode(AbstractNode):
     
     def hasRecordSequence(self, key):
         return self.__sequences.has_key(key)
+    
+    def getAll(self):
+        return self.__sequences
 
 
 class RecordSequenceNode(AbstractNode):

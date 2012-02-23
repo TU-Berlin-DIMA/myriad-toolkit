@@ -21,7 +21,7 @@ Created on Oct 14, 2011
 from myriad.compiler.debug import PrintVisitor
 from myriad.compiler.reader import XMLReader
 from myriad.task.common import AbstractTask
-import os
+import os, re
 
 
 TASK_PREFIX = "compile"
@@ -62,7 +62,115 @@ class CompileModelTask(AbstractTask):
     def _do(self, args):
         # reed the AST
         reader = XMLReader(args)
-        astRoot = reader.read()
+        ast = reader.read()
         
         astPrinter = PrintVisitor()
-        astPrinter.traverse(astRoot)
+        astPrinter.traverse(ast)
+        
+        # compile record types
+        recordCompiler = RecordTypeCompiler(args=args)
+        recordCompiler.compileAll(ast.getSpecification().getRecordSequences())
+
+class FileCompiler(object):
+    '''
+    classdocs
+    '''
+    
+    BUFFER_SIZE = 512
+    
+    _args = None
+    _srcPath = None
+    _cc2us_pattern1 = None
+    _cc2us_pattern2 = None
+    
+    def __init__(self, args):
+        '''
+        Constructor
+        '''
+        self._cc2us_pattern1 = re.compile('(.)([A-Z][a-z]+)')
+        self._cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
+        
+        self._args = args
+        self._srcPath = "%s/../../src/cpp" % (args.base_path)
+        
+    def _uc(self, s):
+        return s.upper()
+
+    def _lc(self, s):
+        return s.lower()
+
+    def _cc2us(self, s):
+        return self._cc2us_pattern2.sub(r'\1_\2', self._cc2us_pattern1.sub(r'\1_\2', s)).lower()
+
+    def _us2cc(self, s):
+        def camelcase(): 
+            yield str.lower
+            while True:
+                yield str.capitalize
+    
+        c = camelcase()
+        return "".join(c.next()(x) if x else '_' for x in s.split("_"))
+    
+    def _ucFirst(self, s):
+        return "%s%s" % (s[0].capitalize(), s[1:])
+
+        
+class RecordTypeCompiler(FileCompiler):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        super(RecordTypeCompiler, self).__init__(*args, **kwargs)
+        
+    def compileAll(self, recordSequences):
+        for v in recordSequences.getAll().itervalues():
+            self.compileRecordType(v.getRecordType())
+            
+    def compileRecordType(self, recordType):
+    
+        try:
+            os.makedirs("%s/record/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
+        typeNameUC = self._uc(typeNameCC)
+        
+        wfile = open("%s/record/base/Base%s.h" % (self._srcPath, typeNameCC), "w", RecordTypeCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad base C++ type for `%s`' % (recordType.getAttribute("key"))
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASE%s_H_' % (typeNameUC)
+        print >> wfile, '#define BASE%s_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/Record.h'
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '// forward declarations'
+        print >> wfile, 'class %s;' % (typeNameCC)
+        print >> wfile, 'class %sConfig;' % (typeNameCC)
+        print >> wfile, 'class %sGenerator;' % (typeNameCC)
+        print >> wfile, 'class %sHydratorChain;' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'class Base%s: public Record' % (typeNameCC)
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, 'private:'
+        print >> wfile, ''
+        print >> wfile, '}'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, "#endif /* BASE%s_H_ */" % (typeNameUC)
+
+        wfile.close()
+        
