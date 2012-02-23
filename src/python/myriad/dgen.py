@@ -177,14 +177,14 @@ class DGen(object):
 
                 # start server loop
                 serverThread = Thread(target=server.serveLoop) 
-                serverThread.start();
+                serverThread.start()
                 
                 # wait for server thread to finish (timeout and loop needed for KeyboardInterrupt)
                 while(serverThread.isAlive()):
                     serverThread.join(3.0)
 
                 # wait for monitor thread
-                monitor.join();
+                monitor.join()
                 
                 if (monitor.exception):
                     self.log.error("interrupting generation process after failure in node %d ", monitor.exception.id)
@@ -334,7 +334,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         
             node = self.server.nodes[int(params['id'])]
             
-            node.lock.acquire();
+            node.lock.acquire()
 
             if (status == DGenNode.READY):
                 self.server.nonReadyLock.acquire()
@@ -362,9 +362,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 log.error("unknown status %d for node %d", node.status, node.id)
                 
             if (status == DGenNode.READY):
-                self.server.nonReadyLock.release();
+                self.server.nonReadyLock.release()
 
-            node.lock.release();
+            node.lock.release()
 
     def do_GET(self):
         
@@ -514,7 +514,7 @@ class DGenNode(config.Node):
         self.attempt += 1
         self.resetState()
 
-        self.lock.release();
+        self.lock.release()
     
     def restart(self, dgen, nodesTotal):
         self.lock.acquire();
@@ -526,15 +526,15 @@ class DGenNode(config.Node):
             self.attempt += 1
             self.resetState()
             
-            self.lock.release();
+            self.lock.release()
         
         else:
             self.status = DGenNode.FAILED
-            self.lock.release();
+            self.lock.release()
             raise NodeFailureException(self.id)
         
     def abort(self, dgen, nodesTotal):
-        self.lock.acquire();
+        self.lock.acquire()
         
         if (self.status < DGenNode.READY):
             log = sysutil.getExistingLogger("myriad.dgen")
@@ -542,26 +542,26 @@ class DGenNode(config.Node):
             os.system("ssh -f %s '%s/bin/%s-kill %d %s > /dev/null 2> /dev/null'" % (self.host, self.dgenPath, self.dgenName, self.id, dgen.datasetID))
             self.status = DGenNode.FAILED
 
-        self.lock.release();
+        self.lock.release()
             
     def isDead(self):
-        self.lock.acquire();
+        self.lock.acquire()
             
         if (self.status == DGenNode.FAILED):
-            self.lock.release();
+            self.lock.release()
             raise NodeFailureException(self.id)
         
         if (self.status == DGenNode.READY):
-            self.lock.release();
+            self.lock.release()
             return False
             
         elif (self.status == DGenNode.ABORTED):
-            self.lock.release();
+            self.lock.release()
             return True
         
         else:
             diff = datetime.datetime.now() - self.lastBeat
-            self.lock.release();
+            self.lock.release()
             return diff > DGenNode.DEAD_TIMEOUT
 
     def resetState(self):
