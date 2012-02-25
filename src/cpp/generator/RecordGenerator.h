@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef RECORDGenerator_H_
-#define RECORDGenerator_H_
+#ifndef RECORDGENERATOR_H_
+#define RECORDGENERATOR_H_
 
 #include "communication/Notifications.h"
 #include "config/GeneratorConfig.h"
@@ -251,4 +251,4 @@ private:
 
 } // namespace Myriad
 
-#endif /* RECORDGenerator_H_ */
+#endif /* RECORDGENERATOR_H_ */
