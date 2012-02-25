@@ -149,9 +149,10 @@ class RecordTypeCompiler(FileCompiler):
         
     def compile(self, recordSequences):
         for v in recordSequences.getRecordSequences():
+            self.compileBaseRecordType(v.getRecordType())
             self.compileRecordType(v.getRecordType())
             
-    def compileRecordType(self, recordType):
+    def compileBaseRecordType(self, recordType):
     
         try:
             os.makedirs("%s/record/base" % (self._srcPath))
@@ -234,5 +235,50 @@ class RecordTypeCompiler(FileCompiler):
         print >> wfile, '} // namespace Myriad'
         print >> wfile, ''
         print >> wfile, '#endif /* BASE%s_H_ */' % (typeNameUC)
+
+        wfile.close()
+            
+    def compileRecordType(self, recordType):
+        
+        try:
+            os.makedirs("%s/record" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
+        typeNameUC = self._uc(typeNameCC)
+        
+        sourcePath = "%s/record/%s.h" % (self._srcPath, typeNameCC)
+        
+        if (os.path.exists(sourcePath)):
+            return
+        
+        wfile = open(sourcePath, "w", RecordTypeCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
+        print >> wfile, ''
+        print >> wfile, '#ifndef %s_H_' % (typeNameUC)
+        print >> wfile, '#define %s_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/base/Base%s.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, 'class %s: public Record' % (typeNameCC)
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    %s()' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* %s_H_ */' % (typeNameUC)
 
         wfile.close()
