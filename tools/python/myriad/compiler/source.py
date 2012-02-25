@@ -251,7 +251,7 @@ class RecordTypeCompiler(FileCompiler):
         
         sourcePath = "%s/record/%s.h" % (self._srcPath, typeNameCC)
         
-        if (os.path.exists(sourcePath)):
+        if (os.path.isfile(sourcePath)):
             return
         
         wfile = open(sourcePath, "w", RecordTypeCompiler.BUFFER_SIZE)
