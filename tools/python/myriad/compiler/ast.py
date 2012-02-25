@@ -347,6 +347,9 @@ class SetsNode(AbstractNode):
     
     def hasSet(self, key):
         return self.__sets.has_key(key)
+    
+    def getSets(self):
+        return self.__sets.itervalues()
 
 
 class EnumSetsNode(SetsNode):
@@ -386,6 +389,9 @@ class SetNode(AbstractNode):
         
     def addItem(self, node):
         self._items.append(node)
+        
+    def getItems(self):
+        return self._items
 
 
 class EnumSetNode(SetNode):
@@ -445,8 +451,8 @@ class RecordSequencesNode(AbstractNode):
     def hasRecordSequence(self, key):
         return self.__sequences.has_key(key)
     
-    def getAll(self):
-        return self.__sequences
+    def getRecordSequences(self):
+        return self.__sequences.itervalues()
 
 
 class RecordSequenceNode(AbstractNode):
@@ -540,6 +546,9 @@ class RecordTypeNode(AbstractNode):
     
     def getField(self, key):
         return self._fields.get(key)
+    
+    def getFields(self):
+        return self._fields.itervalues()
 
 
 class RecordFieldNode(AbstractNode):
