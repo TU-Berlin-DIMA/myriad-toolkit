@@ -18,19 +18,25 @@ Created on Feb 25, 2012
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
-import os, re
+import logging
+import os
+import re
+from myriad.compiler.ast import RandomSequenceNode
 
-class FileCompiler(object):
+class SourceCompiler(object):
     '''
     classdocs
     '''
     
     BUFFER_SIZE = 512
     
-    _args = None
-    _srcPath = None
     _cc2us_pattern1 = None
     _cc2us_pattern2 = None
+    
+    _args = None
+    _srcPath = None
+    
+    _log = None
     
     def __init__(self, args):
         '''
@@ -41,6 +47,8 @@ class FileCompiler(object):
         
         self._args = args
         self._srcPath = "%s/../../src/cpp" % (args.base_path)
+        
+        self._log = logging.getLogger("source.compiler")
         
     def _uc(self, s):
         return s.upper()
@@ -64,7 +72,7 @@ class FileCompiler(object):
         return "%s%s" % (s[0].capitalize(), s[1:])
 
 
-class EnumTypesCompiler(FileCompiler):
+class EnumTypesCompiler(SourceCompiler):
     '''
     classdocs
     '''
@@ -82,7 +90,7 @@ class EnumTypesCompiler(FileCompiler):
         except OSError:
             pass
         
-        wfile = open("%s/record/base/enums.h" % (self._srcPath), "w", RecordTypeCompiler.BUFFER_SIZE)
+        wfile = open("%s/record/base/enums.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
         
         print >> wfile, '// auto-generatad C++ enums'
         print >> wfile, ''
@@ -136,7 +144,7 @@ class EnumTypesCompiler(FileCompiler):
         wfile.close()
 
 
-class RecordTypeCompiler(FileCompiler):
+class RecordTypeCompiler(SourceCompiler):
     '''
     classdocs
     '''
@@ -148,12 +156,12 @@ class RecordTypeCompiler(FileCompiler):
         super(RecordTypeCompiler, self).__init__(*args, **kwargs)
         
     def compile(self, recordSequences):
-        for v in recordSequences.getRecordSequences():
-            self.compileBaseRecordType(v.getRecordType())
-            self.compileRecordType(v.getRecordType())
+        for recordSequence in recordSequences.getRecordSequences():
+            self._log.warning("compiling record C++ sources for `%s`" % (recordSequence.getAttribute("key")))
+            self.compileBaseRecordType(recordSequence.getRecordType())
+            self.compileRecordType(recordSequence.getRecordType())
             
     def compileBaseRecordType(self, recordType):
-    
         try:
             os.makedirs("%s/record/base" % (self._srcPath))
         except OSError:
@@ -163,7 +171,7 @@ class RecordTypeCompiler(FileCompiler):
         typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
         typeNameUC = self._uc(typeNameCC)
         
-        wfile = open("%s/record/base/Base%s.h" % (self._srcPath, typeNameCC), "w", RecordTypeCompiler.BUFFER_SIZE)
+        wfile = open("%s/record/base/Base%s.h" % (self._srcPath, typeNameCC), "w", SourceCompiler.BUFFER_SIZE)
         
         print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
         print >> wfile, ''
@@ -239,7 +247,6 @@ class RecordTypeCompiler(FileCompiler):
         wfile.close()
             
     def compileRecordType(self, recordType):
-        
         try:
             os.makedirs("%s/record" % (self._srcPath))
         except OSError:
@@ -254,10 +261,8 @@ class RecordTypeCompiler(FileCompiler):
         if (os.path.isfile(sourcePath)):
             return
         
-        wfile = open(sourcePath, "w", RecordTypeCompiler.BUFFER_SIZE)
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
         
-        print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
-        print >> wfile, ''
         print >> wfile, '#ifndef %s_H_' % (typeNameUC)
         print >> wfile, '#define %s_H_' % (typeNameUC)
         print >> wfile, ''
@@ -280,5 +285,145 @@ class RecordTypeCompiler(FileCompiler):
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '#endif /* %s_H_ */' % (typeNameUC)
+
+        wfile.close()
+
+
+class RecordGeneratorCompiler(SourceCompiler):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        super(RecordGeneratorCompiler, self).__init__(*args, **kwargs)
+        
+    def compile(self, recordSequences):
+        for recordSequence in recordSequences.getRecordSequences():
+            self._log.warning("compiling generator C++ sources for `%s`" % (recordSequence.getAttribute("key")))
+            self.compileBaseGenerator(recordSequence)
+            self.compileGenerator(recordSequence)
+            
+    def compileBaseGenerator(self, recordSequence):
+        try:
+            os.makedirs("%s/generator/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        if isinstance(recordSequence, RandomSequenceNode):
+            self.__compileBaseRandomGenerator(recordSequence)
+        else:
+            self._log.warning("unsupported generator type for sequence `%s`" % (recordSequence.getAttribute("key")))
+
+    def __compileBaseRandomGenerator(self, recordSequence):
+        typeNameUS = recordSequence.getAttribute("key")
+        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
+        typeNameUC = self._uc(typeNameCC)
+        
+        sourcePath = "%s/generator/base/Base%sGenerator.h" % (self._srcPath, typeNameCC)
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ generator for `%s`' % (typeNameUS)
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASE%sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, '#define BASE%sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "generator/RandomSetGenerator.h"'
+        print >> wfile, '#include "record/%s.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, 'class UserHydratorChain;'
+        print >> wfile, ''
+        print >> wfile, 'class Base%(t)sGenerator: public RandomSetGenerator<%(t)s>' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    typedef RecordTraits<%s>::HydratorChainType HydratorChainType;' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, '    Base%sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
+        print >> wfile, '        RandomSetGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    void prepare(Stage stage, const GeneratorPool& pool)'
+        print >> wfile, '    {'
+        print >> wfile, '        // call generator implementation'
+        print >> wfile, '        RandomSetGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, '        if (stage.name() == "default")'
+        print >> wfile, '        {'
+        print >> wfile, '            registerTask(new RandomSetDefaultGeneratingTask<%s> (*this, _config));' % (typeNameCC)
+        print >> wfile, '        }'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random);'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '/**'
+        print >> wfile, ' * Hydrator specialization for User.'
+        print >> wfile, ' */'
+        print >> wfile, 'class Base%(t)sHydratorChain : public HydratorChain<%(t)s>' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    virtual ~Base%sHydratorChain()' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    /**'
+        print >> wfile, '     * Object hydrating function.'
+        print >> wfile, '     */'
+        print >> wfile, '    void operator()(AutoPtr<%s> recordPtr) const' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '        ensurePosition(recordPtr->genID());'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, 'protected:'
+        print >> wfile, ''
+        print >> wfile, '    /**'
+        print >> wfile, '     * Logger instance.'
+        print >> wfile, '     */'
+        print >> wfile, '    Logger& _logger;'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sGENERATOR_H_ */' % (typeNameUC)
+
+        wfile.close()
+            
+    def compileGenerator(self, recordSequence):
+        try:
+            os.makedirs("%s/generator" % (self._srcPath))
+        except OSError:
+            pass
+        
+        if isinstance(recordSequence, RandomSequenceNode):
+            self.__compileRandomGenerator(recordSequence)
+        else:
+            self._log.warning("unsupported generator type for sequence `%s`" % (recordSequence.getAttribute("key")))
+
+    def __compileRandomGenerator(self, recordSequence):
+        typeNameUS = recordSequence.getAttribute("key")
+        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
+        typeNameUC = self._uc(typeNameCC)
+        
+        sourcePath = "%s/generator/%sGenerator.h" % (self._srcPath, typeNameCC)
+        
+        if (os.path.isfile(sourcePath)):
+            return
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '#ifndef %sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, '#define %sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sGENERATOR_H_ */' % (typeNameUC)
 
         wfile.close()
