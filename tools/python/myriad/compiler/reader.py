@@ -30,7 +30,7 @@ class XMLReader(object):
     Reads the initial AST from an XML file.
     '''
     
-    __NAMESPACE = "http://www.dima.tu-berlin.de/myriad/specification"
+    __NAMESPACE = "http://www.dima.tu-berlin.de/myriad/prototype"
     
     __args = None
     __log = None

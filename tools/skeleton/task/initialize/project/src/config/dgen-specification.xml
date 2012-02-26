@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<generator_specification xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/specification" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/specification specification.xsd">
+<generator_prototype xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/prototype" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/prototype specification.xsd">
 
   <!-- catalog imports -->
   <imports>
@@ -79,4 +79,4 @@
     </random_sequence>
     -->
   </record_sequences>
-</generator_specification>
+</generator_prototype>

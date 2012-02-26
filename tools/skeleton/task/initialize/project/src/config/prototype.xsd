@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/specification" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/specification" elementFormDefault="qualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/prototype" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/prototype" elementFormDefault="qualified">
 
   <!-- permitted root elements -->
 
-  <xs:element name="generator_specification" type="myriad:generator_specification" />
+  <xs:element name="generator_prototype" type="myriad:generator_prototype" />
   <xs:element name="generator_catalog" type="myriad:generator_catalog" />
 
-  <!-- generator_specification root type -->
+  <!-- generator_prototype root type -->
 
-  <xs:complexType name="generator_specification">
+  <xs:complexType name="generator_prototype">
     <xs:sequence>
       <xs:element name="imports" type="myriad:imports_container" minOccurs="0">
         <xs:annotation>
