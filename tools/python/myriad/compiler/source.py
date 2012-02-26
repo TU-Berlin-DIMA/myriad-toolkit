@@ -386,6 +386,15 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
+        
+        for hydrator in recordSequence.getHydrators().getAll():
+            pass
+#            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, self._us2cc(field.getAttribute("name")), field.getAttribute("type"))
+#            print >> wfile, '{'
+#            print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
+#            print >> wfile, '}'
+#            print >> wfile, ''
+        
         print >> wfile, '    /**'
         print >> wfile, '     * Logger instance.'
         print >> wfile, '     */'

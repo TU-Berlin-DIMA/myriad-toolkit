@@ -61,21 +61,10 @@ class XMLReader(object):
             self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
             
             # resolve imports
-            importsNode = self.__astRoot.getImports()
-            unresolvedImports = importsNode.getUnresolvedImports()
-            while unresolvedImports:
-                for unresolvedImportNode in unresolvedImports:
-                    path = unresolvedImportNode.getAttribute('path')
-                    self.__log.info("Resolving XML import `%s`." % (path))
-                    
-                    # open the catalog XML
-                    xmlDoc = libxml2.parseFile(path)
-                    # construct and read the catalog node
-                    resolvedImportNode = ResolvedImportNode(path=path)
-                    self.__readCatalogImport(resolvedImportNode, xmlDoc)
-                    
-                    importsNode.addImport(resolvedImportNode)
-                unresolvedImports = importsNode.getUnresolvedImports()
+            self.__resolveImports()
+        
+            # resolve function refs
+            self.__resolveFunctionRefArguments()
             
         except:
             e = sys.exc_info()[1]
@@ -85,6 +74,61 @@ class XMLReader(object):
         # return the final version AST
         return self.__astRoot
     
+    def __resolveImports(self):
+        importsNode = self.__astRoot.getImports()
+        unresolvedImports = importsNode.getUnresolvedImports()
+        while unresolvedImports:
+            for unresolvedImportNode in unresolvedImports:
+                path = unresolvedImportNode.getAttribute('path')
+                self.__log.info("Resolving XML import `%s`." % (path))
+                
+                # open the catalog XML
+                xmlDoc = libxml2.parseFile(path)
+                # construct and read the catalog node
+                resolvedImportNode = ResolvedImportNode(path=path)
+                self.__readCatalogImport(resolvedImportNode, xmlDoc)
+                
+                importsNode.addImport(resolvedImportNode)
+            unresolvedImports = importsNode.getUnresolvedImports()
+    
+    def __resolveFunctionRefArguments(self):
+        nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFunctionRefArgumentNode)
+        for unresolvedFunctionRefArgumentNode in nodeFilter.getAll(self.__astRoot):
+            
+            parent = unresolvedFunctionRefArgumentNode.getParent()
+            fqName = unresolvedFunctionRefArgumentNode.getAttribute("ref")
+            
+            if fqName.find(":") > -1:
+                namespace = fqName[:fqName.find(":")]
+                key = fqName[fqName.find(":")+1:]
+                if (namespace != "core"):
+                    functionContainerNode = self.__astRoot.getImportByNamespace(namespace)
+                else:
+                    functionContainerNode = None
+            else:
+                namespace = None
+                key = fqName
+                functionContainerNode = self.__astRoot.getSpecification()
+            
+            # FIXME: provide support for core built-in functions (e.g. uniform)    
+            if namespace == "core":
+                continue
+
+            functionNode = functionContainerNode.getFunctions().getFunction(key)
+
+            if not functionNode:
+                message = "Cannot resolve function reference for function `%s`" % (key)
+                self.__log.error(message)
+                raise RuntimeError(msg)
+
+            # construct and read the catalog node
+            resolvedFunctionRefArgumentNode = ResolvedFunctionRefArgumentNode()
+            resolvedFunctionRefArgumentNode.setAttribute('key', unresolvedFunctionRefArgumentNode.getAttribute("key"))
+            resolvedFunctionRefArgumentNode.setAttribute('ref', fqName)
+            resolvedFunctionRefArgumentNode.setAttribute('type', functionNode.getAttribute("type"))
+            resolvedFunctionRefArgumentNode.setFunctionRef(functionNode)
+            parent.setArgument(resolvedFunctionRefArgumentNode)
+        
     def __createXPathContext(self, xmlNode):
         context = xmlNode.get_doc().xpathNewContext()
         context.xpathRegisterNs("m", self.__NAMESPACE)
@@ -292,10 +336,10 @@ class XMLReader(object):
         argumentNode = None
         
         if (argumentType == "field_ref"):
-            argumentNode = FieldRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
+            argumentNode = UnresolvedFieldRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
         elif (argumentType == "function_ref"):
-            argumentNode = FunctionRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
+            argumentNode = UnresolvedFunctionRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
         else:
-            argumentNode = LiteralArgumentNode(key=argumentXMLNode.prop("key"), value=argumentXMLNode.prop("value"))
+            argumentNode = LiteralArgumentNode(key=argumentXMLNode.prop("key"), type=argumentXMLNode.prop("type"), value=argumentXMLNode.prop("value"))
         
         return argumentNode

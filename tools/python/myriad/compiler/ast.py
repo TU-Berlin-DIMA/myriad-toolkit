@@ -18,6 +18,8 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
+from myriad.compiler.visitor import AbstractVisitor
+
 class AbstractNode(object):
     '''
     classdocs
@@ -70,6 +72,11 @@ class RootNode(AbstractNode):
 
     def getImports(self):
         return self.__imports
+    
+    def getImportByNamespace(self, namespace):
+        # FIXME: this won't work for transitive includes
+        path = self.__specification.getNamespacePath(namespace)
+        return self.__imports.getImport(path)
 
 
 class ImportsNode(AbstractNode):
@@ -91,6 +98,9 @@ class ImportsNode(AbstractNode):
         
     def addImport(self, node):
         self.__imports[node.getAttribute('path')] = node
+        
+    def getImport(self, path):
+        return self.__imports[path]
         
     def getUnresolvedImports(self):
         return filter(lambda x: isinstance(x, UnresolvedImportNode), self.__imports.itervalues()) 
@@ -184,6 +194,9 @@ class SpecificationNode(AbstractNode):
     def getNamespaces(self):
         return self.__namespaces
         
+    def getNamespacePath(self, namespace):
+        return self.__namespaces.getNamespace(namespace)    
+        
     def getParameters(self):
         return self.__parameters
     
@@ -272,23 +285,24 @@ class FunctionNode(AbstractNode):
     classdocs
     '''
     
-    _arguments = {}
+    __arguments = {}
     
     def __init__(self, *args, **kwargs):
         super(FunctionNode, self).__init__(*args, **kwargs)
-        self._arguments = {}
+        self.__arguments = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        for node in self._arguments.itervalues():
+        for node in self.__arguments.itervalues():
             node.accept(visitor)
         visitor.postVisit(self)
         
     def setArgument(self, node):
-        self._arguments[node.getAttribute('key')] = node
+        self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
     
     def getArgument(self, key):
-        return self._arguments.get(key)
+        return self.__arguments.get(key)
     
 
 class ParetoProbabilityFunctionNode(FunctionNode):
@@ -297,6 +311,7 @@ class ParetoProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(type="ParetoProbabilityFunctionNode")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
 
     
@@ -306,6 +321,7 @@ class NormalProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(type="NormalProbabilityFunctionNode")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
     
 
@@ -315,6 +331,7 @@ class CustomDiscreteProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(type="CustomDiscreteProbabilityFunctionNode")
         super(CustomDiscreteProbabilityFunctionNode, self).__init__(*args, **kwargs)
     
 
@@ -579,6 +596,7 @@ class CardinalityEstimatorNode(AbstractNode):
         
     def setArgument(self, node):
         self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
     
     def getArgument(self, key):
         return self.__arguments.get(key)
@@ -609,6 +627,8 @@ class HydratorsNode(RecordSequenceNode):
     def hasHydrator(self, key):
         return self.__hydrators.has_key(key)
     
+    def getAll(self):
+        return self.__hydrators.itervalues()
     
 class HydrationPlanNode(AbstractNode):
     '''
@@ -650,6 +670,7 @@ class HydratorNode(AbstractNode):
         
     def setArgument(self, node):
         self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
     
     def getArgument(self, key):
         return self.__arguments.get(key)
@@ -696,8 +717,16 @@ class ArgumentNode(AbstractNode):
     classdocs
     '''
     
+    __parent = None
+    
     def __init__(self, *args, **kwargs):
         super(ArgumentNode, self).__init__(*args, **kwargs)
+
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
 
 
 class LiteralArgumentNode(ArgumentNode):
@@ -709,19 +738,60 @@ class LiteralArgumentNode(ArgumentNode):
         super(LiteralArgumentNode, self).__init__(*args, **kwargs)
 
 
-class FieldRefArgumentNode(ArgumentNode):
+class UnresolvedFieldRefArgumentNode(ArgumentNode):
     '''
     classdocs
     '''
     
     def __init__(self, *args, **kwargs):
-        super(FieldRefArgumentNode, self).__init__(*args, **kwargs)
+        super(UnresolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
 
 
-class FunctionRefArgumentNode(ArgumentNode):
+class UnresolvedFunctionRefArgumentNode(ArgumentNode):
     '''
     classdocs
     '''
     
     def __init__(self, *args, **kwargs):
-        super(FunctionRefArgumentNode, self).__init__(*args, **kwargs)
+        super(UnresolvedFunctionRefArgumentNode, self).__init__(*args, **kwargs)
+
+
+class ResolvedFunctionRefArgumentNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __functionRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedFunctionRefArgumentNode, self).__init__(*args, **kwargs)
+
+    def setFunctionRef(self, functionRef):
+        self.__functionRef = functionRef
+
+    def getFunctionRef(self):
+        return self.__functionRef
+        
+class DepthFirstNodeFilter(AbstractVisitor):
+    '''
+    classdocs
+    '''
+    
+    __filterType = None
+    __filteredNodes = []
+    
+    def __init__(self, *args, **kwargs):
+        super(DepthFirstNodeFilter, self).__init__(*args, **kwargs)
+        self.__filterType = kwargs.get("filterType")
+    
+    def _postVisitAbstractNode(self, node):
+        if isinstance(node, self.__filterType):
+            self.__filteredNodes.append(node)
+        
+    def getAll(self, astRoot):
+        # empty current list
+        del self.__filteredNodes[:]
+        # traverse the AST to build the iterator array
+        astRoot.accept(self)
+        # return the filtered nodes
+        return self.__filteredNodes
