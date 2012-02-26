@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<generator_specification xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/specification" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/specification specification.xsd">
+
+  <!-- catalog imports -->
+  <imports>
+    <import path="catalog/census.us.xml" namespace="census.us" />
+  </imports>
+
+  <!-- configurable parameters -->
+  <parameters>
+    <!-- naming convention {generator}.{parameter_name} -->
+    <!-- 
+    <parameter key="mytype.myparameter">parameter_value</parameter>
+    -->
+  </parameters>
+
+  <!-- function configuration -->
+  <functions>
+    <!-- supported probability types: -->
+    <!--  * pareto_probability(Decimal: x_min, Decimal: alpha) -->
+    <!--  * normal_probability(Decimal: mean, Decimal: stddev) -->
+    <!--  * custom_probability(...) -->
+    <!--
+    <function key="Pr[some_probability]" type="pareto_probability">
+      <argument type="Decimal" key="x_min" value="1" />
+      <argument type="Decimal" key="alpha" value="1" />
+    </function>
+    -->
+  </functions>
+
+  <!-- enumeration types -->
+  <enum_sets>
+    <!-- 
+    <enum_set key="CardSuit">
+      <item value="Spades" />
+      <item value="Hearts" />
+      <item value="Diamonds" />
+      <item value="Clubs" />
+    </enum_set>
+    -->
+  </enum_sets>
+
+  <record_sequences>
+    <!-- users -->
+    <!-- 
+    <random_sequence key="mytype">
+      <!-- supported simple  types: I16, I16u, I32, I32u, I64, I64u, Double, String -->
+      <!-- supported complex types: vector<{simple_type}> -->
+      <!-- 
+      <record_type>
+        <field name="parameter_name" type="I64u" />
+      </record_type>
+      -->
+      <!-- supported cardinality estimator types: -->
+      <!--  * linear_scale_estimator(I64u: base_cardinality) -->
+      <!-- 
+      <cardinality_estimator type="linear_scale_estimator">
+        <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
+      </cardinality_estimator>
+      -->
+      <!-- supported hydrator types: -->
+      <!--  * randomized_sequence_hydrator<RT>(RT#Setter: field, I64u: cardinality, I64u: begin, I64u: end) -->
+      <!--
+      <hydrators>
+        <hydrator key="id_hydrator" type="randomized_sequence_hydrator">
+          <argument key="field" type="field_ref" ref="id" />
+          <argument key="cardinality" type="long" value="%user.sequence.cardinality%" />
+        </hydrator>
+      </hydrators>
+      <hydration_plan>
+        <hydrator_ref ref="id_hydrator" />
+        <hydrator_ref ref="gender_hydrator" />
+        <hydrator_ref ref="first_name_hydrator" />
+      </hydration_plan>
+      -->
+      <generator_tasks>
+        <generator_task key="user.generate" type="partitioned_iterator" />
+      </generator_tasks>
+    </random_sequence>
+    -->
+  </record_sequences>
+</generator_specification>

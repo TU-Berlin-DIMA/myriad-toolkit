@@ -36,7 +36,7 @@ class CompileModelTask(AbstractTask):
         '''
         Constructor
         '''
-        kwargs.update(group=TASK_PREFIX, name="model", description="Compile generator extensions from XML model specification.")
+        kwargs.update(group=TASK_PREFIX, name="prototype", description="Compile generator extensions from XML prototype specification.")
 
         super(CompileModelTask, self).__init__(*args, **kwargs)
     
@@ -56,7 +56,7 @@ class CompileModelTask(AbstractTask):
             args.model_spec_path = "%s-specification.xml" % (args.dgen_name)
                     
         if (not os.path.isabs(args.model_spec_path)):
-            args.model_spec_path = "%s/../../specification/%s" % (args.base_path, args.model_spec_path)
+            args.model_spec_path = "%s/../../src/config/%s" % (args.base_path, args.model_spec_path)
             
         args.model_spec_path = os.path.realpath(args.model_spec_path)
         
