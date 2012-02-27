@@ -44,29 +44,29 @@ class CompileModelTask(AbstractTask):
         parser = super(CompileModelTask, self).argsParser()
         
         # arguments
-        parser.add_option("--input-spec", metavar="SPECIFICATION", dest="model_spec_path", type="str", 
-                            default=None, help="path to the model specification XML file")
+        parser.add_option("--input-spec", metavar="PROTOTYPE", dest="prototype_path", type="str", 
+                            default=None, help="path to the prototype specification XML file")
 
         return parser
         
     def _fixArgs(self, args):
         super(CompileModelTask, self)._fixArgs(args)
         
-        if (args.model_spec_path == None):
-            args.model_spec_path = "%s-specification.xml" % (args.dgen_name)
+        if (args.prototype_path == None):
+            args.prototype_path = "%s-prototype.xml" % (args.dgen_name)
                     
-        if (not os.path.isabs(args.model_spec_path)):
-            args.model_spec_path = "%s/../../src/config/%s" % (args.base_path, args.model_spec_path)
+        if (not os.path.isabs(args.prototype_path)):
+            args.prototype_path = "%s/../../src/config/%s" % (args.base_path, args.prototype_path)
             
-        args.model_spec_path = os.path.realpath(args.model_spec_path)
+        args.prototype_path = os.path.realpath(args.prototype_path)
         
     def _do(self, args):
         # reed the AST
         reader = XMLReader(args)
         ast = reader.read()
         
-#        astPrinter = PrintVisitor()
-#        astPrinter.traverse(ast)
+        astPrinter = PrintVisitor()
+        astPrinter.traverse(ast)
 
         # compile enum types
         enumCompiler = EnumTypesCompiler(args=args)
