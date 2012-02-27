@@ -756,6 +756,39 @@ class UnresolvedFunctionRefArgumentNode(ArgumentNode):
         super(UnresolvedFunctionRefArgumentNode, self).__init__(*args, **kwargs)
 
 
+class UnresolvedHydratorRefArgumentNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(UnresolvedHydratorRefArgumentNode, self).__init__(*args, **kwargs)
+
+
+class ResolvedFieldRefArgumentNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __fieldRef = None
+    __recordTypeRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
+
+    def setRecordTypeRef(self, recordTypeRef):
+        self.__recordTypeRef = recordTypeRef
+
+    def getRecordTypeRef(self):
+        return self.__recordTypeRef
+
+    def setFieldRef(self, fieldRef):
+        self.__fieldRef = fieldRef
+
+    def getFieldRef(self):
+        return self.__fieldRef
+
+
 class ResolvedFunctionRefArgumentNode(ArgumentNode):
     '''
     classdocs
@@ -771,6 +804,24 @@ class ResolvedFunctionRefArgumentNode(ArgumentNode):
 
     def getFunctionRef(self):
         return self.__functionRef
+
+
+class ResolvedHydratorRefArgumentNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __hydratorRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedHydratorRefArgumentNode, self).__init__(*args, **kwargs)
+
+    def setHydratorRef(self, hydratorRef):
+        self.__hydratorRef = hydratorRef
+
+    def getHydratorRef(self):
+        return self.__hydratorRef
+
         
 class DepthFirstNodeFilter(AbstractVisitor):
     '''

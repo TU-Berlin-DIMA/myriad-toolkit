@@ -32,6 +32,7 @@ class SourceCompiler(object):
     
     _cc2us_pattern1 = None
     _cc2us_pattern2 = None
+    _complex_type_pattern = None
     
     _args = None
     _srcPath = None
@@ -44,6 +45,7 @@ class SourceCompiler(object):
         '''
         self._cc2us_pattern1 = re.compile('(.)([A-Z][a-z]+)')
         self._cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
+        self._complex_type_pattern = re.compile('(vector|Interval)\[(\w+)\]')
         
         self._args = args
         self._srcPath = "%s/../../src/cpp" % (args.base_path)
@@ -70,6 +72,13 @@ class SourceCompiler(object):
     
     def _ucFirst(self, s):
         return "%s%s" % (s[0].capitalize(), s[1:])
+    
+    def _sourceType(self, s):
+        r = self._complex_type_pattern.match(s)
+        if r:
+            return "%s<%s>" % (r.group(1), r.group(2))
+        else:
+            return s
 
 
 class EnumTypesCompiler(SourceCompiler):
@@ -201,26 +210,26 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, '    void %s(const %s& v);' % (self._us2cc(field.getAttribute("name")), field.getAttribute("type"))
-            print >> wfile, '    const %s& %s() const;' % (field.getAttribute("type"), self._us2cc(field.getAttribute("name")))
+            print >> wfile, '    void %s(const %s& v);' % (self._us2cc(field.getAttribute("name")), self._sourceType(field.getAttribute("type")))
+            print >> wfile, '    const %s& %s() const;' % (self._sourceType(field.getAttribute("type")), self._us2cc(field.getAttribute("name")))
             print >> wfile, ''
         
         print >> wfile, 'private:'
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, '    %s _%s;' % (field.getAttribute("type"), field.getAttribute("name")) 
+            print >> wfile, '    %s _%s;' % (self._sourceType(field.getAttribute("type")), field.getAttribute("name")) 
         
         print >> wfile, '};'
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, self._us2cc(field.getAttribute("name")), field.getAttribute("type"))
+            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, self._us2cc(field.getAttribute("name")), self._sourceType(field.getAttribute("type")))
             print >> wfile, '{'
             print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
             print >> wfile, '}'
             print >> wfile, ''
-            print >> wfile, 'inline const %s& Base%s::%s() const' % (field.getAttribute("type"), typeNameCC, self._us2cc(field.getAttribute("name")))
+            print >> wfile, 'inline const %s& Base%s::%s() const' % (self._sourceType(field.getAttribute("type")), typeNameCC, self._us2cc(field.getAttribute("name")))
             print >> wfile, '{'
             print >> wfile, '    return _%s;' % (field.getAttribute("name"))
             print >> wfile, '}'

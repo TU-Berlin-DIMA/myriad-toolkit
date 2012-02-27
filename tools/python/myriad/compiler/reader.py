@@ -49,11 +49,11 @@ class XMLReader(object):
         self.__astRoot = RootNode()
         self.__astRoot.getSpecification().setAttribute("generatorName", self.__args.dgen_name)
         self.__astRoot.getSpecification().setAttribute("generatorNameSpace", self.__args.dgen_ns)
-        self.__astRoot.getSpecification().setAttribute("path", self.__args.model_spec_path)
+        self.__astRoot.getSpecification().setAttribute("path", self.__args.prototype_path)
         
         # load the XML
         try:
-            self.__log.info("Reading XML specification from: `%s`." % (self.__args.model_spec_path))
+            self.__log.info("Reading XML specification from: `%s`." % (self.__args.prototype_path))
         
             # open the model specification XML
             xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("path"))
@@ -63,8 +63,10 @@ class XMLReader(object):
             # resolve imports
             self.__resolveImports()
         
-            # resolve function refs
+            # resolve argument refs
+            self.__resolveFieldRefArguments()
             self.__resolveFunctionRefArguments()
+            self.__resolveHydratorRefArguments()
             
         except:
             e = sys.exc_info()[1]
@@ -90,6 +92,31 @@ class XMLReader(object):
                 
                 importsNode.addImport(resolvedImportNode)
             unresolvedImports = importsNode.getUnresolvedImports()
+    
+    def __resolveFieldRefArguments(self):
+        nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFieldRefArgumentNode)
+        for unresolvedFieldRefArgumentNode in nodeFilter.getAll(self.__astRoot):
+            parent = unresolvedFieldRefArgumentNode.getParent()
+            fqName = unresolvedFieldRefArgumentNode.getAttribute("ref")
+
+            if fqName.find(":") > -1:
+                recordKey = fqName[:fqName.find(":")]
+                fieldKey = fqName[fqName.find(":")+1:]
+            else:
+                message = "Cannot resolve field reference for field `%s`" % (fqName)
+                self.__log.error(message)
+                raise RuntimeError(msg)
+            
+            recordTypeNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(recordKey).getRecordType()
+            fieldTypeNode = recordTypeNode.getField(fieldKey)
+            
+            resolvedFieldRefArgumentNode = ResolvedFieldRefArgumentNode()
+            resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+            resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+            resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+            resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+            resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
+            parent.setArgument(resolvedFieldRefArgumentNode)
     
     def __resolveFunctionRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFunctionRefArgumentNode)
@@ -117,7 +144,7 @@ class XMLReader(object):
             functionNode = functionContainerNode.getFunctions().getFunction(key)
 
             if not functionNode:
-                message = "Cannot resolve function reference for function `%s`" % (key)
+                message = "Cannot resolve function reference for function `%s`" % (fqName)
                 self.__log.error(message)
                 raise RuntimeError(msg)
 
@@ -128,6 +155,29 @@ class XMLReader(object):
             resolvedFunctionRefArgumentNode.setAttribute('type', functionNode.getAttribute("type"))
             resolvedFunctionRefArgumentNode.setFunctionRef(functionNode)
             parent.setArgument(resolvedFunctionRefArgumentNode)
+    
+    def __resolveHydratorRefArguments(self):
+        nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedHydratorRefArgumentNode)
+        for unresolvedHydratorRefArgumentNode in nodeFilter.getAll(self.__astRoot):
+            parent = unresolvedHydratorRefArgumentNode.getParent()
+            fqName = unresolvedHydratorRefArgumentNode.getAttribute("ref")
+
+            if fqName.find(":") > -1:
+                sequenceKey = fqName[:fqName.find(":")]
+                hydratorKey = fqName[fqName.find(":")+1:]
+            else:
+                message = "Cannot resolve hydrator reference for hydrator `%s`" % (fqName)
+                self.__log.error(message)
+                raise RuntimeError(msg)
+
+            hydratorNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(sequenceKey).getHydrators().getHydrator(hydratorKey)
+            
+            resolvedHydratorRefArgumentNode = ResolvedHydratorRefArgumentNode()
+            resolvedHydratorRefArgumentNode.setAttribute('key', unresolvedHydratorRefArgumentNode.getAttribute("key"))
+            resolvedHydratorRefArgumentNode.setAttribute('ref', fqName)
+            resolvedHydratorRefArgumentNode.setAttribute('type', hydratorNode.getAttribute("type_alias"))
+            resolvedHydratorRefArgumentNode.setHydratorRef(hydratorNode)
+            parent.setArgument(resolvedHydratorRefArgumentNode)
         
     def __createXPathContext(self, xmlNode):
         context = xmlNode.get_doc().xpathNewContext()
@@ -281,14 +331,16 @@ class XMLReader(object):
         
         hydratorsNode = HydratorsNode()
         
+        i = 0
         for hydrator in xPathContext.xpathEval("./m:hydrator"):
-            hydratorNode = HydratorNode(key=hydrator.prop("key"), type=hydrator.prop("type"))
+            hydratorNode = HydratorNode(key=hydrator.prop("key"), type=hydrator.prop("type"), type_alias="H%02d" % (i))
             
             childContext = self.__createXPathContext(hydrator)
             for argument in childContext.xpathEval("./m:argument"):
-                hydratorNode.setArgument(self.__argumentFactory(argument))
+                hydratorNode.setArgument(self.__argumentFactory(argument, astContext.getRecordType().getAttribute("key")))
 
             hydratorsNode.setHydrator(hydratorNode)
+            i = i+1
                 
         astContext.setHydrators(hydratorsNode)
         
@@ -330,15 +382,22 @@ class XMLReader(object):
         
         return functionNode
 
-    def __argumentFactory(self, argumentXMLNode):
+    def __argumentFactory(self, argumentXMLNode, enclosingRecordType = None):
         argumentType = argumentXMLNode.prop("type")
+        
+        if enclosingRecordType:
+            enclosingRecordType = enclosingRecordType.strip(": ") + ":"
+        else:
+            enclosingRecordType = ""
         
         argumentNode = None
         
         if (argumentType == "field_ref"):
-            argumentNode = UnresolvedFieldRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
+            argumentNode = UnresolvedFieldRefArgumentNode(key=argumentXMLNode.prop("key"), ref="%s%s" % (enclosingRecordType, argumentXMLNode.prop("ref")))
         elif (argumentType == "function_ref"):
             argumentNode = UnresolvedFunctionRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
+        elif (argumentType == "hydrator_ref"):
+            argumentNode = UnresolvedHydratorRefArgumentNode(key=argumentXMLNode.prop("key"), ref="%s%s" % (enclosingRecordType, argumentXMLNode.prop("ref")))
         else:
             argumentNode = LiteralArgumentNode(key=argumentXMLNode.prop("key"), type=argumentXMLNode.prop("type"), value=argumentXMLNode.prop("value"))
         
