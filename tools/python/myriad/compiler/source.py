@@ -381,6 +381,12 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
+        
+        print >> wfile, '    // hydrator typedefs'
+        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+            print >> wfile, '    typedef I16u %s;' % (hydrator.getAttribute("type_alias"))
+            
+        print >> wfile, ''
         print >> wfile, '    virtual ~Base%sHydratorChain()' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
@@ -396,14 +402,11 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'protected:'
         print >> wfile, ''
         
-        for hydrator in recordSequence.getHydrators().getAll():
-            pass
-#            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, self._us2cc(field.getAttribute("name")), field.getAttribute("type"))
-#            print >> wfile, '{'
-#            print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
-#            print >> wfile, '}'
-#            print >> wfile, ''
+        print >> wfile, '    // hydrator members'
+        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+            print >> wfile, '    %s _%s;' % (hydrator.getAttribute("type_alias"), hydrator.getAttribute("key"))
         
+        print >> wfile, ''
         print >> wfile, '    /**'
         print >> wfile, '     * Logger instance.'
         print >> wfile, '     */'

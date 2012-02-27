@@ -611,6 +611,7 @@ class HydratorsNode(RecordSequenceNode):
     
     def __init__(self, *args, **kwargs):
         super(HydratorsNode, self).__init__(*args, **kwargs)
+        self.__hydrators = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -628,7 +629,10 @@ class HydratorsNode(RecordSequenceNode):
         return self.__hydrators.has_key(key)
     
     def getAll(self):
-        return self.__hydrators.itervalues()
+        if sorted:
+            return self.__hydrators.itervalues()
+        else:
+            return self.__hydrators.itervalues()
     
 class HydrationPlanNode(AbstractNode):
     '''
@@ -658,9 +662,12 @@ class HydratorNode(AbstractNode):
     
     __arguments = {}
     
+    orderkey = None
+    
     def __init__(self, *args, **kwargs):
         super(HydratorNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
+        self.orderkey = None
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -674,6 +681,9 @@ class HydratorNode(AbstractNode):
     
     def getArgument(self, key):
         return self.__arguments.get(key)
+        
+    def setOrderKey(self, key):
+        self.orderkey = key
 
 
 class GeneratorTasksNode(AbstractNode):

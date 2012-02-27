@@ -334,6 +334,7 @@ class XMLReader(object):
         i = 0
         for hydrator in xPathContext.xpathEval("./m:hydrator"):
             hydratorNode = HydratorNode(key=hydrator.prop("key"), type=hydrator.prop("type"), type_alias="H%02d" % (i))
+            hydratorNode.setOrderKey(i)
             
             childContext = self.__createXPathContext(hydrator)
             for argument in childContext.xpathEval("./m:argument"):
