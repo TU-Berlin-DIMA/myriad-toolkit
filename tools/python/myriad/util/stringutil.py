@@ -55,3 +55,51 @@ def readString(path):
 def readFirstLine(path):
     f = open(path, 'r')
     return f.readline()
+
+class StringTransformer(object):
+    '''
+    classdocs
+    '''
+    
+    _cc2us_pattern1 = re.compile('(.)([A-Z][a-z]+)')
+    _cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
+    _complex_type_pattern = re.compile('(vector|Interval)\[(\w+)\]')
+    
+    def uc(s):
+        return s.upper()
+    
+    def lc(s):
+        return s.lower()
+    
+    def cc2us(s):
+        return StringTransformer._cc2us_pattern2.sub(r'\1_\2', self._cc2us_pattern1.sub(r'\1_\2', s)).lower()
+    
+    def us2cc(s):
+        def camelcase(): 
+            yield str.lower
+            while True:
+                yield str.capitalize
+    
+        c = camelcase()
+        return "".join(c.next()(x) if x else '_' for x in s.split("_"))
+    
+    def us2ccAll(s):
+        return StringTransformer.ucFirst(StringTransformer.us2cc(s))
+    
+    def ucFirst(s):
+        return "%s%s" % (s[0].capitalize(), s[1:])
+    
+    def sourceType(s):
+        r = StringTransformer._complex_type_pattern.match(s)
+        if r:
+            return "%s<%s>" % (r.group(1), r.group(2))
+        else:
+            return s
+    
+    uc = staticmethod(uc)
+    lc = staticmethod(lc)
+    cc2us = staticmethod(cc2us)
+    us2cc = staticmethod(us2cc)
+    us2ccAll = staticmethod(us2ccAll)
+    ucFirst = staticmethod(ucFirst)
+    sourceType = staticmethod(sourceType)

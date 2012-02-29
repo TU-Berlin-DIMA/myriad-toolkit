@@ -333,7 +333,7 @@ class XMLReader(object):
         
         i = 0
         for hydrator in xPathContext.xpathEval("./m:hydrator"):
-            hydratorNode = HydratorNode(key=hydrator.prop("key"), type=hydrator.prop("type"), type_alias="H%02d" % (i))
+            hydratorNode = self.__hydratorFactory(hydrator, i)
             hydratorNode.setOrderKey(i)
             
             childContext = self.__createXPathContext(hydrator)
@@ -382,6 +382,18 @@ class XMLReader(object):
             raise RuntimeError('Invalid function type `%s`' % (functionType))
         
         return functionNode
+    
+    def __hydratorFactory(self, hydratorXMLNode, i):
+        t = hydratorXMLNode.prop("type")
+        
+        if t == "const_hydrator":
+            return ConstValueHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "randomized_sequence_hydrator":
+            return MultiplicativeGroupHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "clustered_sequence_hydrator":
+            return ClusteredEnumSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        else:
+            return HydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
 
     def __argumentFactory(self, argumentXMLNode, enclosingRecordType = None):
         argumentType = argumentXMLNode.prop("type")

@@ -19,6 +19,7 @@ Created on Oct 14, 2011
 '''
 
 from myriad.compiler.visitor import AbstractVisitor
+from myriad.util.stringutil import StringTransformer
 
 class AbstractNode(object):
     '''
@@ -653,6 +654,9 @@ class HydrationPlanNode(AbstractNode):
         
     def addHydrator(self, node):
         self._hydrators.append(node)
+        
+    def getAll(self):
+        return self._hydrators
     
     
 class HydratorNode(AbstractNode):
@@ -684,6 +688,53 @@ class HydratorNode(AbstractNode):
         
     def setOrderKey(self, key):
         self.orderkey = key
+        
+    def getConcreteType(self):
+        return "RecordHydrator"
+
+
+class ConstValueHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(ConstValueHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        
+        return "ConstValueHydrator<%s, %s>" % (recordType, fieldType)
+
+
+class ClusteredEnumSetHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(ClusteredEnumSetHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        
+        return "ClusteredEnumSetHydrator<%s, %s>" % (recordType, fieldType)
+
+
+class MultiplicativeGroupHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(MultiplicativeGroupHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+
+        return "MultiplicativeGroupHydrator<%s>" % (recordType)
 
 
 class GeneratorTasksNode(AbstractNode):

@@ -21,7 +21,9 @@ Created on Feb 25, 2012
 import logging
 import os
 import re
+
 from myriad.compiler.ast import RandomSequenceNode
+from myriad.util.stringutil import StringTransformer
 
 class SourceCompiler(object):
     '''
@@ -29,10 +31,6 @@ class SourceCompiler(object):
     '''
     
     BUFFER_SIZE = 512
-    
-    _cc2us_pattern1 = None
-    _cc2us_pattern2 = None
-    _complex_type_pattern = None
     
     _args = None
     _srcPath = None
@@ -43,43 +41,11 @@ class SourceCompiler(object):
         '''
         Constructor
         '''
-        self._cc2us_pattern1 = re.compile('(.)([A-Z][a-z]+)')
-        self._cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
-        self._complex_type_pattern = re.compile('(vector|Interval)\[(\w+)\]')
-        
         self._args = args
         self._srcPath = "%s/../../src/cpp" % (args.base_path)
         
         self._log = logging.getLogger("source.compiler")
         
-    def _uc(self, s):
-        return s.upper()
-
-    def _lc(self, s):
-        return s.lower()
-
-    def _cc2us(self, s):
-        return self._cc2us_pattern2.sub(r'\1_\2', self._cc2us_pattern1.sub(r'\1_\2', s)).lower()
-
-    def _us2cc(self, s):
-        def camelcase(): 
-            yield str.lower
-            while True:
-                yield str.capitalize
-    
-        c = camelcase()
-        return "".join(c.next()(x) if x else '_' for x in s.split("_"))
-    
-    def _ucFirst(self, s):
-        return "%s%s" % (s[0].capitalize(), s[1:])
-    
-    def _sourceType(self, s):
-        r = self._complex_type_pattern.match(s)
-        if r:
-            return "%s<%s>" % (r.group(1), r.group(2))
-        else:
-            return s
-
 
 class EnumTypesCompiler(SourceCompiler):
     '''
@@ -177,8 +143,8 @@ class RecordTypeCompiler(SourceCompiler):
             pass
         
         typeNameUS = recordType.getAttribute("key")
-        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
-        typeNameUC = self._uc(typeNameCC)
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
         
         wfile = open("%s/record/base/Base%s.h" % (self._srcPath, typeNameCC), "w", SourceCompiler.BUFFER_SIZE)
         
@@ -210,26 +176,26 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, '    void %s(const %s& v);' % (self._us2cc(field.getAttribute("name")), self._sourceType(field.getAttribute("type")))
-            print >> wfile, '    const %s& %s() const;' % (self._sourceType(field.getAttribute("type")), self._us2cc(field.getAttribute("name")))
+            print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(field.getAttribute("name")), StringTransformer.sourceType(field.getAttribute("type")))
+            print >> wfile, '    const %s& %s() const;' % (StringTransformer.sourceType(field.getAttribute("type")), StringTransformer.us2cc(field.getAttribute("name")))
             print >> wfile, ''
         
         print >> wfile, 'private:'
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, '    %s _%s;' % (self._sourceType(field.getAttribute("type")), field.getAttribute("name")) 
+            print >> wfile, '    %s _%s;' % (StringTransformer.sourceType(field.getAttribute("type")), field.getAttribute("name")) 
         
         print >> wfile, '};'
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, self._us2cc(field.getAttribute("name")), self._sourceType(field.getAttribute("type")))
+            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")), StringTransformer.sourceType(field.getAttribute("type")))
             print >> wfile, '{'
             print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
             print >> wfile, '}'
             print >> wfile, ''
-            print >> wfile, 'inline const %s& Base%s::%s() const' % (self._sourceType(field.getAttribute("type")), typeNameCC, self._us2cc(field.getAttribute("name")))
+            print >> wfile, 'inline const %s& Base%s::%s() const' % (StringTransformer.sourceType(field.getAttribute("type")), typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
             print >> wfile, '{'
             print >> wfile, '    return _%s;' % (field.getAttribute("name"))
             print >> wfile, '}'
@@ -262,8 +228,8 @@ class RecordTypeCompiler(SourceCompiler):
             pass
         
         typeNameUS = recordType.getAttribute("key")
-        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
-        typeNameUC = self._uc(typeNameCC)
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
         
         sourcePath = "%s/record/%s.h" % (self._srcPath, typeNameCC)
         
@@ -328,8 +294,8 @@ class RecordGeneratorCompiler(SourceCompiler):
 
     def __compileBaseRandomGenerator(self, recordSequence):
         typeNameUS = recordSequence.getAttribute("key")
-        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
-        typeNameUC = self._uc(typeNameCC)
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
         
         sourcePath = "%s/generator/base/Base%sGenerator.h" % (self._srcPath, typeNameCC)
         
@@ -384,7 +350,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         print >> wfile, '    // hydrator typedefs'
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            print >> wfile, '    typedef I16u %s;' % (hydrator.getAttribute("type_alias"))
+            print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
             
         print >> wfile, ''
         print >> wfile, '    virtual ~Base%sHydratorChain()' % (typeNameCC)
@@ -397,6 +363,11 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    void operator()(AutoPtr<%s> recordPtr) const' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '        ensurePosition(recordPtr->genID());'
+        print >> wfile, ''
+        
+        for hydratorRef in recordSequence.getHydrationPlan().getAll():
+            print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
+        
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, 'protected:'
@@ -432,8 +403,8 @@ class RecordGeneratorCompiler(SourceCompiler):
 
     def __compileRandomGenerator(self, recordSequence):
         typeNameUS = recordSequence.getAttribute("key")
-        typeNameCC = self._ucFirst(self._us2cc(typeNameUS))
-        typeNameUC = self._uc(typeNameCC)
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
         
         sourcePath = "%s/generator/%sGenerator.h" % (self._srcPath, typeNameCC)
         
