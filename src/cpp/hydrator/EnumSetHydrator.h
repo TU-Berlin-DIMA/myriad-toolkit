@@ -47,7 +47,10 @@ public:
 
 	EnumSetHydrator(RandomStream& random, ValueSetter setter, const CustomDiscreteProbability& probability) :
 		RandomRecordHydrator<RecordType>(random),
-		_setter(setter), _enumCardinality(probability.domainCardinality()), _uniform(false), _probability(probability)
+		_setter(setter),
+		_enumCardinality(probability.domainCardinality()),
+		_uniform(false),
+		_probability(probability)
 	{
 	}
 

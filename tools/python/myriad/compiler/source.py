@@ -23,6 +23,13 @@ import os
 import re
 
 from myriad.compiler.ast import RandomSequenceNode
+from myriad.compiler.ast import LiteralArgumentNode
+from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
+from myriad.compiler.ast import ResolvedFieldRefArgumentNode
+from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
+from myriad.compiler.ast import StringSetRefArgumentNode
+from myriad.compiler.ast import DepthFirstNodeFilter
+from myriad.compiler.ast import StringSetNode
 from myriad.util.stringutil import StringTransformer
 
 class SourceCompiler(object):
@@ -37,6 +44,9 @@ class SourceCompiler(object):
     
     _log = None
     
+    _expr_pattern = re.compile('%([\w.]+)%')
+    _param_pattern = re.compile('^\${(.+)}$')
+    
     def __init__(self, args):
         '''
         Constructor
@@ -45,6 +55,157 @@ class SourceCompiler(object):
         self._srcPath = "%s/../../src/cpp" % (args.base_path)
         
         self._log = logging.getLogger("source.compiler")
+        
+    def _argumentCode(self, argumentNode):
+        if isinstance(argumentNode, LiteralArgumentNode):
+            attributeType = argumentNode.getAttribute("type").strip()
+            attributeValue = argumentNode.getAttribute("value").strip()
+            
+            m = self._expr_pattern.match(attributeValue)
+            if (m):
+                return 'config.parameter<%s>("%s")' % (attributeType, m.group(1))
+            
+            m = self._param_pattern.match(attributeValue)
+            if (m):
+                exprExpandedParams = self._expr_pattern.sub(lambda m: 'config.parameter<Decimal>("%s")' % (m.group(1)), attributeValue)
+                return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[3:-2])
+            
+            else:
+                if type == "String":
+                    return '"%s"' % (attributeValue)
+                else:
+                    return '%s' % (attributeValue)
+        
+        elif isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
+            functionType = argumentNode.getAttribute("type")
+            functionName = argumentNode.getAttribute("ref")
+            return 'config.func<%s> ("%s")' % (functionType, functionName)
+        
+        elif isinstance(argumentNode, ResolvedFieldRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
+            return '&%s::%s' % (typeName, fieldAccessMethodName)
+        
+        elif isinstance(argumentNode, ResolvedHydratorRefArgumentNode):
+            hydratorVarName = StringTransformer.us2cc(argumentNode.getHydratorRef().getAttribute("key"))
+            return '_%s' % (hydratorVarName)
+        
+        elif isinstance(argumentNode, StringSetRefArgumentNode):
+            stringSetKey = StringTransformer.us2cc(argumentNode.getAttribute("ref"))
+            return 'config.stringSet("%s")' % (stringSetKey)
+        
+        else:
+            
+            return "NULL /* unknown */"
+
+
+class ConfigCompiler(SourceCompiler):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        super(ConfigCompiler, self).__init__(*args, **kwargs)
+        
+    def compile(self, astRoot):
+        self._log.warning("compiling generator config C++ sources")
+        self.compileBaseConfig(astRoot)
+        self.compileConfig(astRoot)
+            
+    def compileBaseConfig(self, astRoot):
+        try:
+            os.makedirs("%s/config/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        wfile = open("%s/config/base/BaseGeneratorConfig.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad base generatoc config C++ file'
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASEGENERATORCONFIG_H_'
+        print >> wfile, '#define BASEGENERATORCONFIG_H_'
+        print >> wfile, ''
+        print >> wfile, '#include "config/AbstractGeneratorConfig.h"'
+        print >> wfile, ''
+        print >> wfile, 'namespace Myriad {'
+        print >> wfile, ''
+        print >> wfile, 'class BaseGeneratorConfig: public AbstractGeneratorConfig'
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    BaseGeneratorConfig(GeneratorPool& generatorPool) : AbstractGeneratorConfig(generatorPool)'
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, 'protected:'
+        print >> wfile, ''
+        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
+        print >> wfile, '    {'
+        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
+        
+        nodeFilter = DepthFirstNodeFilter(filterType=StringSetNode)
+        for stringSet in nodeFilter.getAll(astRoot):
+            print >> wfile, '        bindStringSet(doc, "%(n)s", _boundStringSets["%(n)s"]);' % {'n': stringSet.getAttribute("key")}
+        
+        
+        print >> wfile, ''
+        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
+        print >> wfile, '    }'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace Myriad'
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASEGENERATORCONFIG_H_ */'
+        
+        wfile.close()
+            
+    def compileConfig(self, astRoot):
+        try:
+            os.makedirs("%s/config" % (self._srcPath))
+        except OSError:
+            pass
+        
+        sourcePath = "%s/config/GeneratorConfig.h" % (self._srcPath)
+        
+        if (os.path.isfile(sourcePath)):
+            return
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '#ifndef GENERATORCONFIG_H_'
+        print >> wfile, '#define GENERATORCONFIG_H_'
+        print >> wfile, ''
+        print >> wfile, '#include "config/base/BaseGeneratorConfig.h"'
+        print >> wfile, ''
+        print >> wfile, 'namespace Myriad {'
+        print >> wfile, ''
+        print >> wfile, 'class GeneratorConfig: public BaseGeneratorConfig'
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    GeneratorConfig(GeneratorPool& generatorPool) : BaseGeneratorConfig(generatorPool)'
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, 'protected:'
+        print >> wfile, ''
+        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
+        print >> wfile, '    {'
+        print >> wfile, '        BaseGeneratorConfig::configureSets(doc);'
+        print >> wfile, ''
+        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
+        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
+        print >> wfile, '    }'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace Myriad'
+        print >> wfile, ''
+        print >> wfile, '#endif /* GENERATORCONFIG_H_ */'
+
+        wfile.close()
         
 
 class EnumTypesCompiler(SourceCompiler):
@@ -247,7 +408,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
-        print >> wfile, 'class %s: public Record' % (typeNameCC)
+        print >> wfile, 'class %(t)s: public Base%(t)s' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
@@ -353,6 +514,23 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
             
         print >> wfile, ''
+        print >> wfile, '    Base%sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
+        print >> wfile, '        HydratorChain<%s>(opMode, random),' % (typeNameCC)
+        
+        initializers = []
+        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+            argsCode = []
+            if hydrator.hasPRNGArgument():
+                argsCode.append('random')
+            for argKey in hydrator.getConstructorArgumentsOrder():
+                argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
+            initializers.append('        _%s(%s)' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode)))
+        
+        print >> wfile, ',\n'.join(initializers) 
+            
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
         print >> wfile, '    virtual ~Base%sHydratorChain()' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
@@ -365,8 +543,8 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '        ensurePosition(recordPtr->genID());'
         print >> wfile, ''
         
-        for hydratorRef in recordSequence.getHydrationPlan().getAll():
-            print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
+        for hydrator in recordSequence.getHydrationPlan().getAll():
+            print >> wfile, '         _%s(recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
         
         print >> wfile, '    }'
         print >> wfile, ''
@@ -375,7 +553,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         print >> wfile, '    // hydrator members'
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            print >> wfile, '    %s _%s;' % (hydrator.getAttribute("type_alias"), hydrator.getAttribute("key"))
+            print >> wfile, '    %s _%s;' % (hydrator.getAttribute("type_alias"), StringTransformer.us2cc(hydrator.getAttribute("key")))
         
         print >> wfile, ''
         print >> wfile, '    /**'

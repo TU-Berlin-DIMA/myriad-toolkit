@@ -75,6 +75,16 @@ public:
 		return _functionPool.func<C>(name);
 	}
 
+	template<class C> C parameter(string key)
+	{
+		return fromString<C>(getString("generator." + key));
+	}
+
+	const vector<string>& stringSet(string key)
+	{
+		return _boundStringSets[key];
+	}
+
 	ID cardinality(string name)
 	{
 		return fromString<I64u>(getString("generator." + name + ".sequence.cardinality"));
@@ -249,6 +259,11 @@ protected:
 	 * A global function pool.
 	 */
 	FunctionPool _functionPool;
+
+	/**
+	 * The string sets bound from the config.
+	 */
+	map<string, vector<string> > _boundStringSets;
 
 	/**
 	 * A 'generator.config' logger instance.

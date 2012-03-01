@@ -312,7 +312,7 @@ class ParetoProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
-        kwargs.update(type="ParetoProbabilityFunctionNode")
+        kwargs.update(type="ParetoPrFunction")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
 
     
@@ -322,7 +322,7 @@ class NormalProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
-        kwargs.update(type="NormalProbabilityFunctionNode")
+        kwargs.update(type="NormalPrFunction")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
     
 
@@ -332,7 +332,7 @@ class CustomDiscreteProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
-        kwargs.update(type="CustomDiscreteProbabilityFunctionNode")
+        kwargs.update(type="CustomDiscreteProbability")
         super(CustomDiscreteProbabilityFunctionNode, self).__init__(*args, **kwargs)
     
 
@@ -691,21 +691,12 @@ class HydratorNode(AbstractNode):
         
     def getConcreteType(self):
         return "RecordHydrator"
-
-
-class ConstValueHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        super(ConstValueHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         
-        return "ConstValueHydrator<%s, %s>" % (recordType, fieldType)
+    def hasPRNGArgument(self):
+        return False
+        
+    def getConstructorArgumentsOrder(self):
+        return []
 
 
 class ClusteredEnumSetHydratorNode(HydratorNode):
@@ -721,6 +712,77 @@ class ClusteredEnumSetHydratorNode(HydratorNode):
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         
         return "ClusteredEnumSetHydrator<%s, %s>" % (recordType, fieldType)
+        
+    def hasPRNGArgument(self):
+        return False
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'interval_field', 'enum_cardinality', 'cardinality']
+
+
+class ConditionalHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(ConditionalHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        trueHydratorType = self.getArgument("if_true").getHydratorRef().getAttribute("type_alias")
+        falseHydratorType = self.getArgument("if_false").getHydratorRef().getAttribute("type_alias") 
+        
+        return "ConditionalHydrator<%s, %s, %s, %s>" % (recordType, fieldType, trueHydratorType, falseHydratorType)
+        
+    def hasPRNGArgument(self):
+        return False
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'compare_value', 'if_true', 'if_false']
+
+
+class ConstValueHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(ConstValueHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        
+        return "ConstValueHydrator<%s, %s>" % (recordType, fieldType)
+        
+    def hasPRNGArgument(self):
+        return False
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'const_value']
+
+
+class EnumSetHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(EnumSetHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        
+        return "EnumSetHydrator<%s, %s>" % (recordType, fieldType)
+        
+    def hasPRNGArgument(self):
+        return True
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'probability']
 
 
 class MultiplicativeGroupHydratorNode(HydratorNode):
@@ -735,7 +797,33 @@ class MultiplicativeGroupHydratorNode(HydratorNode):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
 
         return "MultiplicativeGroupHydrator<%s>" % (recordType)
+        
+    def hasPRNGArgument(self):
+        return False
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'cardinality', 'begin', 'end']
 
+
+class RangeSetHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(RangeSetHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        
+        return "RangeSetHydrator<%s, %s>" % (recordType, fieldType)
+        
+    def hasPRNGArgument(self):
+        return True
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'range', 'probability']
 
 class GeneratorTasksNode(AbstractNode):
     '''
@@ -824,6 +912,15 @@ class UnresolvedHydratorRefArgumentNode(ArgumentNode):
     
     def __init__(self, *args, **kwargs):
         super(UnresolvedHydratorRefArgumentNode, self).__init__(*args, **kwargs)
+
+
+class StringSetRefArgumentNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(StringSetRefArgumentNode, self).__init__(*args, **kwargs)
 
 
 class ResolvedFieldRefArgumentNode(ArgumentNode):

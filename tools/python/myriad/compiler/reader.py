@@ -386,14 +386,20 @@ class XMLReader(object):
     def __hydratorFactory(self, hydratorXMLNode, i):
         t = hydratorXMLNode.prop("type")
         
+        if t == "clustered_sequence_hydrator":
+            return ClusteredEnumSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "conditional_hydrator":
+            return ConditionalHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "const_hydrator":
             return ConstValueHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "randomized_sequence_hydrator":
+        if t == "enum_set_hydrator":
+            return EnumSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "randomized_sequence_hydrator":
             return MultiplicativeGroupHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "clustered_sequence_hydrator":
-            return ClusteredEnumSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        else:
-            return HydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "range_set_hydrator":
+            return RangeSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        
+        return HydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
 
     def __argumentFactory(self, argumentXMLNode, enclosingRecordType = None):
         argumentType = argumentXMLNode.prop("type")
@@ -411,6 +417,8 @@ class XMLReader(object):
             argumentNode = UnresolvedFunctionRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
         elif (argumentType == "hydrator_ref"):
             argumentNode = UnresolvedHydratorRefArgumentNode(key=argumentXMLNode.prop("key"), ref="%s%s" % (enclosingRecordType, argumentXMLNode.prop("ref")))
+        elif (argumentType == "string_set_ref"):
+            argumentNode = StringSetRefArgumentNode(key=argumentXMLNode.prop("key"), ref=argumentXMLNode.prop("ref"))
         else:
             argumentNode = LiteralArgumentNode(key=argumentXMLNode.prop("key"), type=argumentXMLNode.prop("type"), value=argumentXMLNode.prop("value"))
         
