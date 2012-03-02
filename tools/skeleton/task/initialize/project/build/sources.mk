@@ -30,6 +30,7 @@ vendor/myriad/src/cpp/core \
 vendor/myriad/src/cpp/config \
 vendor/myriad/src/cpp/communication \
 src/cpp/io \
+src/cpp/generator/base \
 src/cpp/generator \
 src/cpp/core \
 
