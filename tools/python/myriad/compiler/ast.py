@@ -658,7 +658,11 @@ class HydrationPlanNode(AbstractNode):
     def getAll(self):
         return self._hydrators
     
-    
+
+#
+# Hydrators
+# 
+ 
 class HydratorNode(AbstractNode):
     '''
     classdocs
@@ -705,6 +709,7 @@ class ClusteredEnumSetHydratorNode(HydratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ClusteredEnumSet")
         super(ClusteredEnumSetHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
@@ -726,6 +731,7 @@ class ConditionalHydratorNode(HydratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ConditionalHydrator")
         super(ConditionalHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
@@ -749,6 +755,7 @@ class ConstValueHydratorNode(HydratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ConstValueHydrator")
         super(ConstValueHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
@@ -770,6 +777,7 @@ class EnumSetHydratorNode(HydratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="EnumSetHydrator")
         super(EnumSetHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
@@ -791,6 +799,7 @@ class MultiplicativeGroupHydratorNode(HydratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="MultiplicativeGroupHydrator")
         super(MultiplicativeGroupHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
@@ -811,6 +820,7 @@ class RangeSetHydratorNode(HydratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="RangeSetHydrator")
         super(RangeSetHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
@@ -824,6 +834,7 @@ class RangeSetHydratorNode(HydratorNode):
         
     def getConstructorArgumentsOrder(self):
         return ['field', 'range', 'probability']
+
 
 class GeneratorTasksNode(AbstractNode):
     '''

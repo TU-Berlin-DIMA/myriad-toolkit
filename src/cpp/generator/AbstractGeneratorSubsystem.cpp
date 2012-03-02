@@ -17,7 +17,7 @@
  */
 
 #include "communication/Notifications.h"
-#include "generator/GeneratorSubsystem.h"
+#include "generator/AbstractGeneratorSubsystem.h"
 
 #include <functional>
 #include <Poco/ErrorHandler.h>
@@ -29,6 +29,21 @@ using namespace Poco;
 
 namespace Myriad {
 
+// the initial stage ID should always be zero
+I32u RecordGenerator::Stage::NEXT_STAGE_ID = 0;
+
+// register the valid stages for the Myriad generator extension
+RecordGenerator::StageList initList()
+{
+	RecordGenerator::StageList tmp;
+
+	tmp.push_back(RecordGenerator::Stage("default"));
+
+	return tmp;
+}
+
+const RecordGenerator::StageList RecordGenerator::STAGES(initList());
+
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // helper function objects
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -39,7 +54,7 @@ namespace Myriad {
 class ThreadExecutor: public unary_function<void, RecordGenerator*>
 {
 public:
-	ThreadExecutor(GeneratorSubsystem& caller) :
+	ThreadExecutor(AbstractGeneratorSubsystem& caller) :
 		caller(caller)
 	{
 	}
@@ -58,7 +73,7 @@ public:
 	}
 
 private:
-	GeneratorSubsystem& caller;
+	AbstractGeneratorSubsystem& caller;
 };
 
 /**
@@ -68,7 +83,7 @@ private:
 class GeneratorErrorHandler: public ErrorHandler
 {
 public:
-	GeneratorErrorHandler(GeneratorSubsystem& caller) :
+	GeneratorErrorHandler(AbstractGeneratorSubsystem& caller) :
 		_caller(caller), _invoked(false)
 	{
 	}
@@ -109,7 +124,7 @@ public:
 	}
 
 private:
-	GeneratorSubsystem& _caller;
+	AbstractGeneratorSubsystem& _caller;
 	bool _invoked;
 };
 
@@ -117,7 +132,7 @@ private:
 // method implementations
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-void GeneratorSubsystem::initialize(Application& app)
+void AbstractGeneratorSubsystem::initialize(Application& app)
 {
 	if (_initialized)
 	{
@@ -163,7 +178,7 @@ void GeneratorSubsystem::initialize(Application& app)
 	_initialized = true;
 }
 
-void GeneratorSubsystem::uninitialize()
+void AbstractGeneratorSubsystem::uninitialize()
 {
 	if (!_initialized)
 	{
@@ -175,7 +190,7 @@ void GeneratorSubsystem::uninitialize()
 	_initialized = false;
 }
 
-void GeneratorSubsystem::prepareStage(RecordGenerator::Stage stage)
+void AbstractGeneratorSubsystem::prepareStage(RecordGenerator::Stage stage)
 {
 	list<RecordGenerator*>& generators = _generatorPool.getAll();
 
@@ -198,7 +213,7 @@ void GeneratorSubsystem::prepareStage(RecordGenerator::Stage stage)
 	}
 }
 
-void GeneratorSubsystem::cleanupStage(RecordGenerator::Stage stage)
+void AbstractGeneratorSubsystem::cleanupStage(RecordGenerator::Stage stage)
 {
 	list<RecordGenerator*>& generators = _generatorPool.getAll();
 	for (RecordGenerator::PtrList::iterator it = generators.begin(); it != generators.end(); ++it)
@@ -207,7 +222,7 @@ void GeneratorSubsystem::cleanupStage(RecordGenerator::Stage stage)
 	}
 }
 
-void GeneratorSubsystem::start()
+void AbstractGeneratorSubsystem::start()
 {
 	Stopwatch totalTimer, stageTimer;
 

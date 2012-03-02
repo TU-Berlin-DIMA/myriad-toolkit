@@ -99,6 +99,158 @@ class SourceCompiler(object):
             return "NULL /* unknown */"
 
 
+class GeneratorSubsystemCompiler(SourceCompiler):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        super(GeneratorSubsystemCompiler, self).__init__(*args, **kwargs)
+        
+    def compile(self, astRoot):
+        self._log.warning("compiling generator subsystem C++ sources")
+        self.compileBaseGeneratorSubsystem(astRoot)
+        self.compileConfig(astRoot)
+            
+    def compileBaseGeneratorSubsystem(self, astRoot):
+        try:
+            os.makedirs("%s/generator/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        wfile = open("%s/generator/base/BaseGeneratorSubsystem.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad base generator config C++ file'
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASEGENERATORSUBSYSTEM_H_'
+        print >> wfile, '#define BASEGENERATORSUBSYSTEM_H_'
+        print >> wfile, ''
+        print >> wfile, '#include "generator/AbstractGeneratorSubsystem.h"'
+        print >> wfile, ''
+        print >> wfile, 'namespace Myriad {'
+        print >> wfile, ''
+        print >> wfile, 'class BaseGeneratorSubsystem: public AbstractGeneratorSubsystem'
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    BaseGeneratorSubsystem(NotificationCenter& notificationCenter, const vector<bool>& executeStages) : '
+        print >> wfile, '        AbstractGeneratorSubsystem(notificationCenter, executeStages)'
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual ~BaseGeneratorSubsystem()'
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, 'protected:'
+        print >> wfile, ''
+        print >> wfile, '    virtual void registerGenerators();'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace Myriad'
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASEGENERATORSUBSYSTEM_H_ */'
+        
+        wfile.close()
+        
+        wfile = open("%s/generator/base/BaseGeneratorSubsystem.cpp" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
+
+        print >> wfile, '// auto-generatad base generator config C++ file'
+        print >> wfile, ''
+        print >> wfile, '#include "generator/base/BaseGeneratorSubsystem.h"'
+        
+        for recordSequence in astRoot.getSpecification().getRecordSequences().getRecordSequences():
+            print >> wfile, '#include "generator/%sGenerator.h"' % (StringTransformer.us2ccAll(recordSequence.getAttribute("key")))
+
+        print >> wfile, ''
+        print >> wfile, 'using namespace std;'
+        print >> wfile, 'using namespace Poco;'
+        print >> wfile, ''
+        print >> wfile, 'namespace Myriad {'
+        print >> wfile, ''
+        print >> wfile, 'void BaseGeneratorSubsystem::registerGenerators()'
+        print >> wfile, '{'
+        
+        for recordSequence in astRoot.getSpecification().getRecordSequences().getRecordSequences():
+            print >> wfile, '    registerGenerator<%s::%sGenerator>("%s");' % (self._args.dgen_ns, StringTransformer.us2ccAll(recordSequence.getAttribute("key")), recordSequence.getAttribute("key"))
+            
+        print >> wfile, '}'
+        print >> wfile, ''
+        print >> wfile, '} // namespace Myriad'
+        
+        wfile.close()
+            
+    def compileConfig(self, astRoot):
+        try:
+            os.makedirs("%s/generator" % (self._srcPath))
+        except OSError:
+            pass
+        
+        sourceHeaderPath = "%s/generator/GeneratorSubsystem.h" % (self._srcPath)
+        sourcePath = "%s/generator/GeneratorSubsystem.cpp" % (self._srcPath)
+        
+        if (not os.path.isfile(sourceHeaderPath)):
+            wfile = open(sourceHeaderPath, "w", SourceCompiler.BUFFER_SIZE)
+            
+            print >> wfile, '#ifndef GENERATORSUBSYSTEM_H_'
+            print >> wfile, '#define GENERATORSUBSYSTEM_H_'
+            print >> wfile, ''
+            print >> wfile, '#include "generator/base/BaseGeneratorSubsystem.h"'
+            print >> wfile, ''
+            print >> wfile, 'using namespace std;'
+            print >> wfile, 'using namespace Poco;'
+            print >> wfile, ''
+            print >> wfile, 'namespace Myriad {'
+            print >> wfile, ''
+            print >> wfile, 'class GeneratorSubsystem : public BaseGeneratorSubsystem'
+            print >> wfile, '{'
+            print >> wfile, 'public:'
+            print >> wfile, ''
+            print >> wfile, '    GeneratorSubsystem(NotificationCenter& notificationCenter, const vector<bool>& executeStages) :'
+            print >> wfile, '        BaseGeneratorSubsystem(notificationCenter, executeStages)'
+            print >> wfile, '    {'
+            print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    virtual ~GeneratorSubsystem()'
+            print >> wfile, '    {'
+            print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, 'protected:'
+            print >> wfile, ''
+            print >> wfile, '    virtual void registerGenerators();'
+            print >> wfile, '};'
+            print >> wfile, ''
+            print >> wfile, '} // namespace Myriad'
+            print >> wfile, ''
+            print >> wfile, '#endif /* GENERATORSUBSYSTEM_H_ */'
+    
+            wfile.close()
+        
+        if (not os.path.isfile(sourcePath)):
+            wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+            
+            print >> wfile, '#include "generator/GeneratorSubsystem.h"'
+            print >> wfile, ''
+            print >> wfile, 'using namespace std;'
+            print >> wfile, 'using namespace Poco;'
+            print >> wfile, ''
+            print >> wfile, 'namespace Myriad {'
+            print >> wfile, ''
+            print >> wfile, 'void GeneratorSubsystem::registerGenerators()'
+            print >> wfile, '{'
+            print >> wfile, '    BaseGeneratorSubsystem::registerGenerators();'
+            print >> wfile, ''
+            print >> wfile, '    // register generators with the autorelease pool'
+            print >> wfile, '}'
+            print >> wfile, ''
+            print >> wfile, '} // namespace Myriad'
+    
+            wfile.close()
+        
+
 class ConfigCompiler(SourceCompiler):
     '''
     classdocs
@@ -123,7 +275,7 @@ class ConfigCompiler(SourceCompiler):
         
         wfile = open("%s/config/base/BaseGeneratorConfig.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
         
-        print >> wfile, '// auto-generatad base generatoc config C++ file'
+        print >> wfile, '// auto-generatad base generator config C++ file'
         print >> wfile, ''
         print >> wfile, '#ifndef BASEGENERATORCONFIG_H_'
         print >> wfile, '#define BASEGENERATORCONFIG_H_'
@@ -374,7 +526,15 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// forward declaration of operator<<'
-        print >> wfile, 'template<> void OutputCollector<%(ns)s::%(t)s>::CollectorType::collect(const %(ns)s::%(t)s& record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'template<> void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::collect(const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, '    _out << '
+        
+        for field in recordType.getFields():
+            print >> wfile, '        record.%-30s << " | " << ' % (StringTransformer.us2cc(field.getAttribute("name")) + "()")
+
+        print >> wfile, '        \'\\n\';'
+        print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
         print >> wfile, ''
@@ -469,6 +629,10 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '#include "generator/RandomSetGenerator.h"'
         print >> wfile, '#include "record/%s.h"' % (typeNameCC)
+        
+        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+            print >> wfile, '#include "hydrator/%s.h"' % (hydrator.getAttribute("template_type"))
+        
         print >> wfile, ''
         print >> wfile, 'using namespace Myriad;'
         print >> wfile, ''
@@ -479,8 +643,6 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'class Base%(t)sGenerator: public RandomSetGenerator<%(t)s>' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
-        print >> wfile, ''
-        print >> wfile, '    typedef RecordTraits<%s>::HydratorChainType HydratorChainType;' % (typeNameCC)
         print >> wfile, ''
         print >> wfile, '    Base%sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
         print >> wfile, '        RandomSetGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
@@ -497,8 +659,6 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '            registerTask(new RandomSetDefaultGeneratingTask<%s> (*this, _config));' % (typeNameCC)
         print >> wfile, '        }'
         print >> wfile, '    }'
-        print >> wfile, ''
-        print >> wfile, '    HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random);'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '/**'
@@ -517,16 +677,15 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    Base%sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
         print >> wfile, '        HydratorChain<%s>(opMode, random),' % (typeNameCC)
         
-        initializers = []
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
             argsCode = []
             if hydrator.hasPRNGArgument():
                 argsCode.append('random')
             for argKey in hydrator.getConstructorArgumentsOrder():
                 argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
-            initializers.append('        _%s(%s)' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode)))
+            print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
         
-        print >> wfile, ',\n'.join(initializers) 
+        print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)
             
         print >> wfile, '    {'
         print >> wfile, '    }'
@@ -593,6 +752,49 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         print >> wfile, '#ifndef %sGENERATOR_H_' % (typeNameUC)
         print >> wfile, '#define %sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "generator/base/Base%sGenerator.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, 'class UserHydratorChain;'
+        print >> wfile, ''
+        print >> wfile, 'class %(t)sGenerator: public Base%(t)sGenerator' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    typedef RecordTraits<%s>::HydratorChainType HydratorChainType;' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, '    %sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
+        print >> wfile, '        Base%sGenerator(name, config, notificationCenter)' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random);'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, 'class %(t)sHydratorChain : public Base%(t)sHydratorChain' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    %sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
+        print >> wfile, '        Base%sHydratorChain(opMode, random, config)' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// base method definitions (don\'t modify)'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
+        print >> wfile, 'inline %(t)sHydratorChain %(t)sGenerator::hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random)' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, '    return %sHydratorChain(opMode, random, _config);' % (typeNameCC)
+        print >> wfile, '}'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '#endif /* BASE%sGENERATOR_H_ */' % (typeNameUC)
 

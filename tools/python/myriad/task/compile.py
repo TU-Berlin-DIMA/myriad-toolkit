@@ -65,17 +65,21 @@ class CompileModelTask(AbstractTask):
         reader = XMLReader(args)
         ast = reader.read()
         
-        astPrinter = PrintVisitor()
-        astPrinter.traverse(ast)
+#        astPrinter = PrintVisitor()
+#        astPrinter.traverse(ast)
 
+        # compile generator config
+        generatorSubsystemCompiler = GeneratorSubsystemCompiler(args=args)
+        generatorSubsystemCompiler.compile(ast)
+        # compile generator config
+        configCompiler = ConfigCompiler(args=args)
+        configCompiler.compile(ast)
         # compile enum types
         enumCompiler = EnumTypesCompiler(args=args)
         enumCompiler.compile(ast.getSpecification().getEnumSets())
-        
         # compile record types
         recordCompiler = RecordTypeCompiler(args=args)
         recordCompiler.compile(ast.getSpecification().getRecordSequences())
-        
         # compile record generators
         generatorCompiler = RecordGeneratorCompiler(args=args)
         generatorCompiler.compile(ast.getSpecification().getRecordSequences())

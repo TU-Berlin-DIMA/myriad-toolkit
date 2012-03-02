@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef GENERATORSUBSYSTEM_H_
-#define GENERATORSUBSYSTEM_H_
+#ifndef ABSTRACTGENERATORSUBSYSTEM_H_
+#define ABSTRACTGENERATORSUBSYSTEM_H_
 
 #include "generator/RecordGenerator.h"
 #include "generator/GeneratorPool.h"
@@ -34,14 +34,14 @@ using namespace Poco::Util;
 
 namespace Myriad {
 
-class GeneratorSubsystem: public Subsystem
+class AbstractGeneratorSubsystem: public Subsystem
 {
 	friend class GeneratorErrorHandler;
 	friend class ThreadExecutor;
 
 public:
 
-	GeneratorSubsystem(NotificationCenter& notificationCenter, const vector<bool>& executeStages) :
+	AbstractGeneratorSubsystem(NotificationCenter& notificationCenter, const vector<bool>& executeStages) :
 		_notificationCenter(notificationCenter),
 		_executeStages(executeStages),
 		_config(_generatorPool),
@@ -52,7 +52,7 @@ public:
 	{
 	}
 
-	~GeneratorSubsystem()
+	virtual ~AbstractGeneratorSubsystem()
 	{
 	}
 
@@ -69,7 +69,14 @@ protected:
 
 	void uninitialize();
 
-	void registerGenerators();
+	virtual void registerGenerators() = 0;
+
+	/**
+	 * Helper method. Adds a single generator to the generator pool.
+	 *
+	 * @param generator
+	 */
+	template<class T> void registerGenerator(const string& name);
 
 private:
 	/**
@@ -85,13 +92,6 @@ private:
 	 * @param stage
 	 */
 	void cleanupStage(RecordGenerator::Stage stage);
-
-	/**
-	 * Helper method. Adds a single generator to the generator pool.
-	 *
-	 * @param generator
-	 */
-	template<class T> void registerGenerator(const string& name);
 
 	/**
 	 * A reference to the application wide notification center.
@@ -138,11 +138,11 @@ private:
 // method definitions
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<class T> void GeneratorSubsystem::registerGenerator(const string& name)
+template<class T> void AbstractGeneratorSubsystem::registerGenerator(const string& name)
 {
 	_generatorPool.set(new T(name, _config, _notificationCenter));
 }
 
 } // namespace Myriad
 
-#endif /* GENERATORSUBSYSTEM_H_ */
+#endif /* ABSTRACTGENERATORSUBSYSTEM_H_ */
