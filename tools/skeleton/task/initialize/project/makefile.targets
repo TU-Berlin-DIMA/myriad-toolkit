@@ -28,7 +28,7 @@ cleanall: clean
 	rm -Rf bin
 	rm -Rf config
 	rm -Rf lib
-	rm -Rf CHANGELOG LICENSE NOTICE
+	rm -Rf CHANGELOG LICENSE NOTICE README.md
 
 install: 
 	mkdir -p $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)
@@ -38,6 +38,7 @@ install:
 	cp CHANGELOG $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)
 	cp LICENSE $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)
 	cp NOTICE $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)
+	cp README.md $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)
 
 work-dirs: 
 	@echo 'Creating directory hierarchy'
@@ -91,15 +92,19 @@ lib/python/vendor/%.py: ../vendor/myriad/src/python/%.py
 	@echo 'Processing $@'
 	cp $< $@
 
-CHANGELOG: ../CHANGELOG
+CHANGELOG: ../src/resources/CHANGELOG
 	@echo 'Processing: $@'
 	cp $< $@
 	
-LICENSE: ../LICENSE
+LICENSE: ../src/resources/LICENSE
 	@echo 'Processing: $@'
 	cp $< $@
 
-NOTICE: ../NOTICE
+NOTICE: ../src/resources/NOTICE
+	@echo 'Processing: $@'
+	cp $< $@
+
+README.%: ../src/resources/README.%
 	@echo 'Processing: $@'
 	cp $< $@
 
