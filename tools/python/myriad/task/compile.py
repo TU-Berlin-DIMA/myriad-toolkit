@@ -68,12 +68,18 @@ class CompileModelTask(AbstractTask):
 #        astPrinter = PrintVisitor()
 #        astPrinter.traverse(ast)
 
+        # compile output collector
+        frontendCompiler = FrontendCompiler(args=args)
+        frontendCompiler.compile(ast)
         # compile generator config
         generatorSubsystemCompiler = GeneratorSubsystemCompiler(args=args)
         generatorSubsystemCompiler.compile(ast)
         # compile generator config
         configCompiler = ConfigCompiler(args=args)
         configCompiler.compile(ast)
+        # compile output collector
+        outputCollectorCompiler = OutputCollectorCompiler(args=args)
+        outputCollectorCompiler.compile(ast)
         # compile enum types
         enumCompiler = EnumTypesCompiler(args=args)
         enumCompiler.compile(ast.getSpecification().getEnumSets())

@@ -99,6 +99,55 @@ class SourceCompiler(object):
             return "NULL /* unknown */"
 
 
+class FrontendCompiler(SourceCompiler):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        super(FrontendCompiler, self).__init__(*args, **kwargs)
+        
+    def compile(self, astRoot):
+        self._log.warning("compiling frontend C++ sources")
+        self.compileMainMethod(astRoot)
+            
+    def compileMainMethod(self, astRoot):
+        try:
+            os.makedirs("%s/core" % (self._srcPath))
+        except OSError:
+            pass
+        
+        sourcePath = "%s/core/main.cpp" % (self._srcPath)
+        
+        if (not os.path.isfile(sourcePath)):
+            wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+            
+            print >> wfile, '#include "core/constants.h"'
+            print >> wfile, '#include "core/Frontend.h"'
+            print >> wfile, ''
+            print >> wfile, 'namespace Myriad {'
+            print >> wfile, ''
+            print >> wfile, '/**'
+            print >> wfile, ' * Application name.'
+            print >> wfile, ' */'
+            print >> wfile, 'const String Constant::APP_NAME = "%s - Parallel Data Generator";' % (self._args.dgen_name)
+            print >> wfile, ''
+            print >> wfile, '/**'
+            print >> wfile, ' * Application version.'
+            print >> wfile, ' */'
+            print >> wfile, 'const String Constant::APP_VERSION = "0.1.0";'
+            print >> wfile, ''
+            print >> wfile, '} // Myriad namespace'
+            print >> wfile, ''
+            print >> wfile, '// define the application main method'
+            print >> wfile, 'POCO_APP_MAIN(Myriad::Frontend)'
+    
+            wfile.close()
+
+
 class GeneratorSubsystemCompiler(SourceCompiler):
     '''
     classdocs
@@ -113,7 +162,7 @@ class GeneratorSubsystemCompiler(SourceCompiler):
     def compile(self, astRoot):
         self._log.warning("compiling generator subsystem C++ sources")
         self.compileBaseGeneratorSubsystem(astRoot)
-        self.compileConfig(astRoot)
+        self.compileGeneratorSubsystem(astRoot)
             
     def compileBaseGeneratorSubsystem(self, astRoot):
         try:
@@ -183,7 +232,7 @@ class GeneratorSubsystemCompiler(SourceCompiler):
         
         wfile.close()
             
-    def compileConfig(self, astRoot):
+    def compileGeneratorSubsystem(self, astRoot):
         try:
             os.makedirs("%s/generator" % (self._srcPath))
         except OSError:
@@ -358,6 +407,42 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, '#endif /* GENERATORCONFIG_H_ */'
 
         wfile.close()
+
+
+class OutputCollectorCompiler(SourceCompiler):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        super(OutputCollectorCompiler, self).__init__(*args, **kwargs)
+        
+    def compile(self, astRoot):
+        self._log.warning("compiling output collector C++ sources")
+        self.compileOutputCollector(astRoot)
+            
+    def compileOutputCollector(self, astRoot):
+        try:
+            os.makedirs("%s/io" % (self._srcPath))
+        except OSError:
+            pass
+        
+        sourcePath = "%s/io/OutputCollector.cpp" % (self._srcPath)
+        
+        if (not os.path.isfile(sourcePath)):
+            wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+            
+            print >> wfile, '#include "io/OutputCollector.h"'
+            print >> wfile, '#include "record/Record.h"'
+            print >> wfile, ''
+            print >> wfile, 'namespace Myriad {'
+            print >> wfile, ''
+            print >> wfile, '}  // namespace Myriad'
+    
+            wfile.close()
         
 
 class EnumTypesCompiler(SourceCompiler):
