@@ -97,7 +97,7 @@ class SourceCompiler(object):
         else:
             
             return "NULL /* unknown */"
-
+        
 
 class FrontendCompiler(SourceCompiler):
     '''
@@ -574,9 +574,16 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(field.getAttribute("name")), StringTransformer.sourceType(field.getAttribute("type")))
-            print >> wfile, '    const %s& %s() const;' % (StringTransformer.sourceType(field.getAttribute("type")), StringTransformer.us2cc(field.getAttribute("name")))
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+            
+            print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(fieldName), StringTransformer.sourceType(fieldType))
+            print >> wfile, '    const %s& %s() const;' % (StringTransformer.sourceType(fieldType), StringTransformer.us2cc(fieldName))
             print >> wfile, ''
+            if StringTransformer.isVectorType(fieldType):
+                print >> wfile, '    void %sSetOne(const %s& v, const size_t i = numeric_limits<size_t>::max());' % (StringTransformer.us2cc(fieldName), StringTransformer.coreType(fieldType))
+                print >> wfile, '    const %s& %sGetOne(const size_t i) const;' % (StringTransformer.coreType(fieldType), StringTransformer.us2cc(fieldName))
+                print >> wfile, ''
         
         print >> wfile, 'private:'
         print >> wfile, ''
@@ -588,16 +595,37 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         
         for field in recordType.getFields():
-            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")), StringTransformer.sourceType(field.getAttribute("type")))
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+            
+            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, StringTransformer.us2cc(fieldName), StringTransformer.sourceType(fieldType))
             print >> wfile, '{'
-            print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
+            print >> wfile, '    _%s = v;' % (fieldName)
             print >> wfile, '}'
             print >> wfile, ''
-            print >> wfile, 'inline const %s& Base%s::%s() const' % (StringTransformer.sourceType(field.getAttribute("type")), typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
+            print >> wfile, 'inline const %s& Base%s::%s() const' % (StringTransformer.sourceType(fieldType), typeNameCC, StringTransformer.us2cc(fieldName))
             print >> wfile, '{'
-            print >> wfile, '    return _%s;' % (field.getAttribute("name"))
+            print >> wfile, '    return _%s;' % (fieldName)
             print >> wfile, '}'
             print >> wfile, ''
+            if StringTransformer.isVectorType(fieldType):
+                print >> wfile, 'inline void Base%s::%sSetOne(const %s& v, const size_t i)' % (typeNameCC, StringTransformer.us2cc(fieldName), StringTransformer.coreType(fieldType))
+                print >> wfile, '{'
+                print >> wfile, '    if (i == numeric_limits<size_t>::max())'
+                print >> wfile, '    {'
+                print >> wfile, '        _%s.push_back(v);' % (fieldName)
+                print >> wfile, '    }'
+                print >> wfile, '    else'
+                print >> wfile, '    {'
+                print >> wfile, '        _%s[i] = v;' % (fieldName)
+                print >> wfile, '    }'
+                print >> wfile, '}'
+                print >> wfile, ''
+                print >> wfile, 'inline const %s& Base%s::%sGetOne(const size_t i) const' % (StringTransformer.coreType(fieldType), typeNameCC, StringTransformer.us2cc(fieldName))
+                print >> wfile, '{'
+                print >> wfile, '    return _%s[i];' % (fieldName)
+                print >> wfile, '}'
+                print >> wfile, ''
         
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
@@ -611,12 +639,23 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// forward declaration of operator<<'
-        print >> wfile, 'template<> void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::collect(const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'template<> inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::collect(const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         print >> wfile, '    _out << '
         
         for field in recordType.getFields():
-            print >> wfile, '        record.%-30s << " | " << ' % (StringTransformer.us2cc(field.getAttribute("name")) + "()")
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+            
+            if StringTransformer.isVectorType(fieldType):
+                pass
+# FIXME            
+#                print >> wfile, '        for(size_t i = 0; i < record.%s().length(); i++)' % (StringTransformer.us2cc(fieldName) + "()")
+#                print >> wfile, '        {'
+#                print >> wfile, '            record.%-26s << " | " << ' % (StringTransformer.us2cc(fieldName) + "GetOne(i)")
+#                print >> wfile, '        }'
+            else:
+                print >> wfile, '        record.%-30s << " | " << ' % (StringTransformer.us2cc(fieldName) + "()")
 
         print >> wfile, '        \'\\n\';'
         print >> wfile, '}'

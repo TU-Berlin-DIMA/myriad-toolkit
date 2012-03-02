@@ -301,11 +301,19 @@ class XMLReader(object):
         
         recordSequenceNode = RandomSequenceNode(key=xmlContext.prop("key"))
         
+        # read record type (mandatory)
         self.__readRecordType(recordSequenceNode, xPathContext.xpathEval("./m:record_type").pop())
+        # read cardinality estimator (mandatory)
         self.__readCardinalityEstimator(recordSequenceNode, xPathContext.xpathEval("./m:cardinality_estimator").pop())
-        self.__readHydrators(recordSequenceNode, xPathContext.xpathEval("./m:hydrators").pop())
-        self.__readHydrationPlan(recordSequenceNode, xPathContext.xpathEval("./m:hydration_plan").pop())
-        self.__readGeneratorTasks(recordSequenceNode, xPathContext.xpathEval("./m:generator_tasks").pop())
+        # read hydrators (optional)
+        hydratorsXMLNode = xPathContext.xpathEval("./m:hydrators")
+        self.__readHydrators(recordSequenceNode, hydratorsXMLNode.pop() if len(hydratorsXMLNode) > 0 else None)
+        # read hydration plan (optional)
+        hydrationPlanXMLNode = xPathContext.xpathEval("./m:hydration_plan")
+        self.__readHydrationPlan(recordSequenceNode, hydrationPlanXMLNode.pop() if len(hydrationPlanXMLNode) > 0 else None)
+        # read generator tasks (optional)
+        generatorTasksXMLNode = xPathContext.xpathEval("./m:generator_tasks")
+        self.__readGeneratorTasks(recordSequenceNode, generatorTasksXMLNode.pop() if len(generatorTasksXMLNode) > 0 else None)
         
         astContext.getRecordSequences().setRecordSequence(recordSequenceNode)
         
@@ -332,10 +340,16 @@ class XMLReader(object):
         astContext.setCardinalityEstimator(cardinalityEstimatorNode)
         
     def __readHydrators(self, astContext, xmlContext):
+        # create and attach the AST node
+        hydratorsNode = HydratorsNode()
+        astContext.setHydrators(hydratorsNode)
+        
+        # sanity check (XML element is not mandatory)
+        if (xmlContext == None):
+            return
+        
         # derive xPath context from the given xmlContext node
         xPathContext = self.__createXPathContext(xmlContext)
-        
-        hydratorsNode = HydratorsNode()
         
         i = 0
         for hydrator in xPathContext.xpathEval("./m:hydrator"):
@@ -348,14 +362,18 @@ class XMLReader(object):
 
             hydratorsNode.setHydrator(hydratorNode)
             i = i+1
-                
-        astContext.setHydrators(hydratorsNode)
         
     def __readHydrationPlan(self, astContext, xmlContext):
+        # create and attach the AST node
+        hydrationPlanNode = HydrationPlanNode()
+        astContext.setHydrationPlan(hydrationPlanNode)
+        
+        # sanity check (XML element is not mandatory)
+        if (xmlContext == None):
+            return
+        
         # derive xPath context from the given xmlContext node
         xPathContext = self.__createXPathContext(xmlContext)
-        
-        hydrationPlanNode = HydrationPlanNode()
         
         for hydratorRef in xPathContext.xpathEval("./m:hydrator_ref"):
             if not astContext.getHydrators().hasHydrator(hydratorRef.prop("ref")):
@@ -364,8 +382,6 @@ class XMLReader(object):
                 raise RuntimeError(message)
                 
             hydrationPlanNode.addHydrator(astContext.getHydrators().getHydrator(hydratorRef.prop("ref")))
-        
-        astContext.setHydrationPlan(hydrationPlanNode)
         
     def __readGeneratorTasks(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node

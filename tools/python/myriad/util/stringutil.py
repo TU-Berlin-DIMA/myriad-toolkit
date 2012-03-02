@@ -95,7 +95,24 @@ class StringTransformer(object):
             return "%s<%s>" % (r.group(1), r.group(2))
         else:
             return s
+        
+    def isVectorType(s):
+        r = StringTransformer._complex_type_pattern.match(s)
+        if r:
+            return r.group(1) == 'vector'
+        else:
+            return False
+        
+        r = StringTransformer._complex_type_pattern.match(s)
+        
+    def coreType(s):
+        r = StringTransformer._complex_type_pattern.match(s)
+        if r:
+            return r.group(2)
+        else:
+            return s
     
+    # static methods
     uc = staticmethod(uc)
     lc = staticmethod(lc)
     cc2us = staticmethod(cc2us)
@@ -103,3 +120,5 @@ class StringTransformer(object):
     us2ccAll = staticmethod(us2ccAll)
     ucFirst = staticmethod(ucFirst)
     sourceType = staticmethod(sourceType)
+    isVectorType = staticmethod(isVectorType)
+    coreType = staticmethod(coreType)

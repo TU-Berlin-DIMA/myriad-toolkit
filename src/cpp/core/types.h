@@ -20,6 +20,7 @@
 #define TYPES_H_
 
 #include <stdint.h>
+#include <limits>
 #include <sstream>
 #include <string>
 
