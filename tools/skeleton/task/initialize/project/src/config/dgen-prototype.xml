@@ -19,7 +19,7 @@
     <!-- supported probability types: -->
     <!--  * pareto_probability(Decimal: x_min, Decimal: alpha) -->
     <!--  * normal_probability(Decimal: mean, Decimal: stddev) -->
-    <!--  * custom_probability(...) -->
+    <!--  * custom_discrete_probability(...) -->
     <!--
     <function key="Pr[some_probability]" type="pareto_probability">
       <argument type="Decimal" key="x_min" value="1" />
