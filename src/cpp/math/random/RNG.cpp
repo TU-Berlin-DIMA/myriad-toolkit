@@ -18,11 +18,12 @@
 
 #include "RNG.h"
 #include "CompoundEICG.h"
+#include "HashRandomStream.h"
 
 namespace Myriad {
 
 // init periods method
-CompoundEICG::Seed initPeriods()
+CompoundEICG::Seed compoundEICGInitPeriods()
 {
 	CompoundEICG::Seed tmp;
 
@@ -37,7 +38,7 @@ CompoundEICG::Seed initPeriods()
 	return tmp;
 }
 
-CompoundEICG::Seed initSubstreamOffset()
+CompoundEICG::Seed compoundEICGInitSubstreamOffset()
 {
 	CompoundEICG::Seed tmp;
 
@@ -52,7 +53,7 @@ CompoundEICG::Seed initSubstreamOffset()
 	return tmp;
 }
 
-CompoundEICG::Seed initChunkOffset()
+CompoundEICG::Seed compoundEICGInitChunkOffset()
 {
 	CompoundEICG::Seed tmp;
 
@@ -67,7 +68,7 @@ CompoundEICG::Seed initChunkOffset()
 	return tmp;
 }
 
-CompoundEICG::Seed initElementOffset()
+CompoundEICG::Seed compoundEICGInitElementOffset()
 {
 	CompoundEICG::Seed tmp;
 
@@ -82,11 +83,47 @@ CompoundEICG::Seed initElementOffset()
 	return tmp;
 }
 
+HashRandomStream::Seed hashRandomStreamInitSubstreamOffset()
+{
+	HashRandomStream::Seed tmp;
+
+	// 281474976710656 = 2^48
+	tmp.v[0] = 281474976710656ULL;
+
+	return tmp;
+}
+
+HashRandomStream::Seed hashRandomStreamInitChunkOffset()
+{
+	HashRandomStream::Seed tmp;
+
+	// 256 = 2^8
+	tmp.v[0] = 256ULL;
+
+	return tmp;
+}
+
+HashRandomStream::Seed hashRandomStreamInitElementOffset()
+{
+	HashRandomStream::Seed tmp;
+
+	// 1
+	tmp.v[0] = 1ULL;
+
+	return tmp;
+}
+
 // set periods for the EICG components
-const CompoundEICG::Seed CompoundEICG::PERIOD(initPeriods());
-const CompoundEICG::Seed CompoundEICG::OFFSET_SUBSTREAM(initSubstreamOffset());
-const CompoundEICG::Seed CompoundEICG::OFFSET_CHUNK(initChunkOffset());
-const CompoundEICG::Seed CompoundEICG::OFFSET_ELEMENT(initElementOffset());
+const CompoundEICG::Seed CompoundEICG::PERIOD(compoundEICGInitPeriods());
+const CompoundEICG::Seed CompoundEICG::OFFSET_SUBSTREAM(compoundEICGInitSubstreamOffset());
+const CompoundEICG::Seed CompoundEICG::OFFSET_CHUNK(compoundEICGInitChunkOffset());
+const CompoundEICG::Seed CompoundEICG::OFFSET_ELEMENT(compoundEICGInitElementOffset());
+
+// set periods for the HashRandomStream
+const HashRandomStream::Seed HashRandomStream::OFFSET_SUBSTREAM(hashRandomStreamInitSubstreamOffset());
+const HashRandomStream::Seed HashRandomStream::OFFSET_CHUNK(hashRandomStreamInitChunkOffset());
+const HashRandomStream::Seed HashRandomStream::OFFSET_ELEMENT(hashRandomStreamInitElementOffset());
+const double HashRandomStream::D_2_POW_NEG_64 = 5.4210108624275221700e-20;
 
 //const CompoundEICG::SeedBitmap CompoundEICG::BITMAP_SUBSTREAM = 0x03;
 //const CompoundEICG::SeedBitmap CompoundEICG::BITMAP_CHUNK = 0x0C;

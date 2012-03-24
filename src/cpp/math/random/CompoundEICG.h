@@ -95,7 +95,7 @@ public:
 			_substreamS = o._substreamS;
 			_chunkS = o._chunkS;
 			_elementS = o._elementS;
-			initialize();
+			_currentSum = updateResults();
 		}
 
 		return *this;
@@ -122,7 +122,7 @@ public:
 	void seed(Seed masterSeed)
 	{
 		_masterS = _substreamS = _chunkS = _elementS = masterSeed;
-		initialize();
+		_currentSum = updateResults();
 	}
 
 	const Seed& seed() const
