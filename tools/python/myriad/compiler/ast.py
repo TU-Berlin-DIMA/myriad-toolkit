@@ -709,7 +709,7 @@ class ClusteredEnumSetHydratorNode(HydratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ClusteredEnumSet")
+        kwargs.update(template_type="ClusteredEnumSetHydrator")
         super(ClusteredEnumSetHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
