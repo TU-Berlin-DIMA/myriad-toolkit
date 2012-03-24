@@ -285,7 +285,7 @@ class XMLReader(object):
     def __readRecordSequences(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
         xPathContext = self.__createXPathContext(xmlContext)
-
+        
         # attach FunctionNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:record_sequences/m:*"):
             recordSequenceType = element.get_name()
@@ -362,7 +362,7 @@ class XMLReader(object):
 
             hydratorsNode.setHydrator(hydratorNode)
             i = i+1
-        
+            
     def __readHydrationPlan(self, astContext, xmlContext):
         # create and attach the AST node
         hydrationPlanNode = HydrationPlanNode()
@@ -460,7 +460,7 @@ class XMLReader(object):
             return UnresolvedHydratorRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
         
         if (argumentType == "string_set_ref"):
-            if not ref:
+            if not argumentRef:
                 message = "Missing required attribute ref for field argument `%s`" % (argumentKey)
                 self.__log.error(message)
                 raise RuntimeError(message)
