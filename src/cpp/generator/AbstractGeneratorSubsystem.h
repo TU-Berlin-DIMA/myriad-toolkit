@@ -45,7 +45,7 @@ public:
 		_notificationCenter(notificationCenter),
 		_executeStages(executeStages),
 		_config(_generatorPool),
-		_threadPool("GeneratorPool", 4, 32),
+		_threadPool("StageTaskPool", 4, 32),
 		_initialized(false),
 		_logger(Logger::get("generator.driver")),
 		_ui(Logger::get("ui"))
