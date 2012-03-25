@@ -28,8 +28,8 @@ using namespace std;
 namespace Myriad {
 
 //typedef CompoundEICG RandomStream;
-//typedef HashRandomStream RandomStream;
-typedef NativeRandomStream RandomStream;
+typedef HashRandomStream RandomStream;
+//typedef NativeRandomStream RandomStream;
 
 } // namespace Myriad
 
