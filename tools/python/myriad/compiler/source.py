@@ -91,7 +91,7 @@ class SourceCompiler(object):
             return '_%s' % (hydratorVarName)
         
         elif isinstance(argumentNode, StringSetRefArgumentNode):
-            stringSetKey = StringTransformer.us2cc(argumentNode.getAttribute("ref"))
+            stringSetKey = argumentNode.getAttribute("ref")
             return 'config.stringSet("%s")' % (stringSetKey)
         
         else:
