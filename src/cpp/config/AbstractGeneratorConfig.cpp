@@ -81,8 +81,11 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	_logger.information("Loading generator configuration from " + configPath.toString());
 	loadXMLConfig(configPath);
 
-	// initialize the master random stream
-	_masterPRNG.seed(RandomStream::Seed(getString("common.master.seed", "0,0,0,0,0,0")));
+	if (hasProperty("common.master.seed"))
+	{
+		// initialize the master random stream (otherwise use the default master seed)
+		_masterPRNG.seed(RandomStream::Seed(getString("common.master.seed")));
+	}
 }
 
 void AbstractGeneratorConfig::loadXMLConfig(const Path& path)
@@ -105,7 +108,7 @@ void AbstractGeneratorConfig::configureParameters(const AutoPtr<Document>& doc)
 	for (unsigned long int j = 0; j < parameters->length(); j++)
 	{
 		Element* p = static_cast<Element*> (parameters->item(j));
-		setString("generator." + p->getAttribute("name"), p->innerText());
+		setString("generator." + p->getAttribute("key"), p->innerText());
 	}
 }
 
