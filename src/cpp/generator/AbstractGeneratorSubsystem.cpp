@@ -38,6 +38,11 @@ RecordGenerator::StageList initList()
 	RecordGenerator::StageList tmp;
 
 	tmp.push_back(RecordGenerator::Stage("default"));
+	tmp.push_back(RecordGenerator::Stage("stage-1"));
+	tmp.push_back(RecordGenerator::Stage("stage-2"));
+	tmp.push_back(RecordGenerator::Stage("stage-3"));
+	tmp.push_back(RecordGenerator::Stage("stage-4"));
+	tmp.push_back(RecordGenerator::Stage("stage-5"));
 
 	return tmp;
 }
