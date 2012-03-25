@@ -65,10 +65,19 @@ protected:
 		return "Generator Subsystem";
 	}
 
+	/**
+	 * Commoninitialization logic.
+	 */
 	void initialize(Application&);
 
+	/**
+	 * Common uninitialization logic.
+	 */
 	void uninitialize();
 
+	/**
+	 * Virtual method for registering generators.
+	 */
 	virtual void registerGenerators() = 0;
 
 	/**
@@ -122,6 +131,8 @@ private:
 	 * A flag indicating that the initialize() method has already been invoked.
 	 */
 	bool _initialized;
+
+protected:
 
 	/**
 	 * Generator subsystem logger.
