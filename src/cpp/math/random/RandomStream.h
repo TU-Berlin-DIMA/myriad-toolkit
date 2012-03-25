@@ -20,12 +20,14 @@
 #define RANDOMSTREAM_H_
 
 #include "math/random/CompoundEICG.h"
+#include "math/random/HashRandomStream.h"
 
 using namespace std;
 
 namespace Myriad {
 
-typedef CompoundEICG RandomStream;
+//typedef CompoundEICG RandomStream;
+typedef HashRandomStream RandomStream;
 
 } // namespace Myriad
 
