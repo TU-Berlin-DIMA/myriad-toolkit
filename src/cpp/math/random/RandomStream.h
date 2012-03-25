@@ -21,13 +21,15 @@
 
 #include "math/random/CompoundEICG.h"
 #include "math/random/HashRandomStream.h"
+#include "math/random/NativeRandomStream.h"
 
 using namespace std;
 
 namespace Myriad {
 
 //typedef CompoundEICG RandomStream;
-typedef HashRandomStream RandomStream;
+//typedef HashRandomStream RandomStream;
+typedef NativeRandomStream RandomStream;
 
 } // namespace Myriad
 
