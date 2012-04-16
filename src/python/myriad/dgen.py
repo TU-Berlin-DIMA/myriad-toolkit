@@ -164,10 +164,7 @@ class DGen(object):
                 self.dgenMaster = master
                 self.dgenNodes = [ DGenNode(n) for n in nodes ]
                 
-                self.log.info("starting %d generator nodes", len(self.dgenNodes))
-                self.startNodes()
-                
-                self.log.info("starting server server on address `%s:%d`", self.dgenMaster.name, self.dgenMaster.coorServerPort)    
+                self.log.info("starting heartbeat server on address `%s:%d`", self.dgenMaster.name, self.dgenMaster.coorServerPort)    
                 server = HeartbeatServer(self.datasetID, self.dgenNodes, ('0.0.0.0', self.dgenMaster.coorServerPort))
                 
                 # start node monitor
@@ -178,6 +175,9 @@ class DGen(object):
                 # start server loop
                 serverThread = Thread(target=server.serveLoop) 
                 serverThread.start()
+                
+                self.log.info("starting %d generator nodes", len(self.dgenNodes))
+                self.startNodes()
                 
                 # wait for server thread to finish (timeout and loop needed for KeyboardInterrupt)
                 while(serverThread.isAlive()):
