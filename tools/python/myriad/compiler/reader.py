@@ -60,9 +60,6 @@ class XMLReader(object):
             # construct the remainder of the AST
             self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
             
-            # resolve imports
-            self.__resolveImports()
-        
             # resolve argument refs
             self.__resolveFieldRefArguments()
             self.__resolveFunctionRefArguments()
@@ -75,23 +72,6 @@ class XMLReader(object):
         
         # return the final version AST
         return self.__astRoot
-    
-    def __resolveImports(self):
-        importsNode = self.__astRoot.getImports()
-        unresolvedImports = importsNode.getUnresolvedImports()
-        while unresolvedImports:
-            for unresolvedImportNode in unresolvedImports:
-                path = unresolvedImportNode.getAttribute('path')
-                self.__log.info("Resolving XML import `%s`." % (path))
-                
-                # open the catalog XML
-                xmlDoc = libxml2.parseFile(path)
-                # construct and read the catalog node
-                resolvedImportNode = ResolvedImportNode(path=path)
-                self.__readCatalogImport(resolvedImportNode, xmlDoc)
-                
-                importsNode.addImport(resolvedImportNode)
-            unresolvedImports = importsNode.getUnresolvedImports()
     
     def __resolveFieldRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFieldRefArgumentNode)
@@ -125,23 +105,7 @@ class XMLReader(object):
             parent = unresolvedFunctionRefArgumentNode.getParent()
             fqName = unresolvedFunctionRefArgumentNode.getAttribute("ref")
             
-            if fqName.find(":") > -1:
-                namespace = fqName[:fqName.find(":")]
-                key = fqName[fqName.find(":")+1:]
-                if (namespace != "core"):
-                    functionContainerNode = self.__astRoot.getImportByNamespace(namespace)
-                else:
-                    functionContainerNode = None
-            else:
-                namespace = None
-                key = fqName
-                functionContainerNode = self.__astRoot.getSpecification()
-            
-            # FIXME: provide support for core built-in functions (e.g. uniform)    
-            if namespace == "core":
-                continue
-
-            functionNode = functionContainerNode.getFunctions().getFunction(key)
+            functionNode = self.__astRoot.getSpecification().getFunctions().getFunction(fqName)
 
             if not functionNode:
                 message = "Cannot resolve function reference for function `%s`" % (fqName)
@@ -193,43 +157,12 @@ class XMLReader(object):
 
     def __readSpecification(self, astContext, xmlContext):
         # basic tree areas
-        self.__readImports(astContext, xmlContext)
         self.__readParameters(astContext, xmlContext)
         self.__readFunctions(astContext, xmlContext)
         self.__readEnumSets(astContext, xmlContext)
         self.__readStringSets(astContext, xmlContext)
         # record related tree areas
         self.__readRecordSequences(astContext, xmlContext)
-        
-    def __readCatalogImport(self, astContext, xmlContext):
-        # basic tree areas
-        self.__readImports(astContext, xmlContext)
-        self.__readParameters(astContext, xmlContext)
-        self.__readFunctions(astContext, xmlContext)
-        self.__readEnumSets(astContext, xmlContext)
-        self.__readStringSets(astContext, xmlContext)
-        
-    def __readImports(self, astContext, xmlContext):
-        # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
-        # get the directory containing the parsed specification XML document
-        baseDir = os.path.dirname(astContext.getAttribute("path"))
-        
-        # attach UnresolvedImportNode for each import in the XML document
-        for element in xPathContext.xpathEval(".//m:imports/m:import"):
-            # get the namespace for the current import
-            namespace = element.prop("namespace")
-            # get the path for the current import
-            path = element.prop("path")
-            # use XML location dir to prefix relative paths
-            if (not os.path.isabs(path)):
-                path = os.path.realpath("%s/%s" % (baseDir, path))
-
-            # register the namespace with this astContext
-            astContext.getNamespaces().setNamespace(namespace, path)
-                            
-            # attach UnresolvedImportNode
-            self.__astRoot.getImports().addImport(UnresolvedImportNode(path=path))
         
     def __readParameters(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node

@@ -54,111 +54,19 @@ class RootNode(AbstractNode):
     '''
     
     __specification = None
-    __imports = None
     
     
     def __init__(self, *args, **kwargs):
         super(RootNode, self).__init__(*args, **kwargs)
         self.__specification = SpecificationNode()
-        self.__imports = ImportsNode()
     
     def accept(self, visitor):
         visitor.preVisit(self)
         self.__specification.accept(visitor)
-        self.__imports.accept(visitor)
         visitor.postVisit(self)
 
     def getSpecification(self):
         return self.__specification
-
-    def getImports(self):
-        return self.__imports
-    
-    def getImportByNamespace(self, namespace):
-        # FIXME: this won't work for transitive includes
-        path = self.__specification.getNamespacePath(namespace)
-        return self.__imports.getImport(path)
-
-
-class ImportsNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    __imports = {}
-    
-    def __init__(self, *args, **kwargs):
-        super(ImportsNode, self).__init__(*args, **kwargs)
-        self.__imports = {}
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        for node in self.__imports.itervalues():
-            node.accept(visitor)
-        visitor.postVisit(self)
-        
-    def addImport(self, node):
-        self.__imports[node.getAttribute('path')] = node
-        
-    def getImport(self, path):
-        return self.__imports[path]
-        
-    def getUnresolvedImports(self):
-        return filter(lambda x: isinstance(x, UnresolvedImportNode), self.__imports.itervalues()) 
-
-    
-
-class UnresolvedImportNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        super(UnresolvedImportNode, self).__init__(*args, **kwargs)
-
-
-class ResolvedImportNode(AbstractNode):
-    '''
-    classdocs
-    '''
-
-    __namespaces = None
-    __parameters = None
-    __functions = None
-    __enumSets = None
-    __stringSets = None
-    
-    def __init__(self, *args, **kwargs):
-        super(ResolvedImportNode, self).__init__(*args, **kwargs)
-        self.__namespaces = ValidNamespacesNode()
-        self.__parameters = ParametersNode()
-        self.__functions = FunctionsNode()
-        self.__enumSets = EnumSetsNode()
-        self.__stringSets = StringSetsNode()
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        self.__namespaces.accept(visitor)
-        self.__parameters.accept(visitor)
-        self.__functions.accept(visitor)
-        self.__enumSets.accept(visitor)
-        self.__stringSets.accept(visitor)
-        visitor.postVisit(self)
-        
-    def getNamespaces(self):
-        return self.__namespaces
-        
-    def getParameters(self):
-        return self.__parameters
-    
-    def getFunctions(self):
-        return self.__functions
-    
-    def getEnumSets(self):
-        return self.__enumSets
-    
-    def getStringSets(self):
-        return self.__stringSets
 
 
 class SpecificationNode(AbstractNode):
@@ -166,7 +74,6 @@ class SpecificationNode(AbstractNode):
     classdocs
     '''
 
-    __namespaces = None
     __parameters = None
     __functions = None
     __enumSets = None
@@ -175,7 +82,6 @@ class SpecificationNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(SpecificationNode, self).__init__(*args, **kwargs)
-        self.__namespaces = ValidNamespacesNode()
         self.__parameters = ParametersNode()
         self.__functions = FunctionsNode()
         self.__enumSets = EnumSetsNode()
@@ -184,19 +90,12 @@ class SpecificationNode(AbstractNode):
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        self.__namespaces.accept(visitor)
         self.__parameters.accept(visitor)
         self.__functions.accept(visitor)
         self.__enumSets.accept(visitor)
         self.__stringSets.accept(visitor)
         self.__recordSequences.accept(visitor)
         visitor.postVisit(self)
-        
-    def getNamespaces(self):
-        return self.__namespaces
-        
-    def getNamespacePath(self, namespace):
-        return self.__namespaces.getNamespace(namespace)    
         
     def getParameters(self):
         return self.__parameters
@@ -212,24 +111,6 @@ class SpecificationNode(AbstractNode):
     
     def getRecordSequences(self):
         return self.__recordSequences
-
-
-class ValidNamespacesNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        super(ValidNamespacesNode, self).__init__(*args, **kwargs)
-        
-    def setNamespace(self, namespace, path):
-        self.setAttribute(namespace, path)
-        
-    def getNamespace(self, namespace):
-        return self.getAttribute(namespace)
-    
-    def hasNamespace(self, namespace):
-        return self.hasAttribute(namespace)
 
 
 class ParametersNode(AbstractNode):
@@ -304,6 +185,9 @@ class FunctionNode(AbstractNode):
     
     def getArgument(self, key):
         return self.__arguments.get(key)
+        
+    def getConstructorArgumentsOrder(self):
+        return []
     
 
 class ParetoProbabilityFunctionNode(FunctionNode):
@@ -314,6 +198,9 @@ class ParetoProbabilityFunctionNode(FunctionNode):
     def __init__(self, *args, **kwargs):
         kwargs.update(type="ParetoPrFunction")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["x_min", "alpha"]
 
     
 class NormalProbabilityFunctionNode(FunctionNode):
@@ -324,6 +211,9 @@ class NormalProbabilityFunctionNode(FunctionNode):
     def __init__(self, *args, **kwargs):
         kwargs.update(type="NormalPrFunction")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["mean", "stddev"]
     
 
 class CustomDiscreteProbabilityFunctionNode(FunctionNode):

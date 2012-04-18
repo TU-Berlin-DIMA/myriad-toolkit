@@ -36,6 +36,8 @@ namespace Myriad {
 
 void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 {
+	_logger.information("Loading generator configuration");
+
 	// add the application config as a read-only layer
 	this->addWriteable(&appConfig, 0, true);
 
@@ -74,12 +76,19 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	Logger::root().setChannel(logChannel);
 	_logger.setChannel(logChannel);
 
+#ifdef XML_CONFIG_LOADING
 	// get the path of the master config xml file
 	Path configPath(getString("application.node-config", getString("common.defaults.config.node-config")));
 	configPath.makeAbsolute(getString("application.config-dir"));
 
 	_logger.information("Loading generator configuration from " + configPath.toString());
 	loadXMLConfig(configPath);
+#else
+	configureParameters();
+	configureFunctions();
+	configurePartitioning();
+	configureSets();
+#endif
 
 	if (hasProperty("common.master.seed"))
 	{

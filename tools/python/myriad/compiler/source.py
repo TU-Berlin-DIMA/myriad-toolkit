@@ -30,6 +30,7 @@ from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
 from myriad.compiler.ast import StringSetRefArgumentNode
 from myriad.compiler.ast import DepthFirstNodeFilter
 from myriad.compiler.ast import StringSetNode
+from myriad.compiler.ast import FunctionNode
 from myriad.util.stringutil import StringTransformer
 
 class SourceCompiler(object):
@@ -343,18 +344,42 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
-        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
+        print >> wfile, '    virtual void configureParameters()'
         print >> wfile, '    {'
-        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
-        
-        nodeFilter = DepthFirstNodeFilter(filterType=StringSetNode)
-        for stringSet in nodeFilter.getAll(astRoot):
-            print >> wfile, '        bindStringSet(doc, "%(n)s", _boundStringSets["%(n)s"]);' % {'n': stringSet.getAttribute("key")}
-        
-        
-        print >> wfile, ''
-        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
         print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configureFunctions()'
+        print >> wfile, '    {'
+        print >> wfile, '        // register prototype functions'
+        
+        nodeFilter = DepthFirstNodeFilter(filterType=FunctionNode)
+        for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
+            argsCode = ['"%s"' % (function.getAttribute("key"))]
+            for argKey in function.getConstructorArgumentsOrder():
+                argsCode.append(self._argumentCode(function.getArgument(argKey)))
+            print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getAttribute("type"), 'a': ', '.join(argsCode)}
+
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configurePartitioning()'
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configureSets()'
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+#        print >> wfile, ''
+#        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
+#        print >> wfile, '    {'
+#        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
+#        
+#        nodeFilter = DepthFirstNodeFilter(filterType=StringSetNode)
+#        for stringSet in nodeFilter.getAll(astRoot):
+#            print >> wfile, '        bindStringSet(doc, "%(n)s", _boundStringSets["%(n)s"]);' % {'n': stringSet.getAttribute("key")}
+#        
+#        print >> wfile, ''
+#        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
+#        print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -393,13 +418,37 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
-        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
+        print >> wfile, '    virtual void configureParameters()'
         print >> wfile, '    {'
-        print >> wfile, '        BaseGeneratorConfig::configureSets(doc);'
-        print >> wfile, ''
-        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
-        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
+        print >> wfile, '        BaseGeneratorConfig::configureParameters();'
+        print >> wfile, '        // override or add parameters here'
         print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configureFunctions()'
+        print >> wfile, '    {'
+        print >> wfile, '        BaseGeneratorConfig::configureFunctions();'
+        print >> wfile, '        // override or add functions here'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configurePartitioning()'
+        print >> wfile, '    {'
+        print >> wfile, '        BaseGeneratorConfig::configurePartitioning();'
+        print >> wfile, '        // override or add partitioning config here'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configureSets()'
+        print >> wfile, '    {'
+        print >> wfile, '        BaseGeneratorConfig::configureSets();'
+        print >> wfile, '        // override or add enumerated sets here'
+        print >> wfile, '    }'
+#        print >> wfile, ''
+#        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
+#        print >> wfile, '    {'
+#        print >> wfile, '        BaseGeneratorConfig::configureSets(doc);'
+#        print >> wfile, ''
+#        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
+#        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
+#        print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -882,8 +931,6 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'using namespace Myriad;'
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
-        print >> wfile, ''
-        print >> wfile, 'class UserHydratorChain;'
         print >> wfile, ''
         print >> wfile, 'class %(t)sGenerator: public Base%(t)sGenerator' % {'t': typeNameCC}
         print >> wfile, '{'

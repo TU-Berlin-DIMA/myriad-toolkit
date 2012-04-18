@@ -131,6 +131,7 @@ protected:
 	 * current api configuration.
 	 *
 	 * @param path
+	 * @deprecated
 	 */
 	void loadXMLConfig(const Path& path);
 
@@ -138,23 +139,28 @@ protected:
 	 * Helper function - loads properties from XML.
 	 *
 	 * @param doc
+	 * @deprecated
 	 */
-	void configureParameters(const AutoPtr<XML::Document>& doc);
+	virtual void configureParameters(const AutoPtr<XML::Document>& doc);
 
 	/**
 	 * Helper function - loads functions from XML.
 	 *
 	 * @param doc
+	 *
+	 * @deprecated
 	 */
-	void configureFunctions(const AutoPtr<XML::Document>& doc);
+	virtual void configureFunctions(const AutoPtr<XML::Document>& doc);
 
 	/**
 	 * Helper function - computes the PRDG subsequences assigned to the current
 	 * node for each data type.
 	 *
 	 * @param doc
+	 *
+	 * @deprecated
 	 */
-	void configurePartitioning(const AutoPtr<XML::Document>& doc);
+	virtual void configurePartitioning(const AutoPtr<XML::Document>& doc);
 
 	/**
 	 * Binds XML configured record and string sets to local variables. This
@@ -162,6 +168,8 @@ protected:
 	 * GeneratorConfig subclass.
 	 *
 	 * @param doc
+	 *
+	 * @deprecated
 	 */
 	virtual void configureSets(const AutoPtr<XML::Document>& doc) = 0;
 
@@ -171,6 +179,8 @@ protected:
 	 * @param doc
 	 * @param id
 	 * @param set
+	 *
+	 * @deprecated
 	 */
 	void bindStringSet(const AutoPtr<XML::Document>& doc, const string& id, vector<string>& set);
 
@@ -180,8 +190,39 @@ protected:
 	 * @param doc
 	 * @param id
 	 * @param set
+	 *
+	 * @deprecated
 	 */
 	template<class T> void bindRecordSet(const AutoPtr<XML::Document>& doc, const string& id, vector<AutoPtr<T> >& set);
+
+	/**
+	 * Helper function - loads config parameters.
+	 */
+	virtual void configureParameters()
+	{
+	}
+
+	/**
+	 * Helper function - loads functions.
+	 */
+	virtual void configureFunctions()
+	{
+	}
+
+	/**
+	 * Helper function - computes the PRDG subsequences assigned to the current
+	 * node for each data type.
+	 */
+	virtual void configurePartitioning()
+	{
+	}
+
+	/**
+	 * Helper function - binds record and string sets to local variables.
+	 */
+	virtual void configureSets()
+	{
+	}
 
 	/**
 	 * Helper function - defines a probability point in a custom probability.
