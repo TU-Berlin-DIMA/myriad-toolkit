@@ -171,7 +171,7 @@ class XMLReader(object):
         # read the parameters for this astContext
         for element in xPathContext.xpathEval(".//m:parameters/m:parameter"):
             # add the parameter to the astContext
-            astContext.getParameters().setParameter(element.prop("key"), element.prop("key"))
+            astContext.getParameters().setParameter(element.prop("key"), element.content)
         
     def __readFunctions(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
@@ -265,7 +265,7 @@ class XMLReader(object):
         # derive xPath context from the given xmlContext node
         xPathContext = self.__createXPathContext(xmlContext)
         
-        cardinalityEstimatorNode = CardinalityEstimatorNode(type=xmlContext.prop("type"))
+        cardinalityEstimatorNode = self.__cardinalityEstimatorFactory(xmlContext)
         
         for child in xPathContext.xpathEval("./m:argument"):
             cardinalityEstimatorNode.setArgument(self.__argumentFactory(child))
@@ -326,6 +326,16 @@ class XMLReader(object):
             generatorTasksNode.setTask(GeneratorTaskNode(key=element.prop("key"), type=element.prop("type")))
         
         astContext.setGeneratorTasks(generatorTasksNode)
+        
+    def __cardinalityEstimatorFactory(self, cardinalityEstimatorXMLNode):
+        cardinalityEstimatorType = cardinalityEstimatorXMLNode.prop("type")
+        
+        cardinalityEstimatorNode = None
+        
+        if (cardinalityEstimatorType == "linear_scale_estimator"):
+            return LinearScaleEstimatorNode()
+
+        raise RuntimeError('Invalid cardinality estimator type `%s`' % (cardinalityEstimatorType))
         
     def __functionFactory(self, functionXMLNode):
         functionType = functionXMLNode.prop("type")

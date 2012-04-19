@@ -130,6 +130,8 @@ class ParametersNode(AbstractNode):
     def hasParameter(self, value):
         return self.hasAttribute(value)
 
+    def getAll(self):
+        return self.allAttributes()
 
 #
 # Functions
@@ -409,6 +411,7 @@ class RandomSequenceNode(RecordSequenceNode):
         
     def setCardinalityEstimator(self, node):
         self.__cardinalityEstimator = node
+        node.setParent(self)
         
     def getCardinalityEstimator(self):
         return self.__cardinalityEstimator
@@ -473,6 +476,7 @@ class CardinalityEstimatorNode(AbstractNode):
     classdocs
     '''
     
+    __parent = None
     __arguments = {}
     
     def __init__(self, *args, **kwargs):
@@ -492,6 +496,26 @@ class CardinalityEstimatorNode(AbstractNode):
     def getArgument(self, key):
         return self.__arguments.get(key)
 
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
+        
+    def getConstructorArgumentsOrder(self):
+        return []
+
+class LinearScaleEstimatorNode(CardinalityEstimatorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="linear_scale_estimator")
+        super(LinearScaleEstimatorNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["base_cardinality"]
 
 class HydratorsNode(RecordSequenceNode):
     '''

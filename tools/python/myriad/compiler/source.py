@@ -31,6 +31,7 @@ from myriad.compiler.ast import StringSetRefArgumentNode
 from myriad.compiler.ast import DepthFirstNodeFilter
 from myriad.compiler.ast import StringSetNode
 from myriad.compiler.ast import FunctionNode
+from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.util.stringutil import StringTransformer
 
 class SourceCompiler(object):
@@ -39,9 +40,11 @@ class SourceCompiler(object):
     '''
     
     BUFFER_SIZE = 512
+    PARAM_PREFIX = 'generator.'
     
     _args = None
     _srcPath = None
+    _dgenName = None
     
     _log = None
     
@@ -53,22 +56,30 @@ class SourceCompiler(object):
         Constructor
         '''
         self._args = args
-        self._srcPath = "%s/../../src/cpp" % (args.base_path)
+        self._srcPath = "%s/../../src" % (args.base_path)
+        self._dgenName = args.dgen_name
         
         self._log = logging.getLogger("source.compiler")
         
-    def _argumentCode(self, argumentNode):
+    def _argumentCode(self, argumentNode, configVarName = 'config'):
+        
+        if configVarName:
+            configPrefix = '%s.'  % (configVarName)
+        else:
+            configPrefix = ''
+        
         if isinstance(argumentNode, LiteralArgumentNode):
             attributeType = argumentNode.getAttribute("type").strip()
             attributeValue = argumentNode.getAttribute("value").strip()
             
             m = self._expr_pattern.match(attributeValue)
             if (m):
-                return 'config.parameter<%s>("%s")' % (attributeType, m.group(1))
+                return '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(1))
             
             m = self._param_pattern.match(attributeValue)
             if (m):
-                exprExpandedParams = self._expr_pattern.sub(lambda m: 'config.parameter<Decimal>("%s")' % (m.group(1)), attributeValue)
+                # FIXME: `config.parameter<Decimal>` looks like a bug
+                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<Decimal>("%s")' % (configPrefix, m.group(1)), attributeValue)
                 return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[3:-2])
             
             else:
@@ -80,7 +91,7 @@ class SourceCompiler(object):
         elif isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
             functionType = argumentNode.getAttribute("type")
             functionName = argumentNode.getAttribute("ref")
-            return 'config.func<%s> ("%s")' % (functionType, functionName)
+            return '%sfunc<%s> ("%s")' % (configPrefix, functionType, functionName)
         
         elif isinstance(argumentNode, ResolvedFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
@@ -93,7 +104,7 @@ class SourceCompiler(object):
         
         elif isinstance(argumentNode, StringSetRefArgumentNode):
             stringSetKey = argumentNode.getAttribute("ref")
-            return 'config.stringSet("%s")' % (stringSetKey)
+            return '%sstringSet("%s")' % (configPrefix, stringSetKey)
         
         else:
             
@@ -117,11 +128,11 @@ class FrontendCompiler(SourceCompiler):
             
     def compileMainMethod(self, astRoot):
         try:
-            os.makedirs("%s/core" % (self._srcPath))
+            os.makedirs("%s/cpp/core" % (self._srcPath))
         except OSError:
             pass
         
-        sourcePath = "%s/core/main.cpp" % (self._srcPath)
+        sourcePath = "%s/cpp/core/main.cpp" % (self._srcPath)
         
         if (not os.path.isfile(sourcePath)):
             wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
@@ -167,11 +178,11 @@ class GeneratorSubsystemCompiler(SourceCompiler):
             
     def compileBaseGeneratorSubsystem(self, astRoot):
         try:
-            os.makedirs("%s/generator/base" % (self._srcPath))
+            os.makedirs("%s/cpp/generator/base" % (self._srcPath))
         except OSError:
             pass
         
-        wfile = open("%s/generator/base/BaseGeneratorSubsystem.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
+        wfile = open("%s/cpp/generator/base/BaseGeneratorSubsystem.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
         
         print >> wfile, '// auto-generatad base generator config C++ file'
         print >> wfile, ''
@@ -206,7 +217,7 @@ class GeneratorSubsystemCompiler(SourceCompiler):
         
         wfile.close()
         
-        wfile = open("%s/generator/base/BaseGeneratorSubsystem.cpp" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
+        wfile = open("%s/cpp/generator/base/BaseGeneratorSubsystem.cpp" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
 
         print >> wfile, '// auto-generatad base generator config C++ file'
         print >> wfile, ''
@@ -235,12 +246,12 @@ class GeneratorSubsystemCompiler(SourceCompiler):
             
     def compileGeneratorSubsystem(self, astRoot):
         try:
-            os.makedirs("%s/generator" % (self._srcPath))
+            os.makedirs("%s/cpp/generator" % (self._srcPath))
         except OSError:
             pass
         
-        sourceHeaderPath = "%s/generator/GeneratorSubsystem.h" % (self._srcPath)
-        sourcePath = "%s/generator/GeneratorSubsystem.cpp" % (self._srcPath)
+        sourceHeaderPath = "%s/cpp/generator/GeneratorSubsystem.h" % (self._srcPath)
+        sourcePath = "%s/cpp/generator/GeneratorSubsystem.cpp" % (self._srcPath)
         
         if (not os.path.isfile(sourceHeaderPath)):
             wfile = open(sourceHeaderPath, "w", SourceCompiler.BUFFER_SIZE)
@@ -314,16 +325,63 @@ class ConfigCompiler(SourceCompiler):
         
     def compile(self, astRoot):
         self._log.warning("compiling generator config C++ sources")
+        self.compileParameters(astRoot)
         self.compileBaseConfig(astRoot)
         self.compileConfig(astRoot)
             
-    def compileBaseConfig(self, astRoot):
+    def compileParameters(self, astRoot):
         try:
-            os.makedirs("%s/config/base" % (self._srcPath))
+            os.makedirs("%s/config" % (self._srcPath))
         except OSError:
             pass
         
-        wfile = open("%s/config/base/BaseGeneratorConfig.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
+        # we assume that the node config *.properties file already exists
+        rfile = open("%s/config/%s-node.properties" % (self._srcPath, self._dgenName), "r", SourceCompiler.BUFFER_SIZE)
+        lines = rfile.readlines()
+        rfile.close()
+        
+        parameters = astRoot.getSpecification().getParameters().getAll()
+        
+        missingParameterKeys = parameters.keys()
+        for l in lines:
+            l = l.strip()
+            
+            if len(l) == 0 or l[0] == '#':
+                continue
+            
+            key = l[0:l.find("=")].strip()
+            
+            if not key.startswith(SourceCompiler.PARAM_PREFIX):
+                continue
+            
+            key = key[len(SourceCompiler.PARAM_PREFIX):]
+            
+            if parameters.has_key(key):
+                missingParameterKeys.remove(key)
+        
+        wfile = open("%s/config/%s-node.properties" % (self._srcPath, self._dgenName), "w", SourceCompiler.BUFFER_SIZE)
+        
+        for l in lines:
+            print >> wfile, l,
+            
+        for k in missingParameterKeys:
+            v = parameters[k]
+            try:
+              float(v)
+            except ValueError, TypeError: # not mumeric
+                print >> wfile, '%s%s = "%s"' % (SourceCompiler.PARAM_PREFIX, k, v)
+            else: # numeric
+                print >> wfile, "%s%s = %s" % (SourceCompiler.PARAM_PREFIX, k, v)
+        
+        wfile.close()
+            
+    def compileBaseConfig(self, astRoot):
+        try:
+            os.makedirs("%s/cpp/config/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        wfile = open("%s/cpp/config/base/BaseGeneratorConfig.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
         
         print >> wfile, '// auto-generatad base generator config C++ file'
         print >> wfile, ''
@@ -344,10 +402,6 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
-        print >> wfile, '    virtual void configureParameters()'
-        print >> wfile, '    {'
-        print >> wfile, '    }'
-        print >> wfile, ''
         print >> wfile, '    virtual void configureFunctions()'
         print >> wfile, '    {'
         print >> wfile, '        // register prototype functions'
@@ -356,13 +410,25 @@ class ConfigCompiler(SourceCompiler):
         for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
             argsCode = ['"%s"' % (function.getAttribute("key"))]
             for argKey in function.getConstructorArgumentsOrder():
-                argsCode.append(self._argumentCode(function.getArgument(argKey)))
+                argsCode.append(self._argumentCode(function.getArgument(argKey), None))
             print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getAttribute("type"), 'a': ', '.join(argsCode)}
 
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, '    virtual void configurePartitioning()'
         print >> wfile, '    {'
+        print >> wfile, '        // TODO: this piece of auto-generating code / Config API needs to be rewritten'
+        print >> wfile, ''
+        
+        nodeFilter = DepthFirstNodeFilter(filterType=CardinalityEstimatorNode)
+        for cardinalityEstimator in nodeFilter.getAll(astRoot.getSpecification().getRecordSequences()):
+            cardinalityEstimatorType = cardinalityEstimator.getAttribute("type")
+            
+            if cardinalityEstimatorType == 'linear_scale_estimator':
+                print >> wfile, '        // setup linear scale estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
+                print >> wfile, '        setString("partitioning.%s.base-cardinality", %s);' % (cardinalityEstimator.getParent().getAttribute("key"), self._argumentCode(cardinalityEstimator.getArgument("base_cardinality"), None))
+                print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
+        
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, '    virtual void configureSets()'
@@ -390,11 +456,11 @@ class ConfigCompiler(SourceCompiler):
             
     def compileConfig(self, astRoot):
         try:
-            os.makedirs("%s/config" % (self._srcPath))
+            os.makedirs("%s/cpp/config" % (self._srcPath))
         except OSError:
             pass
         
-        sourcePath = "%s/config/GeneratorConfig.h" % (self._srcPath)
+        sourcePath = "%s/cpp/config/GeneratorConfig.h" % (self._srcPath)
         
         if (os.path.isfile(sourcePath)):
             return
@@ -417,12 +483,6 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, 'protected:'
-        print >> wfile, ''
-        print >> wfile, '    virtual void configureParameters()'
-        print >> wfile, '    {'
-        print >> wfile, '        BaseGeneratorConfig::configureParameters();'
-        print >> wfile, '        // override or add parameters here'
-        print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, '    virtual void configureFunctions()'
         print >> wfile, '    {'
@@ -475,11 +535,11 @@ class OutputCollectorCompiler(SourceCompiler):
             
     def compileOutputCollector(self, astRoot):
         try:
-            os.makedirs("%s/io" % (self._srcPath))
+            os.makedirs("%s/cpp/io" % (self._srcPath))
         except OSError:
             pass
         
-        sourcePath = "%s/io/OutputCollector.cpp" % (self._srcPath)
+        sourcePath = "%s/cpp/io/OutputCollector.cpp" % (self._srcPath)
         
         if (not os.path.isfile(sourcePath)):
             wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
@@ -508,11 +568,11 @@ class EnumTypesCompiler(SourceCompiler):
     def compile(self, enumSets):
     
         try:
-            os.makedirs("%s/record/base" % (self._srcPath))
+            os.makedirs("%s/cpp/record/base" % (self._srcPath))
         except OSError:
             pass
         
-        wfile = open("%s/record/base/enums.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
+        wfile = open("%s/cpp/record/base/enums.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
         
         print >> wfile, '// auto-generatad C++ enums'
         print >> wfile, ''
@@ -585,7 +645,7 @@ class RecordTypeCompiler(SourceCompiler):
             
     def compileBaseRecordType(self, recordType):
         try:
-            os.makedirs("%s/record/base" % (self._srcPath))
+            os.makedirs("%s/cpp/record/base" % (self._srcPath))
         except OSError:
             pass
         
@@ -593,7 +653,7 @@ class RecordTypeCompiler(SourceCompiler):
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
         typeNameUC = StringTransformer.uc(typeNameCC)
         
-        wfile = open("%s/record/base/Base%s.h" % (self._srcPath, typeNameCC), "w", SourceCompiler.BUFFER_SIZE)
+        wfile = open("%s/cpp/record/base/Base%s.h" % (self._srcPath, typeNameCC), "w", SourceCompiler.BUFFER_SIZE)
         
         print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
         print >> wfile, ''
@@ -717,7 +777,7 @@ class RecordTypeCompiler(SourceCompiler):
             
     def compileRecordType(self, recordType):
         try:
-            os.makedirs("%s/record" % (self._srcPath))
+            os.makedirs("%s/cpp/record" % (self._srcPath))
         except OSError:
             pass
         
@@ -725,7 +785,7 @@ class RecordTypeCompiler(SourceCompiler):
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
         typeNameUC = StringTransformer.uc(typeNameCC)
         
-        sourcePath = "%s/record/%s.h" % (self._srcPath, typeNameCC)
+        sourcePath = "%s/cpp/record/%s.h" % (self._srcPath, typeNameCC)
         
         if (os.path.isfile(sourcePath)):
             return
@@ -777,7 +837,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             
     def compileBaseGenerator(self, recordSequence):
         try:
-            os.makedirs("%s/generator/base" % (self._srcPath))
+            os.makedirs("%s/cpp/generator/base" % (self._srcPath))
         except OSError:
             pass
         
@@ -791,7 +851,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
         typeNameUC = StringTransformer.uc(typeNameCC)
         
-        sourcePath = "%s/generator/base/Base%sGenerator.h" % (self._srcPath, typeNameCC)
+        sourcePath = "%s/cpp/generator/base/Base%sGenerator.h" % (self._srcPath, typeNameCC)
         
         wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
         
@@ -902,7 +962,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             
     def compileGenerator(self, recordSequence):
         try:
-            os.makedirs("%s/generator" % (self._srcPath))
+            os.makedirs("%s/cpp/generator" % (self._srcPath))
         except OSError:
             pass
         
@@ -916,7 +976,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
         typeNameUC = StringTransformer.uc(typeNameCC)
         
-        sourcePath = "%s/generator/%sGenerator.h" % (self._srcPath, typeNameCC)
+        sourcePath = "%s/cpp/generator/%sGenerator.h" % (self._srcPath, typeNameCC)
         
         if (os.path.isfile(sourcePath)):
             return

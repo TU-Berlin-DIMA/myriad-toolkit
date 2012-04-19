@@ -171,7 +171,7 @@ protected:
 	 *
 	 * @deprecated
 	 */
-	virtual void configureSets(const AutoPtr<XML::Document>& doc) = 0;
+	virtual void configureSets(const AutoPtr<XML::Document>& doc);
 
 	/**
 	 * Helper function - binds a XML configured string set to a vector.
@@ -194,13 +194,6 @@ protected:
 	 * @deprecated
 	 */
 	template<class T> void bindRecordSet(const AutoPtr<XML::Document>& doc, const string& id, vector<AutoPtr<T> >& set);
-
-	/**
-	 * Helper function - loads config parameters.
-	 */
-	virtual void configureParameters()
-	{
-	}
 
 	/**
 	 * Helper function - loads functions.
@@ -244,7 +237,7 @@ protected:
 	 *
 	 * @param key
 	 */
-	void computeSimplePartitioning(const string& key);
+	void computeLinearScalePartitioning(const string& key);
 
 	/**
 	 * Helper partitioning function for mirror-partitioned subsequences.

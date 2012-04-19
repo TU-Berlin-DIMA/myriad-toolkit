@@ -84,7 +84,6 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	_logger.information("Loading generator configuration from " + configPath.toString());
 	loadXMLConfig(configPath);
 #else
-	configureParameters();
 	configureFunctions();
 	configurePartitioning();
 	configureSets();
@@ -213,7 +212,7 @@ void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc
 		else if (method == "simple")
 		{
 			setString("partitioning." + type + ".base-cardinality", f->getChildElement("base-cardinality")->innerText());
-			computeSimplePartitioning(type);
+			computeLinearScalePartitioning(type);
 		}
 		else if (method == "mirrored")
 		{
@@ -234,6 +233,10 @@ void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc
 			computeNestedPartitioning(type);
 		}
 	}
+}
+
+void AbstractGeneratorConfig::configureSets(const AutoPtr<XML::Document>& doc)
+{
 }
 
 void AbstractGeneratorConfig::bindStringSet(const AutoPtr<Document>& doc, const string& id, vector<string>& set)
@@ -289,7 +292,7 @@ void AbstractGeneratorConfig::computeFixedPartitioning(const string& key)
 	setString("generator." + key + ".partition.end", toString(genIDEnd));
 }
 
-void AbstractGeneratorConfig::computeSimplePartitioning(const string& key)
+void AbstractGeneratorConfig::computeLinearScalePartitioning(const string& key)
 {
 	I64u cardinality = static_cast<I64u>(scalingFactor() * getInt("partitioning." + key + ".base-cardinality"));
 	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
