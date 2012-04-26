@@ -8,17 +8,17 @@ RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include subdir.mk
 -include vendor/myriad/src/cpp/math/random/subdir.mk
 -include vendor/myriad/src/cpp/math/probability/subdir.mk
--include vendor/myriad/src/cpp/io/subdir.mk
 -include vendor/myriad/src/cpp/generator/subdir.mk
 -include vendor/myriad/src/cpp/core/subdir.mk
 -include vendor/myriad/src/cpp/config/subdir.mk
 -include vendor/myriad/src/cpp/communication/subdir.mk
 -include src/cpp/io/subdir.mk
+-include src/cpp/generator/base/subdir.mk
 -include src/cpp/generator/subdir.mk
 -include src/cpp/core/subdir.mk
+-include subdir.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -47,19 +47,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: bin/graphgen-node
+all: bin/${{dgen_name}}-node
 
 # Tool invocations
-bin/graphgen-node: $(OBJS) $(USER_OBJS)
+bin/${{dgen_name}}-node: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L$(POCO_LIBRARY_PATH) -Wl,-rpath,'$$ORIGIN/../lib/c++' -o "bin/graphgen-node" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L$(POCO_LIBRARY_PATH) -Wl,-rpath,'$$ORIGIN/../lib/c++' -o "bin/${{dgen_name}}-node" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) bin/graphgen-node
+	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) bin/${{dgen_name}}-node
 	-@echo ' '
 
 .PHONY: all clean dependents
