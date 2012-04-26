@@ -5,8 +5,11 @@ myriad-assistant
 makefile.defs
 
 # ignore build artifacts
+*.d
+*.o
 build/bin
 build/config
+build/data
 build/lib
 build/CHANGELOG
 build/LICENSE

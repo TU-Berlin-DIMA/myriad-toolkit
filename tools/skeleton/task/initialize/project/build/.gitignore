@@ -1,3 +1,0 @@
-# ignore *.o and *.d files in the build folder
-build/**/*.o
-build/**/*.d
