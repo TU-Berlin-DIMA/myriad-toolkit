@@ -88,7 +88,18 @@ class XMLReader(object):
                 raise RuntimeError(message)
             
             recordTypeNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(recordKey).getRecordType()
+            
+            if not recordTypeNode:
+                message = "Cannot resolve field reference for function `%s` (unexisting record type `%s`)" % (fqName, recordKey)
+                self.__log.error(message)
+                raise RuntimeError(message)
+            
             fieldTypeNode = recordTypeNode.getField(fieldKey)
+            
+            if not fieldTypeNode:
+                message = "Cannot resolve field reference for function `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
+                self.__log.error(message)
+                raise RuntimeError(message)
             
             resolvedFieldRefArgumentNode = ResolvedFieldRefArgumentNode()
             resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
