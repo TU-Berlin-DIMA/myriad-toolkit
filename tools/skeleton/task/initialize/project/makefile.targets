@@ -6,10 +6,12 @@
 include ../.myriad-settings
 
 # include the following files in the package
-# ./config/*properties  -- properties config files
-# ./config/*xml         -- xml config files
-CONFIG_FILES     = $(shell cd ../src && ls config/*properties)
-CONFIG_FILES    += $(shell cd ../src && ls config/*xml)
+# ./config/*.properties   -- properties config files
+# ./config/*.domain       -- attribute domain enumerations
+# ./config/*.distribution -- attribute domain distributions
+CONFIG_FILES     = $(shell cd ../src && ls config/*.properties)
+CONFIG_FILES    += $(shell cd ../src && ls config/*.distribution)
+CONFIG_FILES    += $(shell cd ../src && ls config/*.domain)
 CONFIG_FILES    += $(shell cd ../vendor/myriad/src && ls config/*xsd)
 CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 
