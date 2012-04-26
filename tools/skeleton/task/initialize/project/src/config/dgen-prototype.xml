@@ -37,7 +37,6 @@
 
   <record_sequences>
     <!-- users -->
-    <!-- 
     <random_sequence key="mytype">
       <!-- supported simple  types: I16, I16u, I32, I32u, I64, I64u, Double, String -->
       <!-- supported complex types: vector[{simple_type}], Interval[{simple_type}] -->
@@ -72,6 +71,5 @@
         <generator_task key="user.generate" type="partitioned_iterator" />
       </generator_tasks>
     </random_sequence>
-    -->
   </record_sequences>
 </generator_prototype>
