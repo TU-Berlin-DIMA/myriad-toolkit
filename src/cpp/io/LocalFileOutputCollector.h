@@ -104,7 +104,15 @@ public:
 	 */
 	void collect(const RecordType& record)
 	{
-		_out << "abstract record #" << record.genID() << "\n";
+		LocalFileOutputCollector<RecordType>::serialize(_out, record);
+	}
+
+	/**
+	 * Output collection method.
+	 */
+	static void serialize(StreamType& out, const RecordType& record)
+	{
+		out << "abstract record #" << record.genID() << "\n";
 	}
 
 private:
