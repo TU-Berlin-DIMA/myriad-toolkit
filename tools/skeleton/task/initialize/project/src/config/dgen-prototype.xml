@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <generator_prototype xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/prototype" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/prototype specification.xsd">
 
-  <!-- catalog imports -->
-  <imports>
-    <import path="catalog/census.us.xml" namespace="census.us" />
-  </imports>
-
   <!-- configurable parameters -->
   <parameters>
-    <!-- naming convention {generator}.{parameter_name} -->
+    <!-- naming convention {generator_name}.{parameter_name} -->
     <!-- 
     <parameter key="mytype.myparameter">parameter_value</parameter>
     -->
