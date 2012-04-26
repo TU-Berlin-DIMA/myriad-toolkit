@@ -747,12 +747,12 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    typedef %s::%sHydratorChain HydratorChainType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '};'
         print >> wfile, ''
-        print >> wfile, '// forward declaration of operator<<'
-        print >> wfile, 'template<> inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::collect(const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, '// template specialization of operator<<'
+        print >> wfile, 'template<> static inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         print >> wfile, '    _out << '
         
-        for field in recordType.getFields():
+        for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             
@@ -812,6 +812,33 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, 'namespace Myriad {'
+        print >> wfile, ''
+        print >> wfile, '// template specialization of operator<<'
+        print >> wfile, 'template<> static inline void OutputCollector<%(ns)s::%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, '    OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(out, record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+#        print >> wfile, '    _out << '
+#        
+#        for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
+#            fieldType = field.getAttribute("type")
+#            fieldName = field.getAttribute("name")
+#            
+#            if StringTransformer.isVectorType(fieldType):
+#                pass
+## FIXME            
+##                print >> wfile, '        for(size_t i = 0; i < record.%s().length(); i++)' % (StringTransformer.us2cc(fieldName) + "()")
+##                print >> wfile, '        {'
+##                print >> wfile, '            record.%-26s << " | " << ' % (StringTransformer.us2cc(fieldName) + "GetOne(i)")
+##                print >> wfile, '        }'
+#            else:
+#                print >> wfile, '        record.%-30s << " | " << ' % (StringTransformer.us2cc(fieldName) + "()")
+#
+#        print >> wfile, '        \'\\n\';'
+        print >> wfile, '}'
+        print >> wfile, ''
+        print >> wfile, '} // namespace Myriad'
         print >> wfile, ''
         print >> wfile, '#endif /* %s_H_ */' % (typeNameUC)
 

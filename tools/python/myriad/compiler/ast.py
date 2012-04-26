@@ -150,7 +150,9 @@ class FunctionsNode(AbstractNode):
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        for node in self.__functions.itervalues():
+#        for node in self.__functions.itervalues():
+#            node.accept(visitor)
+        for key, node in sorted(self.__functions.iteritems()):
             node.accept(visitor)
         visitor.postVisit(self)
         
@@ -216,6 +218,29 @@ class NormalProbabilityFunctionNode(FunctionNode):
         
     def getConstructorArgumentsOrder(self):
         return ["mean", "stddev"]
+    
+
+class CustomDiscreteProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="CustomDiscreteProbability")
+        super(CustomDiscreteProbabilityFunctionNode, self).__init__(*args, **kwargs)
+
+    
+class UniformProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="UniformPrFunction")
+        super(UniformProbabilityFunctionNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["x_min", "x_max"]
     
 
 class CustomDiscreteProbabilityFunctionNode(FunctionNode):
@@ -467,8 +492,14 @@ class RecordFieldNode(AbstractNode):
     classdocs
     '''
     
+    orderkey = None
+    
     def __init__(self, *args, **kwargs):
         super(RecordFieldNode, self).__init__(*args, **kwargs)
+        self.orderkey = None
+        
+    def setOrderKey(self, key):
+        self.orderkey = key
 
 
 class CardinalityEstimatorNode(AbstractNode):
@@ -748,6 +779,29 @@ class RangeSetHydratorNode(HydratorNode):
         
     def getConstructorArgumentsOrder(self):
         return ['field', 'range', 'probability']
+
+
+class SimpleRandomizedHydrator(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="SimpleRandomizedHydrator")
+        super(SimpleRandomizedHydrator, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        
+        return "SimpleRandomizedHydrator<%s, %s, %s>" % (recordType, fieldType, probabilityType)
+        
+    def hasPRNGArgument(self):
+        return True
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'probability']
 
 
 class GeneratorTasksNode(AbstractNode):
