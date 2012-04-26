@@ -366,12 +366,7 @@ class ConfigCompiler(SourceCompiler):
             
         for k in missingParameterKeys:
             v = parameters[k]
-            try:
-              float(v)
-            except ValueError, TypeError: # not mumeric
-                print >> wfile, '%s%s = "%s"' % (SourceCompiler.PARAM_PREFIX, k, v)
-            else: # numeric
-                print >> wfile, "%s%s = %s" % (SourceCompiler.PARAM_PREFIX, k, v)
+            print >> wfile, '%s%s = %s' % (SourceCompiler.PARAM_PREFIX, k, v)
         
         wfile.close()
             
