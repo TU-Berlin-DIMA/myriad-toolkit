@@ -2,6 +2,6 @@
 #include "generator/${{record_name}}Generator.h"
 // snippet:`generator.include`
 
-// snippet:`generator.register` after:`// register generators`
+// snippet:`generator.register` after:`// register generators with the autorelease pool`
 	registerGenerator<${{dgen_ns}}::${{record_name}}Generator>("${cc2us{record_name}}");
 // snippet:`generator.register`
