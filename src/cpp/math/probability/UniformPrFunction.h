@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef PARETOPRFUNCTION_H_
-#define PARETOPRFUNCTION_H_
+#ifndef UNIFORMPRFUNCTION_H_
+#define UNIFORMPRFUNCTION_H_
 
 #include "core/types.h"
 #include "math/Function.h"
@@ -35,34 +35,36 @@ using namespace Poco;
 
 namespace Myriad {
 
-class ParetoPrFunction: public AnalyticPrFunction<Decimal, Decimal>
+class UniformPrFunction: public AnalyticPrFunction<Decimal, Decimal>
 {
 public:
 
-	ParetoPrFunction(Decimal xMin = 1, Decimal alpha = 1) :
-		AnalyticPrFunction<Decimal, Decimal> (""), xMin(xMin), alpha(alpha), xMinAlpha(pow(xMin, alpha))
+	UniformPrFunction(Decimal xMin = 0, Decimal xMax = 1) :
+		AnalyticPrFunction<Decimal, Decimal> (""), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
 	{
 	}
 
-	ParetoPrFunction(const string& name, Decimal xMin = 1, Decimal alpha = 1) :
-		AnalyticPrFunction<Decimal, Decimal> (name), xMin(xMin), alpha(alpha), xMinAlpha(pow(xMin, alpha))
+	UniformPrFunction(const string& name, Decimal xMin = 0, Decimal xMax = 1) :
+		AnalyticPrFunction<Decimal, Decimal> (name), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
 	{
 	}
 
-	ParetoPrFunction(map<string, Any>& params) :
+	UniformPrFunction(map<string, Any>& params) :
 		AnalyticPrFunction<Decimal, Decimal> ("")
 	{
-		xMin = AnyCast<Decimal>(params["xMin"]);
-		alpha = AnyCast<Decimal>(params["alpha"]);
-		xMinAlpha = pow(xMin, alpha);
+		_xMin = AnyCast<Decimal>(params["xMin"]);
+		_xMax = AnyCast<Decimal>(params["xMax"]);
+		_size = _xMax - _xMin;
+		_xPDF = 1.0 / _size;
 	}
 
-	ParetoPrFunction(const string& name, map<string, Any>& params) :
+	UniformPrFunction(const string& name, map<string, Any>& params) :
 		AnalyticPrFunction<Decimal, Decimal> (name)
 	{
-		xMin = AnyCast<Decimal>(params["xMin"]);
-		alpha = AnyCast<Decimal>(params["alpha"]);
-		xMinAlpha = pow(xMin, alpha);
+		_xMin = AnyCast<Decimal>(params["xMin"]);
+		_xMax = AnyCast<Decimal>(params["xMax"]);
+		_size = _xMax - _xMin;
+		_xPDF = 1.0 / _size;
 	}
 
 	Decimal operator()(const Decimal x) const;
@@ -82,29 +84,30 @@ public:
 private:
 
 	// parameters
-	Decimal xMin;
-	Decimal alpha;
+	Decimal _xMin;
+	Decimal _xMax;
 
 	// common used terms
-	Decimal xMinAlpha;
+	Decimal _size;
+	Decimal _xPDF;
 };
 
-inline Decimal ParetoPrFunction::operator()(const Decimal x) const
+inline Decimal UniformPrFunction::operator()(const Decimal x) const
 {
 	return cdf(x);
 }
 
-inline Decimal ParetoPrFunction::sample(Decimal random) const
+inline Decimal UniformPrFunction::sample(Decimal random) const
 {
 	return invcdf(random);
 }
 
-inline Interval<Decimal> ParetoPrFunction::threshold(Decimal yMin) const
+inline Interval<Decimal> UniformPrFunction::threshold(Decimal yMin) const
 {
-	return Interval<Decimal>(xMin, invpdf(yMin));
+	return Interval<Decimal>(_xMin, _xMax);
 }
 
 } // namespace Myriad
 
 
-#endif /* PARETOPRFUNCTION_H_ */
+#endif /* UNIFORMPRFUNCTION_H_ */

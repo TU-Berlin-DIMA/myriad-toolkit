@@ -27,5 +27,7 @@
 #include "math/probability/DiscreteDistribution.h"
 #include "math/probability/DiscreteProbability.h"
 #include "math/probability/CustomDiscreteProbability.h"
+#include "math/probability/CustomDiscreteProbability.h"
+#include "math/probability/UniformPrFunction.h"
 
 #endif /* PRFUNCTION_H_ */

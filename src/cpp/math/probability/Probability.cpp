@@ -18,10 +18,10 @@
 
 #include "core/types.h"
 #include "math/probability/BoundedParetoPrFunction.h"
+#include "math/probability/CustomDiscreteProbability.h"
 #include "math/probability/NormalPrFunction.h"
 #include "math/probability/ParetoPrFunction.h"
-#include "math/probability/DiscreteProbability.h"
-#include "math/probability/CustomDiscreteProbability.h"
+#include "math/probability/UniformPrFunction.h"
 
 namespace Myriad {
 
@@ -174,6 +174,48 @@ Decimal ParetoPrFunction::invpdf(Decimal y) const
 Decimal ParetoPrFunction::invcdf(Decimal y) const
 {
 	return xMin / pow((1 - y), (1 / alpha));
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// Uniform probability
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+Decimal UniformPrFunction::pdf(Decimal x) const
+{
+	if (x < _xMin || x >= _xMax)
+	{
+		return 0;
+	}
+	else
+	{
+		return _xPDF;
+	}
+}
+
+Decimal UniformPrFunction::cdf(Decimal x) const
+{
+	if (x < _xMin)
+	{
+		return 0;
+	}
+	else if (x >= _xMax)
+	{
+		return 1;
+	}
+	else
+	{
+		return (x - _xMin) * _xPDF;
+	}
+}
+
+Decimal UniformPrFunction::invpdf(Decimal y) const
+{
+	return 0; // TODO: invpdf is not really used, remove from all function APIs
+}
+
+Decimal UniformPrFunction::invcdf(Decimal y) const
+{
+	return _xMin + y * _size;
 }
 
 } // namespace Myriad
