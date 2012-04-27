@@ -10,11 +10,6 @@
 
   <xs:complexType name="generator_prototype">
     <xs:sequence>
-      <xs:element name="imports" type="myriad:imports_container" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation>Catalog imports container.</xs:documentation>
-        </xs:annotation>
-      </xs:element>
       <xs:element name="parameters" type="myriad:parameters_container" minOccurs="0">
         <xs:annotation>
           <xs:documentation>A list of global generator parameters.</xs:documentation>
@@ -33,6 +28,7 @@
           <xs:field xpath="@key"></xs:field>
         </xs:unique>
       </xs:element>
+      <!-- 
       <xs:element name="enum_sets" type="myriad:enum_sets" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Enumerations used in the described domain model.</xs:documentation>
@@ -42,6 +38,7 @@
           <xs:field xpath="@key" />
         </xs:unique>
       </xs:element>
+      -->
       <xs:element name="string_sets" type="myriad:string_sets" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Finite string sets used in the described domain model.</xs:documentation>
@@ -64,7 +61,8 @@
   </xs:complexType>
 
   <!-- generator_catalog root type -->
-
+  
+  <!--
   <xs:complexType name="generator_catalog">
     <xs:sequence>
       <xs:group ref="myriad:imports" />
@@ -106,8 +104,10 @@
       </xs:element>
     </xs:sequence>
   </xs:complexType>
-
+  -->
+ 
   <!-- imports -->
+  <!--
   <xs:group name="imports">
     <xs:sequence>
       <xs:element name="import" type="myriad:import" minOccurs="0" maxOccurs="unbounded" />
@@ -120,7 +120,8 @@
     <xs:attribute name="path" type="xs:string" use="required" />
     <xs:attribute name="namespace" type="xs:NCName" use="required" />
   </xs:complexType>
-
+  -->
+ 
   <!-- parameters and arguments -->
 
   <!-- parameters -->
