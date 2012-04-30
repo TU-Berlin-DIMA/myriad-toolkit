@@ -659,6 +659,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '#include "record/Record.h"'
         print >> wfile, '#include "record/base/enums.h"'
+        
+        for referenceType in sorted(recordType.getReferenceTypes()):
+            print >> wfile, '#include "record/%s.h"' % (StringTransformer.sourceType(referenceType))
+        
         print >> wfile, ''
         print >> wfile, 'using namespace Myriad;'
         print >> wfile, ''
@@ -691,12 +695,28 @@ class RecordTypeCompiler(SourceCompiler):
                 print >> wfile, '    const %s& %sGetOne(const size_t i) const;' % (StringTransformer.coreType(fieldType), StringTransformer.us2cc(fieldName))
                 print >> wfile, ''
         
-        print >> wfile, 'private:'
-        print >> wfile, ''
+        for reference in recordType.getReferences():
+            referenceType = reference.getAttribute("type")
+            referenceName = reference.getAttribute("name")
+            
+            print >> wfile, '    void %s(const AutoPtr<%s>& v);' % (StringTransformer.us2cc(referenceName), StringTransformer.sourceType(referenceType))
+            print >> wfile, '    const AutoPtr<%s>& %s() const;' % (StringTransformer.sourceType(referenceType), StringTransformer.us2cc(referenceName))
+            print >> wfile, ''
         
+        print >> wfile, 'private:'
+
+        if recordType.hasFields():
+            print >> wfile, ''
+            print >> wfile, '    // fields'
         for field in recordType.getFields():
             print >> wfile, '    %s _%s;' % (StringTransformer.sourceType(field.getAttribute("type")), field.getAttribute("name")) 
         
+        if recordType.hasReferences():
+            print >> wfile, ''
+            print >> wfile, '    // references'
+        for field in recordType.getReferences():
+            print >> wfile, '    AutoPtr<%s> _%s;' % (StringTransformer.sourceType(field.getAttribute("type")), field.getAttribute("name")) 
+
         print >> wfile, '};'
         print >> wfile, ''
         
@@ -732,6 +752,21 @@ class RecordTypeCompiler(SourceCompiler):
                 print >> wfile, '    return _%s[i];' % (fieldName)
                 print >> wfile, '}'
                 print >> wfile, ''
+        
+        for reference in recordType.getReferences():
+            referenceType = reference.getAttribute("type")
+            referenceName = reference.getAttribute("name")
+            
+            print >> wfile, 'inline void Base%s::%s(const AutoPtr<%s>& v)' % (typeNameCC, StringTransformer.us2cc(referenceName), StringTransformer.sourceType(referenceType))
+            print >> wfile, '{'
+            print >> wfile, '    _%s = v;' % (referenceName)
+            print >> wfile, '}'
+            print >> wfile, ''
+            print >> wfile, 'inline const AutoPtr<%s>& Base%s::%s() const' % (StringTransformer.sourceType(referenceType), typeNameCC, StringTransformer.us2cc(referenceName))
+            print >> wfile, '{'
+            print >> wfile, '    return _%s;' % (referenceName)
+            print >> wfile, '}'
+            print >> wfile, ''
         
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''

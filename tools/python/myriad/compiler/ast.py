@@ -466,14 +466,20 @@ class RecordTypeNode(AbstractNode):
     '''
     
     _fields = {}
+    _references = {}
+    _referenceTypes = []
     
     def __init__(self, *args, **kwargs):
         super(RecordTypeNode, self).__init__(*args, **kwargs)
         self._fields = {}
+        self._references = {}
+        self._referenceTypes = []
     
     def accept(self, visitor):
         visitor.preVisit(self)
         for node in self._fields.itervalues():
+            node.accept(visitor)
+        for node in self._references.itervalues():
             node.accept(visitor)
         visitor.postVisit(self)
         
@@ -486,6 +492,27 @@ class RecordTypeNode(AbstractNode):
     def getFields(self):
         return self._fields.itervalues()
 
+    def hasFields(self):
+        return bool(self._fields)
+        
+    def setReference(self, node):
+        self._references[node.getAttribute('name')] = node
+        t = node.getAttribute('type')
+        if not t in self._referenceTypes:
+            self._referenceTypes.append(t)
+    
+    def getReference(self, key):
+        return self._references.get(key)
+    
+    def getReferences(self):
+        return self._references.itervalues()
+
+    def hasReferences(self):
+        return bool(self._references)
+    
+    def getReferenceTypes(self):
+        return self._referenceTypes
+
 
 class RecordFieldNode(AbstractNode):
     '''
@@ -496,6 +523,21 @@ class RecordFieldNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(RecordFieldNode, self).__init__(*args, **kwargs)
+        self.orderkey = None
+        
+    def setOrderKey(self, key):
+        self.orderkey = key
+
+
+class RecordReferenceNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    orderkey = None
+    
+    def __init__(self, *args, **kwargs):
+        super(RecordReferenceNode, self).__init__(*args, **kwargs)
         self.orderkey = None
         
     def setOrderKey(self, key):

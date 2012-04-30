@@ -264,9 +264,14 @@
   <xs:complexType name="record_type">
     <xs:sequence>
       <xs:element name="field" type="myriad:field_type" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="reference" type="myriad:reference_type" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="field_type">
+    <xs:attribute name="name" type="xs:string" />
+    <xs:attribute name="type" type="xs:string" />
+  </xs:complexType>
+  <xs:complexType name="reference_type">
     <xs:attribute name="name" type="xs:string" />
     <xs:attribute name="type" type="xs:string" />
   </xs:complexType>

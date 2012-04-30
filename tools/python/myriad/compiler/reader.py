@@ -274,6 +274,14 @@ class XMLReader(object):
             
             recordTypeNode.setField(recordFieldNode)
             i = i+1
+        
+        i = 0
+        for element in xPathContext.xpathEval("./m:reference"):
+            recordReferenceNode = RecordReferenceNode(name=element.prop("name"), type=element.prop("type"))
+            recordReferenceNode.setOrderKey(i)
+            
+            recordTypeNode.setReference(recordReferenceNode)
+            i = i+1
 
         astContext.setRecordType(recordTypeNode)
         
