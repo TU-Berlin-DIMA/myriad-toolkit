@@ -35,22 +35,22 @@ using namespace Poco;
 
 namespace Myriad {
 
-class ParetoPrFunction: public AnalyticPrFunction<Decimal, Decimal>
+class ParetoPrFunction: public AnalyticPrFunction<Decimal>
 {
 public:
 
 	ParetoPrFunction(Decimal xMin = 1, Decimal alpha = 1) :
-		AnalyticPrFunction<Decimal, Decimal> (""), xMin(xMin), alpha(alpha), xMinAlpha(pow(xMin, alpha))
+		AnalyticPrFunction<Decimal> (""), xMin(xMin), alpha(alpha), xMinAlpha(pow(xMin, alpha))
 	{
 	}
 
 	ParetoPrFunction(const string& name, Decimal xMin = 1, Decimal alpha = 1) :
-		AnalyticPrFunction<Decimal, Decimal> (name), xMin(xMin), alpha(alpha), xMinAlpha(pow(xMin, alpha))
+		AnalyticPrFunction<Decimal> (name), xMin(xMin), alpha(alpha), xMinAlpha(pow(xMin, alpha))
 	{
 	}
 
 	ParetoPrFunction(map<string, Any>& params) :
-		AnalyticPrFunction<Decimal, Decimal> ("")
+		AnalyticPrFunction<Decimal> ("")
 	{
 		xMin = AnyCast<Decimal>(params["xMin"]);
 		alpha = AnyCast<Decimal>(params["alpha"]);
@@ -58,7 +58,7 @@ public:
 	}
 
 	ParetoPrFunction(const string& name, map<string, Any>& params) :
-		AnalyticPrFunction<Decimal, Decimal> (name)
+		AnalyticPrFunction<Decimal> (name)
 	{
 		xMin = AnyCast<Decimal>(params["xMin"]);
 		alpha = AnyCast<Decimal>(params["alpha"]);
@@ -71,9 +71,9 @@ public:
 
 	Decimal cdf(Decimal x) const;
 
-	Decimal invpdf(Decimal x) const;
-
 	Decimal invcdf(Decimal x) const;
+
+	Decimal invpdf(Decimal x) const;
 
 	Decimal sample(Decimal random) const;
 

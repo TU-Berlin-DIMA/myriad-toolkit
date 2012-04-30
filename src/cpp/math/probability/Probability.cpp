@@ -208,11 +208,6 @@ Decimal UniformPrFunction::cdf(Decimal x) const
 	}
 }
 
-Decimal UniformPrFunction::invpdf(Decimal y) const
-{
-	return 0; // TODO: invpdf is not really used, remove from all function APIs
-}
-
 Decimal UniformPrFunction::invcdf(Decimal y) const
 {
 	return _xMin + y * _size;

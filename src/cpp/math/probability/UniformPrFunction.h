@@ -21,8 +21,6 @@
 
 #include "core/types.h"
 #include "math/Function.h"
-#include "math/DiscreteMap.h"
-#include "math/IntervalMap.h"
 
 #include <Poco/Any.h>
 
@@ -35,22 +33,22 @@ using namespace Poco;
 
 namespace Myriad {
 
-class UniformPrFunction: public AnalyticPrFunction<Decimal, Decimal>
+class UniformPrFunction: public AnalyticPrFunction<Decimal>
 {
 public:
 
 	UniformPrFunction(Decimal xMin = 0, Decimal xMax = 1) :
-		AnalyticPrFunction<Decimal, Decimal> (""), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
+		AnalyticPrFunction<Decimal> (""), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
 	{
 	}
 
 	UniformPrFunction(const string& name, Decimal xMin = 0, Decimal xMax = 1) :
-		AnalyticPrFunction<Decimal, Decimal> (name), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
+		AnalyticPrFunction<Decimal> (name), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
 	{
 	}
 
 	UniformPrFunction(map<string, Any>& params) :
-		AnalyticPrFunction<Decimal, Decimal> ("")
+		AnalyticPrFunction<Decimal> ("")
 	{
 		_xMin = AnyCast<Decimal>(params["xMin"]);
 		_xMax = AnyCast<Decimal>(params["xMax"]);
@@ -59,7 +57,7 @@ public:
 	}
 
 	UniformPrFunction(const string& name, map<string, Any>& params) :
-		AnalyticPrFunction<Decimal, Decimal> (name)
+		AnalyticPrFunction<Decimal> (name)
 	{
 		_xMin = AnyCast<Decimal>(params["xMin"]);
 		_xMax = AnyCast<Decimal>(params["xMax"]);
@@ -72,8 +70,6 @@ public:
 	Decimal pdf(Decimal x) const;
 
 	Decimal cdf(Decimal x) const;
-
-	Decimal invpdf(Decimal x) const;
 
 	Decimal invcdf(Decimal x) const;
 

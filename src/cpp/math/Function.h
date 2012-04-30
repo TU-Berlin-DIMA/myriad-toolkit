@@ -91,11 +91,11 @@ protected:
 /**
  * A base template for all analytic probability distribution functions.
  */
-template<class Domain, class Range> class AnalyticPrFunction: public UnaryFunction<Domain, Range>
+template<class Domain> class AnalyticPrFunction: public UnaryFunction<Domain, Decimal>
 {
 public:
 	AnalyticPrFunction(const string& name) :
-		UnaryFunction<Domain, Range>(name)
+		UnaryFunction<Domain, Decimal>(name)
 	{
 	}
 
@@ -105,19 +105,17 @@ public:
 	 * @param x
 	 * @return
 	 */
-	virtual Range operator()(const Domain x) const = 0;
+	virtual Decimal operator()(const Domain x) const = 0;
 
-	virtual Range pdf(Domain x) const = 0;
+	virtual Decimal pdf(Domain x) const = 0;
 
-	virtual Range cdf(Domain x) const = 0;
+	virtual Decimal cdf(Domain x) const = 0;
 
-	virtual Domain invpdf(Range y) const = 0;
+	virtual Domain invcdf(Decimal y) const = 0;
 
-	virtual Domain invcdf(Range y) const = 0;
+	virtual Decimal sample(Decimal random) const = 0;
 
-	virtual Range sample(Decimal random) const = 0;
-
-	virtual Interval<Domain> threshold(Range yMin) const = 0;
+	virtual Interval<Domain> threshold(Decimal yMin) const = 0;
 
 protected:
 

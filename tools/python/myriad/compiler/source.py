@@ -78,12 +78,10 @@ class SourceCompiler(object):
             
             m = self._param_pattern.match(attributeValue)
             if (m):
-                # FIXME: `config.parameter<Decimal>` looks like a bug
                 exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<Decimal>("%s")' % (configPrefix, m.group(1)), attributeValue)
                 return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1])
-            
             else:
-                if type == "String":
+                if attributeType == "String":
                     return '"%s"' % (attributeValue)
                 else:
                     return '%s' % (attributeValue)

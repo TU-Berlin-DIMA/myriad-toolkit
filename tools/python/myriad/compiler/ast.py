@@ -243,6 +243,19 @@ class UniformProbabilityFunctionNode(FunctionNode):
         return ["x_min", "x_max"]
     
 
+class QHistogramProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="QHistogramPrFunction")
+        super(QHistogramProbabilityFunctionNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["path"]
+    
+
 class CustomDiscreteProbabilityFunctionNode(FunctionNode):
     '''
     classdocs
