@@ -16,10 +16,10 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef SIMPLERANDOMIZEDHYDRATOR_H_
-#define SIMPLERANDOMIZEDHYDRATOR_H_
+#ifndef SIMPLECLUSTEREDHYDRATOR_H_
+#define SIMPLECLUSTEREDHYDRATOR_H_
 
-#include "hydrator/RandomRecordHydrator.h"
+#include "hydrator/RecordHydrator.h"
 #include "math/random/RandomStream.h"
 #include "math/probability/CustomDiscreteProbability.h"
 
@@ -30,41 +30,37 @@ using namespace Poco;
 
 namespace Myriad {
 
-template<class RecordType, typename T, typename P> class SimpleRandomizedHydrator : public RandomRecordHydrator<RecordType>
+template<class RecordType, typename T, typename P> class SimpleClusteredHydrator : public RecordHydrator<RecordType>
 {
 public:
 
 	typedef void (RecordType::*ValueSetter)(const T&);
 
-	SimpleRandomizedHydrator(RandomStream& random, ValueSetter setter, const P& probability) :
-		RandomRecordHydrator<RecordType>(random),
-		_setter(setter),
-		_probability(probability)
+	SimpleClusteredHydrator(ValueSetter valueSetter, const P& probability, const I64u sequenceCardinality) :
+		RecordHydrator<RecordType>(),
+		_valueSetter(valueSetter),
+		_probability(probability),
+		_sequenceCardinality(sequenceCardinality)
 	{
 	}
 
 	void operator()(AutoPtr<RecordType> recordPtr) const
 	{
-		RandomStream& random = const_cast<SimpleRandomizedHydrator<RecordType, T, P>*>(this)->_random;
-
-		if (!RecordHydrator<RecordType>::_enabled)
+		if (RecordHydrator<RecordType>::_enabled)
 		{
-			random();
-		}
-		else
-		{
-			(recordPtr->*_setter)(static_cast<T>(_probability.sample(random())));
+			(recordPtr->*_valueSetter)(static_cast<T>(_probability.sample(recordPtr->genID()/_sequenceCardinality)));
 		}
 	}
 
 private:
 
-	ValueSetter _setter;
+	ValueSetter _valueSetter;
 
 	const P& _probability;
-};
 
+	const Decimal _sequenceCardinality;
+};
 
 } // namespace Myriad
 
-#endif /* SIMPLERANDOMIZEDHYDRATOR_H_ */
+#endif /* SIMPLECLUSTEREDHYDRATOR_H_ */

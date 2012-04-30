@@ -24,6 +24,9 @@
 #include <sstream>
 #include <string>
 
+#include <Poco/DateTime.h>
+#include <Poco/DateTimeFormat.h>
+#include <Poco/DateTimeFormatter.h>
 #include <Poco/Types.h>
 
 namespace Myriad {
@@ -37,6 +40,7 @@ typedef Poco::UInt64 I64u;
 
 typedef Poco::UInt64 ID;
 typedef double Decimal;
+typedef Poco::DateTime Date;
 typedef std::string Ch; // deprecated
 typedef std::string VCh; // deprecated
 typedef std::string String;
@@ -46,6 +50,11 @@ template<class T> inline std::string toString(const T& t)
 	std::stringstream ss;
 	ss << t;
 	return ss.str();
+}
+
+template<> inline std::string toString(const Poco::DateTime& t)
+{
+	return Poco::DateTimeFormatter::format(t, Poco::DateTimeFormat::SORTABLE_FORMAT);
 }
 
 template<class T> T fromString(const std::string& s)

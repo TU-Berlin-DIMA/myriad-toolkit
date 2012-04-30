@@ -80,7 +80,7 @@ class SourceCompiler(object):
             if (m):
                 # FIXME: `config.parameter<Decimal>` looks like a bug
                 exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<Decimal>("%s")' % (configPrefix, m.group(1)), attributeValue)
-                return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[3:-2])
+                return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1])
             
             else:
                 if type == "String":
@@ -342,30 +342,32 @@ class ConfigCompiler(SourceCompiler):
         
         parameters = astRoot.getSpecification().getParameters().getAll()
         
-        missingParameterKeys = parameters.keys()
+        filteredLines = []
+
         for l in lines:
             l = l.strip()
             
             if len(l) == 0 or l[0] == '#':
+                filteredLines.append(l)
                 continue
             
             key = l[0:l.find("=")].strip()
             
             if not key.startswith(SourceCompiler.PARAM_PREFIX):
+                filteredLines.append(l)
                 continue
             
             key = key[len(SourceCompiler.PARAM_PREFIX):]
             
-            if parameters.has_key(key):
-                missingParameterKeys.remove(key)
+            if not parameters.has_key(key):
+                filteredLines.append(l)
         
         wfile = open("%s/config/%s-node.properties" % (self._srcPath, self._dgenName), "w", SourceCompiler.BUFFER_SIZE)
         
-        for l in lines:
-            print >> wfile, l,
+        for l in filteredLines:
+            print >> wfile, l
             
-        for k in missingParameterKeys:
-            v = parameters[k]
+        for k, v in parameters.iteritems():
             print >> wfile, '%s%s = %s' % (SourceCompiler.PARAM_PREFIX, k, v)
         
         wfile.close()
@@ -397,19 +399,6 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
-        print >> wfile, '    virtual void configureFunctions()'
-        print >> wfile, '    {'
-        print >> wfile, '        // register prototype functions'
-        
-        nodeFilter = DepthFirstNodeFilter(filterType=FunctionNode)
-        for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
-            argsCode = ['"%s"' % (function.getAttribute("key"))]
-            for argKey in function.getConstructorArgumentsOrder():
-                argsCode.append(self._argumentCode(function.getArgument(argKey), None))
-            print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getAttribute("type"), 'a': ', '.join(argsCode)}
-
-        print >> wfile, '    }'
-        print >> wfile, ''
         print >> wfile, '    virtual void configurePartitioning()'
         print >> wfile, '    {'
         print >> wfile, '        // TODO: this piece of auto-generating code / Config API needs to be rewritten'
@@ -424,6 +413,19 @@ class ConfigCompiler(SourceCompiler):
                 print >> wfile, '        setString("partitioning.%s.base-cardinality", %s);' % (cardinalityEstimator.getParent().getAttribute("key"), self._argumentCode(cardinalityEstimator.getArgument("base_cardinality"), None))
                 print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
         
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configureFunctions()'
+        print >> wfile, '    {'
+        print >> wfile, '        // register prototype functions'
+        
+        nodeFilter = DepthFirstNodeFilter(filterType=FunctionNode)
+        for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
+            argsCode = ['"%s"' % (function.getAttribute("key"))]
+            for argKey in function.getConstructorArgumentsOrder():
+                argsCode.append(self._argumentCode(function.getArgument(argKey), None))
+            print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getAttribute("type"), 'a': ', '.join(argsCode)}
+
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, '    virtual void configureSets()'
@@ -479,16 +481,16 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
-        print >> wfile, '    virtual void configureFunctions()'
-        print >> wfile, '    {'
-        print >> wfile, '        BaseGeneratorConfig::configureFunctions();'
-        print >> wfile, '        // override or add functions here'
-        print >> wfile, '    }'
-        print >> wfile, ''
         print >> wfile, '    virtual void configurePartitioning()'
         print >> wfile, '    {'
         print >> wfile, '        BaseGeneratorConfig::configurePartitioning();'
         print >> wfile, '        // override or add partitioning config here'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual void configureFunctions()'
+        print >> wfile, '    {'
+        print >> wfile, '        BaseGeneratorConfig::configureFunctions();'
+        print >> wfile, '        // override or add functions here'
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, '    virtual void configureSets()'
@@ -758,8 +760,10 @@ class RecordTypeCompiler(SourceCompiler):
 #                print >> wfile, '        {'
 #                print >> wfile, '            record.%-26s << " | " << ' % (StringTransformer.us2cc(fieldName) + "GetOne(i)")
 #                print >> wfile, '        }'
+            elif fieldType == "Date":
+                print >> wfile, '        %-40s << " | " << ' % ( "toString(record." + StringTransformer.us2cc(fieldName) + "())")
             else:
-                print >> wfile, '        record.%-30s << " | " << ' % (StringTransformer.us2cc(fieldName) + "()")
+                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "()")
 
         print >> wfile, '        \'\\n\';'
         print >> wfile, '}'
@@ -958,7 +962,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         
         for hydrator in recordSequence.getHydrationPlan().getAll():
-            print >> wfile, '         _%s(recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
+            print >> wfile, '        _%s(recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
         
         print >> wfile, '    }'
         print >> wfile, ''

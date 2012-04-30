@@ -386,6 +386,8 @@ class XMLReader(object):
             return RangeSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "simple_randomized_hydrator":
             return SimpleRandomizedHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "simple_clustered_hydrator":
+            return SimpleClusteredHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         
         raise RuntimeError('Unsupported hydrator type `%s`' % (t))
 

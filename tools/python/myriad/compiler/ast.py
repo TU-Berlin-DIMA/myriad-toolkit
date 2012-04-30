@@ -804,6 +804,29 @@ class SimpleRandomizedHydrator(HydratorNode):
         return ['field', 'probability']
 
 
+class SimpleClusteredHydrator(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="SimpleClusteredHydrator")
+        super(SimpleClusteredHydrator, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        
+        return "SimpleClusteredHydrator<%s, %s, %s>" % (recordType, fieldType, probabilityType)
+        
+    def hasPRNGArgument(self):
+        return False
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'probability', 'sequence_cardinality']
+
+
 class GeneratorTasksNode(AbstractNode):
     '''
     classdocs

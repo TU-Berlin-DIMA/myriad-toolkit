@@ -84,8 +84,8 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	_logger.information("Loading generator configuration from " + configPath.toString());
 	loadXMLConfig(configPath);
 #else
-	configureFunctions();
 	configurePartitioning();
+	configureFunctions();
 	configureSets();
 #endif
 

@@ -144,15 +144,6 @@ protected:
 	virtual void configureParameters(const AutoPtr<XML::Document>& doc);
 
 	/**
-	 * Helper function - loads functions from XML.
-	 *
-	 * @param doc
-	 *
-	 * @deprecated
-	 */
-	virtual void configureFunctions(const AutoPtr<XML::Document>& doc);
-
-	/**
 	 * Helper function - computes the PRDG subsequences assigned to the current
 	 * node for each data type.
 	 *
@@ -161,6 +152,15 @@ protected:
 	 * @deprecated
 	 */
 	virtual void configurePartitioning(const AutoPtr<XML::Document>& doc);
+
+	/**
+	 * Helper function - loads functions from XML.
+	 *
+	 * @param doc
+	 *
+	 * @deprecated
+	 */
+	virtual void configureFunctions(const AutoPtr<XML::Document>& doc);
 
 	/**
 	 * Binds XML configured record and string sets to local variables. This
