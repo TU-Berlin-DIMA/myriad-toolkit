@@ -113,7 +113,7 @@ public:
 
 	virtual Domain invcdf(Decimal y) const = 0;
 
-	virtual Decimal sample(Decimal random) const = 0;
+	virtual Domain sample(Decimal random) const = 0;
 
 	virtual Interval<Domain> threshold(Decimal yMin) const = 0;
 
