@@ -42,6 +42,12 @@ public:
 	{
 	}
 
+	void set(const Domain& min, const Domain& max)
+	{
+		_min = min;
+		_max = max;
+	}
+
 	const Domain min() const
 	{
 		return _min;

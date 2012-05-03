@@ -21,6 +21,7 @@
 #include "math/probability/CustomDiscreteProbability.h"
 #include "math/probability/NormalPrFunction.h"
 #include "math/probability/ParetoPrFunction.h"
+#include "math/probability/QHistogramPrFunction.h"
 #include "math/probability/UniformPrFunction.h"
 
 namespace Myriad {
@@ -174,6 +175,48 @@ Decimal ParetoPrFunction::invpdf(Decimal y) const
 Decimal ParetoPrFunction::invcdf(Decimal y) const
 {
 	return xMin / pow((1 - y), (1 / alpha));
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// QHistogram probability
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+Decimal QHistogramPrFunction::pdf(I64u x) const
+{
+	if (x < _min || x >= _max)
+	{
+		return 0.0;
+	}
+	else
+	{
+		return _binProbability * (1.0 / static_cast<Decimal>(_bins[findBucket(x)].length()));
+	}
+}
+
+Decimal QHistogramPrFunction::cdf(I64u x) const
+{
+	if (x < _min)
+	{
+		return 0.0;
+	}
+	else if (x >= _max)
+	{
+		return 1.0;
+	}
+	else
+	{
+		size_t i = findBucket(x);
+		Interval<I64u>& b = _bins[i];
+
+		return _binProbability * i + _binProbability * ((x - b.min()) / static_cast<Decimal>(b.length()));
+	}
+}
+
+I64u QHistogramPrFunction::invcdf(Decimal y) const
+{
+	// locate the bin
+	size_t i = static_cast<size_t>(y / _binProbability);
+	return static_cast<I64u>(_bins[i].min() + (y - i * _binProbability) * _binsLength * _bins[i].length());
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
