@@ -35,30 +35,30 @@ using namespace Poco;
 namespace Myriad
 {
 
-class QHistogramPrFunction: public AnalyticPrFunction<I64u>
+class QHistogramPrFunction: public UnivariatePrFunction<I64u>
 {
 public:
 
 	QHistogramPrFunction(const string& path) :
-			AnalyticPrFunction<I64u>("")
+			UnivariatePrFunction<I64u>("")
 	{
 		initialize(path);
 	}
 
 	QHistogramPrFunction(const string& name, const string& path) :
-			AnalyticPrFunction<I64u>(name), _binsLength(0)
+			UnivariatePrFunction<I64u>(name), _binsLength(0)
 	{
 		initialize(path);
 	}
 
 	QHistogramPrFunction(map<string, Any>& params) :
-			AnalyticPrFunction<I64u>(""), _binsLength(0)
+			UnivariatePrFunction<I64u>(""), _binsLength(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
 	QHistogramPrFunction(const string& name, map<string, Any>& params) :
-			AnalyticPrFunction<I64u>(name), _binsLength(0)
+			UnivariatePrFunction<I64u>(name), _binsLength(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}

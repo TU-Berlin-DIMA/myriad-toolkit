@@ -89,12 +89,38 @@ protected:
 };
 
 /**
- * A base template for all analytic probability distribution functions.
+ * A base template for all unary functions.
  */
-template<class Domain> class AnalyticPrFunction: public UnaryFunction<Domain, Decimal>
+template<class Domain1, class Domain2, class Range> class BinaryFunction: public std::binary_function<Domain1, Domain1, Range>, public AbstractFunction
 {
 public:
-	AnalyticPrFunction(const string& name) :
+	BinaryFunction(const string& name) :
+		AbstractFunction(name)
+	{
+	}
+
+	/**
+	 * Function evaluation operator.
+	 *
+	 * @param x
+	 * @return
+	 */
+	virtual Range operator()(const Domain1 x1, const Domain2 x2) const = 0;
+
+protected:
+
+	virtual ~BinaryFunction()
+	{
+	}
+};
+
+/**
+ * A base template for all univariate probability functions.
+ */
+template<class Domain> class UnivariatePrFunction: public UnaryFunction<Domain, Decimal>
+{
+public:
+	UnivariatePrFunction(const string& name) :
 		UnaryFunction<Domain, Decimal>(name)
 	{
 	}
@@ -119,7 +145,43 @@ public:
 
 protected:
 
-	virtual ~AnalyticPrFunction()
+	virtual ~UnivariatePrFunction()
+	{
+	}
+};
+
+/**
+ * A base template for all bivariate probability functions.
+ */
+template<class Domain1, class Domain2> class BivariatePrFunction: public BinaryFunction<Domain1, Domain2, Decimal>
+{
+public:
+	BivariatePrFunction(const string& name) :
+		BinaryFunction<Domain1, Domain2, Decimal>(name)
+	{
+	}
+
+	/**
+	 * Function evaluation operator.
+	 *
+	 * @param x
+	 * @return
+	 */
+	virtual Decimal operator()(const Domain1 x1, const Domain2 x2) const = 0;
+
+	virtual Decimal pdf(Domain1 x1, Domain2 x2) const = 0;
+
+	virtual Decimal cdf(Domain1 x1, Domain2 x2) const = 0;
+
+	virtual Domain1 invcdf(Decimal y) const = 0;
+
+	virtual Domain1 sample(Decimal random) const = 0;
+
+	virtual Interval<Domain1> threshold(Decimal yMin) const = 0;
+
+protected:
+
+	virtual ~BivariatePrFunction()
 	{
 	}
 };

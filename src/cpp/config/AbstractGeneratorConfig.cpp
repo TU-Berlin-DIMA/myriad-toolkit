@@ -369,8 +369,8 @@ void AbstractGeneratorConfig::computeNestedBlockPartitioning(const string& key)
 	ID parentGenIDBegin = fromString<ID> (getString("generator." + parentKey + ".partition.begin"));
 	ID parentGenIDEnd = fromString<ID> (getString("generator." + parentKey + ".partition.end"));
 
-	AnalyticPrFunction<Decimal>& distribution = func<AnalyticPrFunction<Decimal> >(blockDistribution);
-	DiscreteDistribution<AnalyticPrFunction<Decimal> > d(distribution, blockSize, blockSum, 1);
+	UnivariatePrFunction<Decimal>& distribution = func<UnivariatePrFunction<Decimal> >(blockDistribution);
+	DiscreteDistribution<UnivariatePrFunction<Decimal> > d(distribution, blockSize, blockSum, 1);
 
 	// configure cardinality and partitioning parameters for nested type
 	ID cardinality = (parentCardinality / blockSize) * blockSum + d.cdf(parentCardinality % blockSize) - d(parentCardinality % blockSize);

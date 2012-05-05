@@ -33,22 +33,22 @@ using namespace Poco;
 
 namespace Myriad {
 
-class UniformPrFunction: public AnalyticPrFunction<Decimal>
+class UniformPrFunction: public UnivariatePrFunction<Decimal>
 {
 public:
 
 	UniformPrFunction(Decimal xMin = 0, Decimal xMax = 1) :
-		AnalyticPrFunction<Decimal> (""), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
+		UnivariatePrFunction<Decimal> (""), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
 	{
 	}
 
 	UniformPrFunction(const string& name, Decimal xMin = 0, Decimal xMax = 1) :
-		AnalyticPrFunction<Decimal> (name), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
+		UnivariatePrFunction<Decimal> (name), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
 	{
 	}
 
 	UniformPrFunction(map<string, Any>& params) :
-		AnalyticPrFunction<Decimal> ("")
+		UnivariatePrFunction<Decimal> ("")
 	{
 		_xMin = AnyCast<Decimal>(params["xMin"]);
 		_xMax = AnyCast<Decimal>(params["xMax"]);
@@ -57,7 +57,7 @@ public:
 	}
 
 	UniformPrFunction(const string& name, map<string, Any>& params) :
-		AnalyticPrFunction<Decimal> (name)
+		UnivariatePrFunction<Decimal> (name)
 	{
 		_xMin = AnyCast<Decimal>(params["xMin"]);
 		_xMax = AnyCast<Decimal>(params["xMax"]);
