@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef REFERENCEDRECORDGETTER_H_
-#define REFERENCEDRECORDGETTER_H_
+#ifndef REFERENCEDRECORDFIELDGETTER_H_
+#define REFERENCEDRECORDFIELDGETTER_H_
 
 #include "reflection/getter/ValueGetter.h"
 
@@ -27,33 +27,36 @@ using namespace Poco;
 
 namespace Myriad {
 
-template<class RecordType, typename RefRecordType> class ReferencedRecordGetter : public ValueGetter<RecordType, AutoPtr<RefRecordType> >
+template<class RecordType, class RefRecordType, class FieldType> class ReferencedRecordFieldGetter : public ValueGetter<RecordType, FieldType>
 {
 public:
 
 	typedef const AutoPtr<RefRecordType>& (RecordType::*RecordGetterMethod)() const;
+	typedef const FieldType& (RefRecordType::*FieldGetterMethod)() const;
 
-	ReferencedRecordGetter(RecordGetterMethod refRecordGetter) :
-		_refRecordGetter(refRecordGetter)
+	ReferencedRecordFieldGetter(RecordGetterMethod refRecordGetter, FieldGetterMethod fieldGetter) :
+		_refRecordGetter(refRecordGetter),
+		_fieldGetter(fieldGetter)
 	{
 	}
 
-	virtual ~ReferencedRecordGetter()
+	virtual ~ReferencedRecordFieldGetter()
 	{
 	}
 
-	virtual const AutoPtr<RefRecordType>& operator()(AutoPtr<RecordType> recordPtr) const;
+	virtual const FieldType& operator()(AutoPtr<RecordType> recordPtr) const;
 
 private:
 
 	RecordGetterMethod _refRecordGetter;
+	FieldGetterMethod _fieldGetter;
 };
 
-template<class RecordType, typename RefRecordType> inline const AutoPtr<RefRecordType>& ReferencedRecordGetter<RecordType, RefRecordType>::operator()(AutoPtr<RecordType> recordPtr) const
+template<class RecordType, class RefRecordType, class FieldType> inline const FieldType& ReferencedRecordFieldGetter<RecordType, RefRecordType, FieldType>::operator()(AutoPtr<RecordType> recordPtr) const
 {
-	return (recordPtr->*_refRecordGetter)();
+	return ((recordPtr->*_refRecordGetter)()->*_fieldGetter)();
 }
 
 } // namespace Myriad
 
-#endif /* REFERENCEDRECORDGETTER_H_ */
+#endif /* REFERENCEDRECORDFIELDGETTER_H_ */

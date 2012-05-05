@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef SIMPLEVALUEGETTER_H_
-#define SIMPLEVALUEGETTER_H_
+#ifndef FIELDGETTER_H_
+#define FIELDGETTER_H_
 
 #include "reflection/getter/ValueGetter.h"
 
@@ -27,18 +27,18 @@ using namespace Poco;
 
 namespace Myriad {
 
-template<class RecordType, typename FieldType> class SimpleValueGetter : public ValueGetter<RecordType, FieldType>
+template<class RecordType, typename FieldType> class FieldGetter : public ValueGetter<RecordType, FieldType>
 {
 public:
 
-	typedef const FieldType& (RecordType::*SimpleValueGetterMethod)() const;
+	typedef const FieldType& (RecordType::*FieldGetterMethod)() const;
 
-	SimpleValueGetter(SimpleValueGetterMethod valueGetter) :
-		_valueGetter(valueGetter)
+	FieldGetter(FieldGetterMethod fieldGetter) :
+		_fieldGetter(fieldGetter)
 	{
 	}
 
-	virtual ~SimpleValueGetter()
+	virtual ~FieldGetter()
 	{
 	}
 
@@ -46,14 +46,14 @@ public:
 
 private:
 
-	SimpleValueGetterMethod _valueGetter;
+	FieldGetterMethod _fieldGetter;
 };
 
-template<class RecordType, typename FieldType> inline const FieldType& SimpleValueGetter<RecordType, FieldType>::operator()(AutoPtr<RecordType> recordPtr) const
+template<class RecordType, typename FieldType> inline const FieldType& FieldGetter<RecordType, FieldType>::operator()(AutoPtr<RecordType> recordPtr) const
 {
-	return (recordPtr->*_valueGetter)();
+	return (recordPtr->*_fieldGetter)();
 }
 
 } // namespace Myriad
 
-#endif /* SIMPLEVALUEGETTER_H_ */
+#endif /* FIELDGETTER_H_ */
