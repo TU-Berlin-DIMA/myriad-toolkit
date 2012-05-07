@@ -35,24 +35,24 @@ using namespace Poco;
 
 namespace Myriad {
 
-class NormalPrFunction: public AnalyticPrFunction<Decimal>
+class NormalPrFunction: public UnivariatePrFunction<Decimal>
 {
 public:
 
 	NormalPrFunction(Decimal mean = 0, Decimal stddev = 1) :
-		AnalyticPrFunction<Decimal> (""), _mean(mean), _stddev(stddev)
+		UnivariatePrFunction<Decimal> (""), _mean(mean), _stddev(stddev)
 	{
 		initialize();
 	}
 
 	NormalPrFunction(const string& name, Decimal mean = 0, Decimal stddev = 1) :
-		AnalyticPrFunction<Decimal> (name), _mean(mean), _stddev(stddev)
+		UnivariatePrFunction<Decimal> (name), _mean(mean), _stddev(stddev)
 	{
 		initialize();
 	}
 
 	NormalPrFunction(map<string, Any>& params) :
-		AnalyticPrFunction<Decimal> ("")
+		UnivariatePrFunction<Decimal> ("")
 	{
 		_mean = AnyCast<Decimal>(params["mean"]);
 		_stddev = AnyCast<Decimal>(params["stddev"]);
@@ -61,7 +61,7 @@ public:
 	}
 
 	NormalPrFunction(const string& name, map<string, Any>& params) :
-		AnalyticPrFunction<Decimal> (name)
+		UnivariatePrFunction<Decimal> (name)
 	{
 		_mean = AnyCast<Decimal>(params["mean"]);
 		_stddev = AnyCast<Decimal>(params["stddev"]);

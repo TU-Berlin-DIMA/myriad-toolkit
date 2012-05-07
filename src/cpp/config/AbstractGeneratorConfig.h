@@ -126,52 +126,6 @@ public:
 	}
 
 protected:
-	/**
-	 * Loads the configuration from the given XML configuration file and the
-	 * current api configuration.
-	 *
-	 * @param path
-	 * @deprecated
-	 */
-	void loadXMLConfig(const Path& path);
-
-	/**
-	 * Helper function - loads properties from XML.
-	 *
-	 * @param doc
-	 * @deprecated
-	 */
-	virtual void configureParameters(const AutoPtr<XML::Document>& doc);
-
-	/**
-	 * Helper function - computes the PRDG subsequences assigned to the current
-	 * node for each data type.
-	 *
-	 * @param doc
-	 *
-	 * @deprecated
-	 */
-	virtual void configurePartitioning(const AutoPtr<XML::Document>& doc);
-
-	/**
-	 * Helper function - loads functions from XML.
-	 *
-	 * @param doc
-	 *
-	 * @deprecated
-	 */
-	virtual void configureFunctions(const AutoPtr<XML::Document>& doc);
-
-	/**
-	 * Binds XML configured record and string sets to local variables. This
-	 * function is extension specific and must be provided by the user in the
-	 * GeneratorConfig subclass.
-	 *
-	 * @param doc
-	 *
-	 * @deprecated
-	 */
-	virtual void configureSets(const AutoPtr<XML::Document>& doc);
 
 	/**
 	 * Helper function - binds a XML configured string set to a vector.
@@ -259,13 +213,6 @@ protected:
 	 * @param key
 	 */
 	void computeNestedPartitioning(const string& key);
-
-	/**
-	 * Helper partitioning function for nested block partitioned subsequences.
-	 *
-	 * @param key
-	 */
-	void computeNestedBlockPartitioning(const string& key);
 
 	/**
 	 * Resolves values of the form ${param_name} to the corresponding parameter name.

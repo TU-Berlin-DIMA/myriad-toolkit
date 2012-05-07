@@ -35,30 +35,47 @@ using namespace Poco;
 namespace Myriad
 {
 
-class QHistogramPrFunction: public AnalyticPrFunction<I64u>
+class QHistogramPrFunction: public UnivariatePrFunction<I64u>
 {
 public:
 
+	QHistogramPrFunction() :
+		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
+	{
+	}
+
 	QHistogramPrFunction(const string& path) :
-			AnalyticPrFunction<I64u>("")
+		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
 	{
 		initialize(path);
+	}
+
+	QHistogramPrFunction(ifstream& in) :
+		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
+	{
+		initialize(in);
 	}
 
 	QHistogramPrFunction(const string& name, const string& path) :
-			AnalyticPrFunction<I64u>(name), _binsLength(0)
+		UnivariatePrFunction<I64u>(name), _numberOfBuckets(0)
 	{
 		initialize(path);
 	}
 
+	QHistogramPrFunction(const string& name, ifstream& in) :
+		UnivariatePrFunction<I64u>(name), _numberOfBuckets(0)
+	{
+		initialize(in);
+	}
+
 	QHistogramPrFunction(map<string, Any>& params) :
-			AnalyticPrFunction<I64u>(""), _binsLength(0)
+		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
 	QHistogramPrFunction(const string& name, map<string, Any>& params) :
-			AnalyticPrFunction<I64u>(name), _binsLength(0)
+		UnivariatePrFunction<I64u>(name), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
@@ -67,6 +84,18 @@ public:
 	{
 		reset();
 	}
+
+	void initialize(const string& path);
+
+	void initialize(ifstream& path);
+
+	size_t numberOfBuckets() const;
+
+	I64u min()const;
+
+	I64u max() const;
+
+	size_t findBucket(const I64u x) const;
 
 	Decimal operator()(const I64u x) const;
 
@@ -78,125 +107,45 @@ public:
 
 	I64u sample(Decimal random) const;
 
-	Interval<I64u> threshold(Decimal yMin) const;
-
 private:
-
-	/**
-	 * Load a Q-histogram from the given path. For each entry add a [min, max)
-	 * interval of domain values to a lookup table.
-	 */
-	void initialize(const string& path)
-	{
-		// reset old state
-		reset();
-
-		string line, binMin, binMax;
-
-		ifstream myfile(path.c_str());
-
-		if (!myfile.is_open())
-		{
-			throw OpenFileException("Unexpected file header for file `" + path +  "`");
-		}
-
-		try
-		{
-			// read first line
-			getline(myfile, line);
-
-			if (line.substr(0, 15) != "# numberofbins:")
-			{
-				throw DataException("Unexpected file header for file `" + path +  "`");
-			}
-
-			I32 numberOfLines = atoi(line.substr(15).c_str());
-
-			_bins = new Interval<I64u>[numberOfLines];
-			_binsLength = numberOfLines;
-			_binProbability = 1.0/numberOfLines;
-
-			if (numberOfLines <= 0 && numberOfLines > 65536)
-			{
-				throw DataException("Invalid number of lines `" + toString(numberOfLines) +  "`");
-			}
-
-			for (I16u i = 0; i < numberOfLines; i++)
-			{
-				if (!myfile.good())
-				{
-					throw DataException("Bad line for bin #" + toString(i));
-				}
-
-				getline(myfile, line);
-
-				size_t firsttab = line.find_first_of('\t');
-
-				I64u min = fromString<I64u>(line.substr(0, firsttab));
-				I64u max = fromString<I64u>(line.substr(firsttab));
-
-				_bins[i].set(min, max);
-
-				if (i > 0)
-				{
-					if (_bins[i].min() != _bins[i-1].max())
-					{
-						throw DataException("Bad line for bin #" + toString(i));
-					}
-				}
-			}
-
-			_min = _bins[0].min();
-			_max = _bins[_binsLength-1].max();
-
-			myfile.close();
-		}
-		catch(exception& e)
-		{
-			myfile.close();
-			throw e;
-		}
-	}
 
 	void reset()
 	{
-		if (_binsLength > 0)
+		if (_numberOfBuckets > 0)
 		{
-			delete[] _bins;
-			_binsLength = 0;
-			_binProbability = 1.0;
+			_numberOfBuckets = 0;
+			_bucketProbability = 1.0;
+			delete[] _buckets;
 		}
 	}
 
-	const size_t findBucket(const I64u x) const;
-
-	Interval<I64u>* _bins;
+	Interval<I64u>* _buckets;
 	I64u _min;
 	I64u _max;
-	size_t _binsLength;
-	Decimal _binProbability;
+	size_t _numberOfBuckets;
+	Decimal _bucketProbability;
 };
 
-inline Decimal QHistogramPrFunction::operator()(const I64u x) const
+inline size_t QHistogramPrFunction::numberOfBuckets() const
 {
-	return cdf(x);
+	return _numberOfBuckets;
 }
 
-inline I64u QHistogramPrFunction::sample(Decimal random) const
+inline I64u QHistogramPrFunction::min()const
 {
-	return invcdf(random);
+	return _min;
 }
 
-inline Interval<I64u> QHistogramPrFunction::threshold(Decimal yMin) const
+inline I64u QHistogramPrFunction::max() const
 {
-	return Interval<I64u>(0, 0); //FIXME
+	return _max;
 }
 
-inline const size_t QHistogramPrFunction::findBucket(const I64u x) const
+inline size_t QHistogramPrFunction::findBucket(const I64u x) const
 {
 	// we assert that the value x is in the [_min, _max] range
 	int min = 0;
-	int max = _binsLength - 1;
+	int max = _numberOfBuckets - 1;
 	int mid = 0;
 
 	// continue searching while [min, max] is not empty
@@ -206,12 +155,12 @@ inline const size_t QHistogramPrFunction::findBucket(const I64u x) const
 		mid = (min + max) / 2;
 
 		// determine which subarray to search
-		if (_bins[mid].max() <=  x)
+		if (_buckets[mid].max() <=  x)
 		{
 			// change min index to search upper subarray
 			min = mid + 1;
 		}
-		else if (_bins[mid].min() > x)
+		else if (_buckets[mid].min() > x)
 		{
 			// change max index to search lower subarray
 			max = mid - 1;
@@ -225,6 +174,16 @@ inline const size_t QHistogramPrFunction::findBucket(const I64u x) const
 
 	// key not found
 	return mid;
+}
+
+inline Decimal QHistogramPrFunction::operator()(const I64u x) const
+{
+	return cdf(x);
+}
+
+inline I64u QHistogramPrFunction::sample(Decimal random) const
+{
+	return invcdf(random);
 }
 
 } // namespace Myriad

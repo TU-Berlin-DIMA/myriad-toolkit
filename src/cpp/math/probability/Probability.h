@@ -24,9 +24,8 @@
 #include "math/probability/BoundedParetoPrFunction.h"
 #include "math/probability/NormalPrFunction.h"
 #include "math/probability/ParetoPrFunction.h"
-#include "math/probability/DiscreteDistribution.h"
 #include "math/probability/DiscreteProbability.h"
-#include "math/probability/CustomDiscreteProbability.h"
+#include "math/probability/ConditionalQHistogramPrFunction.h"
 #include "math/probability/CustomDiscreteProbability.h"
 #include "math/probability/UniformPrFunction.h"
 

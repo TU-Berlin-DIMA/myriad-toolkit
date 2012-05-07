@@ -18,6 +18,7 @@
 
 #include "core/types.h"
 #include "math/probability/BoundedParetoPrFunction.h"
+#include "math/probability/ConditionalQHistogramPrFunction.h"
 #include "math/probability/CustomDiscreteProbability.h"
 #include "math/probability/NormalPrFunction.h"
 #include "math/probability/ParetoPrFunction.h"
@@ -181,6 +182,90 @@ Decimal ParetoPrFunction::invcdf(Decimal y) const
 // QHistogram probability
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+/**
+ * Load a Q-histogram from the given path.
+ */
+void QHistogramPrFunction::initialize(const string& path)
+{
+	ifstream in(path.c_str());
+
+	if (!in.is_open())
+	{
+		throw OpenFileException("Unexpected file header for file `" + path +  "`");
+	}
+
+	try
+	{
+		initialize(in);
+
+		in.close();
+	}
+	catch(exception& e)
+	{
+		in.close();
+		throw e;
+	}
+}
+
+/**
+ * Load a Q-histogram from the given input stream. For each entry add a
+ * [min, max) interval of domain values to a lookup table.
+ */
+void QHistogramPrFunction::initialize(ifstream& in)
+{
+	// reset old state
+	reset();
+
+	string line, binMin, binMax;
+
+	// read first line
+	getline(in, line);
+
+	if (line.substr(0, 15) != "# numberofbins:")
+	{
+		throw DataException("Unexpected file header");
+	}
+
+	I32 numberOfLines = atoi(line.substr(15).c_str());
+
+	_buckets = new Interval<I64u>[numberOfLines];
+	_numberOfBuckets = numberOfLines;
+	_bucketProbability = 1.0/numberOfLines;
+
+	if (numberOfLines <= 0 && numberOfLines > 65536)
+	{
+		throw DataException("Invalid number of lines `" + toString(numberOfLines) +  "`");
+	}
+
+	for (I16u i = 0; i < numberOfLines; i++)
+	{
+		if (!in.good())
+		{
+			throw DataException("Bad line for bin #" + toString(i));
+		}
+
+		getline(in, line);
+
+		size_t firsttab = line.find_first_of('\t');
+
+		I64u min = fromString<I64u>(line.substr(0, firsttab));
+		I64u max = fromString<I64u>(line.substr(firsttab));
+
+		_buckets[i].set(min, max);
+
+		if (i > 0)
+		{
+			if (_buckets[i].min() != _buckets[i-1].max())
+			{
+				throw DataException("Bad line for bin #" + toString(i));
+			}
+		}
+	}
+
+	_min = _buckets[0].min();
+	_max = _buckets[_numberOfBuckets-1].max();
+}
+
 Decimal QHistogramPrFunction::pdf(I64u x) const
 {
 	if (x < _min || x >= _max)
@@ -189,7 +274,7 @@ Decimal QHistogramPrFunction::pdf(I64u x) const
 	}
 	else
 	{
-		return _binProbability * (1.0 / static_cast<Decimal>(_bins[findBucket(x)].length()));
+		return _bucketProbability * (1.0 / static_cast<Decimal>(_buckets[findBucket(x)].length()));
 	}
 }
 
@@ -206,17 +291,85 @@ Decimal QHistogramPrFunction::cdf(I64u x) const
 	else
 	{
 		size_t i = findBucket(x);
-		Interval<I64u>& b = _bins[i];
+		Interval<I64u>& b = _buckets[i];
 
-		return _binProbability * i + _binProbability * ((x - b.min()) / static_cast<Decimal>(b.length()));
+		return _bucketProbability * i + _bucketProbability * ((x - b.min()) / static_cast<Decimal>(b.length()));
 	}
 }
 
 I64u QHistogramPrFunction::invcdf(Decimal y) const
 {
 	// locate the bin
-	size_t i = static_cast<size_t>(y / _binProbability);
-	return static_cast<I64u>(_bins[i].min() + (y - i * _binProbability) * _binsLength * _bins[i].length());
+	size_t i = static_cast<size_t>(y / _bucketProbability);
+	return static_cast<I64u>(_buckets[i].min() + (y - i * _bucketProbability) * _numberOfBuckets * _buckets[i].length());
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// ConditionalQHistogram probability
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+/**
+ * Load a Q-histogram from the given path. For each entry add a [min, max)
+ * interval of domain values to a lookup table.
+ */
+void ConditionalQHistogramPrFunction::initialize(const string& path)
+{
+	ifstream in(path.c_str());
+
+	if (!in.is_open())
+	{
+		throw OpenFileException("Unexpected file header for file `" + path +  "`");
+	}
+
+	try
+	{
+		reset();
+
+		_x2Pr = new QHistogramPrFunction(in);
+
+		_x1Pr = new QHistogramPrFunction[_x2Pr->numberOfBuckets()];
+
+		for (size_t i = 0; i < _x2Pr->numberOfBuckets(); i++)
+		{
+			_x1Pr[i].initialize(in);
+		}
+
+		in.close();
+	}
+	catch(exception& e)
+	{
+		in.close();
+		throw e;
+	}
+}
+
+Decimal ConditionalQHistogramPrFunction::pdf(I64u x1, I64u x2) const
+{
+	if (x2 < _x2Pr->min() || x2 >= _x2Pr->max())
+	{
+		return 0.0;
+	}
+	else
+	{
+		return _x1Pr[_x2Pr->findBucket(x2)].pdf(x1);
+	}
+}
+
+Decimal ConditionalQHistogramPrFunction::cdf(I64u x1, I64u x2) const
+{
+	if (x2 < _x2Pr->min() || x2 >= _x2Pr->max())
+	{
+		return 0.0;
+	}
+	else
+	{
+		return _x1Pr[_x2Pr->findBucket(x2)].cdf(x1);
+	}
+}
+
+I64u ConditionalQHistogramPrFunction::invcdf(Decimal y, I64u x2) const
+{
+	return _x1Pr[_x2Pr->findBucket(x2)].invcdf(y);
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
