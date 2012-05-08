@@ -55,6 +55,10 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	setString("application.output-dir", format("%s/node%03d", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
 	setString("application.log-path", format("%s/log/node%03d.log", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
 
+	// expose some application.* parameters unter generator.ENV.*
+	setString("generator.ENV.config-dir", getString("application.config-dir"));
+	setString("generator.ENV.output-dir", getString("application.output-dir"));
+
 	// make sure that the job, log and output paths exist
 
 	// job-dir
@@ -87,27 +91,65 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	}
 }
 
-void AbstractGeneratorConfig::bindStringSet(const AutoPtr<Document>& doc, const string& id, vector<string>& set)
+void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 {
-	Element* containerEl = doc->getElementById(id, "key");
-	if (containerEl == NULL || containerEl->tagName() != "string_set")
+	// compute the output path
+	path.makeAbsolute(getString("application.config-dir"));
+
+	if (!path.isFile())
 	{
-		throw ConfigException(format("No <string-set> element found for `%s`", id));
+		throw ConfigException(format("Cannot find file at `%s`", path.toString()));
 	}
 
-	AutoPtr<NodeList> strings = containerEl->getElementsByTagName("item");
+	File file(path);
 
-	set.resize(strings->length());
-	for (unsigned long int i = 0; i < strings->length(); i++)
+	if (!file.canRead())
 	{
-		Element* s = static_cast<Element*> (strings->item(i));
-		set[i] = s->getAttribute("value");
+		throw ConfigException(format("Cannot read from file at `%s`", path.toString()));
+	}
 
-		AutoPtr<NodeList> probabilities = s->getElementsByTagName("probability");
-		for (unsigned long int j = 0; j < probabilities->length(); j++)
+	ifstream in(file.path().c_str());
+
+	if (!in.is_open())
+	{
+		throw ConfigException(format("Cannot open file at `%s`", path.toString()));
+	}
+
+	string line;
+
+	try
+	{
+		vector<String>& set = _boundStringSets[key];
+
+		// read first line
+		getline(in, line);
+
+		if (line.substr(0, 17) != "# numberofvalues:")
 		{
-			setProbability(i, static_cast<Element*> (probabilities->item(j)));
+			throw DataException("Unexpected file header");
 		}
+
+		I32 numberOfEntries = atoi(line.substr(15).c_str());
+
+		set.resize(numberOfEntries);
+
+
+		for (I16u i = 0; i < numberOfEntries; i++)
+		{
+			if (!in.good())
+			{
+				throw DataException("Bad line for bin #" + toString(i));
+			}
+
+			getline(in, set[i]);
+		}
+
+		in.close();
+	}
+	catch(exception& e)
+	{
+		in.close();
+		throw e;
 	}
 }
 

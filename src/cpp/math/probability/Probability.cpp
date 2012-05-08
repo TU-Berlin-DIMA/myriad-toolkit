@@ -191,7 +191,7 @@ void QHistogramPrFunction::initialize(const string& path)
 
 	if (!in.is_open())
 	{
-		throw OpenFileException("Unexpected file header for file `" + path +  "`");
+		throw OpenFileException(path);
 	}
 
 	try
@@ -234,14 +234,14 @@ void QHistogramPrFunction::initialize(ifstream& in)
 
 	if (numberOfLines <= 0 && numberOfLines > 65536)
 	{
-		throw DataException("Invalid number of lines `" + toString(numberOfLines) +  "`");
+		throw LogicException("Invalid number of lines `" + toString(numberOfLines) +  "`");
 	}
 
 	for (I16u i = 0; i < numberOfLines; i++)
 	{
 		if (!in.good())
 		{
-			throw DataException("Bad line for bin #" + toString(i));
+			throw LogicException("Bad line for bin #" + toString(i));
 		}
 
 		getline(in, line);
@@ -257,7 +257,7 @@ void QHistogramPrFunction::initialize(ifstream& in)
 		{
 			if (_buckets[i].min() != _buckets[i-1].max())
 			{
-				throw DataException("Bad line for bin #" + toString(i));
+				throw LogicException("Bad line for bin #" + toString(i));
 			}
 		}
 	}
@@ -318,7 +318,7 @@ void ConditionalQHistogramPrFunction::initialize(const string& path)
 
 	if (!in.is_open())
 	{
-		throw OpenFileException("Unexpected file header for file `" + path +  "`");
+		throw OpenFileException("Cannot open file `" + path +  "`");
 	}
 
 	try

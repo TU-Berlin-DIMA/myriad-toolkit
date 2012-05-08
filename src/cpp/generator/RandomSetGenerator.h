@@ -21,6 +21,9 @@
 
 #include "generator/RecordGenerator.h"
 #include "hydrator/HydratorChain.h"
+#include "reflection/getter/FieldGetter.h"
+#include "reflection/getter/ReferencedRecordFieldGetter.h"
+#include "reflection/getter/ReferencedRecordGetter.h"
 
 #include <Poco/AutoPtr.h>
 #include <Poco/BasicEvent.h>

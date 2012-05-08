@@ -29,7 +29,7 @@ from myriad.compiler.ast import ResolvedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
 from myriad.compiler.ast import StringSetRefArgumentNode
 from myriad.compiler.ast import DepthFirstNodeFilter
-from myriad.compiler.ast import StringSetNode
+from myriad.compiler.ast import EnumSetNode
 from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.util.stringutil import StringTransformer
@@ -48,7 +48,7 @@ class SourceCompiler(object):
     
     _log = None
     
-    _expr_pattern = re.compile('%([\w.]+)%')
+    _expr_pattern = re.compile('%([\w.\-]+)%')
     _param_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, args):
@@ -78,7 +78,7 @@ class SourceCompiler(object):
             
             m = self._param_pattern.match(attributeValue)
             if (m):
-                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<Decimal>("%s")' % (configPrefix, m.group(1)), attributeValue)
+                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(1)), attributeValue)
                 return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1])
             else:
                 if attributeType == "String":
@@ -105,8 +105,17 @@ class SourceCompiler(object):
             return '%sstringSet("%s")' % (configPrefix, stringSetKey)
         
         else:
-            
             return "NULL /* unknown */"
+        
+    def _getterCode(self, fieldArgumentNode):
+        fieldNode = fieldArgumentNode.getFieldRef()
+        recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
+        recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
+        
+        fieldType = fieldNode.getAttribute("type")
+        fieldName = fieldNode.getAttribute("name")
+            
+        return "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)}
         
 
 class FrontendCompiler(SourceCompiler):
@@ -428,19 +437,13 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '    virtual void configureSets()'
         print >> wfile, '    {'
+        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
+        
+        nodeFilter = DepthFirstNodeFilter(filterType=EnumSetNode)
+        for enumSet in nodeFilter.getAll(astRoot):
+            print >> wfile, '        bindEnumSet("%(n)s", %(p)s);' % {'n': enumSet.getAttribute("key"), 'p': self._argumentCode(enumSet.getArgument("path"), None)}
+
         print >> wfile, '    }'
-#        print >> wfile, ''
-#        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
-#        print >> wfile, '    {'
-#        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
-#        
-#        nodeFilter = DepthFirstNodeFilter(filterType=StringSetNode)
-#        for stringSet in nodeFilter.getAll(astRoot):
-#            print >> wfile, '        bindStringSet(doc, "%(n)s", _boundStringSets["%(n)s"]);' % {'n': stringSet.getAttribute("key")}
-#        
-#        print >> wfile, ''
-#        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
-#        print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -547,78 +550,6 @@ class OutputCollectorCompiler(SourceCompiler):
             print >> wfile, '}  // namespace Myriad'
     
             wfile.close()
-        
-
-class EnumTypesCompiler(SourceCompiler):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        '''
-        Constructor
-        '''
-        super(EnumTypesCompiler, self).__init__(*args, **kwargs)
-    
-    def compile(self, enumSets):
-    
-        try:
-            os.makedirs("%s/cpp/record/base" % (self._srcPath))
-        except OSError:
-            pass
-        
-        wfile = open("%s/cpp/record/base/enums.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
-        
-        print >> wfile, '// auto-generatad C++ enums'
-        print >> wfile, ''
-        print >> wfile, '#ifndef ENUMS_H_'
-        print >> wfile, '#define ENUMS_H_'
-        print >> wfile, ''
-        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
-        print >> wfile, ''
-        
-        for set in enumSets.getSets():
-            print >> wfile, 'enum %s' % (set.getAttribute("key"))
-            print >> wfile, '{'
-            for item in set.getItems():
-                print >> wfile, '    %s,' % (item.getAttribute("value")) 
-            print >> wfile, '};'
-            print >> wfile, ''
-            
-        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
-        print >> wfile, ''
-        print >> wfile, 'namespace Myriad {'
-        print >> wfile, ''
-        for set in enumSets.getSets():
-            print >> wfile, '// string conversion method for `%s`' % (set.getAttribute("key"))
-            print >> wfile, 'inline std::string toString(const %s::%s& t)' % (self._args.dgen_ns, set.getAttribute("key"))
-            print >> wfile, '{'
-            for item in set.getItems():
-                print >> wfile, '    if (t ==  %s::%s)' % (self._args.dgen_ns, item.getAttribute("value"))
-                print >> wfile, '    {'
-                print >> wfile, '        return "%s";' % (item.getAttribute("value"))
-                print >> wfile, '    }'
-            print >> wfile, ''
-            print >> wfile, '    throw Poco::LogicException("unsupported value for type `%s`");' % (set.getAttribute("key"))
-            print >> wfile, '}'
-            print >> wfile, ''
-            print >> wfile, '// enum conversion method for `%s`' % (set.getAttribute("key"))
-            print >> wfile, 'template<> inline %(ns)s::%(t)s toEnum<%(ns)s::%(t)s> (int v)' % {"ns": self._args.dgen_ns, "t": set.getAttribute("key")}
-            print >> wfile, '{'
-            for i, item in enumerate(set.getItems()):
-                print >> wfile, '    if (v == %d)' % (i)
-                print >> wfile, '    {'
-                print >> wfile, '        return %s::%s;' % (self._args.dgen_ns, item.getAttribute("value"))
-                print >> wfile, '    }'
-            print >> wfile, ''
-            print >> wfile, '    throw Poco::LogicException("unknown value for type `%s`");' % (set.getAttribute("key"))
-            print >> wfile, '}'
-            print >> wfile, ''
-        print >> wfile, '} // namespace Myriad'
-        print >> wfile, ''
-        print >> wfile, '#endif /* ENUMS_H_ */'
-
-        wfile.close()
 
 
 class RecordTypeCompiler(SourceCompiler):
@@ -656,7 +587,6 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#define BASE%s_H_' % (typeNameUC)
         print >> wfile, ''
         print >> wfile, '#include "record/Record.h"'
-        print >> wfile, '#include "record/base/enums.h"'
         
         for referenceType in sorted(recordType.getReferenceTypes()):
             print >> wfile, '#include "record/%s.h"' % (StringTransformer.sourceType(referenceType))
@@ -882,6 +812,8 @@ class RecordGeneratorCompiler(SourceCompiler):
     classdocs
     '''
     
+    _getter_pattern = re.compile('getter\(([a-zA-Z_]+)\)')
+    
     def __init__(self, *args, **kwargs):
         '''
         Constructor
@@ -974,7 +906,12 @@ class RecordGeneratorCompiler(SourceCompiler):
             if hydrator.hasPRNGArgument():
                 argsCode.append('random')
             for argKey in hydrator.getConstructorArgumentsOrder():
-                argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
+                m = self._getter_pattern.match(argKey)
+                if (m):
+                    argsCode.append(self._getterCode(hydrator.getArgument(m.group(1))))
+                else:
+                    argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
+                    
             print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)

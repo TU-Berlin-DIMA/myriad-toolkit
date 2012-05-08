@@ -61,7 +61,7 @@ class StringTransformer(object):
     classdocs
     '''
     
-    _cc2us_pattern1 = re.compile('(.)([A-Z][a-z]+)')
+    _cc2us_pattern1 = re.compile('(.)([A-Za-z]+)')
     _cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
     _complex_type_pattern = re.compile('(vector|Interval)\[(\w+)\]')
     

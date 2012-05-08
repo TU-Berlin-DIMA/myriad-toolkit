@@ -171,7 +171,6 @@ class XMLReader(object):
         self.__readParameters(astContext, xmlContext)
         self.__readFunctions(astContext, xmlContext)
         self.__readEnumSets(astContext, xmlContext)
-        self.__readStringSets(astContext, xmlContext)
         # record related tree areas
         self.__readRecordSequences(astContext, xmlContext)
         
@@ -204,27 +203,13 @@ class XMLReader(object):
 
         # attach FunctionNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:enum_sets/m:enum_set"):
-            enumSet = EnumSetNode(key=element.prop("key"))
+            enumSetNode = EnumSetNode(key=element.prop("key"))
             
             childContext = self.__createXPathContext(element)
-            for child in childContext.xpathEval("./m:item"):
-                enumSet.addItem(SetItemNode(value=child.prop("value")))
+            for child in childContext.xpathEval("./m:argument"):
+                enumSetNode.setArgument(self.__argumentFactory(child))
             
-            astContext.getEnumSets().setSet(enumSet)
-
-    def __readStringSets(self, astContext, xmlContext):
-        # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
-
-        # attach FunctionNode for each function in the XML document
-        for element in xPathContext.xpathEval(".//m:string_sets/m:string_set"):
-            enumSet = StringSetNode(key=element.prop("key"))
-            
-            childContext = self.__createXPathContext(element)
-            for child in childContext.xpathEval("./m:item"):
-                enumSet.addItem(SetItemNode(value=child.prop("value")))
-            
-            astContext.getStringSets().setSet(enumSet)
+            astContext.getEnumSets().setSet(enumSetNode)
             
     def __readRecordSequences(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
@@ -376,6 +361,8 @@ class XMLReader(object):
             return UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "q_histogram_probability"):
             return QHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        if (functionType == "conditional_q_histogram_probability"):
+            return ConditionalQHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
 
         raise RuntimeError('Invalid function type `%s`' % (functionType))
     
@@ -398,6 +385,8 @@ class XMLReader(object):
             return SimpleRandomizedHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "simple_clustered_hydrator":
             return SimpleClusteredHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "conditional_randomized_hydrator":
+            return ConditionalRandomizedHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         
         raise RuntimeError('Unsupported hydrator type `%s`' % (t))
 

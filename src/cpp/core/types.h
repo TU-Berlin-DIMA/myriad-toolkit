@@ -37,6 +37,7 @@ typedef Poco::Int64 I64;
 typedef Poco::UInt16 I16u;
 typedef Poco::UInt32 I32u;
 typedef Poco::UInt64 I64u;
+typedef std::size_t Enum;
 
 typedef Poco::UInt64 ID;
 typedef double Decimal;

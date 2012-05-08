@@ -128,15 +128,13 @@ public:
 protected:
 
 	/**
-	 * Helper function - binds a XML configured string set to a vector.
+	 * Helper function - loads an enumerated set from a flat file to a vector.
 	 *
-	 * @param doc
-	 * @param id
-	 * @param set
+	 * @param key
+	 * @param path
 	 *
-	 * @deprecated
 	 */
-	void bindStringSet(const AutoPtr<XML::Document>& doc, const string& id, vector<string>& set);
+	void bindEnumSet(const string& key, Path path);
 
 	/**
 	 * Helper function - binds a XML configured record set to a vector.
