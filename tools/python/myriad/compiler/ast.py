@@ -473,9 +473,12 @@ class RecordTypeNode(AbstractNode):
         
     def setReference(self, node):
         self._references[node.getAttribute('name')] = node
-        t = node.getAttribute('type')
-        if not t in self._referenceTypes:
-            self._referenceTypes.append(t)
+        node.setParent(self)
+
+        if isinstance(node, ResolvedRecordReferenceNode):
+            t = node.getAttribute('type')
+            if not t in self._referenceTypes:
+                self._referenceTypes.append(t)
     
     def getReference(self, key):
         return self._references.get(key)
@@ -511,13 +514,48 @@ class RecordReferenceNode(AbstractNode):
     '''
     
     orderkey = None
+    __parent = None
     
     def __init__(self, *args, **kwargs):
         super(RecordReferenceNode, self).__init__(*args, **kwargs)
         self.orderkey = None
+        self.__parent = None
         
     def setOrderKey(self, key):
         self.orderkey = key
+
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
+
+
+class UnresolvedRecordReferenceNode(RecordReferenceNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(UnresolvedRecordReferenceNode, self).__init__(*args, **kwargs)
+
+
+class ResolvedRecordReferenceNode(RecordReferenceNode):
+    '''
+    classdocs
+    '''
+    
+    __recordTypeRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedRecordReferenceNode, self).__init__(*args, **kwargs)
+        self.__recordTypeRef = None
+        
+    def setRecordTypeRef(self, recordTypeRef):
+        self.__recordTypeRef = recordTypeRef
+
+    def getRecordTypeRef(self):
+        return self.__recordTypeRef
 
 
 class CardinalityEstimatorNode(AbstractNode):
@@ -530,6 +568,7 @@ class CardinalityEstimatorNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(CardinalityEstimatorNode, self).__init__(*args, **kwargs)
+        self.__parent = None
         self.__arguments = {}
     
     def accept(self, visitor):
@@ -554,6 +593,7 @@ class CardinalityEstimatorNode(AbstractNode):
     def getConstructorArgumentsOrder(self):
         return []
 
+
 class LinearScaleEstimatorNode(CardinalityEstimatorNode):
     '''
     classdocs
@@ -565,6 +605,7 @@ class LinearScaleEstimatorNode(CardinalityEstimatorNode):
         
     def getConstructorArgumentsOrder(self):
         return ["base_cardinality"]
+
 
 class HydratorsNode(RecordSequenceNode):
     '''
@@ -597,7 +638,8 @@ class HydratorsNode(RecordSequenceNode):
             return self.__hydrators.itervalues()
         else:
             return self.__hydrators.itervalues()
-    
+
+
 class HydrationPlanNode(AbstractNode):
     '''
     classdocs
@@ -972,17 +1014,62 @@ class ResolvedFieldRefArgumentNode(ArgumentNode):
     classdocs
     '''
     
+    def __init__(self, *args, **kwargs):
+        super(ResolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
+
+
+class ResolvedDirectFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
+    '''
+    classdocs
+    '''
+    
     __fieldRef = None
     __recordTypeRef = None
     
     def __init__(self, *args, **kwargs):
-        super(ResolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
+        super(ResolvedDirectFieldRefArgumentNode, self).__init__(*args, **kwargs)
+        self.__fieldRef = None
+        self.__recordTypeRef = None
 
     def setRecordTypeRef(self, recordTypeRef):
         self.__recordTypeRef = recordTypeRef
 
     def getRecordTypeRef(self):
         return self.__recordTypeRef
+
+    def setFieldRef(self, fieldRef):
+        self.__fieldRef = fieldRef
+
+    def getFieldRef(self):
+        return self.__fieldRef
+
+
+class ResolvedReferencedFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __recordTypeRef = None
+    __recordReferenceRef = None
+    __fieldRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedReferencedFieldRefArgumentNode, self).__init__(*args, **kwargs)
+        self.__fieldRef = None
+        self.__recordReferenceRef = None
+        self.__recordTypeRef = None
+
+    def setRecordTypeRef(self, recordTypeRef):
+        self.__recordTypeRef = recordTypeRef
+
+    def getRecordTypeRef(self):
+        return self.__recordTypeRef
+
+    def setRecordReferenceRef(self, recordReferenceRef):
+        self.__recordReferenceRef = recordReferenceRef
+
+    def getRecordReferenceRef(self):
+        return self.__recordReferenceRef
 
     def setFieldRef(self, fieldRef):
         self.__fieldRef = fieldRef

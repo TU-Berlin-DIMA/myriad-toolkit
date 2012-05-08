@@ -26,6 +26,8 @@ from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
 from myriad.compiler.ast import ResolvedFieldRefArgumentNode
+from myriad.compiler.ast import ResolvedDirectFieldRefArgumentNode
+from myriad.compiler.ast import ResolvedReferencedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
 from myriad.compiler.ast import StringSetRefArgumentNode
 from myriad.compiler.ast import DepthFirstNodeFilter
@@ -91,7 +93,7 @@ class SourceCompiler(object):
             functionName = argumentNode.getAttribute("ref")
             return '%sfunc<%s> ("%s")' % (configPrefix, functionType, functionName)
         
-        elif isinstance(argumentNode, ResolvedFieldRefArgumentNode):
+        elif isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
             fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
             return '&%s::%s' % (typeName, fieldAccessMethodName)
@@ -108,15 +110,30 @@ class SourceCompiler(object):
             return "NULL /* unknown */"
         
     def _getterCode(self, fieldArgumentNode):
-        fieldNode = fieldArgumentNode.getFieldRef()
-        recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
-        recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
         
-        fieldType = fieldNode.getAttribute("type")
-        fieldName = fieldNode.getAttribute("name")
+        if isinstance(fieldArgumentNode, ResolvedDirectFieldRefArgumentNode):
+            recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
+            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
             
-        return "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)}
-        
+            fieldNode = fieldArgumentNode.getFieldRef()
+            fieldType = fieldNode.getAttribute("type")
+            fieldName = fieldNode.getAttribute("name")
+                
+            return "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)}
+
+        elif isinstance(fieldArgumentNode, ResolvedReferencedFieldRefArgumentNode):
+            recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
+            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
+            
+            referenceName = fieldArgumentNode.getRecordReferenceRef().getAttribute("name")
+            referenceTypeNameUS = fieldArgumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key")
+            referenceTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(referenceTypeNameUS))
+            
+            fieldNode = fieldArgumentNode.getFieldRef()
+            fieldType = fieldNode.getAttribute("type")
+            fieldName = fieldNode.getAttribute("name")
+
+            return "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)}
 
 class FrontendCompiler(SourceCompiler):
     '''

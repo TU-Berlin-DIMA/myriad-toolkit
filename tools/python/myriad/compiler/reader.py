@@ -61,6 +61,7 @@ class XMLReader(object):
             self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
             
             # resolve argument refs
+            self.__resolveRecordReferenceNodes()
             self.__resolveFieldRefArguments()
             self.__resolveFunctionRefArguments()
             self.__resolveHydratorRefArguments()
@@ -73,6 +74,28 @@ class XMLReader(object):
         # return the final version AST
         return self.__astRoot
     
+    def __resolveRecordReferenceNodes(self):
+        nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedRecordReferenceNode)
+        for unresolvedRecordReferenceNode in nodeFilter.getAll(self.__astRoot):
+            parent = unresolvedRecordReferenceNode.getParent()
+            fqName = unresolvedRecordReferenceNode.getAttribute("type")
+            
+            recordSequenceNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(fqName)
+            
+            if not recordSequenceNode:
+                message = "Cannot resolve record reference for record of type `%s`" % (fqName)
+                self.__log.error(message)
+                raise RuntimeError(message)
+            
+            recordTypeNode = recordSequenceNode.getRecordType()
+            
+            resolvedRecordReferenceNode = ResolvedRecordReferenceNode()
+            resolvedRecordReferenceNode.setAttribute('name', unresolvedRecordReferenceNode.getAttribute("name"))
+            resolvedRecordReferenceNode.setAttribute('type', StringTransformer.ucFirst(StringTransformer.us2cc(unresolvedRecordReferenceNode.getAttribute("type"))))
+            resolvedRecordReferenceNode.setRecordTypeRef(recordTypeNode)
+            resolvedRecordReferenceNode.orderkey = unresolvedRecordReferenceNode.orderkey
+            parent.setReference(resolvedRecordReferenceNode)
+    
     def __resolveFieldRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFieldRefArgumentNode)
         for unresolvedFieldRefArgumentNode in nodeFilter.getAll(self.__astRoot):
@@ -81,33 +104,64 @@ class XMLReader(object):
 
             if fqName.find(":") > -1:
                 recordKey = fqName[:fqName.find(":")]
-                fieldKey = fqName[fqName.find(":")+1:]
+                fieldPath = fqName[fqName.find(":")+1:]
             else:
                 message = "Cannot resolve field reference for field `%s`" % (fqName)
                 self.__log.error(message)
                 raise RuntimeError(message)
             
-            recordTypeNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(recordKey).getRecordType()
+            recordSequenceNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(recordKey)
             
-            if not recordTypeNode:
-                message = "Cannot resolve field reference for function `%s` (unexisting record type `%s`)" % (fqName, recordKey)
+            if not recordSequenceNode:
+                message = "Cannot resolve field reference for field `%s` (unexisting record type `%s`)" % (fqName, recordKey)
                 self.__log.error(message)
                 raise RuntimeError(message)
             
-            fieldTypeNode = recordTypeNode.getField(fieldKey)
+            recordTypeNode = recordSequenceNode.getRecordType()
             
-            if not fieldTypeNode:
-                message = "Cannot resolve field reference for function `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
-                self.__log.error(message)
-                raise RuntimeError(message)
+            if fieldPath.find(".") > -1:
+                fieldKey = fieldPath[fieldPath.find(".")+1:]
+                
+                referenceKey = fieldPath[:fieldPath.find(".")]
+                recordReferenceNode = recordTypeNode.getReference(referenceKey)
             
-            resolvedFieldRefArgumentNode = ResolvedFieldRefArgumentNode()
-            resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
-            resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
-            resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
-            resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
-            resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
-            parent.setArgument(resolvedFieldRefArgumentNode)
+                if not recordReferenceNode:
+                    message = "Cannot resolve named record reference `%s` for record type `%s`" % (referenceKey, recordKey)
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                fieldTypeNode = recordReferenceNode.getRecordTypeRef().getField(fieldKey)
+                
+                if not fieldTypeNode:
+                    message = "Cannot resolve field reference for function `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                resolvedFieldRefArgumentNode = ResolvedReferencedFieldRefArgumentNode()
+                resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+                resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+                resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+                resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+                resolvedFieldRefArgumentNode.setRecordReferenceRef(recordReferenceNode)
+                resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
+                parent.setArgument(resolvedFieldRefArgumentNode)
+                
+            else:
+                fieldKey = fieldPath
+                fieldTypeNode = recordTypeNode.getField(fieldKey)
+                
+                if not fieldTypeNode:
+                    message = "Cannot resolve field reference for function `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                resolvedFieldRefArgumentNode = ResolvedDirectFieldRefArgumentNode()
+                resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+                resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+                resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+                resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+                resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
+                parent.setArgument(resolvedFieldRefArgumentNode)
     
     def __resolveFunctionRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFunctionRefArgumentNode)
@@ -262,7 +316,7 @@ class XMLReader(object):
         
         i = 0
         for element in xPathContext.xpathEval("./m:reference"):
-            recordReferenceNode = RecordReferenceNode(name=element.prop("name"), type=element.prop("type"))
+            recordReferenceNode = UnresolvedRecordReferenceNode(name=element.prop("name"), type=element.prop("type"))
             recordReferenceNode.setOrderKey(i)
             
             recordTypeNode.setReference(recordReferenceNode)
@@ -417,6 +471,7 @@ class XMLReader(object):
                 raise RuntimeError(message)
             return UnresolvedFunctionRefArgumentNode(key=argumentKey, ref=argumentRef)
         
+        # FIXME: this is (probably) obsolete, remove this code
         if (argumentType == "hydrator_ref"):
             if not argumentRef:
                 message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
@@ -424,6 +479,7 @@ class XMLReader(object):
                 raise RuntimeError(message)
             return UnresolvedHydratorRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
         
+        # FIXME: this is (probably) obsolete, remove this code
         if (argumentType == "string_set_ref"):
             if not argumentRef:
                 message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
