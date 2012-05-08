@@ -21,6 +21,7 @@
 #include <map>
 #include <string>
 #include <Poco/Any.h>
+#include <Poco/AutoPtr.h>
 #include <Poco/DynamicAny.h>
 #include <Poco/RefCountedObject.h>
 
