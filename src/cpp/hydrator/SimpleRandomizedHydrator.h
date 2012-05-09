@@ -21,12 +21,6 @@
 
 #include "hydrator/RandomRecordHydrator.h"
 #include "math/random/RandomStream.h"
-#include "math/probability/CustomDiscreteProbability.h"
-
-#include <vector>
-
-using namespace std;
-using namespace Poco;
 
 namespace Myriad {
 

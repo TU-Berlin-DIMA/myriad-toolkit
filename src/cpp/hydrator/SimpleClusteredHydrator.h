@@ -20,24 +20,17 @@
 #define SIMPLECLUSTEREDHYDRATOR_H_
 
 #include "hydrator/RecordHydrator.h"
-#include "math/random/RandomStream.h"
-#include "math/probability/CustomDiscreteProbability.h"
-
-#include <vector>
-
-using namespace std;
-using namespace Poco;
 
 namespace Myriad {
 
-template<class RecordType, typename T, typename P> class SimpleClusteredHydrator : public RecordHydrator<RecordType>
+template<class RecordType, typename T, typename P> class SimpleClusteredHydrator : public InvertibleHydrator<RecordType, T>
 {
 public:
 
 	typedef void (RecordType::*ValueSetter)(const T&);
 
 	SimpleClusteredHydrator(ValueSetter valueSetter, const P& probability, const I64u sequenceCardinality) :
-		RecordHydrator<RecordType>(),
+		InvertibleHydrator<RecordType, T>(valueSetter),
 		_valueSetter(valueSetter),
 		_probability(probability),
 		_sequenceCardinality(sequenceCardinality)
@@ -50,6 +43,14 @@ public:
 		{
 			(recordPtr->*_valueSetter)(static_cast<T>(_probability.sample(recordPtr->genID()/_sequenceCardinality)));
 		}
+	}
+
+	const Interval<I64u> operator()(const T& x) const
+	{
+		Decimal cdf = _probability.cdf(x);
+		Decimal pdf = _probability.pdf(x);
+
+		return Interval<I64u>(cdf * _sequenceCardinality, (cdf + pdf) * _sequenceCardinality);
 	}
 
 private:

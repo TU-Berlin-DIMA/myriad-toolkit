@@ -50,6 +50,28 @@ protected:
 	bool _enabled;
 };
 
+template<class RecordType, class T> class InvertibleHydrator : public RecordHydrator<RecordType>
+{
+public:
+
+	typedef void (RecordType::*ValueSetter)(const T&);
+
+	InvertibleHydrator(ValueSetter valueSetter) :
+		_valueSetter(valueSetter)
+	{
+	}
+
+	virtual ~InvertibleHydrator()
+	{
+	}
+
+	virtual const Interval<I64u> operator()(const T& x) const = 0;
+
+protected:
+
+	ValueSetter _valueSetter;
+};
+
 } // namespace Myriad
 
 #endif /* RECORDHYDRATOR_H_ */

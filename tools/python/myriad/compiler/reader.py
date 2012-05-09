@@ -133,7 +133,7 @@ class XMLReader(object):
                 fieldTypeNode = recordReferenceNode.getRecordTypeRef().getField(fieldKey)
                 
                 if not fieldTypeNode:
-                    message = "Cannot resolve field reference for function `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
+                    message = "Cannot resolve field reference for field `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
                     self.__log.error(message)
                     raise RuntimeError(message)
                 
@@ -151,17 +151,33 @@ class XMLReader(object):
                 fieldTypeNode = recordTypeNode.getField(fieldKey)
                 
                 if not fieldTypeNode:
-                    message = "Cannot resolve field reference for function `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
+                    fieldTypeNode = recordTypeNode.getReference(fieldKey)
+                
+                if not fieldTypeNode:
+                    message = "Cannot resolve field reference for field `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
                     self.__log.error(message)
                     raise RuntimeError(message)
                 
-                resolvedFieldRefArgumentNode = ResolvedDirectFieldRefArgumentNode()
-                resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
-                resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
-                resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
-                resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
-                resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
-                parent.setArgument(resolvedFieldRefArgumentNode)
+                if isinstance(fieldTypeNode, RecordFieldNode):
+                    resolvedFieldRefArgumentNode = ResolvedDirectFieldRefArgumentNode()
+                    resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+                    resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+                    resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+                    resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+                    resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
+                    parent.setArgument(resolvedFieldRefArgumentNode)
+                elif isinstance(fieldTypeNode, RecordReferenceNode):
+                    resolvedFieldRefArgumentNode = ResolvedRecordReferenceRefArgumentNode()
+                    resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+                    resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+                    resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+                    resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+                    resolvedFieldRefArgumentNode.setRecordReferenceRef(recordTypeNode.getReference(fieldKey))
+                    parent.setArgument(resolvedFieldRefArgumentNode)
+                else:
+                    message = "Unexpected field type"
+                    self.__log.error(message)
+                    raise RuntimeError(message)
     
     def __resolveFunctionRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFunctionRefArgumentNode)
@@ -441,6 +457,8 @@ class XMLReader(object):
             return SimpleClusteredHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "conditional_randomized_hydrator":
             return ConditionalRandomizedHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "referenced_record_hydrator":
+            return ReferencedRecordHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         
         raise RuntimeError('Unsupported hydrator type `%s`' % (t))
 
@@ -461,7 +479,11 @@ class XMLReader(object):
                 message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
                 self.__log.error(message)
                 raise RuntimeError(message)
-            return UnresolvedFieldRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
+            
+            if argumentRef.find(":") == -1:
+                argumentRef = "%s%s" % (enclosingRecordType, argumentRef)
+                
+            return UnresolvedFieldRefArgumentNode(key=argumentKey, ref=argumentRef)
 
         if (argumentType == "function_ref"):
             argumentRef = argumentXMLNode.prop("ref")

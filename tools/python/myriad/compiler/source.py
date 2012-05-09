@@ -27,6 +27,7 @@ from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
 from myriad.compiler.ast import ResolvedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedDirectFieldRefArgumentNode
+from myriad.compiler.ast import ResolvedRecordReferenceRefArgumentNode
 from myriad.compiler.ast import ResolvedReferencedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
 from myriad.compiler.ast import StringSetRefArgumentNode
@@ -35,6 +36,147 @@ from myriad.compiler.ast import EnumSetNode
 from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.util.stringutil import StringTransformer
+
+class ArgumentTransformerFactory(object):
+    
+    _log = logging.getLogger("source.transformer.factory")
+    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_]*)\)$')
+    
+    def createTransformer(transformerDescriptor):
+        m = ArgumentTransformerFactory._descriptor_pattern.match(transformerDescriptor)
+        if (m):
+            transformerType = m.group(1)
+            transformer = None
+            argKey = m.group(2)
+            
+            if (transformerType == "RandomStreamRef"):
+                transformer = RandomStreamRefTransfomer()
+            elif (transformerType == "FieldSetter"):
+                transformer = FieldSetterTransfomer()
+            elif (transformerType == "FieldGetter"):
+                transformer = FieldGetterTransfomer()
+            elif (transformerType == "RandomSetInspector"):
+                transformer = RandomSetInspectorTransfomer()
+            elif (transformerType == "FunctionRef"):
+                transformer = FunctionRefTransfomer()
+            else:
+                message = "Unknown argument transformer type `%s`" % (transformerType)
+                ArgumentTransformerFactory._log.error(message)
+                raise RuntimeError(message)
+            
+            return (transformer, argKey)
+        else:
+            message = "Bad argument transformer descriptor `%s`" % (transformerDescriptor)
+            ArgumentTransformerFactory._log.error(message)
+            raise RuntimeError(message)
+        
+    # static methods
+    createTransformer = staticmethod(createTransformer)
+
+
+class FieldTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        pass
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        raise RuntimeError("Called abstract method FieldTransfomer.transform()")
+
+
+class RandomStreamRefTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(RandomStreamRefTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        return "random"
+
+
+class FieldSetterTransfomer(object):
+    def __init__(self, *args, **kwargs):
+        super(FieldSetterTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
+            return '&%s::%s' % (typeName, fieldAccessMethodName)
+        if isinstance(argumentNode, ResolvedRecordReferenceRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getRecordReferenceRef().getAttribute("name"))
+            return '&%s::%s' % (typeName, fieldAccessMethodName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class FieldGetterTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(FieldGetterTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
+            return '&%s::%s' % (typeName, fieldAccessMethodName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class RandomSetInspectorTransfomer(object):
+    def __init__(self, *args, **kwargs):
+        super(RandomSetInspectorTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if configVarName is not None:
+            configPrefix = configVarName + "."
+        else:
+            configPrefix = ""
+            
+        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class FunctionRefTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(FunctionRefTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if configVarName is not None:
+            configPrefix = configVarName + "."
+        else:
+            configPrefix = ""
+            
+        if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
+            functionType = argumentNode.getAttribute("type")
+            functionName = argumentNode.getAttribute("ref")
+            return '%sfunc<%s>("%s")' % (configPrefix, functionType, functionName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class FunctionRefTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(FunctionRefTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if configVarName is not None:
+            configPrefix = configVarName + "."
+        else:
+            configPrefix = ""
+            
+        if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
+            functionType = argumentNode.getAttribute("type")
+            functionName = argumentNode.getAttribute("ref")
+            return '%sfunc<%s>("%s")' % (configPrefix, functionType, functionName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
 
 class SourceCompiler(object):
     '''
@@ -134,6 +276,7 @@ class SourceCompiler(object):
             fieldName = fieldNode.getAttribute("name")
 
             return "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)}
+
 
 class FrontendCompiler(SourceCompiler):
     '''
@@ -869,6 +1012,10 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '#define BASE%sGENERATOR_H_' % (typeNameUC)
         print >> wfile, ''
         print >> wfile, '#include "generator/RandomSetGenerator.h"'
+        
+        for referenceType in sorted(recordSequence.getRecordType().getReferenceTypes()):
+            print >> wfile, '#include "generator/%sGenerator.h"' % (StringTransformer.sourceType(referenceType))
+            
         print >> wfile, '#include "record/%s.h"' % (typeNameCC)
         
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
@@ -879,7 +1026,9 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
-        print >> wfile, 'class UserHydratorChain;'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// RecordGenerator specialization (base class)'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'class Base%(t)sGenerator: public RandomSetGenerator<%(t)s>' % {'t': typeNameCC}
         print >> wfile, '{'
@@ -902,6 +1051,10 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// HydratorChain specialization (base class)'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, '/**'
         print >> wfile, ' * Hydrator specialization for User.'
         print >> wfile, ' */'
@@ -920,15 +1073,27 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
             argsCode = []
-            if hydrator.hasPRNGArgument():
-                argsCode.append('random')
-            for argKey in hydrator.getConstructorArgumentsOrder():
-                m = self._getter_pattern.match(argKey)
-                if (m):
-                    argsCode.append(self._getterCode(hydrator.getArgument(m.group(1))))
-                else:
-                    argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
+            
+            if hydrator.hasNewArgsSupport():
+                for transformerDescriptor in hydrator.getConstructorArguments():
+                    (argTransformer, argKey) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
                     
+                    if argKey is None:
+                        argument = None
+                    else:
+                        argument = hydrator.getArgument(argKey)
+                    
+                    argsCode.append(argTransformer.transform(argument, "config"))
+            else:
+                if hydrator.hasPRNGArgument():
+                    argsCode.append('random')
+                for argKey in hydrator.getConstructorArgumentsOrder():
+                    m = self._getter_pattern.match(argKey)
+                    if (m):
+                        argsCode.append(self._getterCode(hydrator.getArgument(m.group(1))))
+                    else:
+                        argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
+            
             print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)
@@ -953,6 +1118,14 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         print >> wfile, '    }'
         print >> wfile, ''
+        print >> wfile, '    /**'
+        print >> wfile, '     * Invertible hydrator getter.'
+        print >> wfile, '     */'
+        print >> wfile, '    template<typename T> const InvertibleHydrator<%(t)s, T>& invertableHydrator(typename MethodTraits<%(t)s, T>::Setter setter)' % {'t': typeNameCC}
+        print >> wfile, '    {'
+        print >> wfile, '        return HydratorChain<%s>::invertableHydrator<T>(setter);' % (typeNameCC)
+        print >> wfile, '    }'
+        print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
         
@@ -966,6 +1139,32 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '     */'
         print >> wfile, '    Logger& _logger;'
         print >> wfile, '};'
+        print >> wfile, ''
+        
+        invertibleHydrators = {}
+        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+            if hydrator.isInvertible():
+                fieldType = hydrator.getArgument("field").getFieldRef().getAttribute("type")
+                if not invertibleHydrators.has_key(fieldType):
+                    invertibleHydrators[fieldType] = []
+                invertibleHydrators[fieldType].append(hydrator)
+        
+        for fieldType in sorted(invertibleHydrators.keys()):
+            print >> wfile, '/**'
+            print >> wfile, ' * Invertible hydrator getter (%s specialization).' % (fieldType)
+            print >> wfile, ' */'
+            print >> wfile, 'template<> const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(typename MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
+            print >> wfile, '{'
+            
+            for hydrator in invertibleHydrators[fieldType]:
+                print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': self._argumentCode(hydrator.getArgument("field"))}
+                print >> wfile, '    {'
+                print >> wfile, '        return _setOrderkey;'
+                print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    return HydratorChain<%(rt)s>::invertableHydrator<%(ft)s>(setter);' % { 'rt': typeNameCC, 'ft': fieldType}
+            print >> wfile, '}'
+        
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
@@ -1005,6 +1204,10 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// RecordGenerator specialization'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'class %(t)sGenerator: public Base%(t)sGenerator' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
@@ -1019,12 +1222,20 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random);'
         print >> wfile, '};'
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// HydratorChain specialization'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'class %(t)sHydratorChain : public Base%(t)sHydratorChain' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
         print >> wfile, '    %sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
         print >> wfile, '        Base%sHydratorChain(opMode, random, config)' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual ~%sHydratorChain()' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, '};'

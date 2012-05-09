@@ -44,6 +44,13 @@ typedef double Decimal;
 typedef Poco::DateTime Date;
 typedef std::string String;
 
+template<class RecordType, class T> struct MethodTraits
+{
+	typedef const T& (RecordType::*Getter)();
+	typedef void (RecordType::*Setter)(const T&);
+};
+
+
 template<class T> inline std::string toString(const T& t)
 {
 	std::stringstream ss;

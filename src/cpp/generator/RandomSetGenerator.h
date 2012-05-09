@@ -125,7 +125,7 @@ protected:
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// inspector inspector
+// sequence inspector
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<class RecordType> class RandomSetInspector
@@ -136,26 +136,42 @@ public:
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
 
 	RandomSetInspector(RandomSetGenerator<RecordType>& generator) :
-		_random(generator.random()),
-		_recordPtr(new RecordType()),
-		_hydrate(generator.hydratorChain(BaseHydratorChain::RANDOM, _random)),
+		_generator(generator),
+		_random(_generator.random()),
+		_hydrate(_generator.hydratorChain(BaseHydratorChain::RANDOM, _random)),
 		_logger(Logger::get("inspector."+generator.name()))
 	{
 	}
 
-	const AutoPtr<RecordType> at(const I64u genID);
+	RandomSetInspector(const RandomSetInspector& other) :
+		_generator(other._generator),
+		_random(_generator.random()),
+		_hydrate(_generator.hydratorChain(BaseHydratorChain::RANDOM, _random)),
+		_logger(other._logger)
+	{
+	}
+
+	const AutoPtr<RecordType> at(const I64u genID) const;
+
+	/**
+	 * Invertible hydrator getter.
+	 */
+	template<typename T> const InvertibleHydrator<RecordType, T>& invertableHydrator(typename MethodTraits<RecordType, T>::Setter setter)
+	{
+		return _hydrate.invertableHydrator<T>(setter);
+	}
 
 private:
+
+	/**
+	 * A reference to the parent generator (needed by the copy constructor).
+	 */
+	RandomSetGenerator<RecordType>& _generator;
 
 	/**
 	 * A copy of the generator's random stream.
 	 */
 	RandomStream _random;
-
-	/**
-	 * A record instance used for inspection.
-	 */
-	AutoPtr<RecordType> _recordPtr;
 
 	/**
 	 * Hydrator for the generated records.
@@ -360,15 +376,14 @@ template<class RecordType> inline AutoPtr<RecordType> RandomSetGenerator<RecordT
 	return recordPtr;
 }
 
-template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<RecordType>::at(const I64u genID)
+template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<RecordType>::at(const I64u genID) const
 {
-//	TODO: remove this, chunk adjustment is handled by the hydration chain
-//	_random.atChunk(genID);
+	AutoPtr<RecordType> recordPtr = new RecordType();
+	recordPtr->genID(genID);
 
-	_recordPtr->genID(genID);
-	_hydrate(_recordPtr);
+	_hydrate(recordPtr);
 
-	return _recordPtr;
+	return recordPtr;
 }
 
 template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run()

@@ -703,6 +703,12 @@ class HydratorNode(AbstractNode):
         
     def hasPRNGArgument(self):
         return False
+    
+    def hasNewArgsSupport(self):
+        return False
+        
+    def isInvertible(self):
+        return False
         
     def getConstructorArgumentsOrder(self):
         return []
@@ -883,6 +889,9 @@ class SimpleClusteredHydrator(HydratorNode):
     def hasPRNGArgument(self):
         return False
         
+    def isInvertible(self):
+        return True
+        
     def getConstructorArgumentsOrder(self):
         return ['field', 'probability', 'sequence_cardinality']
 
@@ -909,6 +918,47 @@ class ConditionalRandomizedHydrator(HydratorNode):
         
     def getConstructorArgumentsOrder(self):
         return ['field', 'getter(condition_field)', 'probability']
+
+
+class ReferencedRecordHydrator(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ReferencedRecordHydrator")
+        super(ReferencedRecordHydrator, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        
+        return "ReferencedRecordHydrator<%s, %s, %s, %s>" % (recordType, refRecordType, fieldType, probabilityType)
+        
+    def hasPRNGArgument(self):
+        return True
+    
+    def hasNewArgsSupport(self):
+        return True
+        
+    def getXMLArguments(self):
+        return { 'field'      : { 'type': 'field_ref' }, 
+                 'pivot_field': { 'type': 'field_ref' }, 
+                 'probability': { 'type': 'function_ref' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'RandomStreamRef()',
+                 'FieldSetter(field)',
+                 'FieldSetter(pivot_field)',
+                 'RandomSetInspector(pivot_field)',
+                 'FunctionRef(probability)' 
+               ]
+        
+    def getConstructorArgumentsOrder(self):
+        return ['reference', 'pivot_field', 'probability']
 
 
 class GeneratorTasksNode(AbstractNode):
@@ -1042,6 +1092,33 @@ class ResolvedDirectFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
 
     def getFieldRef(self):
         return self.__fieldRef
+
+
+class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __recordTypeRef = None
+    __recordReferenceRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedRecordReferenceRefArgumentNode, self).__init__(*args, **kwargs)
+        self.__fieldRef = None
+        self.__recordReferenceRef = None
+        self.__recordTypeRef = None
+
+    def setRecordTypeRef(self, recordTypeRef):
+        self.__recordTypeRef = recordTypeRef
+
+    def getRecordTypeRef(self):
+        return self.__recordTypeRef
+
+    def setRecordReferenceRef(self, recordReferenceRef):
+        self.__recordReferenceRef = recordReferenceRef
+
+    def getRecordReferenceRef(self):
+        return self.__recordReferenceRef
 
 
 class ResolvedReferencedFieldRefArgumentNode(ResolvedFieldRefArgumentNode):

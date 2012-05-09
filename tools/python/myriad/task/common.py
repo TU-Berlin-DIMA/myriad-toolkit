@@ -30,6 +30,16 @@ import myriad.util.properties
 
 TASK_PREFIX = "abstract"
 
+class TaskExecutionException(Exception):
+    
+    value = None
+    
+    def __init__(self, value):
+        self.value = value
+        
+    def __str__(self):
+        return repr(self.value)
+
 class TaskOptions(optparse.OptionParser):
     '''
     classdocs
@@ -195,11 +205,17 @@ class AbstractTask(object):
         # fix the parsed arguments
         self._log.info("Fixing parsed values.")
         self._fixArgs(args)
-
+        
         # perform the task, throws a TaskExecutionException on error 
-        self._log.info("Executing task logic.")
-        self._do(args)
-        self._log.info("Task execution finished successfully.")
+        try:
+            self._log.info("Executing task logic.")
+            self._do(args)
+            self._log.info("Task execution finished successfully.")
+                
+        except (Exception), e:
+            e = TaskExecutionException("A error occurred during task execution: %s" % (e))
+            self._log.error(e)
+            raise e
         
     def _fixArgs(self, args):
         args.base_path = self.__basePath

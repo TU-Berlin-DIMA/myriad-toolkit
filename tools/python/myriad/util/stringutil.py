@@ -72,7 +72,7 @@ class StringTransformer(object):
         return s.lower()
     
     def cc2us(s):
-        return StringTransformer._cc2us_pattern2.sub(r'\1_\2', self._cc2us_pattern1.sub(r'\1_\2', s)).lower()
+        return StringTransformer._cc2us_pattern2.sub(r'\1_\2', StringTransformer._cc2us_pattern1.sub(r'\1_\2', s)).lower()
     
     def us2cc(s):
         def camelcase(): 
