@@ -4,7 +4,6 @@
   <!-- permitted root elements -->
 
   <xs:element name="generator_prototype" type="myriad:generator_prototype" />
-  <xs:element name="generator_catalog" type="myriad:generator_catalog" />
 
   <!-- generator_prototype root type -->
 
