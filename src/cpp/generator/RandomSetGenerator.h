@@ -44,6 +44,8 @@ template<class RecordType> class RandomSetGenerator: public RecordGenerator
 {
 public:
 
+	typedef typename RecordTraits<RecordType>::RecordMetaType RecordMetaType;
+	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
 
 	/**
@@ -79,6 +81,20 @@ public:
 	virtual void cleanup(Stage stage);
 
 	/**
+	 * Creates a new hydrator chain which works on the provided RandomStream
+	 * reference.
+	 */
+	virtual HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random) = 0;
+
+	/**
+	 * Record factory method.
+	 */
+	const RecordFactoryType recordFactory()
+	{
+		return RecordFactoryType(_meta);
+	}
+
+	/**
 	 * Object generating function.
 	 */
 	AutoPtr<RecordType> operator()() const;
@@ -94,12 +110,6 @@ public:
 	{
 		return _random;
 	}
-
-	/**
-	 * Creates a new hydrator chain which works on the provided RandomStream
-	 * reference.
-	 */
-	virtual HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random) = 0;
 
 	/**
 	 * Creates a new inspector.
@@ -121,6 +131,11 @@ protected:
 	/**
 	 * RandomStream generator for this generator.
 	 */
+	RecordMetaType _meta;
+
+	/**
+	 * RandomStream generator for this generator.
+	 */
 	RandomStream _random;
 };
 
@@ -134,9 +149,11 @@ public:
 
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
+	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
 
 	RandomSetInspector(RandomSetGenerator<RecordType>& generator) :
 		_generator(generator),
+		_recordFactory(_generator.recordFactory()),
 		_random(_generator.random()),
 		_hydrate(_generator.hydratorChain(BaseHydratorChain::RANDOM, _random)),
 		_logger(Logger::get("inspector."+generator.name()))
@@ -145,6 +162,7 @@ public:
 
 	RandomSetInspector(const RandomSetInspector& other) :
 		_generator(other._generator),
+		_recordFactory(_generator.recordFactory()),
 		_random(_generator.random()),
 		_hydrate(_generator.hydratorChain(BaseHydratorChain::RANDOM, _random)),
 		_logger(other._logger)
@@ -167,6 +185,11 @@ private:
 	 * A reference to the parent generator (needed by the copy constructor).
 	 */
 	RandomSetGenerator<RecordType>& _generator;
+
+	/**
+	 * A record factory instance.
+	 */
+	RecordFactoryType _recordFactory;
 
 	/**
 	 * A copy of the generator's random stream.
@@ -195,11 +218,16 @@ template<class RecordType> class RandomSetDefaultGeneratingTask: public StageTas
 {
 public:
 
+	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
 
 	RandomSetDefaultGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
-		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun), _generator(generator), _random(generator.random()), _logger(Logger::get("task.random.default."+generator.name()))
+		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
+		_generator(generator),
+		_recordFactory(_generator.recordFactory()),
+		_random(generator.random()),
+		_logger(Logger::get("task.random.default."+generator.name()))
 	{
 	}
 
@@ -216,6 +244,11 @@ protected:
 	 * A reference to the generator creating the stage.
 	 */
 	RandomSetGenerator<RecordType>& _generator;
+
+	/**
+	 * A record factory instance.
+	 */
+	RecordFactoryType _recordFactory;
 
 	/**
 	 * A copy of the generator's random stream.
@@ -235,6 +268,7 @@ template<class RecordType, class ProbabilityType> class RandomSetTimeSpanGenerat
 {
 public:
 
+	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
 	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
 
@@ -243,6 +277,7 @@ public:
 	RandomSetTimeSpanGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, DateTimeSetter dateTimeSetter, bool dryRun = false) :
 		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
 		_generator(generator),
+		_recordFactory(_generator.recordFactory()),
 		_random(generator.random()),
 		_dateTimeSetter(dateTimeSetter),
 		_probability(config.func<ProbabilityType>(config.getString("generator." + generator.name() + ".timespan.pattern.probability"))),
@@ -263,6 +298,11 @@ protected:
 	 * A reference to the generator creating the stage.
 	 */
 	RandomSetGenerator<RecordType>& _generator;
+
+	/**
+	 * A record factory instance.
+	 */
+	RecordFactoryType _recordFactory;
 
 	/**
 	 * A copy of the generator's random stream.
@@ -378,7 +418,7 @@ template<class RecordType> inline AutoPtr<RecordType> RandomSetGenerator<RecordT
 
 template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<RecordType>::at(const I64u genID) const
 {
-	AutoPtr<RecordType> recordPtr = new RecordType();
+	AutoPtr<RecordType> recordPtr = _recordFactory();
 	recordPtr->genID(genID);
 
 	_hydrate(recordPtr);
@@ -407,7 +447,7 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 	HydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
 	while (current < last)
 	{
-		AutoPtr<RecordType> recordPtr = _generator();
+		AutoPtr<RecordType> recordPtr = _recordFactory();
 		recordPtr->genID(current);
 
 		hydrate(recordPtr);
@@ -523,7 +563,7 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 		I32u currentPeriodXPosition = (_probability.invcdf((current - currentPeriodFirst) * yAxisRatio + delta) - xRange.min()) / xAxisRatio;
 		DateTime currentDateTime = minDateTime + Timespan(period * currentPeriod + currentPeriodXPosition, 0);
 
-		AutoPtr<RecordType> recordPtr = _generator();
+		AutoPtr<RecordType> recordPtr = _recordFactory();
 		recordPtr->genID(current);
 
 		(recordPtr->*_dateTimeSetter)(currentDateTime);

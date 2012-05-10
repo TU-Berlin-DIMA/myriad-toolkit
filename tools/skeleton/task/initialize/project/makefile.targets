@@ -27,7 +27,7 @@ PYTHON_DIRS      = $(shell cd ../vendor/myriad/src/python && find -mindepth 1 -t
 PYTHON_FILES     = $(shell cd ../vendor/myriad/src/python && find -type f | grep -v '\.svn' | sed 's/^.\//lib\/python\/vendor\//')
 
 # All Target
-all: work-dirs script-files config-files lib-misc lib-poco CHANGELOG LICENSE NOTICE dgen-prototype-sources bin/$(MYRIAD_DGEN_NAME)-node
+all: work-dirs script-files config-files lib-misc lib-poco CHANGELOG LICENSE NOTICE bin/$(MYRIAD_DGEN_NAME)-node
 
 cleanall: clean
 	rm -Rf bin
@@ -113,7 +113,7 @@ README.%: ../src/resources/README.%
 	@echo 'Processing: $@'
 	cp $< $@
 	
-dgen-prototype-sources:
+prototype:
 	@echo 'Compiling data generator prototype sources for $(MYRIAD_DGEN_NAME)'
 	$(MYRIAD_ASSISTANT) compile:prototype
 

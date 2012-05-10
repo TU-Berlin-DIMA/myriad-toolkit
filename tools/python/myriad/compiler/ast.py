@@ -444,12 +444,16 @@ class RecordTypeNode(AbstractNode):
     _fields = {}
     _references = {}
     _referenceTypes = []
+    _enumFields = {}
+    _enumFieldNames = []
     
     def __init__(self, *args, **kwargs):
         super(RecordTypeNode, self).__init__(*args, **kwargs)
         self._fields = {}
         self._references = {}
         self._referenceTypes = []
+        self._enumFields = {}
+        self._enumFieldNames = []
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -491,6 +495,27 @@ class RecordTypeNode(AbstractNode):
     
     def getReferenceTypes(self):
         return self._referenceTypes
+        
+    def setEnumField(self, node):
+        self._enumFields[node.getAttribute('name')] = node
+        self._fields[node.getAttribute('name')] = node
+        node.setParent(self)
+
+        t = node.getAttribute('enumref')
+        if not t in self._enumFieldNames:
+            self._enumFieldNames.append(t)
+    
+    def getEnumField(self, key):
+        return self._enumFields.get(key)
+    
+    def getEnumFields(self):
+        return self._enumFields.itervalues()
+
+    def hasEnumFields(self):
+        return bool(self._enumFields)
+    
+    def getEnumFieldNames(self):
+        return self._enumFieldNames
 
 
 class RecordFieldNode(AbstractNode):
@@ -499,15 +524,43 @@ class RecordFieldNode(AbstractNode):
     '''
     
     orderkey = None
+    __parent = None
     
     def __init__(self, *args, **kwargs):
         super(RecordFieldNode, self).__init__(*args, **kwargs)
         self.orderkey = None
+        self.__parent = None
         
     def setOrderKey(self, key):
         self.orderkey = key
 
+    def setParent(self, parent):
+        self.__parent = parent
 
+    def getParent(self):
+        return self.__parent
+
+
+class RecordEnumFieldNode(RecordFieldNode):
+    '''
+    classdocs
+    '''
+    
+    orderkey = None
+    __enumSetRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(RecordEnumFieldNode, self).__init__(*args, **kwargs)
+        self.__eumSetRef = None
+        
+    def getEnumSetRef(self):
+        return self.__enumSetRef
+        
+    def setEnumSetRef(self, enumSetRef):
+        self.__enumSetRef = enumSetRef
+
+
+#FIXME: use a common XML syntax for RecordReferenceNode and RecordEnumFieldNode
 class RecordReferenceNode(AbstractNode):
     '''
     classdocs

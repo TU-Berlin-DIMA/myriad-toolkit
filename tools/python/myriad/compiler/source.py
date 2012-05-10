@@ -762,13 +762,18 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'class %sGenerator;' % (typeNameCC)
         print >> wfile, 'class %sHydratorChain;' % (typeNameCC)
         print >> wfile, ''
+        print >> wfile, 'class %(t)sMeta;' % { 't': typeNameCC }
+        print >> wfile, ''
         print >> wfile, 'class Base%s: public Record' % (typeNameCC)
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    Base%s()' % (typeNameCC)
+    
+        print >> wfile, '    Base%(t)s(const %(t)sMeta& meta) : ' % { 't': typeNameCC }
+        print >> wfile, '        _meta(meta)'
         print >> wfile, '    {'
         print >> wfile, '    }'
+
         print >> wfile, ''
         
         for field in recordType.getFields():
@@ -792,6 +797,9 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, ''
         
         print >> wfile, 'private:'
+        print >> wfile, ''
+        print >> wfile, '    // meta'
+        print >> wfile, '    const %sMeta& _meta;' % (typeNameCC)
 
         if recordType.hasFields():
             print >> wfile, ''
@@ -855,6 +863,11 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    return _%s;' % (referenceName)
             print >> wfile, '}'
             print >> wfile, ''
+            
+        print >> wfile, 'class Base%(t)sMeta : public RecordMeta<%(t)s>' % { 't': typeNameCC }
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, '};'
         
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
@@ -863,8 +876,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// record traits specialization'
         print >> wfile, 'template<> struct RecordTraits<%s::%s>' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '{'
+        print >> wfile, '    typedef %s::%sMeta RecordMetaType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sGenerator GeneratorType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sHydratorChain HydratorChainType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '    typedef RecordFactory<%s::%s> RecordFactoryType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// template specialization of operator<<'
@@ -923,14 +938,23 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
+        print >> wfile, '// forward declarations'
+        print >> wfile, 'class %sMeta;' % (typeNameCC)
+        print >> wfile, ''
         print >> wfile, 'class %(t)s: public Base%(t)s' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    %s()' % (typeNameCC)
+        print >> wfile, '    %(t)s(const %(t)sMeta& meta)' % {'t': typeNameCC}
+        print >> wfile, '        : Base%s(meta)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, 'class %(t)sMeta : public Base%(t)sMeta' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)

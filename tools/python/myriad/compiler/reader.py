@@ -324,10 +324,25 @@ class XMLReader(object):
         
         i = 0
         for element in xPathContext.xpathEval("./m:field"):
-            recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"))
+            fieldType = element.prop("type")
+            
+            if fieldType == "Enum":
+                recordFieldNode = RecordEnumFieldNode(name=element.prop("name"), type=element.prop("type"), enumref=element.prop("enumref"))
+                enumSetNode = self.__astRoot.getSpecification().getEnumSets().getSet(recordFieldNode.getAttribute('enumref'))
+                
+                if enumSetNode is None:
+                    message = "Cannot resolve enum set reference for enum set `%s`" % (recordFieldNode.getAttribute('enumref'))
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                recordFieldNode.setEnumSetRef(enumSetNode)
+                recordTypeNode.setEnumField(recordFieldNode)
+            else:
+                recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"))
+                recordTypeNode.setField(recordFieldNode)
+            
             recordFieldNode.setOrderKey(i)
             
-            recordTypeNode.setField(recordFieldNode)
             i = i+1
         
         i = 0
