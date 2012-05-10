@@ -1153,7 +1153,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '/**'
             print >> wfile, ' * Invertible hydrator getter (%s specialization).' % (fieldType)
             print >> wfile, ' */'
-            print >> wfile, 'template<> const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(typename MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
+            print >> wfile, 'template<> const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
             print >> wfile, '{'
             
             for hydrator in invertibleHydrators[fieldType]:
