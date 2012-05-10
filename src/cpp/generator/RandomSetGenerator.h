@@ -89,9 +89,9 @@ public:
 	/**
 	 * Record factory method.
 	 */
-	const RecordFactoryType recordFactory()
+	virtual const RecordFactoryType recordFactory()
 	{
-		return RecordFactoryType(_meta);
+		return RecordFactoryType(RecordMetaType(_config.enumSets()));
 	}
 
 	/**
@@ -127,11 +127,6 @@ public:
 protected:
 
 	virtual ~RandomSetGenerator();
-
-	/**
-	 * RandomStream generator for this generator.
-	 */
-	RecordMetaType _meta;
 
 	/**
 	 * RandomStream generator for this generator.
