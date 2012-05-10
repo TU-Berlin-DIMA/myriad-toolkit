@@ -5,6 +5,9 @@
 # include project-specific variables
 include ../.myriad-settings
 
+# the path to the myriad assistant binary
+MYRIAD_ASSISTANT = ../vendor/myriad/bin/assistant
+
 # include the following files in the package
 # ./config/*.properties   -- properties config files
 # ./config/*.domain       -- attribute domain enumerations
@@ -24,7 +27,7 @@ PYTHON_DIRS      = $(shell cd ../vendor/myriad/src/python && find -mindepth 1 -t
 PYTHON_FILES     = $(shell cd ../vendor/myriad/src/python && find -type f | grep -v '\.svn' | sed 's/^.\//lib\/python\/vendor\//')
 
 # All Target
-all: work-dirs script-files config-files lib-misc lib-poco CHANGELOG LICENSE NOTICE bin/$(MYRIAD_DGEN_NAME)-node
+all: work-dirs script-files config-files lib-misc lib-poco CHANGELOG LICENSE NOTICE dgen-prototype-sources bin/$(MYRIAD_DGEN_NAME)-node
 
 cleanall: clean
 	rm -Rf bin
@@ -109,6 +112,10 @@ NOTICE: ../src/resources/NOTICE
 README.%: ../src/resources/README.%
 	@echo 'Processing: $@'
 	cp $< $@
+	
+dgen-prototype-sources:
+	@echo 'Compiling data generator prototype sources for $(MYRIAD_DGEN_NAME)'
+	$(MYRIAD_ASSISTANT) compile:prototype
 
-.PHONY: all tests clean dependents tests cleanall install work-dirs script-files config-files lib-misc lib-poco
+.PHONY: all tests clean dependents tests cleanall install work-dirs script-files config-files lib-misc lib-poco dgen-prototype-sources
 .SILENT: work-dirs lib-poco
