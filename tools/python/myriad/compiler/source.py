@@ -763,7 +763,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'public:'
         print >> wfile, ''
         
-        if recordType.getEnumFields():
+        if recordType.hasEnumFields():
             print >> wfile, '    Base%(t)sMeta(const map<string, vector<string> >& enumSets) : ' % {'t': typeNameCC}
             print >> wfile, '        %s' % ', '.join([ '%(n)s(enumSets.find("%(r)s")->second)' % {'n': field.getAttribute("name"), 'r': field.getAttribute("enumref")} for field in recordType.getEnumFields() ])
             print >> wfile, '    {'
@@ -1285,7 +1285,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             for hydrator in invertibleHydrators[fieldType]:
                 print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': self._argumentCode(hydrator.getArgument("field"))}
                 print >> wfile, '    {'
-                print >> wfile, '        return _setOrderkey;'
+                print >> wfile, '        return _%s;' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
                 print >> wfile, '    }'
             print >> wfile, ''
             print >> wfile, '    return HydratorChain<%(rt)s>::invertableHydrator<%(ft)s>(setter);' % { 'rt': typeNameCC, 'ft': fieldType}
