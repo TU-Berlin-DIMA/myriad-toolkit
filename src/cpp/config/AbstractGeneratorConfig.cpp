@@ -119,7 +119,7 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 
 	try
 	{
-		vector<String>& set = _boundStringSets[key];
+		vector<String>& set = _enumSets[key];
 
 		// read first line
 		getline(in, line);
@@ -129,10 +129,9 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 			throw DataException("Unexpected file header");
 		}
 
-		I32 numberOfEntries = atoi(line.substr(15).c_str());
+		I32 numberOfEntries = atoi(line.substr(17).c_str());
 
 		set.resize(numberOfEntries);
-
 
 		for (I16u i = 0; i < numberOfEntries; i++)
 		{
@@ -141,7 +140,8 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 				throw DataException("Bad line for bin #" + toString(i));
 			}
 
-			getline(in, set[i]);
+			getline(in, line);
+			set[i] = line.substr(line.find_first_of('\t')+1);
 		}
 
 		in.close();

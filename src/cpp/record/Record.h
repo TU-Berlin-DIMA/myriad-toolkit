@@ -91,7 +91,7 @@ public:
 
 private:
 
-	const RecordMetaType& _meta;
+	const RecordMetaType _meta;
 };
 
 template<class RecordType> inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()() const
@@ -101,6 +101,15 @@ template<class RecordType> inline AutoPtr<RecordType> RecordFactory<RecordType>:
 
 template<class RecordType> class RecordMeta
 {
+public:
+
+	RecordMeta()
+	{
+	}
+
+	RecordMeta(const map<string, vector<string> >& enumSets)
+	{
+	}
 };
 
 } // namespace Myriad

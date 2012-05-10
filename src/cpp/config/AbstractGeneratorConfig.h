@@ -80,9 +80,14 @@ public:
 		return fromString<C>(getString("generator." + key));
 	}
 
-	const vector<string>& stringSet(string key)
+	const vector<string>& enumSet(string key)
 	{
-		return _boundStringSets[key];
+		return _enumSets[key];
+	}
+
+	map<string, vector<string> >& enumSets()
+	{
+		return _enumSets;
 	}
 
 	ID cardinality(string name)
@@ -242,7 +247,7 @@ protected:
 	/**
 	 * The string sets bound from the config.
 	 */
-	map<string, vector<string> > _boundStringSets;
+	map<string, vector<string> > _enumSets;
 
 	/**
 	 * A 'generator.config' logger instance.

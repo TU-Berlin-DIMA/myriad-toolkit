@@ -30,6 +30,7 @@ from myriad.compiler.ast import ResolvedDirectFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedRecordReferenceRefArgumentNode
 from myriad.compiler.ast import ResolvedReferencedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
+from myriad.compiler.ast import RecordEnumFieldNode
 from myriad.compiler.ast import StringSetRefArgumentNode
 from myriad.compiler.ast import DepthFirstNodeFilter
 from myriad.compiler.ast import EnumSetNode
@@ -726,8 +727,107 @@ class RecordTypeCompiler(SourceCompiler):
     def compile(self, recordSequences):
         for recordSequence in recordSequences.getRecordSequences():
             self._log.warning("compiling record C++ sources for `%s`" % (recordSequence.getAttribute("key")))
+            self.compileBaseRecordMeta(recordSequence.getRecordType())
             self.compileBaseRecordType(recordSequence.getRecordType())
+            self.compileRecordMeta(recordSequence.getRecordType())
             self.compileRecordType(recordSequence.getRecordType())
+            
+    def compileBaseRecordMeta(self, recordType):
+        try:
+            os.makedirs("%s/cpp/record/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        wfile = open("%s/cpp/record/base/Base%sMeta.h" % (self._srcPath, typeNameCC), "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASE%sMETA_H_' % (typeNameUC)
+        print >> wfile, '#define BASE%sMETA_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/Record.h"'
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '// forward declarations'
+        print >> wfile, 'class %s;' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'class Base%(t)sMeta : public RecordMeta<%(t)s>' % { 't': typeNameCC }
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        
+        if recordType.getEnumFields():
+            print >> wfile, '    Base%(t)sMeta(const map<string, vector<string> >& enumSets) : ' % {'t': typeNameCC}
+            print >> wfile, '        %s' % ', '.join([ '%(n)s(enumSets.find("%(r)s")->second)' % {'n': field.getAttribute("name"), 'r': field.getAttribute("enumref")} for field in recordType.getEnumFields() ])
+            print >> wfile, '    {'
+            print >> wfile, '    }'
+        else:
+            print >> wfile, '    Base%(t)sMeta(const map<string, vector<string> >& enumSets)' % {'t': typeNameCC}
+            print >> wfile, '    {'
+            print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    // enum set refecences'
+        for field in recordType.getEnumFields():
+            print >> wfile, '    const vector<String>& %s;' % field.getAttribute("name")
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sMETA_H_ */' % (typeNameUC)
+
+        wfile.close()
+            
+    def compileRecordMeta(self, recordType):
+        try:
+            os.makedirs("%s/cpp/record" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        sourcePath = "%s/cpp/record/%sMeta.h" % (self._srcPath, typeNameCC)
+        
+        if (os.path.isfile(sourcePath)):
+            return
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
+        print >> wfile, ''
+        print >> wfile, '#ifndef %sMETA_H_' % (typeNameUC)
+        print >> wfile, '#define %sMETA_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/base/Base%sMeta.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, 'class %(t)sMeta : public Base%(t)sMeta' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    %(t)sMeta(const map<string, vector<string> >& enumSets) :' % {'t': typeNameCC}
+        print >> wfile, '        Base%(t)sMeta(enumSets)' % {'t': typeNameCC}
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* %sMETA_H_ */' % (typeNameUC)
+
+        wfile.close()
             
     def compileBaseRecordType(self, recordType):
         try:
@@ -747,6 +847,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#define BASE%s_H_' % (typeNameUC)
         print >> wfile, ''
         print >> wfile, '#include "record/Record.h"'
+        print >> wfile, '#include "record/%sMeta.h"' % (typeNameCC)
         
         for referenceType in sorted(recordType.getReferenceTypes()):
             print >> wfile, '#include "record/%s.h"' % (StringTransformer.sourceType(referenceType))
@@ -761,8 +862,6 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'class %sConfig;' % (typeNameCC)
         print >> wfile, 'class %sGenerator;' % (typeNameCC)
         print >> wfile, 'class %sHydratorChain;' % (typeNameCC)
-        print >> wfile, ''
-        print >> wfile, 'class %(t)sMeta;' % { 't': typeNameCC }
         print >> wfile, ''
         print >> wfile, 'class Base%s: public Record' % (typeNameCC)
         print >> wfile, '{'
@@ -780,9 +879,15 @@ class RecordTypeCompiler(SourceCompiler):
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             
+                
             print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(fieldName), StringTransformer.sourceType(fieldType))
             print >> wfile, '    const %s& %s() const;' % (StringTransformer.sourceType(fieldType), StringTransformer.us2cc(fieldName))
+            
+            if isinstance(field, RecordEnumFieldNode):
+                print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(fieldName))
+
             print >> wfile, ''
+            
             if StringTransformer.isVectorType(fieldType):
                 print >> wfile, '    void %sSetOne(const %s& v, const size_t i = numeric_limits<size_t>::max());' % (StringTransformer.us2cc(fieldName), StringTransformer.coreType(fieldType))
                 print >> wfile, '    const %s& %sGetOne(const size_t i) const;' % (StringTransformer.coreType(fieldType), StringTransformer.us2cc(fieldName))
@@ -830,6 +935,14 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    return _%s;' % (fieldName)
             print >> wfile, '}'
             print >> wfile, ''
+            
+            if isinstance(field, RecordEnumFieldNode):
+                print >> wfile, 'inline const String& Base%s::%sEnumValue() const' % (typeNameCC, StringTransformer.us2cc(fieldName))
+                print >> wfile, '{'
+                print >> wfile, '    return _meta.%(n)s[_%(n)s];' % {'n': fieldName}
+                print >> wfile, '}'
+                print >> wfile, ''
+
             if StringTransformer.isVectorType(fieldType):
                 print >> wfile, 'inline void Base%s::%sSetOne(const %s& v, const size_t i)' % (typeNameCC, StringTransformer.us2cc(fieldName), StringTransformer.coreType(fieldType))
                 print >> wfile, '{'
@@ -863,11 +976,6 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    return _%s;' % (referenceName)
             print >> wfile, '}'
             print >> wfile, ''
-            
-        print >> wfile, 'class Base%(t)sMeta : public RecordMeta<%(t)s>' % { 't': typeNameCC }
-        print >> wfile, '{'
-        print >> wfile, 'public:'
-        print >> wfile, '};'
         
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
@@ -900,6 +1008,8 @@ class RecordTypeCompiler(SourceCompiler):
 #                print >> wfile, '        }'
             elif fieldType == "Date":
                 print >> wfile, '        %-40s << " | " << ' % ( "toString(record." + StringTransformer.us2cc(fieldName) + "())")
+            elif fieldType == "Enum":
+                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
             else:
                 print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "()")
 
@@ -911,7 +1021,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#endif /* BASE%s_H_ */' % (typeNameUC)
 
         wfile.close()
-            
+    
     def compileRecordType(self, recordType):
         try:
             os.makedirs("%s/cpp/record" % (self._srcPath))
@@ -938,9 +1048,6 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
-        print >> wfile, '// forward declarations'
-        print >> wfile, 'class %sMeta;' % (typeNameCC)
-        print >> wfile, ''
         print >> wfile, 'class %(t)s: public Base%(t)s' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
@@ -950,11 +1057,6 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
-        print >> wfile, '};'
-        print >> wfile, ''
-        print >> wfile, 'class %(t)sMeta : public Base%(t)sMeta' % {'t': typeNameCC}
-        print >> wfile, '{'
-        print >> wfile, 'public:'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
