@@ -95,6 +95,10 @@ public:
 
 	I64u max() const;
 
+	size_t findIndex(const Decimal y) const;
+
+	size_t findValue(const I64u x) const;
+
 	size_t findBucket(const I64u x) const;
 
 	Decimal operator()(const I64u x) const;
@@ -112,6 +116,11 @@ private:
 	void reset()
 	{
 		_notNullProbability = 0.0;
+
+		if (_numberOfValues > 0 || _numberOfBuckets > 0)
+		{
+			delete[] _cdfMap;
+		}
 
 		if (_numberOfValues > 0)
 		{
@@ -145,6 +154,8 @@ private:
 	Interval<I64u>* _bucketRanges;
 	Decimal _bucketProbability;
 	Decimal* _bucketProbabilities;
+
+	Decimal* _cdfMap;
 };
 
 inline size_t CombinedPrFunction::numberOfBuckets() const
@@ -160,6 +171,82 @@ inline I64u CombinedPrFunction::min()const
 inline I64u CombinedPrFunction::max() const
 {
 	return _max;
+}
+
+inline size_t CombinedPrFunction::findIndex(const Decimal y) const
+{
+	// we assert that the value x is in the [_min, _max] range
+	int min = 0;
+	int max = _numberOfValues + _numberOfBuckets - 1;
+	int mid = 0;
+
+	int origMax = _numberOfValues + _numberOfBuckets - 1;
+
+	// continue searching while [min, max] is not empty
+	while (max >= min)
+	{
+		// calculate the midpoint for roughly equal partition //
+		mid = (min + max) / 2;
+
+		// determine which subarray to search
+		if (mid == origMax && _cdfMap[mid] <= y)
+		{
+			return mid;
+		}
+		else if (_cdfMap[mid+1] <=  y)
+		{
+			// change min index to search upper subarray
+			min = mid + 1;
+		}
+		else if (_cdfMap[mid] > y)
+		{
+			// change max index to search lower subarray
+			max = mid - 1;
+		}
+		else
+		{
+			// key found at index mid
+			return mid;
+		}
+	}
+
+	// key not found
+	return mid;
+}
+
+inline size_t CombinedPrFunction::findValue(const I64u x) const
+{
+	// we assert that the value x is in the [_min, _max] range
+	int min = 0;
+	int max = _numberOfValues - 1;
+	int mid = 0;
+
+	// continue searching while [min, max] is not empty
+	while (max >= min)
+	{
+		// calculate the midpoint for roughly equal partition //
+		mid = (min + max) / 2;
+
+		// determine which subarray to search
+		if (_values[mid] <  x)
+		{
+			// change min index to search upper subarray
+			min = mid + 1;
+		}
+		else if (_values[mid] > x)
+		{
+			// change max index to search lower subarray
+			max = mid - 1;
+		}
+		else
+		{
+			// key found at index mid
+			return mid;
+		}
+	}
+
+	// key not found
+	return nullValue<size_t>();
 }
 
 inline size_t CombinedPrFunction::findBucket(const I64u x) const
