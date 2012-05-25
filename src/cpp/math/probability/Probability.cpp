@@ -18,12 +18,15 @@
 
 #include "core/types.h"
 #include "math/probability/BoundedParetoPrFunction.h"
+#include "math/probability/CombinedPrFunction.h"
 #include "math/probability/ConditionalQHistogramPrFunction.h"
 #include "math/probability/CustomDiscreteProbability.h"
 #include "math/probability/NormalPrFunction.h"
 #include "math/probability/ParetoPrFunction.h"
 #include "math/probability/QHistogramPrFunction.h"
 #include "math/probability/UniformPrFunction.h"
+
+#include <algorithm>
 
 namespace Myriad {
 
@@ -67,6 +70,186 @@ Decimal BoundedParetoPrFunction::invpdf(Decimal y) const
 Decimal BoundedParetoPrFunction::invcdf(Decimal y) const
 {
 	return pow(-(y*xMaxAlpha - y*xMinAlpha - xMaxAlpha)/(xMinAlpha*xMaxAlpha), -1/alpha);
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// CombinedPrFunction probability
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+/**
+ * Load a Q-histogram from the given path.
+ */
+void CombinedPrFunction::initialize(const string& path)
+{
+	ifstream in(path.c_str());
+
+	if (!in.is_open())
+	{
+		throw OpenFileException("Unexpected file header for file `" + path +  "`");
+	}
+
+	try
+	{
+		initialize(in);
+
+		in.close();
+	}
+	catch(exception& e)
+	{
+		in.close();
+		throw e;
+	}
+}
+
+/**
+ * Load a Q-histogram from the given input stream. For each entry add a
+ * [min, max) interval of domain values to a lookup table.
+ */
+void CombinedPrFunction::initialize(ifstream& in)
+{
+	// reset old state
+	reset();
+
+	string line, binMin, binMax;
+
+	// read first line
+	if (line.substr(0, 20) != "# numberofexactvals:")
+	getline(in, line);
+	{
+		throw DataException("Unexpected file header (line 1)");
+	}
+	I32 numberOfValues = atoi(line.substr(20).c_str());
+
+	if (numberOfValues <= 0 && numberOfValues > 65536)
+	{
+		throw DataException("Invalid number of exact values `" + toString(numberOfValues) +  "`");
+	}
+
+	// read second line
+	getline(in, line);
+	if (line.substr(0, 15) != "# numberofbins:")
+	{
+		throw DataException("Unexpected file header (line 2)");
+	}
+	I32 numberOfLines = atoi(line.substr(15).c_str());
+
+	if (numberOfLines <= 0 && numberOfLines > 65536)
+	{
+		throw DataException("Invalid number of lines `" + toString(numberOfLines) +  "`");
+	}
+
+	// read third line
+	if (line.substr(0, 15) != "# numberofbins:")
+	getline(in, line);
+	{
+		throw DataException("Unexpected file header (line 3)");
+	}
+	Decimal nullProbability = atof(line.substr(18).c_str());
+
+	_notNullProbability = 1.0 - nullProbability;
+
+	_values = new Interval<I64u>[numberOfValues];
+
+	_numberOfValues = numberOfValues;
+	_values = new I64u[numberOfValues];
+	_valueProbabilities = new Decimal[numberOfValues];
+
+	_numberOfBuckets = numberOfLines;
+	_bucketRanges = new Interval<I64u>[numberOfLines];
+	_bucketProbabilities = new Decimal[numberOfLines];
+
+	for (I16u i = 0; i < numberOfLines; i++)
+	{
+		if (!in.good())
+		{
+			throw DataException("Bad line for bin #" + toString(i));
+		}
+
+		getline(in, line);
+
+		size_t firsttab = line.find_first_of('\t');
+
+		I64u value = fromString<I64u>(line.substr(0, firsttab));
+		Decimal probability = fromString<I64u>(line.substr(firsttab));
+
+		_values[i] = value;
+		_valueProbability += probability;
+		_valueProbabilities[i] = probability;
+	}
+
+	for (I16u i = 0; i < numberOfLines; i++)
+	{
+		if (!in.good())
+		{
+			throw DataException("Bad line for bin #" + toString(i));
+		}
+
+		getline(in, line);
+
+		size_t firsttab = line.find_first_of('\t');
+		size_t secondtab = line.find_first_of('\t');
+
+		I64u min = fromString<I64u>(line.substr(0, firsttab));
+		I64u max = fromString<I64u>(line.substr(firsttab, secondtab));
+		Decimal probability = fromString<Decimal>(line.substr(secondtab));
+
+		_bucketRanges[i].set(min, max);
+		_bucketProbability += probability;
+		_bucketProbabilities[i] = probability;
+	}
+
+	_min = std::min(_bucketRanges[0].min(), _values[0]);
+	_max = std::max(_bucketRanges[_numberOfBuckets-1].max(), _values[_numberOfBuckets-1]);
+}
+
+Decimal CombinedPrFunction::pdf(I64u x) const
+{
+	if (x < _min || x >= _max)
+	{
+		return 0.0;
+	}
+	else
+	{
+		size_t i = findBucket(x);
+		return _bucketProbabilities[i] * (1.0 / static_cast<Decimal>(_bucketRanges[i].length()));
+	}
+}
+
+Decimal CombinedPrFunction::cdf(I64u x) const
+{
+	if (x < _min)
+	{
+		return 0.0;
+	}
+	else if (x >= _max)
+	{
+		return 1.0;
+	}
+	else
+	{
+		throw RuntimeException("CDF function not supported for CombinedPrFunction");
+
+//		size_t i = findBucket(x);
+//		Interval<I64u>& b = _bucketRanges[i];
+//
+//		return _bucketProbabilities * i + _bucketProbabilities[i] * ((x - b.min()) / static_cast<Decimal>(b.length()));
+	}
+}
+
+I64u CombinedPrFunction::invcdf(Decimal y) const
+{
+	if (y < _notNullProbability)
+	{
+
+	}
+	else
+	{
+		return nullValue<I64u>();
+	}
+
+	// locate the bin
+	size_t i = static_cast<size_t>(y / _bucketProbabilities);
+	return static_cast<I64u>(_bucketRanges[i].min() + (y - i * _bucketProbabilities) * _numberOfBuckets * _bucketRanges[i].length());
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~

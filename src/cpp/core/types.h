@@ -50,7 +50,6 @@ template<class RecordType, class T> struct MethodTraits
 	typedef void (RecordType::*Setter)(const T&);
 };
 
-
 template<class T> inline std::string toString(const T& t)
 {
 	std::stringstream ss;
@@ -72,6 +71,11 @@ template<class T> inline T fromString(const std::string& s)
 }
 
 template<typename T> T toEnum(int v);
+
+template<typename T> inline T nullValue()
+{
+	return std::numeric_limits<T>::max();
+}
 
 } // namespace Myriad
 
