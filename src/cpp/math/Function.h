@@ -128,12 +128,27 @@ public:
 
 	virtual Decimal operator()(const Domain x) const = 0;
 
+	/**
+	 * Returns the probability distribution function (pdf) for this
+	 * distribution, i.e. Pr[X = x].
+	 */
 	virtual Decimal pdf(Domain x) const = 0;
 
+	/**
+	 * Returns the cumulative distribution function (pdf) for this
+	 * distribution, i.e. Pr[X \leq x].
+	 */
 	virtual Decimal cdf(Domain x) const = 0;
 
+	/**
+	 * Returns the inverse cumulative distribution function (pdf) for this
+	 * distribution, i.e. x such that Pr[X \leq x] = y.
+	 */
 	virtual Domain invcdf(Decimal y) const = 0;
 
+	/**
+	 * Transforms a uniform sample r sample from the underlying distribution
+	 */
 	virtual Domain sample(Decimal r) const = 0;
 
 protected:

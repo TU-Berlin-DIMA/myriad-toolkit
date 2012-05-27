@@ -148,17 +148,16 @@ void CombinedPrFunction::initialize(ifstream& in)
 
 	_notNullProbability = 1.0 - nullProbability;
 
-	_values = new I64u[numberOfValues];
 
 	_numberOfValues = numberOfValues;
 	_values = new I64u[numberOfValues];
 	_valueProbabilities = new Decimal[numberOfValues];
 
 	_numberOfBuckets = numberOfBuckets;
-	_bucketRanges = new Interval<I64u>[numberOfBuckets];
+	_buckets = new Interval<I64u>[numberOfBuckets];
 	_bucketProbabilities = new Decimal[numberOfBuckets];
 
-	_cdfMap = new Decimal[numberOfValues+numberOfBuckets];
+	_cumulativeProbabilites = new Decimal[numberOfValues+numberOfBuckets];
 
 	for (I16u i = 0; i < numberOfBuckets; i++)
 	{
@@ -175,9 +174,9 @@ void CombinedPrFunction::initialize(ifstream& in)
 		I64u value = fromString<I64u>(line.substr(firsttab));
 
 		_values[i] = value;
-		_cdfMap[i] = _valueProbability;
 		_valueProbabilities[i] = probability;
 		_valueProbability += probability;
+		_cumulativeProbabilites[i] = _valueProbability;
 	}
 
 	for (I16u i = 0; i < numberOfBuckets; i++)
@@ -196,26 +195,14 @@ void CombinedPrFunction::initialize(ifstream& in)
 		I64u min = fromString<I64u>(line.substr(firsttab, secondtab));
 		I64u max = fromString<I64u>(line.substr(secondtab));
 
-		_bucketRanges[i].set(min, max);
-		_cdfMap[i+numberOfValues] = _valueProbability + _bucketProbability;
+		_buckets[i].set(min, max);
 		_bucketProbabilities[i] = probability;
 		_bucketProbability += probability;
+		_cumulativeProbabilites[i+numberOfValues] = _valueProbability + _bucketProbability;
 	}
 
-//	std::cout << std::endl;
-//
-//	for (unsigned int i = 0; i < _numberOfBuckets + _numberOfValues; i++)
-//	{
-//		std::cout << "cdfmap[" << i << "] = " << _cdfMap[i] << std::endl;
-//	}
-//
-//	for (unsigned int i = 0; i < _numberOfBuckets; i++)
-//	{
-//		std::cout << "bucket[" << i << "] = " << _bucketRanges[i] << std::endl;
-//	}
-
-	_min = std::min(_bucketRanges[0].min(), _values[0]);
-	_max = std::max(_bucketRanges[_numberOfBuckets-1].max(), _values[_numberOfBuckets-1]+1);
+	_min = std::min(_buckets[0].min(), _values[0]);
+	_max = std::max(_buckets[_numberOfBuckets-1].max(), _values[_numberOfBuckets-1]+1);
 
 	if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
 	{
@@ -235,16 +222,19 @@ Decimal CombinedPrFunction::pdf(I64u x) const
 	}
 	else
 	{
-		size_t i = findValue(x);
-		if (i != nullValue<size_t>())
+		size_t i;
+
+		if (nullValue<size_t>() != (i = findValue(x)))
 		{
 			return _valueProbabilities[i];
 		}
-		else
+
+		if (nullValue<size_t>() != (i = findBucket(x)))
 		{
-			i = findBucket(x);
-			return _bucketProbabilities[i] * (1.0 / static_cast<Decimal>(_bucketRanges[i].length()));
+			return _bucketProbabilities[i] * (1.0 / static_cast<Decimal>(_buckets[i].length()));
 		}
+
+		throw RuntimeException("Unknown pdf(x) for x = " + x);
 	}
 }
 
@@ -256,16 +246,39 @@ Decimal CombinedPrFunction::cdf(I64u x) const
 	}
 	else if (x >= _max)
 	{
-		return 1.0;
+		return _notNullProbability;
 	}
 	else
 	{
-		throw RuntimeException("CDF function not supported for CombinedPrFunction");
+		Decimal cdf = 0.0;
 
-//		size_t i = findBucket(x);
-//		Interval<I64u>& b = _bucketRanges[i];
-//
-//		return _bucketProbabilities * i + _bucketProbabilities[i] * ((x - b.min()) / static_cast<Decimal>(b.length()));
+		size_t i;
+
+		if (nullValue<size_t>() != (i = findValue(x, false)))
+		{
+			cdf += _cumulativeProbabilites[i];
+		}
+
+		if (nullValue<size_t>() != (i = findBucket(x, false)))
+		{
+			const Interval<I64u>& b = _buckets[i];
+
+			if (!b.contains(x))
+			{
+				cdf += _cumulativeProbabilites[_numberOfValues + i] - _valueProbability;
+			}
+			else
+			{
+				if (i > 0)
+				{
+					cdf += _cumulativeProbabilites[_numberOfValues + i - 1] - _valueProbability;
+				}
+
+				cdf += _bucketProbabilities[i] * ((1 + x - b.min())/static_cast<Decimal>(b.length()));
+			}
+		}
+
+		return cdf;
 	}
 }
 
@@ -275,17 +288,15 @@ I64u CombinedPrFunction::invcdf(Decimal y) const
 	{
 		size_t i = findIndex(y);
 
-//		std::cout << "index for " << y << " is " << i << std::endl;
-
 		if (i < _numberOfValues)
 		{
 			return _values[i];
 		}
 		else
 		{
-//			std::cout << "fraction is " << (y - _cdfMap[i]) << "/" << _bucketProbabilities[i-_numberOfValues] << " = " << ((y - _cdfMap[i])/_bucketProbabilities[i-_numberOfValues]) << std::endl;
-			const Interval<I64u> b = _bucketRanges[i-_numberOfValues];
-			return static_cast<I64u>(b.min() + ((y - _cdfMap[i]) / _bucketProbabilities[i-_numberOfValues]) * b.length());
+			const Interval<I64u> b = _buckets[i-_numberOfValues];
+			Decimal cdfBefore = i > 0 ? _cumulativeProbabilites[i-1] : 0;
+			return static_cast<I64u>(b.min() + ((y - cdfBefore) / _bucketProbabilities[i-_numberOfValues]) * b.length());
 		}
 	}
 	else

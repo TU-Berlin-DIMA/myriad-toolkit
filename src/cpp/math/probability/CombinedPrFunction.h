@@ -40,42 +40,42 @@ class CombinedPrFunction: public UnivariatePrFunction<I64u>
 public:
 
 	CombinedPrFunction() :
-		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
+		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 	}
 
 	CombinedPrFunction(const string& path) :
-		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
+		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(ifstream& in) :
-		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
+		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(const string& name, const string& path) :
-		UnivariatePrFunction<I64u>(name), _numberOfBuckets(0)
+		UnivariatePrFunction<I64u>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(const string& name, ifstream& in) :
-		UnivariatePrFunction<I64u>(name), _numberOfBuckets(0)
+		UnivariatePrFunction<I64u>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(map<string, Any>& params) :
-		UnivariatePrFunction<I64u>(""), _numberOfBuckets(0)
+		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
 	CombinedPrFunction(const string& name, map<string, Any>& params) :
-		UnivariatePrFunction<I64u>(name), _numberOfBuckets(0)
+		UnivariatePrFunction<I64u>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
@@ -95,12 +95,6 @@ public:
 
 	I64u max() const;
 
-	size_t findIndex(const Decimal y) const;
-
-	size_t findValue(const I64u x) const;
-
-	size_t findBucket(const I64u x) const;
-
 	Decimal operator()(const I64u x) const;
 
 	Decimal pdf(I64u x) const;
@@ -119,7 +113,7 @@ private:
 
 		if (_numberOfValues > 0 || _numberOfBuckets > 0)
 		{
-			delete[] _cdfMap;
+			delete[] _cumulativeProbabilites;
 		}
 
 		if (_numberOfValues > 0)
@@ -134,10 +128,16 @@ private:
 		{
 			_numberOfBuckets = 0;
 			_bucketProbability = 0.0;
-			delete[] _bucketRanges;
+			delete[] _buckets;
 			delete[] _bucketProbabilities;
 		}
 	}
+
+	size_t findIndex(const Decimal y) const;
+
+	size_t findValue(const I64u x, bool exact = true) const;
+
+	size_t findBucket(const I64u x, bool exact = true) const;
 
 	Decimal _notNullProbability;
 
@@ -151,11 +151,11 @@ private:
 	Decimal* _valueProbabilities;
 
 	size_t _numberOfBuckets;
-	Interval<I64u>* _bucketRanges;
+	Interval<I64u>* _buckets;
 	Decimal _bucketProbability;
 	Decimal* _bucketProbabilities;
 
-	Decimal* _cdfMap;
+	Decimal* _cumulativeProbabilites;
 };
 
 inline size_t CombinedPrFunction::numberOfBuckets() const
@@ -180,8 +180,6 @@ inline size_t CombinedPrFunction::findIndex(const Decimal y) const
 	int max = _numberOfValues + _numberOfBuckets - 1;
 	int mid = 0;
 
-	int origMax = _numberOfValues + _numberOfBuckets - 1;
-
 	// continue searching while [min, max] is not empty
 	while (max >= min)
 	{
@@ -189,16 +187,12 @@ inline size_t CombinedPrFunction::findIndex(const Decimal y) const
 		mid = (min + max) / 2;
 
 		// determine which subarray to search
-		if (mid == origMax && _cdfMap[mid] <= y)
-		{
-			return mid;
-		}
-		else if (_cdfMap[mid+1] <=  y)
+		if (_cumulativeProbabilites[mid] <  y)
 		{
 			// change min index to search upper subarray
 			min = mid + 1;
 		}
-		else if (_cdfMap[mid] > y)
+		else if (_cumulativeProbabilites[mid] > y)
 		{
 			// change max index to search lower subarray
 			max = mid - 1;
@@ -210,11 +204,17 @@ inline size_t CombinedPrFunction::findIndex(const Decimal y) const
 		}
 	}
 
-	// key not found
-	return mid;
+	if (static_cast<size_t>(mid) < _numberOfValues + _numberOfBuckets - 1 && _cumulativeProbabilites[mid] < y)
+	{
+		return mid+1;
+	}
+	else
+	{
+		return mid;
+	}
 }
 
-inline size_t CombinedPrFunction::findValue(const I64u x) const
+inline size_t CombinedPrFunction::findValue(const I64u x, bool exact) const
 {
 	// we assert that the value x is in the [_min, _max] range
 	int min = 0;
@@ -224,7 +224,7 @@ inline size_t CombinedPrFunction::findValue(const I64u x) const
 	// continue searching while [min, max] is not empty
 	while (max >= min)
 	{
-		// calculate the midpoint for roughly equal partition //
+		// calculate the midpoint for roughly equal partition
 		mid = (min + max) / 2;
 
 		// determine which subarray to search
@@ -245,11 +245,30 @@ inline size_t CombinedPrFunction::findValue(const I64u x) const
 		}
 	}
 
-	// key not found
-	return nullValue<size_t>();
+	// at this point, mid is always equal to min and points to the first record higher than x
+	// what we actually want the index of the first value less than or equal to x
+	if (!exact && mid > 0)
+	{
+		if (static_cast<size_t>(mid) < _numberOfValues-2 && _values[mid+1] < x)
+		{
+			return mid+1;
+		}
+		else if (_values[mid] < x)
+		{
+			return mid;
+		}
+		else
+		{
+			return mid-1;
+		}
+	}
+	else
+	{
+		return nullValue<size_t>();
+	}
 }
 
-inline size_t CombinedPrFunction::findBucket(const I64u x) const
+inline size_t CombinedPrFunction::findBucket(const I64u x, bool exact) const
 {
 	// we assert that the value x is in the [_min, _max] range
 	int min = 0;
@@ -263,12 +282,12 @@ inline size_t CombinedPrFunction::findBucket(const I64u x) const
 		mid = (min + max) / 2;
 
 		// determine which subarray to search
-		if (_bucketRanges[mid].max() <=  x)
+		if (_buckets[mid].max() <=  x)
 		{
 			// change min index to search upper subarray
 			min = mid + 1;
 		}
-		else if (_bucketRanges[mid].min() > x)
+		else if (_buckets[mid].min() > x)
 		{
 			// change max index to search lower subarray
 			max = mid - 1;
@@ -280,8 +299,27 @@ inline size_t CombinedPrFunction::findBucket(const I64u x) const
 		}
 	}
 
-	// key not found
-	return mid;
+	// at this point, mid is always equal to min and points to the first bucket where higher than x
+	// what we actually want the index of the first bucket less than but not containing x
+	if (!exact && mid > 0)
+	{
+		if (static_cast<size_t>(mid) < _numberOfBuckets-2 && _buckets[mid+1].max() <= x)
+		{
+			return mid+1;
+		}
+		else if (_buckets[mid].max() <= x)
+		{
+			return mid;
+		}
+		else
+		{
+			return mid-1;
+		}
+	}
+	else
+	{
+		return nullValue<size_t>();
+	}
 }
 
 inline Decimal CombinedPrFunction::operator()(const I64u x) const
