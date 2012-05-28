@@ -444,6 +444,8 @@ class XMLReader(object):
             return ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "uniform_probability"):
             return UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        if (functionType == "combined_probability"):
+            return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "q_histogram_probability"):
             return QHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "conditional_q_histogram_probability"):

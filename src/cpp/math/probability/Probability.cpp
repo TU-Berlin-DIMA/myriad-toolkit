@@ -148,7 +148,6 @@ void CombinedPrFunction::initialize(ifstream& in)
 
 	_notNullProbability = 1.0 - nullProbability;
 
-
 	_numberOfValues = numberOfValues;
 	_values = new I64u[numberOfValues];
 	_valueProbabilities = new Decimal[numberOfValues];
@@ -159,7 +158,7 @@ void CombinedPrFunction::initialize(ifstream& in)
 
 	_cumulativeProbabilites = new Decimal[numberOfValues+numberOfBuckets];
 
-	for (I16u i = 0; i < numberOfBuckets; i++)
+	for (I16u i = 0; i < numberOfValues; i++)
 	{
 		if (!in.good())
 		{

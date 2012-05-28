@@ -110,6 +110,8 @@ private:
 	void reset()
 	{
 		_notNullProbability = 0.0;
+		_valueProbability = 0.0;
+		_bucketProbability = 0.0;
 
 		if (_numberOfValues > 0 || _numberOfBuckets > 0)
 		{
@@ -119,7 +121,6 @@ private:
 		if (_numberOfValues > 0)
 		{
 			_numberOfValues = 0;
-			_valueProbability = 0.0;
 			delete[] _values;
 			delete[] _valueProbabilities;
 		}
@@ -127,7 +128,6 @@ private:
 		if (_numberOfBuckets > 0)
 		{
 			_numberOfBuckets = 0;
-			_bucketProbability = 0.0;
 			delete[] _buckets;
 			delete[] _bucketProbabilities;
 		}
