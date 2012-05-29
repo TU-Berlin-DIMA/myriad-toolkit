@@ -33,13 +33,11 @@ public:
 	{
 	}
 
-	virtual const FieldType& operator()(AutoPtr<RecordType> recordPtr) const = 0;
-
-protected:
-
 	virtual ~ValueGetter()
 	{
 	}
+
+	virtual const FieldType& operator()(AutoPtr<RecordType> recordPtr) const = 0;
 };
 
 } // namespace Myriad

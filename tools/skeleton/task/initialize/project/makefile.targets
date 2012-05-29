@@ -5,6 +5,9 @@
 # include project-specific variables
 include ../.myriad-settings
 
+# the path to the myriad assistant binary
+MYRIAD_ASSISTANT = ../vendor/myriad/bin/assistant
+
 # include the following files in the package
 # ./config/*.properties   -- properties config files
 # ./config/*.domain       -- attribute domain enumerations
@@ -109,6 +112,10 @@ NOTICE: ../src/resources/NOTICE
 README.%: ../src/resources/README.%
 	@echo 'Processing: $@'
 	cp $< $@
+	
+prototype:
+	@echo 'Compiling data generator prototype sources for $(MYRIAD_DGEN_NAME)'
+	$(MYRIAD_ASSISTANT) compile:prototype
 
-.PHONY: all tests clean dependents tests cleanall install work-dirs script-files config-files lib-misc lib-poco
+.PHONY: all tests clean dependents tests cleanall install work-dirs script-files config-files lib-misc lib-poco dgen-prototype-sources
 .SILENT: work-dirs lib-poco

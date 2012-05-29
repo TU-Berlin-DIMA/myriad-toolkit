@@ -26,13 +26,158 @@ from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
 from myriad.compiler.ast import ResolvedFieldRefArgumentNode
+from myriad.compiler.ast import ResolvedDirectFieldRefArgumentNode
+from myriad.compiler.ast import ResolvedRecordReferenceRefArgumentNode
+from myriad.compiler.ast import ResolvedReferencedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
+from myriad.compiler.ast import RecordEnumFieldNode
 from myriad.compiler.ast import StringSetRefArgumentNode
 from myriad.compiler.ast import DepthFirstNodeFilter
-from myriad.compiler.ast import StringSetNode
+from myriad.compiler.ast import EnumSetNode
 from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.util.stringutil import StringTransformer
+
+class ArgumentTransformerFactory(object):
+    
+    _log = logging.getLogger("source.transformer.factory")
+    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_]*)\)$')
+    
+    def createTransformer(transformerDescriptor):
+        m = ArgumentTransformerFactory._descriptor_pattern.match(transformerDescriptor)
+        if (m):
+            transformerType = m.group(1)
+            transformer = None
+            argKey = m.group(2)
+            
+            if (transformerType == "RandomStreamRef"):
+                transformer = RandomStreamRefTransfomer()
+            elif (transformerType == "FieldSetter"):
+                transformer = FieldSetterTransfomer()
+            elif (transformerType == "FieldGetter"):
+                transformer = FieldGetterTransfomer()
+            elif (transformerType == "RandomSetInspector"):
+                transformer = RandomSetInspectorTransfomer()
+            elif (transformerType == "FunctionRef"):
+                transformer = FunctionRefTransfomer()
+            else:
+                message = "Unknown argument transformer type `%s`" % (transformerType)
+                ArgumentTransformerFactory._log.error(message)
+                raise RuntimeError(message)
+            
+            return (transformer, argKey)
+        else:
+            message = "Bad argument transformer descriptor `%s`" % (transformerDescriptor)
+            ArgumentTransformerFactory._log.error(message)
+            raise RuntimeError(message)
+        
+    # static methods
+    createTransformer = staticmethod(createTransformer)
+
+
+class FieldTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        pass
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        raise RuntimeError("Called abstract method FieldTransfomer.transform()")
+
+
+class RandomStreamRefTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(RandomStreamRefTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        return "random"
+
+
+class FieldSetterTransfomer(object):
+    def __init__(self, *args, **kwargs):
+        super(FieldSetterTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
+            return '&%s::%s' % (typeName, fieldAccessMethodName)
+        if isinstance(argumentNode, ResolvedRecordReferenceRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getRecordReferenceRef().getAttribute("name"))
+            return '&%s::%s' % (typeName, fieldAccessMethodName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class FieldGetterTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(FieldGetterTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
+            return '&%s::%s' % (typeName, fieldAccessMethodName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class RandomSetInspectorTransfomer(object):
+    def __init__(self, *args, **kwargs):
+        super(RandomSetInspectorTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if configVarName is not None:
+            configPrefix = configVarName + "."
+        else:
+            configPrefix = ""
+            
+        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
+            return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class FunctionRefTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(FunctionRefTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if configVarName is not None:
+            configPrefix = configVarName + "."
+        else:
+            configPrefix = ""
+            
+        if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
+            functionType = argumentNode.getAttribute("type")
+            functionName = argumentNode.getAttribute("ref")
+            return '%sfunc<%s>("%s")' % (configPrefix, functionType, functionName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class FunctionRefTransfomer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(FunctionRefTransfomer, self).__init__(*args, **kwargs)
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        if configVarName is not None:
+            configPrefix = configVarName + "."
+        else:
+            configPrefix = ""
+            
+        if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
+            functionType = argumentNode.getAttribute("type")
+            functionName = argumentNode.getAttribute("ref")
+            return '%sfunc<%s>("%s")' % (configPrefix, functionType, functionName)
+        else:
+            raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
 
 class SourceCompiler(object):
     '''
@@ -48,7 +193,7 @@ class SourceCompiler(object):
     
     _log = None
     
-    _expr_pattern = re.compile('%([\w.]+)%')
+    _expr_pattern = re.compile('%([\w.\-]+)%')
     _param_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, args):
@@ -78,7 +223,7 @@ class SourceCompiler(object):
             
             m = self._param_pattern.match(attributeValue)
             if (m):
-                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<Decimal>("%s")' % (configPrefix, m.group(1)), attributeValue)
+                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(1)), attributeValue)
                 return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1])
             else:
                 if attributeType == "String":
@@ -91,7 +236,7 @@ class SourceCompiler(object):
             functionName = argumentNode.getAttribute("ref")
             return '%sfunc<%s> ("%s")' % (configPrefix, functionType, functionName)
         
-        elif isinstance(argumentNode, ResolvedFieldRefArgumentNode):
+        elif isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
             fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
             return '&%s::%s' % (typeName, fieldAccessMethodName)
@@ -105,9 +250,34 @@ class SourceCompiler(object):
             return '%sstringSet("%s")' % (configPrefix, stringSetKey)
         
         else:
-            
             return "NULL /* unknown */"
         
+    def _getterCode(self, fieldArgumentNode):
+        
+        if isinstance(fieldArgumentNode, ResolvedDirectFieldRefArgumentNode):
+            recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
+            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
+            
+            fieldNode = fieldArgumentNode.getFieldRef()
+            fieldType = fieldNode.getAttribute("type")
+            fieldName = fieldNode.getAttribute("name")
+                
+            return "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)}
+
+        elif isinstance(fieldArgumentNode, ResolvedReferencedFieldRefArgumentNode):
+            recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
+            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
+            
+            referenceName = fieldArgumentNode.getRecordReferenceRef().getAttribute("name")
+            referenceTypeNameUS = fieldArgumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key")
+            referenceTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(referenceTypeNameUS))
+            
+            fieldNode = fieldArgumentNode.getFieldRef()
+            fieldType = fieldNode.getAttribute("type")
+            fieldName = fieldNode.getAttribute("name")
+
+            return "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)}
+
 
 class FrontendCompiler(SourceCompiler):
     '''
@@ -428,19 +598,13 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '    virtual void configureSets()'
         print >> wfile, '    {'
+        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
+        
+        nodeFilter = DepthFirstNodeFilter(filterType=EnumSetNode)
+        for enumSet in nodeFilter.getAll(astRoot):
+            print >> wfile, '        bindEnumSet("%(n)s", %(p)s);' % {'n': enumSet.getAttribute("key"), 'p': self._argumentCode(enumSet.getArgument("path"), None)}
+
         print >> wfile, '    }'
-#        print >> wfile, ''
-#        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
-#        print >> wfile, '    {'
-#        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
-#        
-#        nodeFilter = DepthFirstNodeFilter(filterType=StringSetNode)
-#        for stringSet in nodeFilter.getAll(astRoot):
-#            print >> wfile, '        bindStringSet(doc, "%(n)s", _boundStringSets["%(n)s"]);' % {'n': stringSet.getAttribute("key")}
-#        
-#        print >> wfile, ''
-#        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
-#        print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -547,78 +711,6 @@ class OutputCollectorCompiler(SourceCompiler):
             print >> wfile, '}  // namespace Myriad'
     
             wfile.close()
-        
-
-class EnumTypesCompiler(SourceCompiler):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        '''
-        Constructor
-        '''
-        super(EnumTypesCompiler, self).__init__(*args, **kwargs)
-    
-    def compile(self, enumSets):
-    
-        try:
-            os.makedirs("%s/cpp/record/base" % (self._srcPath))
-        except OSError:
-            pass
-        
-        wfile = open("%s/cpp/record/base/enums.h" % (self._srcPath), "w", SourceCompiler.BUFFER_SIZE)
-        
-        print >> wfile, '// auto-generatad C++ enums'
-        print >> wfile, ''
-        print >> wfile, '#ifndef ENUMS_H_'
-        print >> wfile, '#define ENUMS_H_'
-        print >> wfile, ''
-        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
-        print >> wfile, ''
-        
-        for set in enumSets.getSets():
-            print >> wfile, 'enum %s' % (set.getAttribute("key"))
-            print >> wfile, '{'
-            for item in set.getItems():
-                print >> wfile, '    %s,' % (item.getAttribute("value")) 
-            print >> wfile, '};'
-            print >> wfile, ''
-            
-        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
-        print >> wfile, ''
-        print >> wfile, 'namespace Myriad {'
-        print >> wfile, ''
-        for set in enumSets.getSets():
-            print >> wfile, '// string conversion method for `%s`' % (set.getAttribute("key"))
-            print >> wfile, 'inline std::string toString(const %s::%s& t)' % (self._args.dgen_ns, set.getAttribute("key"))
-            print >> wfile, '{'
-            for item in set.getItems():
-                print >> wfile, '    if (t ==  %s::%s)' % (self._args.dgen_ns, item.getAttribute("value"))
-                print >> wfile, '    {'
-                print >> wfile, '        return "%s";' % (item.getAttribute("value"))
-                print >> wfile, '    }'
-            print >> wfile, ''
-            print >> wfile, '    throw Poco::LogicException("unsupported value for type `%s`");' % (set.getAttribute("key"))
-            print >> wfile, '}'
-            print >> wfile, ''
-            print >> wfile, '// enum conversion method for `%s`' % (set.getAttribute("key"))
-            print >> wfile, 'template<> inline %(ns)s::%(t)s toEnum<%(ns)s::%(t)s> (int v)' % {"ns": self._args.dgen_ns, "t": set.getAttribute("key")}
-            print >> wfile, '{'
-            for i, item in enumerate(set.getItems()):
-                print >> wfile, '    if (v == %d)' % (i)
-                print >> wfile, '    {'
-                print >> wfile, '        return %s::%s;' % (self._args.dgen_ns, item.getAttribute("value"))
-                print >> wfile, '    }'
-            print >> wfile, ''
-            print >> wfile, '    throw Poco::LogicException("unknown value for type `%s`");' % (set.getAttribute("key"))
-            print >> wfile, '}'
-            print >> wfile, ''
-        print >> wfile, '} // namespace Myriad'
-        print >> wfile, ''
-        print >> wfile, '#endif /* ENUMS_H_ */'
-
-        wfile.close()
 
 
 class RecordTypeCompiler(SourceCompiler):
@@ -635,8 +727,107 @@ class RecordTypeCompiler(SourceCompiler):
     def compile(self, recordSequences):
         for recordSequence in recordSequences.getRecordSequences():
             self._log.warning("compiling record C++ sources for `%s`" % (recordSequence.getAttribute("key")))
+            self.compileBaseRecordMeta(recordSequence.getRecordType())
             self.compileBaseRecordType(recordSequence.getRecordType())
+            self.compileRecordMeta(recordSequence.getRecordType())
             self.compileRecordType(recordSequence.getRecordType())
+            
+    def compileBaseRecordMeta(self, recordType):
+        try:
+            os.makedirs("%s/cpp/record/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        wfile = open("%s/cpp/record/base/Base%sMeta.h" % (self._srcPath, typeNameCC), "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASE%sMETA_H_' % (typeNameUC)
+        print >> wfile, '#define BASE%sMETA_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/Record.h"'
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '// forward declarations'
+        print >> wfile, 'class %s;' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'class Base%(t)sMeta : public RecordMeta<%(t)s>' % { 't': typeNameCC }
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        
+        if recordType.hasEnumFields():
+            print >> wfile, '    Base%(t)sMeta(const map<string, vector<string> >& enumSets) : ' % {'t': typeNameCC}
+            print >> wfile, '        %s' % ', '.join([ '%(n)s(enumSets.find("%(r)s")->second)' % {'n': field.getAttribute("name"), 'r': field.getAttribute("enumref")} for field in recordType.getEnumFields() ])
+            print >> wfile, '    {'
+            print >> wfile, '    }'
+        else:
+            print >> wfile, '    Base%(t)sMeta(const map<string, vector<string> >& enumSets)' % {'t': typeNameCC}
+            print >> wfile, '    {'
+            print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    // enum set refecences'
+        for field in recordType.getEnumFields():
+            print >> wfile, '    const vector<String>& %s;' % field.getAttribute("name")
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sMETA_H_ */' % (typeNameUC)
+
+        wfile.close()
+            
+    def compileRecordMeta(self, recordType):
+        try:
+            os.makedirs("%s/cpp/record" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        sourcePath = "%s/cpp/record/%sMeta.h" % (self._srcPath, typeNameCC)
+        
+        if (os.path.isfile(sourcePath)):
+            return
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
+        print >> wfile, ''
+        print >> wfile, '#ifndef %sMETA_H_' % (typeNameUC)
+        print >> wfile, '#define %sMETA_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/base/Base%sMeta.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, 'class %(t)sMeta : public Base%(t)sMeta' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    %(t)sMeta(const map<string, vector<string> >& enumSets) :' % {'t': typeNameCC}
+        print >> wfile, '        Base%(t)sMeta(enumSets)' % {'t': typeNameCC}
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* %sMETA_H_ */' % (typeNameUC)
+
+        wfile.close()
             
     def compileBaseRecordType(self, recordType):
         try:
@@ -656,7 +847,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#define BASE%s_H_' % (typeNameUC)
         print >> wfile, ''
         print >> wfile, '#include "record/Record.h"'
-        print >> wfile, '#include "record/base/enums.h"'
+        print >> wfile, '#include "record/%sMeta.h"' % (typeNameCC)
         
         for referenceType in sorted(recordType.getReferenceTypes()):
             print >> wfile, '#include "record/%s.h"' % (StringTransformer.sourceType(referenceType))
@@ -676,18 +867,27 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    Base%s()' % (typeNameCC)
+    
+        print >> wfile, '    Base%(t)s(const %(t)sMeta& meta) : ' % { 't': typeNameCC }
+        print >> wfile, '        _meta(meta)'
         print >> wfile, '    {'
         print >> wfile, '    }'
+
         print >> wfile, ''
         
         for field in recordType.getFields():
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             
+                
             print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(fieldName), StringTransformer.sourceType(fieldType))
             print >> wfile, '    const %s& %s() const;' % (StringTransformer.sourceType(fieldType), StringTransformer.us2cc(fieldName))
+            
+            if isinstance(field, RecordEnumFieldNode):
+                print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(fieldName))
+
             print >> wfile, ''
+            
             if StringTransformer.isVectorType(fieldType):
                 print >> wfile, '    void %sSetOne(const %s& v, const size_t i = numeric_limits<size_t>::max());' % (StringTransformer.us2cc(fieldName), StringTransformer.coreType(fieldType))
                 print >> wfile, '    const %s& %sGetOne(const size_t i) const;' % (StringTransformer.coreType(fieldType), StringTransformer.us2cc(fieldName))
@@ -702,6 +902,9 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, ''
         
         print >> wfile, 'private:'
+        print >> wfile, ''
+        print >> wfile, '    // meta'
+        print >> wfile, '    const %sMeta& _meta;' % (typeNameCC)
 
         if recordType.hasFields():
             print >> wfile, ''
@@ -732,6 +935,14 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    return _%s;' % (fieldName)
             print >> wfile, '}'
             print >> wfile, ''
+            
+            if isinstance(field, RecordEnumFieldNode):
+                print >> wfile, 'inline const String& Base%s::%sEnumValue() const' % (typeNameCC, StringTransformer.us2cc(fieldName))
+                print >> wfile, '{'
+                print >> wfile, '    return _meta.%(n)s[_%(n)s];' % {'n': fieldName}
+                print >> wfile, '}'
+                print >> wfile, ''
+
             if StringTransformer.isVectorType(fieldType):
                 print >> wfile, 'inline void Base%s::%sSetOne(const %s& v, const size_t i)' % (typeNameCC, StringTransformer.us2cc(fieldName), StringTransformer.coreType(fieldType))
                 print >> wfile, '{'
@@ -773,8 +984,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// record traits specialization'
         print >> wfile, 'template<> struct RecordTraits<%s::%s>' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '{'
+        print >> wfile, '    typedef %s::%sMeta RecordMetaType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sGenerator GeneratorType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sHydratorChain HydratorChainType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '    typedef RecordFactory<%s::%s> RecordFactoryType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// template specialization of operator<<'
@@ -795,6 +1008,8 @@ class RecordTypeCompiler(SourceCompiler):
 #                print >> wfile, '        }'
             elif fieldType == "Date":
                 print >> wfile, '        %-40s << " | " << ' % ( "toString(record." + StringTransformer.us2cc(fieldName) + "())")
+            elif fieldType == "Enum":
+                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
             else:
                 print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "()")
 
@@ -806,7 +1021,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#endif /* BASE%s_H_ */' % (typeNameUC)
 
         wfile.close()
-            
+    
     def compileRecordType(self, recordType):
         try:
             os.makedirs("%s/cpp/record" % (self._srcPath))
@@ -837,7 +1052,8 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    %s()' % (typeNameCC)
+        print >> wfile, '    %(t)s(const %(t)sMeta& meta)' % {'t': typeNameCC}
+        print >> wfile, '        : Base%s(meta)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
@@ -882,6 +1098,8 @@ class RecordGeneratorCompiler(SourceCompiler):
     classdocs
     '''
     
+    _getter_pattern = re.compile('getter\(([a-zA-Z_]+)\)')
+    
     def __init__(self, *args, **kwargs):
         '''
         Constructor
@@ -920,6 +1138,10 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '#define BASE%sGENERATOR_H_' % (typeNameUC)
         print >> wfile, ''
         print >> wfile, '#include "generator/RandomSetGenerator.h"'
+        
+        for referenceType in sorted(recordSequence.getRecordType().getReferenceTypes()):
+            print >> wfile, '#include "generator/%sGenerator.h"' % (StringTransformer.sourceType(referenceType))
+            
         print >> wfile, '#include "record/%s.h"' % (typeNameCC)
         
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
@@ -930,7 +1152,9 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
-        print >> wfile, 'class UserHydratorChain;'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// RecordGenerator specialization (base class)'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'class Base%(t)sGenerator: public RandomSetGenerator<%(t)s>' % {'t': typeNameCC}
         print >> wfile, '{'
@@ -953,6 +1177,10 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// HydratorChain specialization (base class)'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, '/**'
         print >> wfile, ' * Hydrator specialization for User.'
         print >> wfile, ' */'
@@ -971,10 +1199,27 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
             argsCode = []
-            if hydrator.hasPRNGArgument():
-                argsCode.append('random')
-            for argKey in hydrator.getConstructorArgumentsOrder():
-                argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
+            
+            if hydrator.hasNewArgsSupport():
+                for transformerDescriptor in hydrator.getConstructorArguments():
+                    (argTransformer, argKey) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
+                    
+                    if argKey is None:
+                        argument = None
+                    else:
+                        argument = hydrator.getArgument(argKey)
+                    
+                    argsCode.append(argTransformer.transform(argument, "config"))
+            else:
+                if hydrator.hasPRNGArgument():
+                    argsCode.append('random')
+                for argKey in hydrator.getConstructorArgumentsOrder():
+                    m = self._getter_pattern.match(argKey)
+                    if (m):
+                        argsCode.append(self._getterCode(hydrator.getArgument(m.group(1))))
+                    else:
+                        argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
+            
             print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)
@@ -999,6 +1244,14 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         print >> wfile, '    }'
         print >> wfile, ''
+        print >> wfile, '    /**'
+        print >> wfile, '     * Invertible hydrator getter.'
+        print >> wfile, '     */'
+        print >> wfile, '    template<typename T> const InvertibleHydrator<%(t)s, T>& invertableHydrator(typename MethodTraits<%(t)s, T>::Setter setter)' % {'t': typeNameCC}
+        print >> wfile, '    {'
+        print >> wfile, '        return HydratorChain<%s>::invertableHydrator<T>(setter);' % (typeNameCC)
+        print >> wfile, '    }'
+        print >> wfile, ''
         print >> wfile, 'protected:'
         print >> wfile, ''
         
@@ -1012,6 +1265,32 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '     */'
         print >> wfile, '    Logger& _logger;'
         print >> wfile, '};'
+        print >> wfile, ''
+        
+        invertibleHydrators = {}
+        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+            if hydrator.isInvertible():
+                fieldType = hydrator.getArgument("field").getFieldRef().getAttribute("type")
+                if not invertibleHydrators.has_key(fieldType):
+                    invertibleHydrators[fieldType] = []
+                invertibleHydrators[fieldType].append(hydrator)
+        
+        for fieldType in sorted(invertibleHydrators.keys()):
+            print >> wfile, '/**'
+            print >> wfile, ' * Invertible hydrator getter (%s specialization).' % (fieldType)
+            print >> wfile, ' */'
+            print >> wfile, 'template<> const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
+            print >> wfile, '{'
+            
+            for hydrator in invertibleHydrators[fieldType]:
+                print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': self._argumentCode(hydrator.getArgument("field"))}
+                print >> wfile, '    {'
+                print >> wfile, '        return _%s;' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
+                print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    return HydratorChain<%(rt)s>::invertableHydrator<%(ft)s>(setter);' % { 'rt': typeNameCC, 'ft': fieldType}
+            print >> wfile, '}'
+        
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
@@ -1051,6 +1330,10 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// RecordGenerator specialization'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'class %(t)sGenerator: public Base%(t)sGenerator' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
@@ -1065,12 +1348,20 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random);'
         print >> wfile, '};'
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// HydratorChain specialization'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'class %(t)sHydratorChain : public Base%(t)sHydratorChain' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
         print >> wfile, '    %sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
         print >> wfile, '        Base%sHydratorChain(opMode, random, config)' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual ~%sHydratorChain()' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, '};'

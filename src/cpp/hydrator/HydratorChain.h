@@ -82,6 +82,14 @@ public:
 	 * Object hydrating function (external PRNG).
 	 */
 	virtual void operator()(AutoPtr<RecordType> recordPtr) const = 0;
+
+	/**
+	 * Invertible hydrator getter.
+	 */
+	template<typename T> const InvertibleHydrator<RecordType, T>& invertableHydrator(typename MethodTraits<RecordType, T>::Setter setter)
+	{
+		throw LogicException("The hydrator object associated with the specified setter is not invertable");
+	}
 };
 
 } // namespace Myriad

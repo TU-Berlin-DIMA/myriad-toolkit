@@ -21,6 +21,7 @@
 #include <map>
 #include <string>
 #include <Poco/Any.h>
+#include <Poco/AutoPtr.h>
 #include <Poco/DynamicAny.h>
 #include <Poco/RefCountedObject.h>
 
@@ -35,11 +36,15 @@ namespace Myriad {
 // forward declarations
 class RecordGenerator;
 template<class RecordType> class HydratorChain;
+template<class RecordType> class RecordFactory;
+template<class RecordType> class RecordMeta;
 
 template<class RecordType> struct RecordTraits
 {
+	typedef RecordMeta<RecordType> RecordMetaType;
 	typedef RecordGenerator GeneratorType;
 	typedef HydratorChain<RecordType> HydratorChainType;
+	typedef RecordFactory<RecordType> RecordFactoryType;
 };
 
 class Record: public Poco::RefCountedObject
@@ -63,6 +68,49 @@ inline void Record::genID(const I64u v)
 {
 	meta_genid = v;
 }
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// sequence inspector
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<class RecordType> class RecordFactory
+{
+public:
+
+	typedef typename RecordTraits<RecordType>::RecordMetaType RecordMetaType;
+
+	RecordFactory(RecordMetaType meta)
+		: _meta(meta)
+	{
+	}
+
+	/**
+	 * Object generating function.
+	 */
+	AutoPtr<RecordType> operator()() const;
+
+private:
+
+	const RecordMetaType _meta;
+};
+
+template<class RecordType> inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()() const
+{
+	return new RecordType(_meta);
+}
+
+template<class RecordType> class RecordMeta
+{
+public:
+
+	RecordMeta()
+	{
+	}
+
+	RecordMeta(const map<string, vector<string> >& enumSets)
+	{
+	}
+};
 
 } // namespace Myriad
 

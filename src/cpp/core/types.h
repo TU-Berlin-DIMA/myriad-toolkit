@@ -37,11 +37,18 @@ typedef Poco::Int64 I64;
 typedef Poco::UInt16 I16u;
 typedef Poco::UInt32 I32u;
 typedef Poco::UInt64 I64u;
+typedef std::size_t Enum;
 
 typedef Poco::UInt64 ID;
 typedef double Decimal;
 typedef Poco::DateTime Date;
 typedef std::string String;
+
+template<class RecordType, class T> struct MethodTraits
+{
+	typedef const T& (RecordType::*Getter)();
+	typedef void (RecordType::*Setter)(const T&);
+};
 
 template<class T> inline std::string toString(const T& t)
 {
@@ -64,6 +71,11 @@ template<class T> inline T fromString(const std::string& s)
 }
 
 template<typename T> T toEnum(int v);
+
+template<typename T> inline T nullValue()
+{
+	return std::numeric_limits<T>::max();
+}
 
 } // namespace Myriad
 

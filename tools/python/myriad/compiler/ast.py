@@ -77,7 +77,6 @@ class SpecificationNode(AbstractNode):
     __parameters = None
     __functions = None
     __enumSets = None
-    __stringSets = None
     __recordSequences = None
     
     def __init__(self, *args, **kwargs):
@@ -85,7 +84,6 @@ class SpecificationNode(AbstractNode):
         self.__parameters = ParametersNode()
         self.__functions = FunctionsNode()
         self.__enumSets = EnumSetsNode()
-        self.__stringSets = StringSetsNode()
         self.__recordSequences = RecordSequencesNode()
     
     def accept(self, visitor):
@@ -93,7 +91,6 @@ class SpecificationNode(AbstractNode):
         self.__parameters.accept(visitor)
         self.__functions.accept(visitor)
         self.__enumSets.accept(visitor)
-        self.__stringSets.accept(visitor)
         self.__recordSequences.accept(visitor)
         visitor.postVisit(self)
         
@@ -105,9 +102,6 @@ class SpecificationNode(AbstractNode):
     
     def getEnumSets(self):
         return self.__enumSets
-    
-    def getStringSets(self):
-        return self.__stringSets
     
     def getRecordSequences(self):
         return self.__recordSequences
@@ -243,6 +237,19 @@ class UniformProbabilityFunctionNode(FunctionNode):
         return ["x_min", "x_max"]
     
 
+class CombinedProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="CombinedPrFunction")
+        super(CombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["path"]
+    
+
 class QHistogramProbabilityFunctionNode(FunctionNode):
     '''
     classdocs
@@ -251,6 +258,19 @@ class QHistogramProbabilityFunctionNode(FunctionNode):
     def __init__(self, *args, **kwargs):
         kwargs.update(type="QHistogramPrFunction")
         super(QHistogramProbabilityFunctionNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["path"]
+    
+
+class ConditionalQHistogramProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="ConditionalQHistogramPrFunction")
+        super(ConditionalQHistogramProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getConstructorArgumentsOrder(self):
         return ["path"]
@@ -267,10 +287,10 @@ class CustomDiscreteProbabilityFunctionNode(FunctionNode):
     
 
 #
-# Enum and String Sets
+# Enum Sets
 # 
 
-class SetsNode(AbstractNode):
+class EnumSetsNode(AbstractNode):
     '''
     classdocs
     '''
@@ -278,7 +298,7 @@ class SetsNode(AbstractNode):
     __sets = {}
     
     def __init__(self, *args, **kwargs):
-        super(SetsNode, self).__init__(*args, **kwargs)
+        super(EnumSetsNode, self).__init__(*args, **kwargs)
         self.__sets = {}
     
     def accept(self, visitor):
@@ -300,74 +320,30 @@ class SetsNode(AbstractNode):
         return self.__sets.itervalues()
 
 
-class EnumSetsNode(SetsNode):
+class EnumSetNode(AbstractNode):
     '''
     classdocs
     '''
     
-    def __init__(self, *args, **kwargs):
-        super(EnumSetsNode, self).__init__(*args, **kwargs)
-
-
-class StringSetsNode(SetsNode):
-    '''
-    classdocs
-    '''
+    __arguments = {}
     
     def __init__(self, *args, **kwargs):
-        super(StringSetsNode, self).__init__(*args, **kwargs)
-    
-    
-class SetNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    _items = []
-    
-    def __init__(self, *args, **kwargs):
-        super(SetNode, self).__init__(*args, **kwargs)
-        self._items = []
+        super(EnumSetNode, self).__init__(*args, **kwargs)
+        self.__arguments = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        for node in self._items:
+        for node in self.__arguments.itervalues():
             node.accept(visitor)
         visitor.postVisit(self)
         
-    def addItem(self, node):
-        self._items.append(node)
-        
-    def getItems(self):
-        return self._items
-
-
-class EnumSetNode(SetNode):
-    '''
-    classdocs
-    '''
-
-    def __init__(self, *args, **kwargs):
-        super(EnumSetNode, self).__init__(*args, **kwargs)
-
-
-class StringSetNode(SetNode):
-    '''
-    classdocs
-    '''
-
-    def __init__(self, *args, **kwargs):
-        super(StringSetNode, self).__init__(*args, **kwargs)
-
-
-class SetItemNode(AbstractNode):
-    '''
-    classdocs
-    '''
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
     
-    def __init__(self, *args, **kwargs):
-        super(SetItemNode, self).__init__(*args, **kwargs)
-
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+        
 
 #
 # Record Sequences
@@ -481,12 +457,16 @@ class RecordTypeNode(AbstractNode):
     _fields = {}
     _references = {}
     _referenceTypes = []
+    _enumFields = {}
+    _enumFieldNames = []
     
     def __init__(self, *args, **kwargs):
         super(RecordTypeNode, self).__init__(*args, **kwargs)
         self._fields = {}
         self._references = {}
         self._referenceTypes = []
+        self._enumFields = {}
+        self._enumFieldNames = []
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -510,9 +490,12 @@ class RecordTypeNode(AbstractNode):
         
     def setReference(self, node):
         self._references[node.getAttribute('name')] = node
-        t = node.getAttribute('type')
-        if not t in self._referenceTypes:
-            self._referenceTypes.append(t)
+        node.setParent(self)
+
+        if isinstance(node, ResolvedRecordReferenceNode):
+            t = node.getAttribute('type')
+            if not t in self._referenceTypes:
+                self._referenceTypes.append(t)
     
     def getReference(self, key):
         return self._references.get(key)
@@ -525,6 +508,27 @@ class RecordTypeNode(AbstractNode):
     
     def getReferenceTypes(self):
         return self._referenceTypes
+        
+    def setEnumField(self, node):
+        self._enumFields[node.getAttribute('name')] = node
+        self._fields[node.getAttribute('name')] = node
+        node.setParent(self)
+
+        t = node.getAttribute('enumref')
+        if not t in self._enumFieldNames:
+            self._enumFieldNames.append(t)
+    
+    def getEnumField(self, key):
+        return self._enumFields.get(key)
+    
+    def getEnumFields(self):
+        return self._enumFields.itervalues()
+
+    def hasEnumFields(self):
+        return bool(self._enumFields)
+    
+    def getEnumFieldNames(self):
+        return self._enumFieldNames
 
 
 class RecordFieldNode(AbstractNode):
@@ -533,28 +537,91 @@ class RecordFieldNode(AbstractNode):
     '''
     
     orderkey = None
+    __parent = None
     
     def __init__(self, *args, **kwargs):
         super(RecordFieldNode, self).__init__(*args, **kwargs)
         self.orderkey = None
+        self.__parent = None
         
     def setOrderKey(self, key):
         self.orderkey = key
 
+    def setParent(self, parent):
+        self.__parent = parent
 
+    def getParent(self):
+        return self.__parent
+
+
+class RecordEnumFieldNode(RecordFieldNode):
+    '''
+    classdocs
+    '''
+    
+    orderkey = None
+    __enumSetRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(RecordEnumFieldNode, self).__init__(*args, **kwargs)
+        self.__eumSetRef = None
+        
+    def getEnumSetRef(self):
+        return self.__enumSetRef
+        
+    def setEnumSetRef(self, enumSetRef):
+        self.__enumSetRef = enumSetRef
+
+
+#FIXME: use a common XML syntax for RecordReferenceNode and RecordEnumFieldNode
 class RecordReferenceNode(AbstractNode):
     '''
     classdocs
     '''
     
     orderkey = None
+    __parent = None
     
     def __init__(self, *args, **kwargs):
         super(RecordReferenceNode, self).__init__(*args, **kwargs)
         self.orderkey = None
+        self.__parent = None
         
     def setOrderKey(self, key):
         self.orderkey = key
+
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
+
+
+class UnresolvedRecordReferenceNode(RecordReferenceNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(UnresolvedRecordReferenceNode, self).__init__(*args, **kwargs)
+
+
+class ResolvedRecordReferenceNode(RecordReferenceNode):
+    '''
+    classdocs
+    '''
+    
+    __recordTypeRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedRecordReferenceNode, self).__init__(*args, **kwargs)
+        self.__recordTypeRef = None
+        
+    def setRecordTypeRef(self, recordTypeRef):
+        self.__recordTypeRef = recordTypeRef
+
+    def getRecordTypeRef(self):
+        return self.__recordTypeRef
 
 
 class CardinalityEstimatorNode(AbstractNode):
@@ -567,6 +634,7 @@ class CardinalityEstimatorNode(AbstractNode):
     
     def __init__(self, *args, **kwargs):
         super(CardinalityEstimatorNode, self).__init__(*args, **kwargs)
+        self.__parent = None
         self.__arguments = {}
     
     def accept(self, visitor):
@@ -591,6 +659,7 @@ class CardinalityEstimatorNode(AbstractNode):
     def getConstructorArgumentsOrder(self):
         return []
 
+
 class LinearScaleEstimatorNode(CardinalityEstimatorNode):
     '''
     classdocs
@@ -602,6 +671,7 @@ class LinearScaleEstimatorNode(CardinalityEstimatorNode):
         
     def getConstructorArgumentsOrder(self):
         return ["base_cardinality"]
+
 
 class HydratorsNode(RecordSequenceNode):
     '''
@@ -634,7 +704,8 @@ class HydratorsNode(RecordSequenceNode):
             return self.__hydrators.itervalues()
         else:
             return self.__hydrators.itervalues()
-    
+
+
 class HydrationPlanNode(AbstractNode):
     '''
     classdocs
@@ -697,6 +768,12 @@ class HydratorNode(AbstractNode):
         return "RecordHydrator"
         
     def hasPRNGArgument(self):
+        return False
+    
+    def hasNewArgsSupport(self):
+        return False
+        
+    def isInvertible(self):
         return False
         
     def getConstructorArgumentsOrder(self):
@@ -878,8 +955,76 @@ class SimpleClusteredHydrator(HydratorNode):
     def hasPRNGArgument(self):
         return False
         
+    def isInvertible(self):
+        return True
+        
     def getConstructorArgumentsOrder(self):
         return ['field', 'probability', 'sequence_cardinality']
+
+
+class ConditionalRandomizedHydrator(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ConditionalRandomizedHydrator")
+        super(ConditionalRandomizedHydrator, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        conditionFieldType = self.getArgument("condition_field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        
+        return "ConditionalRandomizedHydrator<%s, %s, %s, %s>" % (recordType, fieldType, conditionFieldType, probabilityType)
+        
+    def hasPRNGArgument(self):
+        return True
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'getter(condition_field)', 'probability']
+
+
+class ReferencedRecordHydrator(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ReferencedRecordHydrator")
+        super(ReferencedRecordHydrator, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        
+        return "ReferencedRecordHydrator<%s, %s, %s, %s>" % (recordType, refRecordType, fieldType, probabilityType)
+        
+    def hasPRNGArgument(self):
+        return True
+    
+    def hasNewArgsSupport(self):
+        return True
+        
+    def getXMLArguments(self):
+        return { 'field'      : { 'type': 'field_ref' }, 
+                 'pivot_field': { 'type': 'field_ref' }, 
+                 'probability': { 'type': 'function_ref' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'RandomStreamRef()',
+                 'FieldSetter(field)',
+                 'FieldSetter(pivot_field)',
+                 'RandomSetInspector(pivot_field)',
+                 'FunctionRef(probability)' 
+               ]
+        
+    def getConstructorArgumentsOrder(self):
+        return ['reference', 'pivot_field', 'probability']
 
 
 class GeneratorTasksNode(AbstractNode):
@@ -985,17 +1130,89 @@ class ResolvedFieldRefArgumentNode(ArgumentNode):
     classdocs
     '''
     
+    def __init__(self, *args, **kwargs):
+        super(ResolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
+
+
+class ResolvedDirectFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
+    '''
+    classdocs
+    '''
+    
     __fieldRef = None
     __recordTypeRef = None
     
     def __init__(self, *args, **kwargs):
-        super(ResolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
+        super(ResolvedDirectFieldRefArgumentNode, self).__init__(*args, **kwargs)
+        self.__fieldRef = None
+        self.__recordTypeRef = None
 
     def setRecordTypeRef(self, recordTypeRef):
         self.__recordTypeRef = recordTypeRef
 
     def getRecordTypeRef(self):
         return self.__recordTypeRef
+
+    def setFieldRef(self, fieldRef):
+        self.__fieldRef = fieldRef
+
+    def getFieldRef(self):
+        return self.__fieldRef
+
+
+class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __recordTypeRef = None
+    __recordReferenceRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedRecordReferenceRefArgumentNode, self).__init__(*args, **kwargs)
+        self.__fieldRef = None
+        self.__recordReferenceRef = None
+        self.__recordTypeRef = None
+
+    def setRecordTypeRef(self, recordTypeRef):
+        self.__recordTypeRef = recordTypeRef
+
+    def getRecordTypeRef(self):
+        return self.__recordTypeRef
+
+    def setRecordReferenceRef(self, recordReferenceRef):
+        self.__recordReferenceRef = recordReferenceRef
+
+    def getRecordReferenceRef(self):
+        return self.__recordReferenceRef
+
+
+class ResolvedReferencedFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __recordTypeRef = None
+    __recordReferenceRef = None
+    __fieldRef = None
+    
+    def __init__(self, *args, **kwargs):
+        super(ResolvedReferencedFieldRefArgumentNode, self).__init__(*args, **kwargs)
+        self.__fieldRef = None
+        self.__recordReferenceRef = None
+        self.__recordTypeRef = None
+
+    def setRecordTypeRef(self, recordTypeRef):
+        self.__recordTypeRef = recordTypeRef
+
+    def getRecordTypeRef(self):
+        return self.__recordTypeRef
+
+    def setRecordReferenceRef(self, recordReferenceRef):
+        self.__recordReferenceRef = recordReferenceRef
+
+    def getRecordReferenceRef(self):
+        return self.__recordReferenceRef
 
     def setFieldRef(self, fieldRef):
         self.__fieldRef = fieldRef

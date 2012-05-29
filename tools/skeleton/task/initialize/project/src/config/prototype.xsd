@@ -4,7 +4,6 @@
   <!-- permitted root elements -->
 
   <xs:element name="generator_prototype" type="myriad:generator_prototype" />
-  <xs:element name="generator_catalog" type="myriad:generator_catalog" />
 
   <!-- generator_prototype root type -->
 
@@ -28,23 +27,12 @@
           <xs:field xpath="@key"></xs:field>
         </xs:unique>
       </xs:element>
-      <!-- 
       <xs:element name="enum_sets" type="myriad:enum_sets" minOccurs="0">
         <xs:annotation>
           <xs:documentation>Enumerations used in the described domain model.</xs:documentation>
         </xs:annotation>
         <xs:unique name="specification_enum_set_name">
           <xs:selector xpath=".//myriad:enum_set" />
-          <xs:field xpath="@key" />
-        </xs:unique>
-      </xs:element>
-      -->
-      <xs:element name="string_sets" type="myriad:string_sets" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation>Finite string sets used in the described domain model.</xs:documentation>
-        </xs:annotation>
-        <xs:unique name="specification_string_set_name">
-          <xs:selector xpath=".//myriad:string-set" />
           <xs:field xpath="@key" />
         </xs:unique>
       </xs:element>
@@ -160,19 +148,6 @@
     <xs:attribute name="value" type="xs:string" />
   </xs:complexType>
 
-  <!-- string / enum set items -->
-  <xs:group name="items">
-    <xs:sequence>
-      <xs:element name="item" type="myriad:item" maxOccurs="unbounded" />
-    </xs:sequence>
-  </xs:group>
-  <xs:complexType name="item">
-    <xs:sequence>
-      <xs:element name="probability" type="myriad:probability-point-context" minOccurs="0" />
-    </xs:sequence>
-    <xs:attribute name="value" type="xs:string" use="required" />
-  </xs:complexType>
-
   <!-- functions -->
 
   <xs:complexType name="functions">
@@ -208,40 +183,16 @@
     </xs:simpleContent>
   </xs:complexType>
 
-  <!-- string-sets -->
-
-  <xs:complexType name="string_sets">
-    <xs:sequence>
-      <xs:element name="string_set" type="myriad:string_set" minOccurs="0" maxOccurs="unbounded">
-        <xs:unique name="string_set_item_value">
-          <xs:selector xpath=".//myriad:item" />
-          <xs:field xpath="@value" />
-        </xs:unique>
-      </xs:element>
-    </xs:sequence>
-  </xs:complexType>
-  <xs:complexType name="string_set">
-    <xs:group ref="myriad:items" />
-    <xs:attribute name="key" type="xs:NCName" use="required" />
-  </xs:complexType>
-
   <!-- enum_sets -->
 
   <xs:complexType name="enum_sets">
     <xs:sequence>
-      <xs:element name="enum_set" type="myriad:enum_set" minOccurs="0" maxOccurs="unbounded">
-        <xs:unique name="enum_set_item_value">
-          <xs:selector xpath=".//myriad:item" />
-          <xs:field xpath="@value" />
-        </xs:unique>
-      </xs:element>
+      <xs:element name="enum_set" type="myriad:enum_set" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="enum_set">
-    <xs:sequence>
-      <xs:element name="item" type="myriad:item" maxOccurs="unbounded" />
-    </xs:sequence>
     <xs:attribute name="key" type="xs:NCName" use="required" />
+    <xs:attribute name="path" type="xs:string" use="required" />
   </xs:complexType>
 
   <!-- record sequences -->
@@ -264,14 +215,9 @@
   <xs:complexType name="record_type">
     <xs:sequence>
       <xs:element name="field" type="myriad:field_type" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="reference" type="myriad:reference_type" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="field_type">
-    <xs:attribute name="name" type="xs:string" />
-    <xs:attribute name="type" type="xs:string" />
-  </xs:complexType>
-  <xs:complexType name="reference_type">
     <xs:attribute name="name" type="xs:string" />
     <xs:attribute name="type" type="xs:string" />
   </xs:complexType>

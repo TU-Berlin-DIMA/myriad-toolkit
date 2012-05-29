@@ -33,6 +33,10 @@ public:
 	{
 	}
 
+	virtual ~RandomRecordHydrator()
+	{
+	}
+
 protected:
 
 	RandomStream& _random;

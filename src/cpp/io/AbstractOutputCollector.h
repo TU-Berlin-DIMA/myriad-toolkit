@@ -31,7 +31,8 @@ template<typename RecordType> class AbstractOutputCollector
 {
 public:
 
-	AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config)
+	AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config) :
+		_config(config)
 	{
 	}
 
@@ -70,6 +71,13 @@ public:
 	{
 		throw new NotImplementedException("");
 	}
+
+protected:
+
+	/**
+	 * A reference to the generator config.
+	 */
+	const GeneratorConfig& _config;
 };
 
 } // namespace Myriad

@@ -61,6 +61,7 @@ class XMLReader(object):
             self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
             
             # resolve argument refs
+            self.__resolveRecordReferenceNodes()
             self.__resolveFieldRefArguments()
             self.__resolveFunctionRefArguments()
             self.__resolveHydratorRefArguments()
@@ -73,6 +74,28 @@ class XMLReader(object):
         # return the final version AST
         return self.__astRoot
     
+    def __resolveRecordReferenceNodes(self):
+        nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedRecordReferenceNode)
+        for unresolvedRecordReferenceNode in nodeFilter.getAll(self.__astRoot):
+            parent = unresolvedRecordReferenceNode.getParent()
+            fqName = unresolvedRecordReferenceNode.getAttribute("type")
+            
+            recordSequenceNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(fqName)
+            
+            if not recordSequenceNode:
+                message = "Cannot resolve record reference for record of type `%s`" % (fqName)
+                self.__log.error(message)
+                raise RuntimeError(message)
+            
+            recordTypeNode = recordSequenceNode.getRecordType()
+            
+            resolvedRecordReferenceNode = ResolvedRecordReferenceNode()
+            resolvedRecordReferenceNode.setAttribute('name', unresolvedRecordReferenceNode.getAttribute("name"))
+            resolvedRecordReferenceNode.setAttribute('type', StringTransformer.ucFirst(StringTransformer.us2cc(unresolvedRecordReferenceNode.getAttribute("type"))))
+            resolvedRecordReferenceNode.setRecordTypeRef(recordTypeNode)
+            resolvedRecordReferenceNode.orderkey = unresolvedRecordReferenceNode.orderkey
+            parent.setReference(resolvedRecordReferenceNode)
+    
     def __resolveFieldRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFieldRefArgumentNode)
         for unresolvedFieldRefArgumentNode in nodeFilter.getAll(self.__astRoot):
@@ -81,33 +104,80 @@ class XMLReader(object):
 
             if fqName.find(":") > -1:
                 recordKey = fqName[:fqName.find(":")]
-                fieldKey = fqName[fqName.find(":")+1:]
+                fieldPath = fqName[fqName.find(":")+1:]
             else:
                 message = "Cannot resolve field reference for field `%s`" % (fqName)
                 self.__log.error(message)
                 raise RuntimeError(message)
             
-            recordTypeNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(recordKey).getRecordType()
+            recordSequenceNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(recordKey)
             
-            if not recordTypeNode:
-                message = "Cannot resolve field reference for function `%s` (unexisting record type `%s`)" % (fqName, recordKey)
+            if not recordSequenceNode:
+                message = "Cannot resolve field reference for field `%s` (unexisting record type `%s`)" % (fqName, recordKey)
                 self.__log.error(message)
                 raise RuntimeError(message)
             
-            fieldTypeNode = recordTypeNode.getField(fieldKey)
+            recordTypeNode = recordSequenceNode.getRecordType()
             
-            if not fieldTypeNode:
-                message = "Cannot resolve field reference for function `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
-                self.__log.error(message)
-                raise RuntimeError(message)
+            if fieldPath.find(".") > -1:
+                fieldKey = fieldPath[fieldPath.find(".")+1:]
+                
+                referenceKey = fieldPath[:fieldPath.find(".")]
+                recordReferenceNode = recordTypeNode.getReference(referenceKey)
             
-            resolvedFieldRefArgumentNode = ResolvedFieldRefArgumentNode()
-            resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
-            resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
-            resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
-            resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
-            resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
-            parent.setArgument(resolvedFieldRefArgumentNode)
+                if not recordReferenceNode:
+                    message = "Cannot resolve named record reference `%s` for record type `%s`" % (referenceKey, recordKey)
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                fieldTypeNode = recordReferenceNode.getRecordTypeRef().getField(fieldKey)
+                
+                if not fieldTypeNode:
+                    message = "Cannot resolve field reference for field `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                resolvedFieldRefArgumentNode = ResolvedReferencedFieldRefArgumentNode()
+                resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+                resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+                resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+                resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+                resolvedFieldRefArgumentNode.setRecordReferenceRef(recordReferenceNode)
+                resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
+                parent.setArgument(resolvedFieldRefArgumentNode)
+                
+            else:
+                fieldKey = fieldPath
+                fieldTypeNode = recordTypeNode.getField(fieldKey)
+                
+                if not fieldTypeNode:
+                    fieldTypeNode = recordTypeNode.getReference(fieldKey)
+                
+                if not fieldTypeNode:
+                    message = "Cannot resolve field reference for field `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                if isinstance(fieldTypeNode, RecordFieldNode):
+                    resolvedFieldRefArgumentNode = ResolvedDirectFieldRefArgumentNode()
+                    resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+                    resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+                    resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+                    resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+                    resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
+                    parent.setArgument(resolvedFieldRefArgumentNode)
+                elif isinstance(fieldTypeNode, RecordReferenceNode):
+                    resolvedFieldRefArgumentNode = ResolvedRecordReferenceRefArgumentNode()
+                    resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+                    resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+                    resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
+                    resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+                    resolvedFieldRefArgumentNode.setRecordReferenceRef(recordTypeNode.getReference(fieldKey))
+                    parent.setArgument(resolvedFieldRefArgumentNode)
+                else:
+                    message = "Unexpected field type"
+                    self.__log.error(message)
+                    raise RuntimeError(message)
     
     def __resolveFunctionRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFunctionRefArgumentNode)
@@ -171,7 +241,6 @@ class XMLReader(object):
         self.__readParameters(astContext, xmlContext)
         self.__readFunctions(astContext, xmlContext)
         self.__readEnumSets(astContext, xmlContext)
-        self.__readStringSets(astContext, xmlContext)
         # record related tree areas
         self.__readRecordSequences(astContext, xmlContext)
         
@@ -204,27 +273,13 @@ class XMLReader(object):
 
         # attach FunctionNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:enum_sets/m:enum_set"):
-            enumSet = EnumSetNode(key=element.prop("key"))
+            enumSetNode = EnumSetNode(key=element.prop("key"))
             
             childContext = self.__createXPathContext(element)
-            for child in childContext.xpathEval("./m:item"):
-                enumSet.addItem(SetItemNode(value=child.prop("value")))
+            for child in childContext.xpathEval("./m:argument"):
+                enumSetNode.setArgument(self.__argumentFactory(child))
             
-            astContext.getEnumSets().setSet(enumSet)
-
-    def __readStringSets(self, astContext, xmlContext):
-        # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
-
-        # attach FunctionNode for each function in the XML document
-        for element in xPathContext.xpathEval(".//m:string_sets/m:string_set"):
-            enumSet = StringSetNode(key=element.prop("key"))
-            
-            childContext = self.__createXPathContext(element)
-            for child in childContext.xpathEval("./m:item"):
-                enumSet.addItem(SetItemNode(value=child.prop("value")))
-            
-            astContext.getStringSets().setSet(enumSet)
+            astContext.getEnumSets().setSet(enumSetNode)
             
     def __readRecordSequences(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
@@ -269,15 +324,30 @@ class XMLReader(object):
         
         i = 0
         for element in xPathContext.xpathEval("./m:field"):
-            recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"))
+            fieldType = element.prop("type")
+            
+            if fieldType == "Enum":
+                recordFieldNode = RecordEnumFieldNode(name=element.prop("name"), type=element.prop("type"), enumref=element.prop("enumref"))
+                enumSetNode = self.__astRoot.getSpecification().getEnumSets().getSet(recordFieldNode.getAttribute('enumref'))
+                
+                if enumSetNode is None:
+                    message = "Cannot resolve enum set reference for enum set `%s`" % (recordFieldNode.getAttribute('enumref'))
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                
+                recordFieldNode.setEnumSetRef(enumSetNode)
+                recordTypeNode.setEnumField(recordFieldNode)
+            else:
+                recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"))
+                recordTypeNode.setField(recordFieldNode)
+            
             recordFieldNode.setOrderKey(i)
             
-            recordTypeNode.setField(recordFieldNode)
             i = i+1
         
         i = 0
         for element in xPathContext.xpathEval("./m:reference"):
-            recordReferenceNode = RecordReferenceNode(name=element.prop("name"), type=element.prop("type"))
+            recordReferenceNode = UnresolvedRecordReferenceNode(name=element.prop("name"), type=element.prop("type"))
             recordReferenceNode.setOrderKey(i)
             
             recordTypeNode.setReference(recordReferenceNode)
@@ -374,8 +444,12 @@ class XMLReader(object):
             return ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "uniform_probability"):
             return UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        if (functionType == "combined_probability"):
+            return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "q_histogram_probability"):
             return QHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        if (functionType == "conditional_q_histogram_probability"):
+            return ConditionalQHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
 
         raise RuntimeError('Invalid function type `%s`' % (functionType))
     
@@ -398,6 +472,10 @@ class XMLReader(object):
             return SimpleRandomizedHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "simple_clustered_hydrator":
             return SimpleClusteredHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "conditional_randomized_hydrator":
+            return ConditionalRandomizedHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "referenced_record_hydrator":
+            return ReferencedRecordHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         
         raise RuntimeError('Unsupported hydrator type `%s`' % (t))
 
@@ -418,7 +496,11 @@ class XMLReader(object):
                 message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
                 self.__log.error(message)
                 raise RuntimeError(message)
-            return UnresolvedFieldRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
+            
+            if argumentRef.find(":") == -1:
+                argumentRef = "%s%s" % (enclosingRecordType, argumentRef)
+                
+            return UnresolvedFieldRefArgumentNode(key=argumentKey, ref=argumentRef)
 
         if (argumentType == "function_ref"):
             argumentRef = argumentXMLNode.prop("ref")
@@ -428,6 +510,7 @@ class XMLReader(object):
                 raise RuntimeError(message)
             return UnresolvedFunctionRefArgumentNode(key=argumentKey, ref=argumentRef)
         
+        # FIXME: this is (probably) obsolete, remove this code
         if (argumentType == "hydrator_ref"):
             if not argumentRef:
                 message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
@@ -435,6 +518,7 @@ class XMLReader(object):
                 raise RuntimeError(message)
             return UnresolvedHydratorRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
         
+        # FIXME: this is (probably) obsolete, remove this code
         if (argumentType == "string_set_ref"):
             if not argumentRef:
                 message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)

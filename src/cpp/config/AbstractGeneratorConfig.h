@@ -80,9 +80,14 @@ public:
 		return fromString<C>(getString("generator." + key));
 	}
 
-	const vector<string>& stringSet(string key)
+	const vector<string>& enumSet(string key)
 	{
-		return _boundStringSets[key];
+		return _enumSets[key];
+	}
+
+	map<string, vector<string> >& enumSets()
+	{
+		return _enumSets;
 	}
 
 	ID cardinality(string name)
@@ -126,63 +131,15 @@ public:
 	}
 
 protected:
+
 	/**
-	 * Loads the configuration from the given XML configuration file and the
-	 * current api configuration.
+	 * Helper function - loads an enumerated set from a flat file to a vector.
 	 *
+	 * @param key
 	 * @param path
-	 * @deprecated
+	 *
 	 */
-	void loadXMLConfig(const Path& path);
-
-	/**
-	 * Helper function - loads properties from XML.
-	 *
-	 * @param doc
-	 * @deprecated
-	 */
-	virtual void configureParameters(const AutoPtr<XML::Document>& doc);
-
-	/**
-	 * Helper function - computes the PRDG subsequences assigned to the current
-	 * node for each data type.
-	 *
-	 * @param doc
-	 *
-	 * @deprecated
-	 */
-	virtual void configurePartitioning(const AutoPtr<XML::Document>& doc);
-
-	/**
-	 * Helper function - loads functions from XML.
-	 *
-	 * @param doc
-	 *
-	 * @deprecated
-	 */
-	virtual void configureFunctions(const AutoPtr<XML::Document>& doc);
-
-	/**
-	 * Binds XML configured record and string sets to local variables. This
-	 * function is extension specific and must be provided by the user in the
-	 * GeneratorConfig subclass.
-	 *
-	 * @param doc
-	 *
-	 * @deprecated
-	 */
-	virtual void configureSets(const AutoPtr<XML::Document>& doc);
-
-	/**
-	 * Helper function - binds a XML configured string set to a vector.
-	 *
-	 * @param doc
-	 * @param id
-	 * @param set
-	 *
-	 * @deprecated
-	 */
-	void bindStringSet(const AutoPtr<XML::Document>& doc, const string& id, vector<string>& set);
+	void bindEnumSet(const string& key, Path path);
 
 	/**
 	 * Helper function - binds a XML configured record set to a vector.
@@ -261,13 +218,6 @@ protected:
 	void computeNestedPartitioning(const string& key);
 
 	/**
-	 * Helper partitioning function for nested block partitioned subsequences.
-	 *
-	 * @param key
-	 */
-	void computeNestedBlockPartitioning(const string& key);
-
-	/**
 	 * Resolves values of the form ${param_name} to the corresponding parameter name.
 	 *
 	 * @param value
@@ -297,7 +247,7 @@ protected:
 	/**
 	 * The string sets bound from the config.
 	 */
-	map<string, vector<string> > _boundStringSets;
+	map<string, vector<string> > _enumSets;
 
 	/**
 	 * A 'generator.config' logger instance.

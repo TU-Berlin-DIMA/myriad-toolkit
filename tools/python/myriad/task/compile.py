@@ -80,9 +80,6 @@ class CompileModelTask(AbstractTask):
         # compile output collector
         outputCollectorCompiler = OutputCollectorCompiler(args=args)
         outputCollectorCompiler.compile(ast)
-        # compile enum types
-        enumCompiler = EnumTypesCompiler(args=args)
-        enumCompiler.compile(ast.getSpecification().getEnumSets())
         # compile record types
         recordCompiler = RecordTypeCompiler(args=args)
         recordCompiler.compile(ast.getSpecification().getRecordSequences())

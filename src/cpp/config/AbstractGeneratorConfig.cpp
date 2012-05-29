@@ -55,6 +55,10 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	setString("application.output-dir", format("%s/node%03d", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
 	setString("application.log-path", format("%s/log/node%03d.log", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
 
+	// expose some application.* parameters unter generator.ENV.*
+	setString("generator.ENV.config-dir", getString("application.config-dir"));
+	setString("generator.ENV.output-dir", getString("application.output-dir"));
+
 	// make sure that the job, log and output paths exist
 
 	// job-dir
@@ -76,18 +80,9 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	Logger::root().setChannel(logChannel);
 	_logger.setChannel(logChannel);
 
-#ifdef XML_CONFIG_LOADING
-	// get the path of the master config xml file
-	Path configPath(getString("application.node-config", getString("common.defaults.config.node-config")));
-	configPath.makeAbsolute(getString("application.config-dir"));
-
-	_logger.information("Loading generator configuration from " + configPath.toString());
-	loadXMLConfig(configPath);
-#else
 	configurePartitioning();
 	configureFunctions();
 	configureSets();
-#endif
 
 	if (hasProperty("common.master.seed"))
 	{
@@ -96,170 +91,65 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	}
 }
 
-void AbstractGeneratorConfig::loadXMLConfig(const Path& path)
+void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 {
-	DOMParser parser;
-	AutoPtr<Document> doc = parser.parse(path.toString());
-	doc->normalize();
+	// compute the output path
+	path.makeAbsolute(getString("application.config-dir"));
 
-	configureParameters(doc);
-	configureFunctions(doc);
-	configurePartitioning(doc);
-	configureSets(doc);
-}
-
-void AbstractGeneratorConfig::configureParameters(const AutoPtr<Document>& doc)
-{
-	Element* parametersEl = static_cast<Element*> (doc->getElementsByTagName("parameters")->item(0));
-
-	AutoPtr<NodeList> parameters = parametersEl->getElementsByTagName("parameter");
-	for (unsigned long int j = 0; j < parameters->length(); j++)
+	if (!path.isFile())
 	{
-		Element* p = static_cast<Element*> (parameters->item(j));
-		setString("generator." + p->getAttribute("key"), p->innerText());
+		throw ConfigException(format("Cannot find file at `%s`", path.toString()));
 	}
-}
 
-void AbstractGeneratorConfig::configureFunctions(const AutoPtr<Document>& doc)
-{
-	ObjectBuilder builder;
+	File file(path);
 
-	Element* functionsEl = static_cast<Element*> (doc->getElementsByTagName("functions")->item(0));
-	AutoPtr<NodeList> functions = functionsEl->getElementsByTagName("function");
-	for (unsigned long int i = 0; i < functions->length(); i++)
+	if (!file.canRead())
 	{
-		Element* f = static_cast<Element*> (functions->item(i));
-		// read name and type
-		String key = f->getAttribute("key");
-		String type = f->getAttribute("type");
+		throw ConfigException(format("Cannot read from file at `%s`", path.toString()));
+	}
 
-		// read function parameters
-		AutoPtr<NodeList> parameters = f->getElementsByTagName("argument");
-		for (unsigned long int j = 0; j < parameters->length(); j++)
+	ifstream in(file.path().c_str());
+
+	if (!in.is_open())
+	{
+		throw ConfigException(format("Cannot open file at `%s`", path.toString()));
+	}
+
+	string line;
+
+	try
+	{
+		vector<String>& set = _enumSets[key];
+
+		// read first line
+		getline(in, line);
+
+		if (line.substr(0, 17) != "# numberofvalues:")
 		{
-			Element* p = static_cast<Element*> (parameters->item(j));
-			builder.addParameter(p->getAttribute("key"), fromString<Decimal>(p->innerText()));
+			throw DataException("Unexpected file header");
 		}
 
-		// create function of the specified type
-		if (type == "custom_discrete_probability")
+		I32 numberOfEntries = atoi(line.substr(17).c_str());
+
+		set.resize(numberOfEntries);
+
+		for (I16u i = 0; i < numberOfEntries; i++)
 		{
-			// read function parameters
-			AutoPtr<NodeList> probabilities = f->getElementsByTagName("probability");
-			for (unsigned long int j = 0; j < probabilities->length(); j++)
+			if (!in.good())
 			{
-				Element* p = static_cast<Element*> (probabilities->item(j));
-				builder.addParameter(p->getAttribute("argument"), fromString<Decimal>(p->getAttribute("value")));
+				throw DataException("Bad line for bin #" + toString(i));
 			}
 
-			addFunction(builder.create<CustomDiscreteProbability> (key));
-		}
-		else if (type == "interval_map")
-		{
-			addFunction(builder.create<IntervalMap<ID, ID> > (key));
-		}
-		else if (type == "id_range_map")
-		{
-			addFunction(builder.create<DiscreteMap<ID, Interval<ID> > > (key));
-		}
-		else if (type == "pareto_probability")
-		{
-			addFunction(builder.create<ParetoPrFunction> (key));
-		}
-		else if (type == "normal_probability")
-		{
-			addFunction(builder.create<NormalPrFunction> (key));
-		}
-		else if (type == "bounded_normal")
-		{
-			addFunction(builder.create<BoundedNormalPrFunction> (key));
-		}
-		else
-		{
-			throw FeatureConfigurationException(format("Unsupported function type '%s' for function", type, key));
+			getline(in, line);
+			set[i] = line.substr(line.find_first_of('\t')+1);
 		}
 
-		builder.clear();
+		in.close();
 	}
-}
-
-void AbstractGeneratorConfig::configurePartitioning(const AutoPtr<Document>& doc)
-{
-	NodeList* partitioningElements = doc->getElementsByTagName("partitioning");
-
-	if (partitioningElements->length() == 0)
+	catch(exception& e)
 	{
-		return;
-	}
-
-	Element* partitioningEl = static_cast<Element*> (partitioningElements->item(0));
-
-	AutoPtr<NodeList> partitionConfigs = partitioningEl->getElementsByTagName("partition");
-	for (unsigned long int i = 0; i < partitionConfigs->length(); i++)
-	{
-		Element* f = static_cast<Element*> (partitionConfigs->item(i));
-
-		// read name and type
-		String type = f->getAttribute("type");
-		String method = f->getAttribute("method");
-
-		if (method == "fixed")
-		{
-			// TODO: determine cardinality from the loaded object set size
-			setString("partitioning." + type + ".cardinality", f->getChildElement("cardinality")->innerText());
-			computeFixedPartitioning(type);
-		}
-		else if (method == "simple")
-		{
-			setString("partitioning." + type + ".base-cardinality", f->getChildElement("base-cardinality")->innerText());
-			computeLinearScalePartitioning(type);
-		}
-		else if (method == "mirrored")
-		{
-			setString("partitioning." + type + ".master", f->getChildElement("master")->innerText());
-			computeMirroredPartitioning(type);
-		}
-		else if (method == "period-bound")
-		{
-			setString("partitioning." + type + ".period-min", resolveValue(f->getChildElement("period-min")->innerText()));
-			setString("partitioning." + type + ".period-max", resolveValue(f->getChildElement("period-max")->innerText()));
-			setString("partitioning." + type + ".items-per-second", resolveValue(f->getChildElement("items-per-second")->innerText()));
-			computePeriodBoundPartitioning(type);
-		}
-		else if (method == "nested")
-		{
-			setString("partitioning." + type + ".parent", f->getChildElement("parent")->innerText());
-			setString("partitioning." + type + ".items-per-parent", f->getChildElement("items-per-parent")->innerText());
-			computeNestedPartitioning(type);
-		}
-	}
-}
-
-void AbstractGeneratorConfig::configureSets(const AutoPtr<XML::Document>& doc)
-{
-}
-
-void AbstractGeneratorConfig::bindStringSet(const AutoPtr<Document>& doc, const string& id, vector<string>& set)
-{
-	Element* containerEl = doc->getElementById(id, "key");
-	if (containerEl == NULL || containerEl->tagName() != "string_set")
-	{
-		throw ConfigException(format("No <string-set> element found for `%s`", id));
-	}
-
-	AutoPtr<NodeList> strings = containerEl->getElementsByTagName("item");
-
-	set.resize(strings->length());
-	for (unsigned long int i = 0; i < strings->length(); i++)
-	{
-		Element* s = static_cast<Element*> (strings->item(i));
-		set[i] = s->getAttribute("value");
-
-		AutoPtr<NodeList> probabilities = s->getElementsByTagName("probability");
-		for (unsigned long int j = 0; j < probabilities->length(); j++)
-		{
-			setProbability(i, static_cast<Element*> (probabilities->item(j)));
-		}
+		in.close();
+		throw e;
 	}
 }
 
@@ -352,42 +242,6 @@ void AbstractGeneratorConfig::computeNestedPartitioning(const string& key)
 	setString("generator." + key + ".sequence.cardinality", toString(cardinality * itemsPerParent));
 	setString("generator." + key + ".partition.begin", toString(genIDBegin * itemsPerParent));
 	setString("generator." + key + ".partition.end", toString(genIDEnd * itemsPerParent));
-}
-
-void AbstractGeneratorConfig::computeNestedBlockPartitioning(const string& key)
-{
-	// TODO: this partitioning method is functional but currently not supported. revision needed.
-
-	string parentKey = getString("partitioning." + key + ".parent");
-	string blockName = getString("partitioning." + key + ".block.name");
-	string blockDistribution = getString("partitioning." + key + ".block.distribution");
-	I32u blockSize = getInt("partitioning." + key + ".block.size.x");
-	I32u blockSum = getInt("partitioning." + key + ".block.size.y");
-
-	// get cardinality and partitioning parameters for parent type
-	ID parentCardinality = fromString<ID> (getString("generator." + parentKey + ".sequence.cardinality"));
-	ID parentGenIDBegin = fromString<ID> (getString("generator." + parentKey + ".partition.begin"));
-	ID parentGenIDEnd = fromString<ID> (getString("generator." + parentKey + ".partition.end"));
-
-	UnivariatePrFunction<Decimal>& distribution = func<UnivariatePrFunction<Decimal> >(blockDistribution);
-	DiscreteDistribution<UnivariatePrFunction<Decimal> > d(distribution, blockSize, blockSum, 1);
-
-	// configure cardinality and partitioning parameters for nested type
-	ID cardinality = (parentCardinality / blockSize) * blockSum + d.cdf(parentCardinality % blockSize) - d(parentCardinality % blockSize);
-	ID genIDBegin = (parentGenIDBegin / blockSize) * blockSum + d.cdf(parentGenIDBegin % blockSize) - d(parentGenIDBegin % blockSize);
-	ID genIDEnd = (parentGenIDEnd / blockSize) * blockSum + d.cdf(parentGenIDEnd % blockSize) - d(parentGenIDEnd % blockSize);
-
-	addFunction(d.pdfMap(blockName + "_pdf"));
-	addFunction(d.cdfMap(blockName + "_cdf"));
-
-	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
-	setString("generator." + key + ".partition.begin", toString(genIDBegin));
-	setString("generator." + key + ".partition.end", toString(genIDEnd));
-
-	_logger.information(format("Configuring `%s` nested block sizing, `%s` has [%Lu, %Lu) of total %Lu", key, parentKey, parentGenIDBegin, parentGenIDEnd, parentCardinality));
-	_logger.information(format("Configuring `%s` nested block sizing, %Lu full blocks, %Lu items before begin", key, parentGenIDBegin / blockSize, parentGenIDBegin % blockSize));
-	_logger.information(format("Configuring `%s` nested block sizing, %Lu full blocks, %Lu items before end", key, parentGenIDEnd / blockSize, parentGenIDEnd % blockSize));
-	_logger.information(format("Configuring `%s` nested block sizing: %Lu [%Lu, %Lu) of total %Lu", key, genIDEnd - genIDBegin, genIDBegin, genIDEnd, cardinality));
 }
 
 const string AbstractGeneratorConfig::resolveValue(const string& value)
