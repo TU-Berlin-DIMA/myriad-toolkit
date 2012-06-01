@@ -27,7 +27,6 @@
 
 #include <string>
 #include <iostream>
-#include <fstream>
 
 using namespace std;
 using namespace Poco;
@@ -50,7 +49,7 @@ public:
 		initialize(path);
 	}
 
-	CombinedPrFunction(ifstream& in) :
+	CombinedPrFunction(istream& in) :
 		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
@@ -62,7 +61,7 @@ public:
 		initialize(path);
 	}
 
-	CombinedPrFunction(const string& name, ifstream& in) :
+	CombinedPrFunction(const string& name, istream& in) :
 		UnivariatePrFunction<I64u>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
@@ -87,7 +86,7 @@ public:
 
 	void initialize(const string& path);
 
-	void initialize(ifstream& path);
+	void initialize(istream& path);
 
 	size_t numberOfBuckets() const;
 

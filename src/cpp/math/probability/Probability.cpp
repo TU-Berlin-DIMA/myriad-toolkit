@@ -105,7 +105,7 @@ void CombinedPrFunction::initialize(const string& path)
  * Load a Q-histogram from the given input stream. For each entry add a
  * [min, max) interval of domain values to a lookup table.
  */
-void CombinedPrFunction::initialize(ifstream& in)
+void CombinedPrFunction::initialize(istream& in)
 {
 	// reset old state
 	reset();
