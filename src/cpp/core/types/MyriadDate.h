@@ -24,6 +24,8 @@
 #include <Poco/DateTimeFormatter.h>
 #include <Poco/DateTimeParser.h>
 
+#include <iostream>
+
 using namespace Poco;
 using namespace std;
 
@@ -43,6 +45,7 @@ public:
 		string s(date);
 		int tzd;
 
+		std::cout << "string: "  << s.substr(0,10) << std::endl;
 		DateTimeParser::parse(s, _dateTime, tzd);
 	}
 
@@ -51,7 +54,8 @@ public:
 		string s(date);
 		int tzd;
 
-		DateTimeParser::parse(s, _dateTime, tzd);
+		std::cout << "string: "  << s.substr(0,10) << std::endl;
+		DateTimeParser::parse(s.substr(0,10), _dateTime, tzd);
 	}
 
 	MyriadDate operator +(const Int64& daysSpan) const
@@ -94,12 +98,16 @@ private:
 
 inline ostream &operator<<(ostream& stream, const MyriadDate& ob)
 {
-	stream << Poco::DateTimeFormatter::format(ob._dateTime, Poco::DateTimeFormat::SORTABLE_FORMAT);
+	stream << Poco::DateTimeFormatter::format(ob._dateTime, "%Y-%m-%d");
 	return stream;
 }
 
 inline istream &operator>>(istream& stream, MyriadDate& ob)
 {
+	int tzd;
+	char line[10];
+	stream.read(line, 10);
+	DateTimeParser::parse(string(line), ob._dateTime, tzd);
 	return stream;
 }
 
