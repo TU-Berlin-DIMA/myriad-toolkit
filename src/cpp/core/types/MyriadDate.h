@@ -40,12 +40,16 @@ public:
 	{
 	}
 
+	MyriadDate(const DateTime& dateTime) :
+		_dateTime(dateTime)
+	{
+	}
+
 	MyriadDate(const string& date)
 	{
 		string s(date);
 		int tzd;
 
-		std::cout << "string: "  << s.substr(0,10) << std::endl;
 		DateTimeParser::parse(s, _dateTime, tzd);
 	}
 
@@ -54,38 +58,64 @@ public:
 		string s(date);
 		int tzd;
 
-		std::cout << "string: "  << s.substr(0,10) << std::endl;
-		DateTimeParser::parse(s.substr(0,10), _dateTime, tzd);
+		DateTimeParser::parse(s.substr(0,11), _dateTime, tzd);
+	}
+
+	bool operator == (const MyriadDate& myriadDate) const
+	{
+		return _dateTime == myriadDate._dateTime;
+	}
+
+	bool operator != (const MyriadDate& myriadDate) const
+	{
+		return _dateTime != myriadDate._dateTime;
+	}
+
+	bool operator <  (const MyriadDate& myriadDate) const
+	{
+		return _dateTime < myriadDate._dateTime;
+	}
+
+	bool operator <= (const MyriadDate& myriadDate) const
+	{
+		return _dateTime <= myriadDate._dateTime;
+	}
+
+	bool operator >  (const MyriadDate& myriadDate) const
+	{
+		return _dateTime > myriadDate._dateTime;
+	}
+
+	bool operator >= (const MyriadDate& myriadDate) const
+	{
+		return _dateTime >= myriadDate._dateTime;
 	}
 
 	MyriadDate operator +(const Int64& daysSpan) const
 	{
-		return *this;
+		return MyriadDate(_dateTime + Timespan(daysSpan, 0, 0, 0, 0));
 	}
 
 	MyriadDate operator -(const Int64& daysSpan) const
 	{
-		return *this;
+		return MyriadDate(_dateTime - Timespan(daysSpan, 0, 0, 0, 0));
 	}
 
-	Int64 operator -(const MyriadDate& dateTime) const
+	Int64 operator -(const MyriadDate& myriadDate) const
 	{
-		return 0;
+		return (_dateTime - myriadDate._dateTime).days();
 	}
 
 	MyriadDate& operator +=(const Timespan& daysSpan)
 	{
+		_dateTime += Timespan(1, 0, 0, 0, 0);
 		return *this;
 	}
 
 	MyriadDate& operator -=(const Timespan& daysSpan)
 	{
+		_dateTime -= Timespan(1, 0, 0, 0, 0);
 		return *this;
-	}
-
-	bool operator <(const MyriadDate& o) const
-	{
-		return _dateTime < o._dateTime;
 	}
 
 	friend ostream &operator<<(ostream& stream, const MyriadDate& ob);
