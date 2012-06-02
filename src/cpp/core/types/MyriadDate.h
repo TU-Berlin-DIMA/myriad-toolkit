@@ -40,9 +40,9 @@ public:
 	{
 	}
 
-	MyriadDate(const DateTime& dateTime) :
-		_dateTime(dateTime)
+	MyriadDate(const DateTime& dateTime)
 	{
+		_dateTime.assign(dateTime.year(), dateTime.month(), dateTime.day());
 	}
 
 	MyriadDate(const string& date)
@@ -50,7 +50,8 @@ public:
 		string s(date);
 		int tzd;
 
-		DateTimeParser::parse(s, _dateTime, tzd);
+		DateTimeParser::parse(s.substr(0,10), _dateTime, tzd);
+		resetTime();
 	}
 
 	MyriadDate(const char* date)
@@ -58,7 +59,8 @@ public:
 		string s(date);
 		int tzd;
 
-		DateTimeParser::parse(s.substr(0,11), _dateTime, tzd);
+		DateTimeParser::parse(s.substr(0,10), _dateTime, tzd);
+		resetTime();
 	}
 
 	bool operator == (const MyriadDate& myriadDate) const
@@ -122,6 +124,11 @@ public:
 	friend istream &operator>>(istream& stream, MyriadDate& ob);
 
 private:
+
+	void resetTime()
+	{
+		_dateTime.assign(_dateTime.year(), _dateTime.month(), _dateTime.day());
+	}
 
 	DateTime _dateTime;
 };
