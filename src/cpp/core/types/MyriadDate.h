@@ -93,6 +93,30 @@ public:
 		return _dateTime >= myriadDate._dateTime;
 	}
 
+	MyriadDate& operator ++(int)
+	{
+		_dateTime += Timespan(1, 0, 0, 0, 0);
+		return *this;
+	}
+
+	MyriadDate& operator ++()
+	{
+		_dateTime += Timespan(1, 0, 0, 0, 0);
+		return *this;
+	}
+
+	MyriadDate& operator --(int)
+	{
+		_dateTime -= Timespan(1, 0, 0, 0, 0);
+		return *this;
+	}
+
+	MyriadDate& operator --()
+	{
+		_dateTime -= Timespan(1, 0, 0, 0, 0);
+		return *this;
+	}
+
 	MyriadDate operator +(const Int64& daysSpan) const
 	{
 		return MyriadDate(_dateTime + Timespan(daysSpan, 0, 0, 0, 0));

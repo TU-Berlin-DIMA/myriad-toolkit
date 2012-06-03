@@ -58,7 +58,7 @@ public:
 		return _max;
 	}
 
-	const Domain length() const
+	const double length() const
 	{
 		return _max-_min;
 	}

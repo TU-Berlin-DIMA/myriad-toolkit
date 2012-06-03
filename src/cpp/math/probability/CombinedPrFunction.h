@@ -26,7 +26,7 @@
 #include <Poco/Any.h>
 
 #include <string>
-#include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace Poco;
@@ -34,47 +34,47 @@ using namespace Poco;
 namespace Myriad
 {
 
-class CombinedPrFunction: public UnivariatePrFunction<I64u>
+template<typename T> class CombinedPrFunction: public UnivariatePrFunction<T>
 {
 public:
 
 	CombinedPrFunction() :
-		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 	}
 
 	CombinedPrFunction(const string& path) :
-		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(istream& in) :
-		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(const string& name, const string& path) :
-		UnivariatePrFunction<I64u>(name), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(const string& name, istream& in) :
-		UnivariatePrFunction<I64u>(name), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(map<string, Any>& params) :
-		UnivariatePrFunction<I64u>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
 	CombinedPrFunction(const string& name, map<string, Any>& params) :
-		UnivariatePrFunction<I64u>(name), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
@@ -90,19 +90,19 @@ public:
 
 	size_t numberOfBuckets() const;
 
-	I64u min()const;
+	T min()const;
 
-	I64u max() const;
+	T max() const;
 
-	Decimal operator()(const I64u x) const;
+	Decimal operator()(const T x) const;
 
-	Decimal pdf(I64u x) const;
+	Decimal pdf(T x) const;
 
-	Decimal cdf(I64u x) const;
+	Decimal cdf(T x) const;
 
-	I64u invcdf(Decimal x) const;
+	T invcdf(Decimal x) const;
 
-	I64u sample(Decimal random) const;
+	T sample(Decimal random) const;
 
 private:
 
@@ -134,45 +134,45 @@ private:
 
 	size_t findIndex(const Decimal y) const;
 
-	size_t findValue(const I64u x, bool exact = true) const;
+	size_t findValue(const T x, bool exact = true) const;
 
-	size_t findBucket(const I64u x, bool exact = true) const;
+	size_t findBucket(const T x, bool exact = true) const;
 
 	Decimal _notNullProbability;
 
 	// TODO: replace with an interval
-	I64u _min;
-	I64u _max;
+	T _min;
+	T _max;
 
 	size_t _numberOfValues;
-	I64u* _values;
+	T* _values;
 	Decimal _valueProbability;
 	Decimal* _valueProbabilities;
 
 	size_t _numberOfBuckets;
-	Interval<I64u>* _buckets;
+	Interval<T>* _buckets;
 	Decimal _bucketProbability;
 	Decimal* _bucketProbabilities;
 
 	Decimal* _cumulativeProbabilites;
 };
 
-inline size_t CombinedPrFunction::numberOfBuckets() const
+template<typename T> inline size_t CombinedPrFunction<T>::numberOfBuckets() const
 {
 	return _numberOfBuckets;
 }
 
-inline I64u CombinedPrFunction::min()const
+template<typename T> inline T CombinedPrFunction<T>::min()const
 {
 	return _min;
 }
 
-inline I64u CombinedPrFunction::max() const
+template<typename T> inline T CombinedPrFunction<T>::max() const
 {
 	return _max;
 }
 
-inline size_t CombinedPrFunction::findIndex(const Decimal y) const
+template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decimal y) const
 {
 	// we assert that the value x is in the [_min, _max] range
 	int min = 0;
@@ -213,7 +213,7 @@ inline size_t CombinedPrFunction::findIndex(const Decimal y) const
 	}
 }
 
-inline size_t CombinedPrFunction::findValue(const I64u x, bool exact) const
+template<typename T> inline size_t CombinedPrFunction<T>::findValue(const T x, bool exact) const
 {
 	// we assert that the value x is in the [_min, _max] range
 	int min = 0;
@@ -267,7 +267,7 @@ inline size_t CombinedPrFunction::findValue(const I64u x, bool exact) const
 	}
 }
 
-inline size_t CombinedPrFunction::findBucket(const I64u x, bool exact) const
+template<typename T> inline size_t CombinedPrFunction<T>::findBucket(const T x, bool exact) const
 {
 	// we assert that the value x is in the [_min, _max] range
 	int min = 0;
@@ -321,14 +321,250 @@ inline size_t CombinedPrFunction::findBucket(const I64u x, bool exact) const
 	}
 }
 
-inline Decimal CombinedPrFunction::operator()(const I64u x) const
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// inline member function templates
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename T> inline Decimal CombinedPrFunction<T>::operator()(const T x) const
 {
 	return cdf(x);
 }
 
-inline I64u CombinedPrFunction::sample(Decimal random) const
+template<typename T> inline T CombinedPrFunction<T>::sample(Decimal random) const
 {
 	return invcdf(random);
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// member function templates
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+/**
+ * Load a Q-histogram from the given path.
+ */
+template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
+{
+	ifstream in(path.c_str());
+
+	if (!in.is_open())
+	{
+		throw OpenFileException("Unexpected file header for file `" + path +  "`");
+	}
+
+	try
+	{
+		initialize(in);
+
+		in.close();
+	}
+	catch(exception& e)
+	{
+		in.close();
+		throw e;
+	}
+}
+
+/**
+ * Load a Q-histogram from the given input stream. For each entry add a
+ * [min, max) interval of domain values to a lookup table.
+ */
+template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
+{
+	// reset old state
+	reset();
+
+	string line, binMin, binMax;
+
+	// read first line
+	getline(in, line);
+	if (line.substr(0, 20) != "# numberofexactvals:")
+	{
+		throw DataException("Unexpected file header (line 1)");
+	}
+	I32 numberOfValues = atoi(line.substr(20).c_str());
+
+	if (numberOfValues <= 0 && numberOfValues > 65536)
+	{
+		throw DataException("Invalid number of exact values `" + toString(numberOfValues) +  "`");
+	}
+
+	// read second line
+	getline(in, line);
+	if (line.substr(0, 15) != "# numberofbins:")
+	{
+		throw DataException("Unexpected file header (line 2)");
+	}
+	I32 numberOfBuckets = atoi(line.substr(15).c_str());
+
+	if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
+	{
+		throw DataException("Invalid number of lines `" + toString(numberOfBuckets) +  "`");
+	}
+
+	// read third line
+	getline(in, line);
+	if (line.substr(0, 18) != "# nullprobability:")
+	{
+		throw DataException("Unexpected file header (line 3)");
+	}
+	Decimal nullProbability = atof(line.substr(18).c_str());
+
+	_notNullProbability = 1.0 - nullProbability;
+
+	_numberOfValues = numberOfValues;
+	_values = new T[numberOfValues];
+	_valueProbabilities = new Decimal[numberOfValues];
+
+	_numberOfBuckets = numberOfBuckets;
+	_buckets = new Interval<T>[numberOfBuckets];
+	_bucketProbabilities = new Decimal[numberOfBuckets];
+
+	_cumulativeProbabilites = new Decimal[numberOfValues+numberOfBuckets];
+
+	for (I16u i = 0; i < numberOfValues; i++)
+	{
+		if (!in.good())
+		{
+			throw DataException("Bad line for bin #" + toString(i));
+		}
+
+		getline(in, line);
+
+		size_t firsttab = line.find_first_of('\t');
+
+		Decimal probability = fromString<Decimal>(line.substr(0, firsttab));
+		T value = fromString<T>(line.substr(firsttab+1));
+
+		_values[i] = value;
+		_valueProbabilities[i] = probability;
+		_valueProbability += probability;
+		_cumulativeProbabilites[i] = _valueProbability;
+	}
+
+	for (I16u i = 0; i < numberOfBuckets; i++)
+	{
+		if (!in.good())
+		{
+			throw DataException("Bad line for bin #" + toString(i));
+		}
+
+		getline(in, line);
+
+		size_t firsttab = line.find_first_of('\t');
+		size_t secondtab = line.find_last_of('\t');
+
+		Decimal probability = fromString<Decimal>(line.substr(0, firsttab));
+		T min = fromString<T>(line.substr(firsttab+1, secondtab));
+		T max = fromString<T>(line.substr(secondtab+1));
+
+		_buckets[i].set(min, max);
+		_bucketProbabilities[i] = probability;
+		_bucketProbability += probability;
+		_cumulativeProbabilites[i+numberOfValues] = _valueProbability + _bucketProbability;
+	}
+
+	_min = std::min(_buckets[0].min(), _values[0]);
+	_max = std::max(_buckets[_numberOfBuckets-1].max(), _values[_numberOfBuckets-1]+1);
+
+	if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
+	{
+		throw LogicException("Probabilities don't sum up to 1");
+	}
+}
+
+template<typename T> Decimal CombinedPrFunction<T>::pdf(T x) const
+{
+	if (x == nullValue<T>())
+	{
+		return 1.0-_notNullProbability;
+	}
+	else if (x < _min || x >= _max)
+	{
+		return 0.0;
+	}
+	else
+	{
+		size_t i;
+
+		if (nullValue<size_t>() != (i = findValue(x)))
+		{
+			return _valueProbabilities[i];
+		}
+
+		if (nullValue<size_t>() != (i = findBucket(x)))
+		{
+			return _bucketProbabilities[i] * (1.0 / static_cast<Decimal>(_buckets[i].length()));
+		}
+
+		throw RuntimeException("Unknown pdf(x) for x = " + toString<T>(x));
+	}
+}
+
+template<typename T> Decimal CombinedPrFunction<T>::cdf(T x) const
+{
+	if (x < _min)
+	{
+		return 0.0;
+	}
+	else if (x >= _max)
+	{
+		return _notNullProbability;
+	}
+	else
+	{
+		Decimal cdf = 0.0;
+
+		size_t i;
+
+		if (nullValue<size_t>() != (i = findValue(x, false)))
+		{
+			cdf += _cumulativeProbabilites[i];
+		}
+
+		if (nullValue<size_t>() != (i = findBucket(x, false)))
+		{
+			const Interval<T>& b = _buckets[i];
+
+			if (!b.contains(x))
+			{
+				cdf += _cumulativeProbabilites[_numberOfValues + i] - _valueProbability;
+			}
+			else
+			{
+				if (i > 0)
+				{
+					cdf += _cumulativeProbabilites[_numberOfValues + i - 1] - _valueProbability;
+				}
+
+				cdf += _bucketProbabilities[i] * ((1 + (x - b.min()))/static_cast<Decimal>(b.length()));
+			}
+		}
+
+		return cdf;
+	}
+}
+
+template<typename T> T CombinedPrFunction<T>::invcdf(Decimal y) const
+{
+	if (y < _notNullProbability)
+	{
+		size_t i = findIndex(y);
+
+		if (i < _numberOfValues)
+		{
+			return _values[i];
+		}
+		else
+		{
+			const Interval<T> b = _buckets[i-_numberOfValues];
+			Decimal cdfBefore = i > 0 ? _cumulativeProbabilites[i-1] : 0;
+			return static_cast<T>(b.min() + ((y - cdfBefore) / _bucketProbabilities[i-_numberOfValues]) * b.length());
+		}
+	}
+	else
+	{
+		return nullValue<T>();
+	}
 }
 
 } // namespace Myriad

@@ -66,6 +66,43 @@ template<typename T> inline T nullValue()
 	return std::numeric_limits<T>::max();
 }
 
+template<> inline Date nullValue<Date>()
+{
+	return Date(DateTime(9999, 12, 31));
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// numericLimits
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename T> class numericLimits
+{
+public:
+	static T min()
+	{
+		return std::numeric_limits<T>::min();
+	}
+
+	static T max()
+	{
+		return std::numeric_limits<T>::max();
+	}
+};
+
+template<> class numericLimits<Date>
+{
+public:
+	static Date min()
+	{
+		return Date(DateTime(1, 1, 1));
+	}
+
+	static Date max()
+	{
+		return Date(DateTime(9999, 12, 31));
+	}
+};
+
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // string conversion templates
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
