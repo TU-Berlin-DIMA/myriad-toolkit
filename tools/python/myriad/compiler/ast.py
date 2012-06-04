@@ -187,6 +187,10 @@ class FunctionNode(AbstractNode):
     def getConstructorArgumentsOrder(self):
         return []
     
+    def getConcreteType(self):
+        return self.getAttribute("concrete_type")
+
+    
 
 class ParetoProbabilityFunctionNode(FunctionNode):
     '''
@@ -244,11 +248,12 @@ class CombinedProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="CombinedPrFunction")
+        kwargs.update(concrete_type="CombinedPrFunction<%s>" % self.getAttribute("domainType", "I64u"))
         super(CombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getConstructorArgumentsOrder(self):
         return ["path"]
-    
+
 
 class QHistogramProbabilityFunctionNode(FunctionNode):
     '''
@@ -793,7 +798,7 @@ class ClusteredEnumSetHydratorNode(HydratorNode):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         
-        return "ClusteredEnumSetHydrator<%s, %s>" % (recordType, fieldType)
+        return "ClusteredEnumSetHydrator< %s, %s >" % (recordType, fieldType)
         
     def hasPRNGArgument(self):
         return False
@@ -817,7 +822,7 @@ class ConditionalHydratorNode(HydratorNode):
         trueHydratorType = self.getArgument("if_true").getHydratorRef().getAttribute("type_alias")
         falseHydratorType = self.getArgument("if_false").getHydratorRef().getAttribute("type_alias") 
         
-        return "ConditionalHydrator<%s, %s, %s, %s>" % (recordType, fieldType, trueHydratorType, falseHydratorType)
+        return "ConditionalHydrator< %s, %s, %s, %s >" % (recordType, fieldType, trueHydratorType, falseHydratorType)
         
     def hasPRNGArgument(self):
         return False
@@ -839,7 +844,7 @@ class ConstValueHydratorNode(HydratorNode):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         
-        return "ConstValueHydrator<%s, %s>" % (recordType, fieldType)
+        return "ConstValueHydrator< %s, %s >" % (recordType, fieldType)
         
     def hasPRNGArgument(self):
         return False
@@ -861,7 +866,7 @@ class EnumSetHydratorNode(HydratorNode):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         
-        return "EnumSetHydrator<%s, %s>" % (recordType, fieldType)
+        return "EnumSetHydrator< %s, %s >" % (recordType, fieldType)
         
     def hasPRNGArgument(self):
         return True
@@ -882,7 +887,7 @@ class MultiplicativeGroupHydratorNode(HydratorNode):
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
 
-        return "MultiplicativeGroupHydrator<%s>" % (recordType)
+        return "MultiplicativeGroupHydrator< %s >" % (recordType)
         
     def hasPRNGArgument(self):
         return False
@@ -904,7 +909,7 @@ class RangeSetHydratorNode(HydratorNode):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         
-        return "RangeSetHydrator<%s, %s>" % (recordType, fieldType)
+        return "RangeSetHydrator< %s, %s >" % (recordType, fieldType)
         
     def hasPRNGArgument(self):
         return True
@@ -925,9 +930,9 @@ class SimpleRandomizedHydrator(HydratorNode):
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         
-        return "SimpleRandomizedHydrator<%s, %s, %s>" % (recordType, fieldType, probabilityType)
+        return "SimpleRandomizedHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
         
     def hasPRNGArgument(self):
         return True
@@ -950,7 +955,7 @@ class SimpleClusteredHydrator(HydratorNode):
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
         
-        return "SimpleClusteredHydrator<%s, %s, %s>" % (recordType, fieldType, probabilityType)
+        return "SimpleClusteredHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
         
     def hasPRNGArgument(self):
         return False
@@ -977,7 +982,7 @@ class ConditionalRandomizedHydrator(HydratorNode):
         conditionFieldType = self.getArgument("condition_field").getFieldRef().getAttribute("type")
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
         
-        return "ConditionalRandomizedHydrator<%s, %s, %s, %s>" % (recordType, fieldType, conditionFieldType, probabilityType)
+        return "ConditionalRandomizedHydrator< %s, %s, %s, %s >" % (recordType, fieldType, conditionFieldType, probabilityType)
         
     def hasPRNGArgument(self):
         return True
@@ -1001,7 +1006,7 @@ class ReferencedRecordHydrator(HydratorNode):
         fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
         
-        return "ReferencedRecordHydrator<%s, %s, %s, %s>" % (recordType, refRecordType, fieldType, probabilityType)
+        return "ReferencedRecordHydrator< %s, %s, %s, %s >" % (recordType, refRecordType, fieldType, probabilityType)
         
     def hasPRNGArgument(self):
         return True

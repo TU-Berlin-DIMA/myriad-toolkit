@@ -592,7 +592,7 @@ class ConfigCompiler(SourceCompiler):
             argsCode = ['"%s"' % (function.getAttribute("key"))]
             for argKey in function.getConstructorArgumentsOrder():
                 argsCode.append(self._argumentCode(function.getArgument(argKey), None))
-            print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getAttribute("type"), 'a': ', '.join(argsCode)}
+            print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getConcreteType(), 'a': ', '.join(argsCode)}
 
         print >> wfile, '    }'
         print >> wfile, ''

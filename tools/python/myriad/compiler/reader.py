@@ -19,6 +19,7 @@ Created on Dec 15, 2011
 '''
 
 import os
+import re
 import sys
 import logging
 import libxml2
@@ -434,6 +435,7 @@ class XMLReader(object):
     def __functionFactory(self, functionXMLNode):
         functionType = functionXMLNode.prop("type")
         
+        functionMatch = None
         functionNode = None
         
         if (functionType == "custom_discrete_probability"):
@@ -444,8 +446,10 @@ class XMLReader(object):
             return ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "uniform_probability"):
             return UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-        if (functionType == "combined_probability"):
-            return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+
+        functionMatch = re.match(r"combined_probability\[(.*)\]", functionType)
+        if (functionMatch != None):
+            return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType=functionMatch.group(1))
         if (functionType == "q_histogram_probability"):
             return QHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "conditional_q_histogram_probability"):
