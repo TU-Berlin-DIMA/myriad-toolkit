@@ -19,17 +19,20 @@
 #ifndef TYPES_H_
 #define TYPES_H_
 
+#include "types/MyriadDate.h"
+
+#include <Poco/Types.h>
+
 #include <stdint.h>
 #include <limits>
 #include <sstream>
 #include <string>
 
-#include <Poco/DateTime.h>
-#include <Poco/DateTimeFormat.h>
-#include <Poco/DateTimeFormatter.h>
-#include <Poco/Types.h>
-
 namespace Myriad {
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// type aliasees
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 typedef Poco::Int16 I16;
 typedef Poco::Int32 I32;
@@ -41,14 +44,68 @@ typedef std::size_t Enum;
 
 typedef Poco::UInt64 ID;
 typedef double Decimal;
-typedef Poco::DateTime Date;
+typedef MyriadDate Date;
 typedef std::string String;
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// field method traits
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<class RecordType, class T> struct MethodTraits
 {
 	typedef const T& (RecordType::*Getter)();
 	typedef void (RecordType::*Setter)(const T&);
 };
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// null value template
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename T> inline T nullValue()
+{
+	return std::numeric_limits<T>::max();
+}
+
+template<> inline Date nullValue<Date>()
+{
+	return Date(DateTime(9999, 12, 31));
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// numericLimits
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename T> class numericLimits
+{
+public:
+	static T min()
+	{
+		return std::numeric_limits<T>::min();
+	}
+
+	static T max()
+	{
+		return std::numeric_limits<T>::max();
+	}
+};
+
+template<> class numericLimits<Date>
+{
+public:
+	static Date min()
+	{
+		return Date(DateTime(1, 1, 1));
+	}
+
+	static Date max()
+	{
+		return Date(DateTime(9999, 12, 31));
+	}
+};
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// string conversion templates
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<class T> inline std::string toString(const T& t)
 {
@@ -57,24 +114,12 @@ template<class T> inline std::string toString(const T& t)
 	return ss.str();
 }
 
-template<> inline std::string toString(const Poco::DateTime& t)
-{
-	return Poco::DateTimeFormatter::format(t, Poco::DateTimeFormat::SORTABLE_FORMAT);
-}
-
 template<class T> inline T fromString(const std::string& s)
 {
 	std::stringstream ss(s);
 	T t;
 	ss >> t;
 	return t;
-}
-
-template<typename T> T toEnum(int v);
-
-template<typename T> inline T nullValue()
-{
-	return std::numeric_limits<T>::max();
 }
 
 } // namespace Myriad
