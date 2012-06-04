@@ -168,6 +168,8 @@ class FunctionNode(AbstractNode):
     __arguments = {}
     
     def __init__(self, *args, **kwargs):
+        if not kwargs.has_key("concrete_type"):
+            kwargs.update(concrete_type=kwargs["type"])
         super(FunctionNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
     

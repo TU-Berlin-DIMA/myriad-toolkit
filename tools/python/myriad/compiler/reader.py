@@ -199,6 +199,7 @@ class XMLReader(object):
             resolvedFunctionRefArgumentNode.setAttribute('key', unresolvedFunctionRefArgumentNode.getAttribute("key"))
             resolvedFunctionRefArgumentNode.setAttribute('ref', fqName)
             resolvedFunctionRefArgumentNode.setAttribute('type', functionNode.getAttribute("type"))
+            resolvedFunctionRefArgumentNode.setAttribute('concrete_type', functionNode.getAttribute("concrete_type"))
             resolvedFunctionRefArgumentNode.setFunctionRef(functionNode)
             parent.setArgument(resolvedFunctionRefArgumentNode)
     

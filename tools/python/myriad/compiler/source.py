@@ -155,7 +155,7 @@ class FunctionRefTransfomer(object):
         if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
             functionType = argumentNode.getAttribute("type")
             functionName = argumentNode.getAttribute("ref")
-            return '%sfunc<%s>("%s")' % (configPrefix, functionType, functionName)
+            return '%sfunc< %s >("%s")' % (configPrefix, functionType, functionName)
         else:
             raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
 
@@ -174,7 +174,7 @@ class FunctionRefTransfomer(object):
         if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
             functionType = argumentNode.getAttribute("type")
             functionName = argumentNode.getAttribute("ref")
-            return '%sfunc<%s>("%s")' % (configPrefix, functionType, functionName)
+            return '%sfunc< %s >("%s")' % (configPrefix, functionType, functionName)
         else:
             raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
 
@@ -232,9 +232,9 @@ class SourceCompiler(object):
                     return '%s' % (attributeValue)
         
         elif isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
-            functionType = argumentNode.getAttribute("type")
+            functionType = argumentNode.getAttribute("concrete_type")
             functionName = argumentNode.getAttribute("ref")
-            return '%sfunc<%s> ("%s")' % (configPrefix, functionType, functionName)
+            return '%sfunc< %s > ("%s")' % (configPrefix, functionType, functionName)
         
         elif isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
