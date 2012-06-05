@@ -16,14 +16,34 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
+#include "core/types.h"
 #include "core/exceptions.h"
 
 #include <typeinfo>
 
 namespace Myriad {
 
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// exception definitions
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
 POCO_IMPLEMENT_EXCEPTION(ConfigException, Poco::Exception, "Error in configuration")
 POCO_IMPLEMENT_EXCEPTION(FeatureConfigurationException, Poco::Exception, "Error while configuring feature")
 POCO_IMPLEMENT_EXCEPTION(IntegerOverflowException, Poco::LogicException, "Integer overflow")
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// type constants
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+
+const I16  NullValue::SHORT = std::numeric_limits<I16>::max();
+const I32  NullValue::INTEGER = std::numeric_limits<I32>::max();;
+const I64  NullValue::BIGINTEGER = std::numeric_limits<I64>::max();;
+const I16u NullValue::USHORT = std::numeric_limits<I16u>::max();;
+const I32u NullValue::UINTEGER = std::numeric_limits<I32u>::max();;
+const I64u NullValue::UBIGINTEGER = std::numeric_limits<I64u>::max();;
+const Decimal NullValue::DECIMAL = std::numeric_limits<Decimal>::max();;
+const Date NullValue::DATE = Date(DateTime(9999, 12, 31));
+const String NullValue::STRING = "NULL";
 
 } // namespace Myriad

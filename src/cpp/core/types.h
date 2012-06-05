@@ -48,6 +48,23 @@ typedef MyriadDate Date;
 typedef std::string String;
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// explicit null type constants
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+struct NullValue
+{
+	static const I16  SHORT;
+	static const I32  INTEGER;
+	static const I64  BIGINTEGER;
+	static const I16u USHORT;
+	static const I32u UINTEGER;
+	static const I64u UBIGINTEGER;
+	static const Decimal DECIMAL;
+	static const Date DATE;
+	static const String STRING;
+};
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // field method traits
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
@@ -61,14 +78,54 @@ template<class RecordType, class T> struct MethodTraits
 // null value template
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<typename T> inline T nullValue()
+template<typename T> inline const T& nullValue()
 {
-	return std::numeric_limits<T>::max();
+	throw std::exception("Unsupported null value for this type");
 }
 
-template<> inline Date nullValue<Date>()
+template<> inline const I16& nullValue<I16>()
 {
-	return Date(DateTime(9999, 12, 31));
+	return NullValue::SHORT;
+}
+
+template<> inline const I32& nullValue<I32>()
+{
+	return NullValue::INTEGER;
+}
+
+template<> inline const I64& nullValue<I64>()
+{
+	return NullValue::BIGINTEGER;
+}
+
+template<> inline const I16u& nullValue<I16u>()
+{
+	return NullValue::USHORT;
+}
+
+template<> inline const I32u& nullValue<I32u>()
+{
+	return NullValue::UINTEGER;
+}
+
+template<> inline const I64u& nullValue<I64u>()
+{
+	return NullValue::UBIGINTEGER;
+}
+
+template<> inline const Decimal& nullValue<Decimal>()
+{
+	return NullValue::DECIMAL;
+}
+
+template<> inline const Date& nullValue<Date>()
+{
+	return NullValue::DATE;
+}
+
+template<> inline const String& nullValue<String>()
+{
+	return NullValue::STRING;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -120,6 +177,41 @@ template<class T> inline T fromString(const std::string& s)
 	T t;
 	ss >> t;
 	return t;
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// serialization helpers
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<class T> inline void write(std::ostream& stream, const T& t, bool quoted = true)
+{
+	if (t != nullValue<T>())
+	{
+		stream << t;
+	}
+	else
+	{
+		stream << "NULL";
+	}
+}
+
+template<> inline void write<String>(std::ostream& stream, const String& t, bool quoted)
+{
+	if (t != nullValue<String>())
+	{
+		if (quoted)
+		{
+			stream << '"' << t << '"';
+		}
+		else
+		{
+			stream << t;
+		}
+	}
+	else
+	{
+		stream << "NULL";
+	}
 }
 
 } // namespace Myriad

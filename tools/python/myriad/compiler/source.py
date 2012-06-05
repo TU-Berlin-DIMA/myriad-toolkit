@@ -993,7 +993,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// template specialization of operator<<'
         print >> wfile, 'template<> inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
-        print >> wfile, '    out << '
+#        print >> wfile, '    out << '
         
         for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
             fieldType = field.getAttribute("type")
@@ -1006,14 +1006,19 @@ class RecordTypeCompiler(SourceCompiler):
 #                print >> wfile, '        {'
 #                print >> wfile, '            record.%-26s << " | " << ' % (StringTransformer.us2cc(fieldName) + "GetOne(i)")
 #                print >> wfile, '        }'
-            elif fieldType == "Date":
-                print >> wfile, '        %-40s << " | " << ' % ( "toString(record." + StringTransformer.us2cc(fieldName) + "())")
+#            elif fieldType == "Date":
+#                print >> wfile, '        %-40s << " | " << ' % ( "toString(record." + StringTransformer.us2cc(fieldName) + "())")
             elif fieldType == "Enum":
-                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
+                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
+                print >> wfile, '    out << \'|\';'
+#                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
             else:
-                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                print >> wfile, '    write(out, %s);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                print >> wfile, '    out << \'|\';'
+#                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "()")
 
-        print >> wfile, '        \'\\n\';'
+        print >> wfile, '    out << \'\\n\';'
+#        print >> wfile, '        \'\\n\';'
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
