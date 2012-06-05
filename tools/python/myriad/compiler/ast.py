@@ -250,7 +250,7 @@ class CombinedProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="CombinedPrFunction")
-        kwargs.update(concrete_type="CombinedPrFunction<%s>" % self.getAttribute("domainType", "I64u"))
+        kwargs.update(concrete_type="CombinedPrFunction<%s>" % kwargs.get("domainType", "I64u"))
         super(CombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getConstructorArgumentsOrder(self):
