@@ -480,6 +480,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 		}
 
 		getline(in, line);
+		std::cout << "LINE4a: " << line << std::endl;
 
 		size_t firsttab = line.find_first_of('\t');
 
@@ -508,9 +509,10 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 		size_t secondtab = line.find_last_of('\t');
 
 		Decimal probability = fromString<Decimal>(line.substr(0, firsttab));
-		T min = fromString<T>(line.substr(firsttab+1, secondtab));
+		T min = fromString<T>(line.substr(firsttab+1, secondtab-firsttab-1));
 		T max = fromString<T>(line.substr(secondtab+1));
 
+		std::cout << "LINE5: { " << probability << "\t" << line.substr(firsttab+1, secondtab-firsttab-1) << "\t" << line.substr(secondtab+1) << std::endl;
 		std::cout << "LINE5: [ " << probability << "\t" << toString<T>(min) << "\t" << toString<T>(max) << std::endl;
 
 		_buckets[i].set(min, max);

@@ -159,8 +159,7 @@ private:
 
 inline std::ostream& operator<<(std::ostream& stream, const MyriadDate& ob)
 {
-//	stream << Poco::DateTimeFormatter::format(ob._dateTime, "%Y-%m-%d");
-	stream << '`' << Poco::DateTimeFormatter::format(ob._dateTime, DateTimeFormat::ISO8601_FORMAT) << '`';
+	stream << Poco::DateTimeFormatter::format(ob._dateTime, "%Y-%m-%d");
 	return stream;
 }
 
