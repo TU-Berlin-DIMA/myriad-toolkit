@@ -37,8 +37,8 @@ public:
 	{
 	}
 
-	Interval(const Domain& x, const Domain& y) :
-		_min(x), _max(y)
+	Interval(const Domain& min, const Domain& max) :
+		_min(min), _max(max)
 	{
 	}
 
