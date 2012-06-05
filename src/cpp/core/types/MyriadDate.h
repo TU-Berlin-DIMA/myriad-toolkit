@@ -145,7 +145,7 @@ public:
 	}
 
 	friend std::ostream& operator<<(std::ostream& stream, const MyriadDate& ob);
-	friend std::istream &operator>>(istream& stream, MyriadDate& ob);
+	friend std::istream& operator>>(istream& stream, MyriadDate& ob);
 
 private:
 
@@ -163,10 +163,11 @@ inline std::ostream& operator<<(std::ostream& stream, const MyriadDate& ob)
 	return stream;
 }
 
-inline std::istream &operator>>(std::istream& stream, MyriadDate& ob)
+inline std::istream& operator>>(std::istream& stream, MyriadDate& ob)
 {
 	int tzd;
-	char line[10];
+	char line[11];
+	line[10] = '\0';
 	stream.read(line, 10);
 	DateTimeParser::parse(string(line), ob._dateTime, tzd);
 	return stream;

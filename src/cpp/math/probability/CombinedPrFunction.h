@@ -186,22 +186,6 @@ template<typename T> void CombinedPrFunction<T>::normalize()
 		_bucketProbability += probability;
 		_cumulativeProbabilites[i+_numberOfValues] = _valueProbability + _bucketProbability;
 	}
-
-	for (size_t i = 0; i < _numberOfValues + _numberOfBuckets; i++)
-	{
-		std::cout << "an: [" << i << "] = " << _cumulativeProbabilites[i] << " -> ";
-
-		if (i < _numberOfValues)
-		{
-			std::cout << _values[i] << std::endl;
-		}
-		else
-		{
-			std::cout << _buckets[_numberOfValues+i] << std::endl;
-		}
-	}
-
-	std::cout << "LINE6: Probabilities after normalization sum up to " << (_valueProbability + _bucketProbability - _notNullProbability) << std::endl;
 }
 
 template<typename T> inline size_t CombinedPrFunction<T>::numberOfBuckets() const
@@ -379,7 +363,6 @@ template<typename T> inline Decimal CombinedPrFunction<T>::operator()(const T x)
 
 template<typename T> inline T CombinedPrFunction<T>::sample(Decimal random) const
 {
-	std::cout << "sample from " << this->name() << " for random " << random << std::endl;
 	return invcdf(random);
 }
 
@@ -425,7 +408,6 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 	// read first line
 	getline(in, line);
-	std::cout << "LINE1: [ " << line << std::endl;
 	if (line.substr(0, 20) != "# numberofexactvals:")
 	{
 		throw DataException("Unexpected file header (line 1)");
@@ -439,7 +421,6 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 	// read second line
 	getline(in, line);
-	std::cout << "LINE2: [ " << line << std::endl;
 	if (line.substr(0, 15) != "# numberofbins:")
 	{
 		throw DataException("Unexpected file header (line 2)");
@@ -453,7 +434,6 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 	// read third line
 	getline(in, line);
-	std::cout << "LINE3: [ " << line << std::endl;
 	if (line.substr(0, 18) != "# nullprobability:")
 	{
 		throw DataException("Unexpected file header (line 3)");
@@ -480,15 +460,11 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 		}
 
 		getline(in, line);
-		std::cout << "LINE4a: " << line << std::endl;
 
 		size_t firsttab = line.find_first_of('\t');
 
 		Decimal probability = fromString<Decimal>(line.substr(0, firsttab));
 		T value = fromString<T>(line.substr(firsttab+1));
-
-		std::cout << "LINE4: { " << probability << "\t" << line.substr(firsttab+1) << std::endl;
-		std::cout << "LINE4: [ " << probability << "\t" << toString<T>(value) << std::endl;
 
 		_values[i] = value;
 		_valueProbabilities[i] = probability;
@@ -512,9 +488,6 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 		T min = fromString<T>(line.substr(firsttab+1, secondtab-firsttab-1));
 		T max = fromString<T>(line.substr(secondtab+1));
 
-		std::cout << "LINE5: { " << probability << "\t" << line.substr(firsttab+1, secondtab-firsttab-1) << "\t" << line.substr(secondtab+1) << std::endl;
-		std::cout << "LINE5: [ " << probability << "\t" << toString<T>(min) << "\t" << toString<T>(max) << std::endl;
-
 		_buckets[i].set(min, max);
 		_bucketProbabilities[i] = probability;
 		_bucketProbability += probability;
@@ -526,7 +499,6 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 	if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
 	{
-		std::cout << "LINE6: Probabilities don't sum up to one for " << this->name() << ", current value is " << (_valueProbability + _bucketProbability - _notNullProbability) << std::endl;
 		normalize();
 	}
 }
