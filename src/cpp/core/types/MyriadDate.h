@@ -144,8 +144,8 @@ public:
 		return *this;
 	}
 
-	friend ostream &operator<<(ostream& stream, const MyriadDate& ob);
-	friend istream &operator>>(istream& stream, MyriadDate& ob);
+	friend std::ostream& operator<<(std::ostream& stream, const MyriadDate& ob);
+	friend std::istream &operator>>(istream& stream, MyriadDate& ob);
 
 private:
 
@@ -157,13 +157,14 @@ private:
 	DateTime _dateTime;
 };
 
-inline ostream &operator<<(ostream& stream, const MyriadDate& ob)
+inline std::ostream& operator<<(std::ostream& stream, const MyriadDate& ob)
 {
-	stream << Poco::DateTimeFormatter::format(ob._dateTime, "%Y-%m-%d");
+//	stream << Poco::DateTimeFormatter::format(ob._dateTime, "%Y-%m-%d");
+	stream << '`' << Poco::DateTimeFormatter::format(ob._dateTime, DateTimeFormat::ISO8601_FORMAT) << '`';
 	return stream;
 }
 
-inline istream &operator>>(istream& stream, MyriadDate& ob)
+inline std::istream &operator>>(std::istream& stream, MyriadDate& ob)
 {
 	int tzd;
 	char line[10];
