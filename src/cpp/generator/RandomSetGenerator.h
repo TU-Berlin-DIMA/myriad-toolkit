@@ -460,7 +460,7 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 		if(++progressCounter >= 1000)
 		{
 			progressCounter = 0;
-			AbstractStageTask::_progress = (current - first) / static_cast<Decimal>(last - first);
+			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
 		}
 	}
 
@@ -579,7 +579,7 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 		if(++progressCounter >= 1000)
 		{
 			progressCounter = 0;
-			AbstractStageTask::_progress = (current - first) / static_cast<Decimal>(last - first);
+			StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
 		}
 	}
 
