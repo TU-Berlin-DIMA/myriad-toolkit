@@ -24,6 +24,7 @@
 #include <string>
 #include <Poco/NotificationCenter.h>
 #include <Poco/NotificationQueue.h>
+#include <Poco/Thread.h>
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Util/Application.h>
 #include <Poco/Util/Subsystem.h>

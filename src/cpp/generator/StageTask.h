@@ -19,6 +19,7 @@
 #ifndef STAGEEXECUTOR_H_
 #define STAGETASK_H_
 
+#include "core/types.h"
 #include "communication/Notifications.h"
 #include "io/OutputCollector.h"
 #include "record/Record.h"
