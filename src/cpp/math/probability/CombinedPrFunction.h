@@ -187,8 +187,6 @@ template<typename T> void CombinedPrFunction<T>::normalize()
 	}
 
 	_notNullProbability = _valueProbability + _bucketProbability;
-
-	std::cout << "Not NULL probability of " << this->name() << " after reset is " << _notNullProbability << std::endl;
 }
 
 template<typename T> inline size_t CombinedPrFunction<T>::numberOfBuckets() const
@@ -444,8 +442,6 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 	Decimal nullProbability = atof(line.substr(18).c_str());
 
 	_notNullProbability = 1.0 - nullProbability;
-
-	std::cout << "Not NULL probability of " << this->name() << " before reset is " << _notNullProbability << std::endl;
 
 	_numberOfValues = numberOfValues;
 	_values = new T[numberOfValues];
