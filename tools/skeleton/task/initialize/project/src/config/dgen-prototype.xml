@@ -67,6 +67,7 @@
         <hydrator_ref ref="first_name_hydrator" />
       </hydration_plan>
       -->
+      <!-- TODO: rename tags from 'generator_task' to 'iterator_type', no children needed  -->
       <generator_tasks>
         <generator_task key="user.generate" type="partitioned_iterator" />
       </generator_tasks>
