@@ -13,9 +13,9 @@ MYRIAD_ASSISTANT = ../vendor/myriad/bin/assistant
 # ./config/*.domain       -- attribute domain enumerations
 # ./config/*.distribution -- attribute domain distributions
 CONFIG_DIRS      = $(shell cd ../src && find config -type d | grep -v '\.svn')
-CONFIG_FILES     = $(shell cd ../src && ls config/*.properties)
-CONFIG_FILES    += $(shell cd ../src && ls config/*.distribution)
-CONFIG_FILES    += $(shell cd ../src && ls config/*.domain)
+CONFIG_FILES     = $(shell cd ../src && find config -type f -name "*.properties")
+CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.distribution")
+CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.domain")
 CONFIG_FILES    += $(shell cd ../vendor/myriad/src && ls config/*xsd)
 CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 
@@ -55,10 +55,10 @@ work-dirs:
 	mkdir -p lib/python
 	mkdir -p lib/query
 	for dir in ${CONFIG_DIRS}; do \
-		mkdir -p src/$$dir; \
+		mkdir -p $$dir; \
 	done
 	for dir in ${PYTHON_DIRS}; do \
-		mkdir -p $$dir $$dir; \
+		mkdir -p $$dir; \
 	done
 	@echo ' '
 	
