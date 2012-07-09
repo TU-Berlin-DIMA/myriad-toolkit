@@ -12,6 +12,7 @@ MYRIAD_ASSISTANT = ../vendor/myriad/bin/assistant
 # ./config/*.properties   -- properties config files
 # ./config/*.domain       -- attribute domain enumerations
 # ./config/*.distribution -- attribute domain distributions
+CONFIG_DIRS      = $(shell cd ../src && find config -type d | grep -v '\.svn')
 CONFIG_FILES     = $(shell cd ../src && ls config/*.properties)
 CONFIG_FILES    += $(shell cd ../src && ls config/*.distribution)
 CONFIG_FILES    += $(shell cd ../src && ls config/*.domain)
@@ -53,6 +54,9 @@ work-dirs:
 	mkdir -p lib/c++
 	mkdir -p lib/python
 	mkdir -p lib/query
+	for dir in ${CONFIG_DIRS}; do \
+		mkdir -p src/$$dir; \
+	done
 	for dir in ${PYTHON_DIRS}; do \
 		mkdir -p $$dir $$dir; \
 	done
