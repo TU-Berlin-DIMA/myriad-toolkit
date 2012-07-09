@@ -163,9 +163,8 @@ template<typename T> void CombinedPrFunction<T>::reset()
 
 template<typename T> void CombinedPrFunction<T>::normalize()
 {
-	Decimal normalizationFactor = 1.0 / static_cast<Decimal>(_valueProbability + _bucketProbability + _notNullProbability);
+	Decimal normalizationFactor = 1.0 / static_cast<Decimal>(_valueProbability + _bucketProbability + (1.0 - _notNullProbability));
 
-	_notNullProbability *= normalizationFactor;
 	_valueProbability = 0;
 	_bucketProbability = 0;
 
@@ -186,6 +185,8 @@ template<typename T> void CombinedPrFunction<T>::normalize()
 		_bucketProbability += probability;
 		_cumulativeProbabilites[i+_numberOfValues] = _valueProbability + _bucketProbability;
 	}
+
+	_notNullProbability = _valueProbability + _bucketProbability;
 }
 
 template<typename T> inline size_t CombinedPrFunction<T>::numberOfBuckets() const
