@@ -38,11 +38,14 @@
   <record_sequences>
     <!-- users -->
     <random_sequence key="mytype">
-      <!-- supported simple  types: I16, I16u, I32, I32u, I64, I64u, Double, String -->
-      <!-- supported complex types: vector[{simple_type}], Interval[{simple_type}] -->
+      <!-- supported core types: I16, I16u, I32, I32u, I64, I64u, Decimal, String, Date -->
+      <!-- supported enum types: Enum, with an additional enumref='{enum_set.key}' attribute -->
+      <!-- supported ref. types: all record_sequence keys defined in this XML document -->
       <!-- 
       <record_type>
-        <field name="parameter_name" type="I64u" />
+        <field name="coretype_parameter" type="I64u" />
+        <field name='enumtype_parameter' type='Enum' enumref='enumset.key' />
+        <reference name='ref_alias' type='othertype' />
       </record_type>
       -->
       <!-- supported cardinality estimator types: -->
