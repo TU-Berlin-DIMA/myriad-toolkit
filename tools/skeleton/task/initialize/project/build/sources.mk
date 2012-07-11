@@ -23,12 +23,12 @@ C_UPPER_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-vendor/myriad/src/cpp/math/random \
-vendor/myriad/src/cpp/math/probability \
-vendor/myriad/src/cpp/generator \
-vendor/myriad/src/cpp/core \
-vendor/myriad/src/cpp/config \
-vendor/myriad/src/cpp/communication \
+vendor/myriad-toolkit/src/cpp/math/random \
+vendor/myriad-toolkit/src/cpp/math/probability \
+vendor/myriad-toolkit/src/cpp/generator \
+vendor/myriad-toolkit/src/cpp/core \
+vendor/myriad-toolkit/src/cpp/config \
+vendor/myriad-toolkit/src/cpp/communication \
 src/cpp/io \
 src/cpp/generator/base \
 src/cpp/generator \

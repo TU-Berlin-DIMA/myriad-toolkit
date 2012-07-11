@@ -4,23 +4,20 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../vendor/myriad/src/cpp/core/Frontend.cpp \
-../vendor/myriad/src/cpp/core/exceptions.cpp 
+../vendor/myriad-toolkit/src/cpp/generator/AbstractGeneratorSubsystem.cpp 
 
 OBJS += \
-./vendor/myriad/src/cpp/core/Frontend.o \
-./vendor/myriad/src/cpp/core/exceptions.o 
+./vendor/myriad-toolkit/src/cpp/generator/AbstractGeneratorSubsystem.o 
 
 CPP_DEPS += \
-./vendor/myriad/src/cpp/core/Frontend.d \
-./vendor/myriad/src/cpp/core/exceptions.d 
+./vendor/myriad-toolkit/src/cpp/generator/AbstractGeneratorSubsystem.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-vendor/myriad/src/cpp/core/%.o: ../vendor/myriad/src/cpp/core/%.cpp
+vendor/myriad-toolkit/src/cpp/generator/%.o: ../vendor/myriad-toolkit/src/cpp/generator/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -I"$(POCO_INCLUDE_PATH)" -I"../src/cpp" -I"../vendor/myriad/src/cpp" -O2 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -I"$(POCO_INCLUDE_PATH)" -I"../src/cpp" -I"../vendor/myriad-toolkit/src/cpp" -O2 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

@@ -6,7 +6,7 @@
 include ../.myriad-settings
 
 # the path to the myriad assistant binary
-MYRIAD_ASSISTANT = ../vendor/myriad/bin/assistant
+MYRIAD_ASSISTANT = ../vendor/myriad-toolkit/bin/assistant
 
 # include the following files in the package
 # ./config/*.properties   -- properties config files
@@ -16,7 +16,7 @@ CONFIG_DIRS      = $(shell cd ../src && find config -type d | grep -v '\.svn')
 CONFIG_FILES     = $(shell cd ../src && find config -type f -name "*.properties")
 CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.distribution")
 CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.domain")
-CONFIG_FILES    += $(shell cd ../vendor/myriad/src && ls config/*xsd)
+CONFIG_FILES    += $(shell cd ../vendor/myriad-toolkit/src && ls config/*xsd)
 CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 
 # script files
@@ -24,8 +24,8 @@ SCRIPT_FILES     = bin/$(MYRIAD_DGEN_NAME)-frontend
 SCRIPT_FILES    += bin/$(MYRIAD_DGEN_NAME)-kill
 
 # python files & dirs
-PYTHON_DIRS      = $(shell cd ../vendor/myriad/src/python && find -mindepth 1 -type d | grep -v '\.svn' | sed 's/^.\//lib\/python\/vendor\//')
-PYTHON_FILES     = $(shell cd ../vendor/myriad/src/python && find -type f | grep -v '\.svn' | sed 's/^.\//lib\/python\/vendor\//')
+PYTHON_DIRS      = $(shell cd ../vendor/myriad-toolkit/src/python && find -mindepth 1 -type d | grep -v '\.svn' | sed 's/^.\//lib\/python\/vendor\//')
+PYTHON_FILES     = $(shell cd ../vendor/myriad-toolkit/src/python && find -type f | grep -v '\.svn' | sed 's/^.\//lib\/python\/vendor\//')
 
 # All Target
 all: work-dirs script-files config-files lib-misc lib-poco CHANGELOG LICENSE NOTICE bin/$(MYRIAD_DGEN_NAME)-node
@@ -77,15 +77,15 @@ lib-poco:
 	find $(POCO_LIBRARY_PATH) -name "libPoco*" -type l -exec cp -PRf {} ./lib/c++/. \;
 	@echo ' '
 
-bin/$(MYRIAD_DGEN_NAME)-%: ../vendor/myriad/src/script/myriad-%
+bin/$(MYRIAD_DGEN_NAME)-%: ../vendor/myriad-toolkit/src/script/myriad-%
 	@echo 'Processing: $@'
 	cp $< $@ && chmod 0755 $@
 
-config/$(MYRIAD_DGEN_NAME)-frontend.template.xml: ../vendor/myriad/src/config/myriad-frontend.template.xml
+config/$(MYRIAD_DGEN_NAME)-frontend.template.xml: ../vendor/myriad-toolkit/src/config/myriad-frontend.template.xml
 	@echo 'Processing $@'
 	cp $< $@
 
-config/%.xsd: ../vendor/myriad/src/config/%.xsd
+config/%.xsd: ../vendor/myriad-toolkit/src/config/%.xsd
 	@echo 'Processing $@'
 	cp $< $@
 	
@@ -97,7 +97,7 @@ lib/python/%.py: ../src/python/%.py
 	@echo 'Processing $@'
 	cp $< $@
 
-lib/python/vendor/%.py: ../vendor/myriad/src/python/%.py
+lib/python/vendor/%.py: ../vendor/myriad-toolkit/src/python/%.py
 	@echo 'Processing $@'
 	cp $< $@
 
