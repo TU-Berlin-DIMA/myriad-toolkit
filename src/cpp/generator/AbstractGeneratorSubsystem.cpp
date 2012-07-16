@@ -164,15 +164,15 @@ void AbstractGeneratorSubsystem::initialize(Application& app)
 
 		_ui.information(format("Starting generation for node %hu from %hu", _config.chunkID(), _config.numberOfChunks()));
 	}
-	catch(const Exception& exc)
+	catch(const Exception& e)
 	{
-		_logger.error(format("Exception caught in generator subsystem: %s", exc.displayText()));
-		exc.rethrow();
+		_logger.error(format("Exception caught in generator subsystem: %s", e.displayText()));
+		e.rethrow();
 	}
-	catch(const std::exception& exc)
+	catch(const std::exception& e)
 	{
-		_logger.error(format("Exception caught in generator subsystem: %s", string(exc.what())));
-		throw exc;
+		_logger.error(format("Exception caught in generator subsystem: %s", string(e.what())));
+		throw e;
 	}
 	catch(...)
 	{

@@ -36,8 +36,6 @@ namespace Myriad {
 
 void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 {
-	_logger.information("Loading generator configuration");
-
 	// add the application config as a read-only layer
 	this->addWriteable(&appConfig, 0, true);
 
@@ -80,6 +78,8 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 	Logger::root().setChannel(logChannel);
 	_logger.setChannel(logChannel);
 
+    _logger.information("Loading generator configuration");
+
 	configurePartitioning();
 	configureFunctions();
 	configureSets();
@@ -95,6 +95,11 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 {
 	// compute the output path
 	path.makeAbsolute(getString("application.config-dir"));
+
+	if (_logger.debug())
+	{
+	    _logger.debug(format("Loading enum set from file `%s`", path.toString()));
+	}
 
 	if (!path.isFile())
 	{
@@ -124,7 +129,7 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 		// read first line
 		getline(in, line);
 
-		if (line.substr(0, 17) != "# numberofvalues:")
+		if (!in.good() || line.substr(0, 17) != "# numberofvalues:")
 		{
 			throw DataException("Unexpected file header");
 		}
@@ -141,16 +146,47 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 			}
 
 			getline(in, line);
-			set[i] = line.substr(line.find_first_of('\t')+1);
+
+			string::size_type t = line.find_first_of('\t');
+			string::size_type c = line.find_first_of('#');
+			string value;
+
+			if (t == string::npos)
+			{
+                throw DataException("Bad line for bin #" + toString(i) + ", expected format '{i}\t{value}[# {comment}]");
+			}
+
+			if (c != string::npos)
+			{
+			    value = line.substr(t+1, c-t-1);
+			    trim(value);
+			}
+			else
+			{
+			    value = line.substr(t+1);
+			    trim(value);
+			}
+
+            set[i] = value;
 		}
 
 		in.close();
 	}
+    catch(Exception& e)
+    {
+        in.close();
+        throw e;
+    }
 	catch(exception& e)
 	{
 		in.close();
 		throw e;
 	}
+    catch(...)
+    {
+        in.close();
+        throw;
+    }
 }
 
 void AbstractGeneratorConfig::setProbability(const ID x, const Element* probability)

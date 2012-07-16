@@ -24,7 +24,11 @@
 #include <Poco/Types.h>
 
 #include <stdint.h>
+#include <algorithm>
+#include <cctype>
+#include <functional>
 #include <limits>
+#include <locale>
 #include <sstream>
 #include <string>
 
@@ -53,15 +57,15 @@ typedef std::string String;
 
 struct NullValue
 {
-	static const I16  SHORT;
-	static const I32  INTEGER;
-	static const I64  BIGINTEGER;
-	static const I16u USHORT;
-	static const I32u UINTEGER;
-	static const I64u UBIGINTEGER;
-	static const Decimal DECIMAL;
-	static const Date DATE;
-	static const String STRING;
+    static const I16  SHORT;
+    static const I32  INTEGER;
+    static const I64  BIGINTEGER;
+    static const I16u USHORT;
+    static const I32u UINTEGER;
+    static const I64u UBIGINTEGER;
+    static const Decimal DECIMAL;
+    static const Date DATE;
+    static const String STRING;
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -70,8 +74,8 @@ struct NullValue
 
 template<class RecordType, class T> struct MethodTraits
 {
-	typedef const T& (RecordType::*Getter)();
-	typedef void (RecordType::*Setter)(const T&);
+    typedef const T& (RecordType::*Getter)();
+    typedef void (RecordType::*Setter)(const T&);
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -80,52 +84,52 @@ template<class RecordType, class T> struct MethodTraits
 
 template<typename T> inline const T& nullValue()
 {
-	throw std::exception("Unsupported null value for this type");
+    throw std::exception("Unsupported null value for this type");
 }
 
 template<> inline const I16& nullValue<I16>()
 {
-	return NullValue::SHORT;
+    return NullValue::SHORT;
 }
 
 template<> inline const I32& nullValue<I32>()
 {
-	return NullValue::INTEGER;
+    return NullValue::INTEGER;
 }
 
 template<> inline const I64& nullValue<I64>()
 {
-	return NullValue::BIGINTEGER;
+    return NullValue::BIGINTEGER;
 }
 
 template<> inline const I16u& nullValue<I16u>()
 {
-	return NullValue::USHORT;
+    return NullValue::USHORT;
 }
 
 template<> inline const I32u& nullValue<I32u>()
 {
-	return NullValue::UINTEGER;
+    return NullValue::UINTEGER;
 }
 
 template<> inline const I64u& nullValue<I64u>()
 {
-	return NullValue::UBIGINTEGER;
+    return NullValue::UBIGINTEGER;
 }
 
 template<> inline const Decimal& nullValue<Decimal>()
 {
-	return NullValue::DECIMAL;
+    return NullValue::DECIMAL;
 }
 
 template<> inline const Date& nullValue<Date>()
 {
-	return NullValue::DATE;
+    return NullValue::DATE;
 }
 
 template<> inline const String& nullValue<String>()
 {
-	return NullValue::STRING;
+    return NullValue::STRING;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -135,29 +139,29 @@ template<> inline const String& nullValue<String>()
 template<typename T> class numericLimits
 {
 public:
-	static T min()
-	{
-		return std::numeric_limits<T>::min();
-	}
+    static T min()
+    {
+        return std::numeric_limits<T>::min();
+    }
 
-	static T max()
-	{
-		return std::numeric_limits<T>::max();
-	}
+    static T max()
+    {
+        return std::numeric_limits<T>::max();
+    }
 };
 
 template<> class numericLimits<Date>
 {
 public:
-	static Date min()
-	{
-		return Date(DateTime(1, 1, 1));
-	}
+    static Date min()
+    {
+        return Date(DateTime(1, 1, 1));
+    }
 
-	static Date max()
-	{
-		return Date(DateTime(9999, 12, 31));
-	}
+    static Date max()
+    {
+        return Date(DateTime(9999, 12, 31));
+    }
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -166,17 +170,17 @@ public:
 
 template<class T> inline std::string toString(const T& t)
 {
-	std::stringstream ss;
-	ss << t;
-	return ss.str();
+    std::stringstream ss;
+    ss << t;
+    return ss.str();
 }
 
 template<class T> inline T fromString(const std::string& s)
 {
-	std::stringstream ss(s);
-	T t;
-	ss >> t;
-	return t;
+    std::stringstream ss(s);
+    T t;
+    ss >> t;
+    return t;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -185,34 +189,59 @@ template<class T> inline T fromString(const std::string& s)
 
 template<class T> inline void write(std::ostream& stream, const T& t, bool quoted = true)
 {
-	if (t != nullValue<T>())
-	{
-		stream << t;
-	}
-	else
-	{
-		stream << "NULL";
-	}
+    if (t != nullValue<T>())
+    {
+        stream << t;
+    }
+    else
+    {
+        stream << "NULL";
+    }
 }
 
 template<> inline void write<String>(std::ostream& stream, const String& t, bool quoted)
 {
-	if (t != nullValue<String>())
-	{
-		if (quoted)
-		{
-			stream << '"' << t << '"';
-		}
-		else
-		{
-			stream << t;
-		}
-	}
-	else
-	{
-		stream << "NULL";
-	}
+    if (t != nullValue<String>())
+    {
+        if (quoted)
+        {
+            stream << '"' << t << '"';
+        }
+        else
+        {
+            stream << t;
+        }
+    }
+    else
+    {
+        stream << "NULL";
+    }
 }
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// string trim helpers
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+// trim from start
+static inline std::string& ltrim(std::string& s)
+{
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+}
+
+// trim from end
+static inline std::string& rtrim(std::string& s)
+{
+    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+}
+
+// trim from both ends
+static inline std::string& trim(std::string& s)
+{
+    return ltrim(rtrim(s));
+}
+
 
 } // namespace Myriad
 
