@@ -389,11 +389,21 @@ template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
 
 		in.close();
 	}
-	catch(exception& e)
-	{
-		in.close();
-		throw e;
-	}
+    catch(Exception& e)
+    {
+        in.close();
+        throw e;
+    }
+    catch(exception& e)
+    {
+        in.close();
+        throw e;
+    }
+    catch(...)
+    {
+        in.close();
+        throw;
+    }
 }
 
 /**
@@ -409,7 +419,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 	// read first line
 	getline(in, line);
-	if (line.substr(0, 20) != "# numberofexactvals:")
+	if (!in.good() || line.substr(0, 20) != "# numberofexactvals:")
 	{
 		throw DataException("Unexpected file header (line 1)");
 	}
@@ -422,7 +432,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 	// read second line
 	getline(in, line);
-	if (line.substr(0, 15) != "# numberofbins:")
+	if (!in.good() || line.substr(0, 15) != "# numberofbins:")
 	{
 		throw DataException("Unexpected file header (line 2)");
 	}
@@ -435,7 +445,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 	// read third line
 	getline(in, line);
-	if (line.substr(0, 18) != "# nullprobability:")
+	if (!in.good() || line.substr(0, 18) != "# nullprobability:")
 	{
 		throw DataException("Unexpected file header (line 3)");
 	}
@@ -462,10 +472,16 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 		getline(in, line);
 
-		size_t firsttab = line.find_first_of('\t');
+		size_t tab1 = line.find_first_of('\t');
+        size_t lend = line.find_last_of('#');
 
-		Decimal probability = fromString<Decimal>(line.substr(0, firsttab));
-		T value = fromString<T>(line.substr(firsttab+1));
+        if (lend == string::npos)
+        {
+            lend = line.length();
+        }
+
+		Decimal probability = fromString<Decimal>(line.substr(0, tab1));
+		T value = fromString<T>(line.substr(tab1+1, lend-tab1-1));
 
 		_values[i] = value;
 		_valueProbabilities[i] = probability;
@@ -482,12 +498,18 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 
 		getline(in, line);
 
-		size_t firsttab = line.find_first_of('\t');
-		size_t secondtab = line.find_last_of('\t');
+		size_t tab1 = line.find_first_of('\t');
+		size_t tab2 = line.find_last_of('\t');
+        size_t lend = line.find_last_of('#');
 
-		Decimal probability = fromString<Decimal>(line.substr(0, firsttab));
-		T min = fromString<T>(line.substr(firsttab+1, secondtab-firsttab-1));
-		T max = fromString<T>(line.substr(secondtab+1));
+        if (lend == string::npos)
+        {
+            lend = line.length();
+        }
+
+		Decimal probability = fromString<Decimal>(line.substr(0, tab1));
+		T min = fromString<T>(line.substr(tab1+1, tab2-tab1-1));
+		T max = fromString<T>(line.substr(tab2+1, lend-tab2-1));
 
 		_buckets[i].set(min, max);
 		_bucketProbabilities[i] = probability;
