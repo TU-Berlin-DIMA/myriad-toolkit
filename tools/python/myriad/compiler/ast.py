@@ -255,6 +255,20 @@ class CombinedProbabilityFunctionNode(FunctionNode):
         
     def getConstructorArgumentsOrder(self):
         return ["path"]
+    
+
+class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="ConditionalCombinedPrFunction")
+        kwargs.update(concrete_type="ConditionalCombinedPrFunction<%s, %s>" % (kwargs.get("domainType1", "I64u"), kwargs.get("domainType2", "I64u")))
+        super(ConditionalCombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["path"]
 
 
 class QHistogramProbabilityFunctionNode(FunctionNode):
@@ -955,7 +969,7 @@ class SimpleClusteredHydrator(HydratorNode):
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         
         return "SimpleClusteredHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
         
@@ -982,7 +996,7 @@ class ConditionalRandomizedHydrator(HydratorNode):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         conditionFieldType = self.getArgument("condition_field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         
         return "ConditionalRandomizedHydrator< %s, %s, %s, %s >" % (recordType, fieldType, conditionFieldType, probabilityType)
         

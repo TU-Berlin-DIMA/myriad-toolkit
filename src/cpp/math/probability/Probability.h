@@ -26,6 +26,7 @@
 #include "math/probability/ParetoPrFunction.h"
 #include "math/probability/DiscreteProbability.h"
 #include "math/probability/CombinedPrFunction.h"
+#include "math/probability/ConditionalCombinedPrFunction.h"
 #include "math/probability/ConditionalQHistogramPrFunction.h"
 #include "math/probability/CustomDiscreteProbability.h"
 #include "math/probability/UniformPrFunction.h"

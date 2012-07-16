@@ -451,6 +451,11 @@ class XMLReader(object):
         functionMatch = re.match(r"combined_probability\[(.*)\]", functionType)
         if (functionMatch != None):
             return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType=functionMatch.group(1))
+        
+        functionMatch = re.match(r"conditional_combined_probability\[(.*),(.*)\]", functionType)
+        if (functionMatch != None):
+            return ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType1=functionMatch.group(1), domainType2=functionMatch.group(2))
+        
         if (functionType == "q_histogram_probability"):
             return QHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "conditional_q_histogram_probability"):
