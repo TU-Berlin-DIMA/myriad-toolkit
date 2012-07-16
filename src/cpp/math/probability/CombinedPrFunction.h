@@ -90,7 +90,7 @@ public:
 
 	size_t numberOfBuckets() const;
 
-	T min()const;
+	T min() const;
 
 	T max() const;
 
@@ -134,6 +134,10 @@ private:
 
 	Decimal* _cumulativeProbabilites;
 };
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// private member function templates
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename T> void CombinedPrFunction<T>::reset()
 {
@@ -187,21 +191,6 @@ template<typename T> void CombinedPrFunction<T>::normalize()
 	}
 
 	_notNullProbability = _valueProbability + _bucketProbability;
-}
-
-template<typename T> inline size_t CombinedPrFunction<T>::numberOfBuckets() const
-{
-	return _numberOfBuckets;
-}
-
-template<typename T> inline T CombinedPrFunction<T>::min()const
-{
-	return _min;
-}
-
-template<typename T> inline T CombinedPrFunction<T>::max() const
-{
-	return _max;
 }
 
 template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decimal y) const
@@ -407,7 +396,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
 }
 
 /**
- * Load a Q-histogram from the given input stream. For each entry add a
+ * Load the distribution data from the given input stream. For each entry add a
  * [min, max) interval of domain values to a lookup table.
  */
 template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
@@ -524,6 +513,21 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 	{
 		normalize();
 	}
+}
+
+template<typename T> inline size_t CombinedPrFunction<T>::numberOfBuckets() const
+{
+    return _numberOfBuckets;
+}
+
+template<typename T> inline T CombinedPrFunction<T>::min()const
+{
+    return _min;
+}
+
+template<typename T> inline T CombinedPrFunction<T>::max() const
+{
+    return _max;
 }
 
 template<typename T> Decimal CombinedPrFunction<T>::pdf(T x) const
