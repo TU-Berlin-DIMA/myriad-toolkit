@@ -213,7 +213,7 @@ class AbstractTask(object):
             self._log.info("Task execution finished successfully.")
                 
         except (Exception), e:
-            e = TaskExecutionException("A error occurred during task execution: %s" % (e))
+            e = TaskExecutionException("An error occurred during task execution: %s" % (e))
             self._log.error(e)
             raise e
         
