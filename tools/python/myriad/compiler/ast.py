@@ -1048,6 +1048,46 @@ class ReferencedRecordHydrator(HydratorNode):
         return ['reference', 'pivot_field', 'probability']
 
 
+class ReferenceHydrator(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ReferenceHydrator")
+        super(ReferenceHydrator, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
+        
+        return "ReferenceHydrator< %s, %s, %s >" % (recordType, refRecordType, fieldType)
+        
+    def hasPRNGArgument(self):
+        return True
+    
+    def hasNewArgsSupport(self):
+        return True
+        
+    def getXMLArguments(self):
+        return { 'field'      : { 'type': 'field_ref' }, 
+                 'pivot_field': { 'type': 'field_ref' }, 
+                 'pivot_value': { 'type': 'field_ref' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'RandomStreamRef()',
+                 'FieldSetter(field)',
+                 'FieldSetter(pivot_field)',
+                 'RandomSetInspector(pivot_field)',
+                 'FieldGetter(pivot_value)' 
+               ]
+        
+    def getConstructorArgumentsOrder(self):
+        return ['reference', 'pivot_field', 'pivot_value']
+
+
 class GeneratorTasksNode(AbstractNode):
     '''
     classdocs

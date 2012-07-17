@@ -484,6 +484,8 @@ class XMLReader(object):
             return SimpleClusteredHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "conditional_randomized_hydrator":
             return ConditionalRandomizedHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "reference_hydrator":
+            return ReferenceHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "referenced_record_hydrator":
             return ReferencedRecordHydrator(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         

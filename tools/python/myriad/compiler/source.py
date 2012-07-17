@@ -193,7 +193,7 @@ class SourceCompiler(object):
     
     _log = None
     
-    _expr_pattern = re.compile('%([\w.\-]+)%')
+    _expr_pattern = re.compile('%(\([\w.\-]+\))?([\w.\-]+)%')    
     _param_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, args):
@@ -219,11 +219,11 @@ class SourceCompiler(object):
             
             m = self._expr_pattern.match(attributeValue)
             if (m):
-                return '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(1))
+                return '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(2))
             
             m = self._param_pattern.match(attributeValue)
             if (m):
-                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(1)), attributeValue)
+                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType if m.group(1) == None else m.group(1)[1:-1], m.group(2)), attributeValue)
                 return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1])
             else:
                 if attributeType == "String":
@@ -578,7 +578,7 @@ class ConfigCompiler(SourceCompiler):
             
             if cardinalityEstimatorType == 'linear_scale_estimator':
                 print >> wfile, '        // setup linear scale estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
-                print >> wfile, '        setString("partitioning.%s.base-cardinality", %s);' % (cardinalityEstimator.getParent().getAttribute("key"), self._argumentCode(cardinalityEstimator.getArgument("base_cardinality"), None))
+                print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), self._argumentCode(cardinalityEstimator.getArgument("base_cardinality"), None))
                 print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
         
         print >> wfile, '    }'

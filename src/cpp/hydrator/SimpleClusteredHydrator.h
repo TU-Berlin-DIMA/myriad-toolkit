@@ -33,7 +33,8 @@ public:
 		InvertibleHydrator<RecordType, T>(valueSetter),
 		_valueSetter(valueSetter),
 		_probability(probability),
-		_sequenceCardinality(sequenceCardinality)
+		_sequenceCardinality(sequenceCardinality),
+		_sequenceCardinalityDecimal(sequenceCardinality)
 	{
 	}
 
@@ -41,7 +42,7 @@ public:
 	{
 		if (RecordHydrator<RecordType>::_enabled)
 		{
-			(recordPtr->*_valueSetter)(static_cast<T>(_probability.sample(recordPtr->genID()/_sequenceCardinality)));
+			(recordPtr->*_valueSetter)(static_cast<T>(_probability.sample((recordPtr->genID() % _sequenceCardinality)/_sequenceCardinalityDecimal)));
 		}
 	}
 
@@ -50,16 +51,15 @@ public:
 		Decimal cdf = _probability.cdf(x);
 		Decimal pdf = _probability.pdf(x);
 
-		return Interval<I64u>(cdf * _sequenceCardinality, (cdf + pdf) * _sequenceCardinality);
+		return Interval<I64u>(cdf * _sequenceCardinalityDecimal, (cdf + pdf) * _sequenceCardinalityDecimal);
 	}
 
 private:
 
 	ValueSetter _valueSetter;
-
 	const P& _probability;
-
-	const Decimal _sequenceCardinality;
+	const I64u _sequenceCardinality;
+	const Decimal _sequenceCardinalityDecimal;
 };
 
 } // namespace Myriad
