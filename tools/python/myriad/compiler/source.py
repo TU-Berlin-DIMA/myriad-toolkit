@@ -1011,14 +1011,11 @@ class RecordTypeCompiler(SourceCompiler):
             elif fieldType == "Enum":
                 print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
                 print >> wfile, '    out << \'|\';'
-#                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
             else:
-                print >> wfile, '    write(out, %s);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
                 print >> wfile, '    out << \'|\';'
-#                print >> wfile, '        %-40s << " | " << ' % ("record." + StringTransformer.us2cc(fieldName) + "()")
 
         print >> wfile, '    out << \'\\n\';'
-#        print >> wfile, '        \'\\n\';'
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
