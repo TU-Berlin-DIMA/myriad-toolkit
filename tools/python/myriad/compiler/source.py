@@ -41,7 +41,7 @@ from myriad.util.stringutil import StringTransformer
 class ArgumentTransformerFactory(object):
     
     _log = logging.getLogger("source.transformer.factory")
-    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_]*)\)$')
+    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_\*]*)\)$')
     
     def createTransformer(transformerDescriptor):
         m = ArgumentTransformerFactory._descriptor_pattern.match(transformerDescriptor)
@@ -60,6 +60,9 @@ class ArgumentTransformerFactory(object):
                 transformer = RandomSetInspectorTransfomer()
             elif (transformerType == "FunctionRef"):
                 transformer = FunctionRefTransfomer()
+            elif (transformerType == "EnvVariable"):
+                transformer = EnvVariableTransfomer(varName=argKey)
+                argKey = None
             else:
                 message = "Unknown argument transformer type `%s`" % (transformerType)
                 ArgumentTransformerFactory._log.error(message)
@@ -87,7 +90,7 @@ class FieldTransfomer(object):
 class RandomStreamRefTransfomer(object):
 
     def __init__(self, *args, **kwargs):
-        super(RandomStreamRefTransfomer, self).__init__(*args, **kwargs)
+        super(RandomStreamRefTransfomer, self).__init__()
     
     def transform(self, argumentNode = None, configVarName = "config"):
         return "random"
@@ -95,7 +98,7 @@ class RandomStreamRefTransfomer(object):
 
 class FieldSetterTransfomer(object):
     def __init__(self, *args, **kwargs):
-        super(FieldSetterTransfomer, self).__init__(*args, **kwargs)
+        super(FieldSetterTransfomer, self).__init__()
     
     def transform(self, argumentNode = None, configVarName = "config"):
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
@@ -113,7 +116,7 @@ class FieldSetterTransfomer(object):
 class FieldGetterTransfomer(object):
 
     def __init__(self, *args, **kwargs):
-        super(FieldGetterTransfomer, self).__init__(*args, **kwargs)
+        super(FieldGetterTransfomer, self).__init__()
     
     def transform(self, argumentNode = None, configVarName = "config"):
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
@@ -126,7 +129,7 @@ class FieldGetterTransfomer(object):
 
 class RandomSetInspectorTransfomer(object):
     def __init__(self, *args, **kwargs):
-        super(RandomSetInspectorTransfomer, self).__init__(*args, **kwargs)
+        super(RandomSetInspectorTransfomer, self).__init__()
     
     def transform(self, argumentNode = None, configVarName = "config"):
         if configVarName is not None:
@@ -144,7 +147,7 @@ class RandomSetInspectorTransfomer(object):
 class FunctionRefTransfomer(object):
 
     def __init__(self, *args, **kwargs):
-        super(FunctionRefTransfomer, self).__init__(*args, **kwargs)
+        super(FunctionRefTransfomer, self).__init__()
     
     def transform(self, argumentNode = None, configVarName = "config"):
         if configVarName is not None:
@@ -163,7 +166,7 @@ class FunctionRefTransfomer(object):
 class FunctionRefTransfomer(object):
 
     def __init__(self, *args, **kwargs):
-        super(FunctionRefTransfomer, self).__init__(*args, **kwargs)
+        super(FunctionRefTransfomer, self).__init__()
     
     def transform(self, argumentNode = None, configVarName = "config"):
         if configVarName is not None:
@@ -177,6 +180,18 @@ class FunctionRefTransfomer(object):
             return '%sfunc< %s >("%s")' % (configPrefix, functionType, functionName)
         else:
             raise RuntimeError("Unsupported argument of type `%s`" % (type(argumentNode)))
+
+
+class EnvVariableTransfomer(object):
+    
+    __varName = None
+
+    def __init__(self, *args, **kwargs):
+        super(EnvVariableTransfomer, self).__init__()
+        self.__varName = kwargs.get("varName")
+    
+    def transform(self, argumentNode = None, configVarName = "config"):
+        return self.__varName
 
 
 class SourceCompiler(object):
@@ -1172,9 +1187,23 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '        // call generator implementation'
         print >> wfile, '        RandomSetGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
         print >> wfile, ''
+        
+        sequenceIterator = recordSequence.getSequenceIterator()
+        argsCode = []
+        
+        for transformerDescriptor in sequenceIterator.getConstructorArguments():
+            (argTransformer, argKey) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
+            
+            if argKey is None:
+                argument = None
+            else:
+                argument = hydrator.getArgument(argKey)
+            
+            argsCode.append(argTransformer.transform(argument, "_config"))
+            
         print >> wfile, '        if (stage.name() == "default")'
         print >> wfile, '        {'
-        print >> wfile, '            registerTask(new RandomSetDefaultGeneratingTask<%s> (*this, _config));' % (typeNameCC)
+        print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(argsCode))
         print >> wfile, '        }'
         print >> wfile, '    }'
         print >> wfile, '};'

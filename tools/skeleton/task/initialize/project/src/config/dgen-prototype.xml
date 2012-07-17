@@ -43,17 +43,11 @@
       <!-- supported ref. types: all record_sequence keys defined in this XML document -->
       <!-- 
       <record_type>
-        <field name="coretype_parameter" type="I64u" />
-        <field name='enumtype_parameter' type='Enum' enumref='enumset.key' />
-        <reference name='ref_alias' type='othertype' />
+        <field name="id" type="I64u" />
+        <field name='some_enum_parameter' type='Enum' enumref='enumset.key' />
+        <reference name='reference_alias' type='othertype_key' />
       </record_type>
       -->
-      <!-- supported cardinality estimator types: -->
-      <!--  * linear_scale_estimator(I64u: base_cardinality) -->
-      <!-- 
-      <cardinality_estimator type="linear_scale_estimator">
-        <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
-      </cardinality_estimator>
       -->
       <!-- supported hydrator types: -->
       <!--  * randomized_sequence_hydrator<RT>(RT#Setter: field, I64u: cardinality, I64u: begin, I64u: end) -->
@@ -70,10 +64,16 @@
         <hydrator_ref ref="first_name_hydrator" />
       </hydration_plan>
       -->
-      <!-- TODO: rename tags from 'generator_task' to 'iterator_type', no children needed  -->
-      <generator_tasks>
-        <generator_task key="user.generate" type="partitioned_iterator" />
-      </generator_tasks>
+      <!-- supported cardinality estimator types: -->
+      <!--  * linear_scale_estimator(I64u: base_cardinality) -->
+      <!-- 
+      <cardinality_estimator type="linear_scale_estimator">
+        <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
+      </cardinality_estimator>
+      <!-- supported sequence_iterator types: -->
+      <!--  * partitioned_iterator() -->
+      <!-- 
+      <sequence_iterator type="partitioned_iterator" />
     </random_sequence>
   </record_sequences>
 </generator_prototype>

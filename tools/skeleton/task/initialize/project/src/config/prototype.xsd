@@ -204,11 +204,11 @@
   </xs:complexType>
   <xs:complexType name="random_sequence">
     <xs:sequence>
-      <xs:element name="record_type" type="myriad:record_type" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="cardinality_estimator" type="myriad:cardinality_estimator" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="hydrators" type="myriad:hydrators" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="hydration_plan" type="myriad:hydration_plan" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="generator_tasks" type="myriad:generator_tasks" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="record_type" type="myriad:record_type" minOccurs="1" maxOccurs="1" />
+      <xs:element name="hydrators" type="myriad:hydrators" minOccurs="0" maxOccurs="1" />
+      <xs:element name="hydration_plan" type="myriad:hydration_plan" minOccurs="0" maxOccurs="1" />
+      <xs:element name="cardinality_estimator" type="myriad:cardinality_estimator" minOccurs="1" maxOccurs="1" />
+      <xs:element name="sequence_iterator" type="myriad:sequence_iterator" minOccurs="1" maxOccurs="1" />
     </xs:sequence>
     <xs:attribute name="key" type="xs:NCName" use="required" />
   </xs:complexType>
@@ -226,10 +226,6 @@
       <xs:element name="hydrator" type="myriad:hydrator" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
-  <xs:complexType name="cardinality_estimator">
-    <xs:group ref="myriad:arguments" />
-    <xs:attribute name="type" type="xs:string" />
-  </xs:complexType>
   <xs:complexType name="hydrator">
     <xs:group ref="myriad:arguments" />
     <xs:attribute name="key" type="xs:NCName" use="required" />
@@ -243,14 +239,12 @@
   <xs:complexType name="hydrator_ref">
     <xs:attribute name="ref" type="xs:NCName" />
   </xs:complexType>
-  <xs:complexType name="generator_tasks">
-    <xs:sequence>
-      <xs:element name="generator_task" type="myriad:generator_task" minOccurs="0" maxOccurs="unbounded" />
-    </xs:sequence>
-  </xs:complexType>
-  <xs:complexType name="generator_task">
+  <xs:complexType name="cardinality_estimator">
     <xs:group ref="myriad:arguments" />
-    <xs:attribute name="key" type="xs:NCName" use="required" />
+    <xs:attribute name="type" type="xs:string" />
+  </xs:complexType>
+  <xs:complexType name="sequence_iterator">
+    <xs:group ref="myriad:arguments" />
     <xs:attribute name="type" type="xs:NCName" use="required" />
   </xs:complexType>
 </xs:schema>

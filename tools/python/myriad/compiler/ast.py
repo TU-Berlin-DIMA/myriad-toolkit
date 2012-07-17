@@ -430,7 +430,7 @@ class RandomSequenceNode(RecordSequenceNode):
     __cardinalityEstimator = None
     __hydrators = None
     __hydrationPlan = None
-    __generatorTasks = None
+    __sequenceIterator = None
     
     def __init__(self, *args, **kwargs):
         super(RandomSequenceNode, self).__init__(*args, **kwargs)
@@ -438,18 +438,11 @@ class RandomSequenceNode(RecordSequenceNode):
     def accept(self, visitor):
         visitor.preVisit(self)
         self._recordType.accept(visitor)
-        self.__cardinalityEstimator.accept(visitor)
         self.__hydrators.accept(visitor)
         self.__hydrationPlan.accept(visitor)
-        self.__generatorTasks.accept(visitor)
+        self.__cardinalityEstimator.accept(visitor)
+        self.__sequenceIterator.accept(visitor)
         visitor.postVisit(self)
-        
-    def setCardinalityEstimator(self, node):
-        self.__cardinalityEstimator = node
-        node.setParent(self)
-        
-    def getCardinalityEstimator(self):
-        return self.__cardinalityEstimator
         
     def setHydrators(self, node):
         self.__hydrators = node
@@ -463,11 +456,19 @@ class RandomSequenceNode(RecordSequenceNode):
     def getHydrationPlan(self):
         return self.__hydrationPlan
         
-    def setGeneratorTasks(self, node):
-        self.__generatorTasks = node
+    def setCardinalityEstimator(self, node):
+        self.__cardinalityEstimator = node
+        node.setParent(self)
         
-    def getGeneratorTasks(self):
-        return self.__generatorTasks
+    def getCardinalityEstimator(self):
+        return self.__cardinalityEstimator
+        
+    def setSequenceIterator(self, node):
+        self.__sequenceIterator = node
+        node.setParent(self)
+        
+    def getSequenceIterator(self):
+        return self.__sequenceIterator
         
 
 class RecordTypeNode(AbstractNode):
@@ -643,55 +644,6 @@ class ResolvedRecordReferenceNode(RecordReferenceNode):
 
     def getRecordTypeRef(self):
         return self.__recordTypeRef
-
-
-class CardinalityEstimatorNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    __parent = None
-    __arguments = {}
-    
-    def __init__(self, *args, **kwargs):
-        super(CardinalityEstimatorNode, self).__init__(*args, **kwargs)
-        self.__parent = None
-        self.__arguments = {}
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        for node in self.__arguments.itervalues():
-            node.accept(visitor)
-        visitor.postVisit(self)
-        
-    def setArgument(self, node):
-        self.__arguments[node.getAttribute('key')] = node
-        node.setParent(self)
-    
-    def getArgument(self, key):
-        return self.__arguments.get(key)
-
-    def setParent(self, parent):
-        self.__parent = parent
-
-    def getParent(self):
-        return self.__parent
-        
-    def getConstructorArgumentsOrder(self):
-        return []
-
-
-class LinearScaleEstimatorNode(CardinalityEstimatorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(type="linear_scale_estimator")
-        super(LinearScaleEstimatorNode, self).__init__(*args, **kwargs)
-        
-    def getConstructorArgumentsOrder(self):
-        return ["base_cardinality"]
 
 
 class HydratorsNode(RecordSequenceNode):
@@ -1088,37 +1040,145 @@ class ReferenceHydrator(HydratorNode):
         return ['reference', 'pivot_field', 'pivot_value']
 
 
-class GeneratorTasksNode(AbstractNode):
+#
+# Cardinality Estimators
+# 
+
+class CardinalityEstimatorNode(AbstractNode):
     '''
     classdocs
     '''
     
-    __tasks = {}
+    __parent = None
+    __arguments = {}
     
     def __init__(self, *args, **kwargs):
-        super(GeneratorTasksNode, self).__init__(*args, **kwargs)
-        self.__tasks = {}
+        super(CardinalityEstimatorNode, self).__init__(*args, **kwargs)
+        self.__parent = None
+        self.__arguments = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        for node in self.__tasks.itervalues():
+        for node in self.__arguments.itervalues():
             node.accept(visitor)
         visitor.postVisit(self)
         
-    def setTask(self, node):
-        self.__tasks[node.getAttribute('key')] = node
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
     
-    def getTask(self, key):
-        return self.__tasks.get(key)
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
+        
+    def getConstructorArgumentsOrder(self):
+        return []
 
 
-class GeneratorTaskNode(AbstractNode):
+class LinearScaleEstimatorNode(CardinalityEstimatorNode):
     '''
     classdocs
     '''
     
     def __init__(self, *args, **kwargs):
-        super(GeneratorTaskNode, self).__init__(*args, **kwargs)
+        kwargs.update(type="linear_scale_estimator")
+        super(LinearScaleEstimatorNode, self).__init__(*args, **kwargs)
+        
+    def getConstructorArgumentsOrder(self):
+        return ["base_cardinality"]
+
+
+#
+# Sequence Iterators
+# 
+ 
+class SequenceIteratorNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __arguments = {}
+    __parent = None
+    
+    def __init__(self, *args, **kwargs):
+        super(SequenceIteratorNode, self).__init__(*args, **kwargs)
+        self.__arguments = {}
+        self.__parent = None
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__arguments.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
+    
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+    
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
+        
+    def getConcreteType(self):
+        return "SequenceIterator"
+        
+    def getXMLArguments(self):
+        return {}
+        
+    def getConstructorArguments(self):
+        return [ 'EnvVariable(*this)',
+                 'EnvVariable(_config)' 
+               ]
+
+
+class PartitionedSequenceIteratorNode(SequenceIteratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="RandomSetDefaultGeneratingTask")
+        super(PartitionedSequenceIteratorNode, self).__init__(*args, **kwargs)
+        
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
+
+        return "RandomSetDefaultGeneratingTask< %s >" % (recordType)
+
+
+#class NestedSequenceIteratorNode(SequenceIteratorNode):
+#    '''
+#    classdocs
+#    '''
+#    
+#    def __init__(self, *args, **kwargs):
+#        kwargs.update(template_type="PartitionedSequenceIterator")
+#        super(NestedSequenceIteratorNode, self).__init__(*args, **kwargs)
+#        
+#    def getConcreteType(self):
+#        recordType = StringTransformer.us2ccAll(self.getArgument("parent_field").getRecordTypeRef().getAttribute("key"))
+#        refRecordType = StringTransformer.us2ccAll(self.getArgument("parent_field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
+#        
+#        return "NestedSequenceIterator< %s, %s >" % (recordType, refRecordType)
+#        
+#    def getXMLArguments(self):
+#        return { 'parent_field' : { 'type': 'field_ref' }, 
+#                 'children_count_field' : { 'type': 'field_ref' }
+#               }
+#        
+#    def getConstructorArguments(self):
+#        return [ 'EnvVariable(_config)'
+#               ]
 
 #
 # Arguments

@@ -304,17 +304,16 @@ class XMLReader(object):
         
         # read record type (mandatory)
         self.__readRecordType(recordSequenceNode, xPathContext.xpathEval("./m:record_type").pop())
-        # read cardinality estimator (mandatory)
-        self.__readCardinalityEstimator(recordSequenceNode, xPathContext.xpathEval("./m:cardinality_estimator").pop())
         # read hydrators (optional)
         hydratorsXMLNode = xPathContext.xpathEval("./m:hydrators")
         self.__readHydrators(recordSequenceNode, hydratorsXMLNode.pop() if len(hydratorsXMLNode) > 0 else None)
         # read hydration plan (optional)
         hydrationPlanXMLNode = xPathContext.xpathEval("./m:hydration_plan")
         self.__readHydrationPlan(recordSequenceNode, hydrationPlanXMLNode.pop() if len(hydrationPlanXMLNode) > 0 else None)
-        # read generator tasks (optional)
-        generatorTasksXMLNode = xPathContext.xpathEval("./m:generator_tasks")
-        self.__readGeneratorTasks(recordSequenceNode, generatorTasksXMLNode.pop() if len(generatorTasksXMLNode) > 0 else None)
+        # read cardinality estimator (mandatory)
+        self.__readCardinalityEstimator(recordSequenceNode, xPathContext.xpathEval("./m:cardinality_estimator").pop())
+        # read generator tasks (mandatory)
+        self.__readSequenceIterator(recordSequenceNode, xPathContext.xpathEval("./m:generator_task").pop())
         
         astContext.getRecordSequences().setRecordSequence(recordSequenceNode)
         
@@ -412,26 +411,34 @@ class XMLReader(object):
                 
             hydrationPlanNode.addHydrator(astContext.getHydrators().getHydrator(hydratorRef.prop("ref")))
         
-    def __readGeneratorTasks(self, astContext, xmlContext):
+    def __readSequenceIterator(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
         xPathContext = self.__createXPathContext(xmlContext)
         
-        generatorTasksNode = GeneratorTasksNode()
+        sequenceIteratorNode = self.__sequenceIteratorFactory(xmlContext)
         
-        for element in xPathContext.xpathEval("./m:generator_task"):
-            generatorTasksNode.setTask(GeneratorTaskNode(key=element.prop("key"), type=element.prop("type")))
-        
-        astContext.setGeneratorTasks(generatorTasksNode)
+        for child in xPathContext.xpathEval("./m:argument"):
+            sequenceIteratorNode.setArgument(self.__argumentFactory(child))
+
+        astContext.setSequenceIterator(sequenceIteratorNode)
         
     def __cardinalityEstimatorFactory(self, cardinalityEstimatorXMLNode):
         cardinalityEstimatorType = cardinalityEstimatorXMLNode.prop("type")
-        
-        cardinalityEstimatorNode = None
         
         if (cardinalityEstimatorType == "linear_scale_estimator"):
             return LinearScaleEstimatorNode()
 
         raise RuntimeError('Invalid cardinality estimator type `%s`' % (cardinalityEstimatorType))
+        
+    def __sequenceIteratorFactory(self, sequenceIteratorXMLNode):
+        sequenceIteratorType = sequenceIteratorXMLNode.prop("type")
+        
+        if (sequenceIteratorType == "partitioned_iterator"):
+            return PartitionedSequenceIteratorNode()
+#        if (sequenceIteratorType == "nested_iterator"):
+#            return NestedSequenceIteratorNode()
+
+        raise RuntimeError('Invalid generator task type `%s`' % (sequenceIteratorType))
         
     def __functionFactory(self, functionXMLNode):
         functionType = functionXMLNode.prop("type")
