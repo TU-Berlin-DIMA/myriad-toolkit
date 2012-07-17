@@ -507,7 +507,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 	}
 
 	_min = std::min(_buckets[0].min(), _values[0]);
-	_max = std::max(_buckets[_numberOfBuckets-1].max(), _values[_numberOfBuckets-1]+1);
+	_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
 
 	if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
 	{
