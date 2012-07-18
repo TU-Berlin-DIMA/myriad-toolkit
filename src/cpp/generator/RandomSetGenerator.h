@@ -19,6 +19,7 @@
 #ifndef RANDOMSETGENERATOR_H_
 #define RANDOMSETGENERATOR_H_
 
+#include "generator/InvalidRecordException.h"
 #include "generator/RecordGenerator.h"
 #include "hydrator/HydratorChain.h"
 #include "reflection/getter/FieldGetter.h"
@@ -112,6 +113,17 @@ public:
 	}
 
 	/**
+	 * Returns the cardinality of the record sequence produced by this
+	 * generator.
+	 *
+	 * @return the sequence cardinality for this generator
+	 */
+    const I64u cardinality() const
+    {
+        return _config.cardinality(name());
+    }
+
+	/**
 	 * Creates a new inspector.
 	 */
 	RandomSetInspector<RecordType> inspector()
@@ -165,6 +177,11 @@ public:
 	}
 
 	const AutoPtr<RecordType> at(const I64u genID) const;
+
+	const I64u cardinality() const
+	{
+	    return _generator.cardinality();
+	}
 
 	/**
 	 * Invertible hydrator getter.
@@ -445,7 +462,23 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 		AutoPtr<RecordType> recordPtr = _recordFactory();
 		recordPtr->genID(current);
 
-		hydrate(recordPtr);
+		try
+		{
+		    hydrate(recordPtr);
+		}
+		catch(InvalidRecordException& e)
+		{
+		    current = e.nextValidGenID();
+		    _random.atChunk(current);
+
+	        if(progressCounter + e.invalidRangeCount() >= 1000)
+	        {
+	            progressCounter = 0;
+	            StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);
+	        }
+
+		    continue;
+		}
 
 		_generator.newRecord.notify(&_generator, recordPtr);
 

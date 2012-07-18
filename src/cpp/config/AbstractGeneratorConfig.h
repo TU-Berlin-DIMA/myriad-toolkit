@@ -90,17 +90,17 @@ public:
 		return _enumSets;
 	}
 
-	ID cardinality(string name)
+	ID cardinality(const string name)
 	{
 		return fromString<I64u>(getString("generator." + name + ".sequence.cardinality"));
 	}
 
-	ID genIDBegin(string name)
+	ID genIDBegin(const string name)
 	{
 		return fromString<I64u>(getString("generator." + name + ".partition.begin"));
 	}
 
-	ID genIDEnd(string name)
+	ID genIDEnd(const string name)
 	{
 		return fromString<I64u>(getString("generator." + name + ".partition.end"));
 	}

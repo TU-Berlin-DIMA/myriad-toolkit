@@ -133,7 +133,7 @@ public:
 	/**
 	 * The name of the Generator.
 	 */
-	const string& name()
+	const string& name() const
 	{
 		return _name;
 	}
