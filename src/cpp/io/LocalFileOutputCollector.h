@@ -91,6 +91,14 @@ public:
 		}
 	}
 
+    void flush()
+    {
+        if (_isOpen)
+        {
+            _out.flush();
+        }
+    }
+
 	void writeHeader()
 	{
 	}

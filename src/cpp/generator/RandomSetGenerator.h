@@ -497,7 +497,10 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 		}
 	}
 
-	StageTask<RecordType>::_progress = 1.0;
+	// flush the output collector contents
+	out.flush();
+
+    StageTask<RecordType>::_progress = 1.0;
 
 	if (logger.debug())
 	{
