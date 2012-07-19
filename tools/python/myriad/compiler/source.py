@@ -41,34 +41,35 @@ from myriad.util.stringutil import StringTransformer
 class ArgumentTransformerFactory(object):
     
     _log = logging.getLogger("source.transformer.factory")
-    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_\*]*)\)$')
+    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_\*]*)\)(\*)?$')
     
     def createTransformer(transformerDescriptor):
         m = ArgumentTransformerFactory._descriptor_pattern.match(transformerDescriptor)
         if (m):
             transformerType = m.group(1)
-            transformer = None
+            argTransformer = None
             argKey = m.group(2)
+            argOptional = m.group(3) is not None 
             
             if (transformerType == "Literal"):
-                transformer = LiteralTransfomer()
+                argTransformer = LiteralTransfomer()
             elif (transformerType == "FieldSetter"):
-                transformer = FieldSetterTransfomer()
+                argTransformer = FieldSetterTransfomer()
             elif (transformerType == "FieldGetter"):
-                transformer = FieldGetterTransfomer()
+                argTransformer = FieldGetterTransfomer()
             elif (transformerType == "RandomSetInspector"):
-                transformer = RandomSetInspectorTransfomer()
+                argTransformer = RandomSetInspectorTransfomer()
             elif (transformerType == "FunctionRef"):
-                transformer = FunctionRefTransfomer()
+                argTransformer = FunctionRefTransfomer()
             elif (transformerType == "EnvVariable"):
-                transformer = EnvVariableTransfomer(varName=argKey)
+                argTransformer = EnvVariableTransfomer(varName=argKey)
                 argKey = None
             else:
                 message = "Unknown argument transformer type `%s`" % (transformerType)
                 ArgumentTransformerFactory._log.error(message)
                 raise RuntimeError(message)
             
-            return (transformer, argKey)
+            return (argTransformer, argKey, argOptional)
         else:
             message = "Bad argument transformer descriptor `%s`" % (transformerDescriptor)
             ArgumentTransformerFactory._log.error(message)
@@ -83,7 +84,7 @@ class FieldTransfomer(object):
     def __init__(self, *args, **kwargs):
         pass
     
-    def transform(self, argumentNode = None, configVarName = "config"):
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
         raise RuntimeError("Called abstract method FieldTransfomer.transform()")
 
 
@@ -95,7 +96,10 @@ class LiteralTransfomer(object):
     def __init__(self, *args, **kwargs):
         super(LiteralTransfomer, self).__init__()
     
-    def transform(self, argumentNode = None, configVarName = "config"):
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+        
         if configVarName is not None:
             configPrefix = configVarName + "."
         else:
@@ -126,7 +130,10 @@ class FieldSetterTransfomer(object):
     def __init__(self, *args, **kwargs):
         super(FieldSetterTransfomer, self).__init__()
     
-    def transform(self, argumentNode = None, configVarName = "config"):
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+        
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
             fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
@@ -144,7 +151,10 @@ class FieldGetterTransfomer(object):
     def __init__(self, *args, **kwargs):
         super(FieldGetterTransfomer, self).__init__()
     
-    def transform(self, argumentNode = None, configVarName = "config"):
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+        
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
             fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
@@ -157,7 +167,10 @@ class RandomSetInspectorTransfomer(object):
     def __init__(self, *args, **kwargs):
         super(RandomSetInspectorTransfomer, self).__init__()
     
-    def transform(self, argumentNode = None, configVarName = "config"):
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+        
         if configVarName is not None:
             configPrefix = configVarName + "."
         else:
@@ -175,7 +188,10 @@ class FunctionRefTransfomer(object):
     def __init__(self, *args, **kwargs):
         super(FunctionRefTransfomer, self).__init__()
     
-    def transform(self, argumentNode = None, configVarName = "config"):
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+        
         if configVarName is not None:
             configPrefix = configVarName + "."
         else:
@@ -197,7 +213,7 @@ class EnvVariableTransfomer(object):
         super(EnvVariableTransfomer, self).__init__()
         self.__varName = kwargs.get("varName")
     
-    def transform(self, argumentNode = None, configVarName = "config"):
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
         return self.__varName
 
 
@@ -1199,14 +1215,16 @@ class RecordGeneratorCompiler(SourceCompiler):
         argsCode = []
         
         for transformerDescriptor in sequenceIterator.getConstructorArguments():
-            (argTransformer, argKey) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
+            (argTransformer, argKey, argOptional) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
             
             if argKey is None:
                 argument = None
             else:
                 argument = hydrator.getArgument(argKey)
             
-            argsCode.append(argTransformer.transform(argument, "_config"))
+            argsCode.append(argTransformer.transform(argument, "_config", argOptional))
+        
+        argsCode = filter(None, argsCode)
             
         print >> wfile, '        if (stage.name() == "default")'
         print >> wfile, '        {'
@@ -1240,14 +1258,16 @@ class RecordGeneratorCompiler(SourceCompiler):
             
             if hydrator.hasNewArgsSupport():
                 for transformerDescriptor in hydrator.getConstructorArguments():
-                    (argTransformer, argKey) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
+                    (argTransformer, argKey, argOptional) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
                     
                     if argKey is None:
                         argument = None
                     else:
                         argument = hydrator.getArgument(argKey)
                     
-                    argsCode.append(argTransformer.transform(argument, "config"))
+                    argsCode.append(argTransformer.transform(argument, "config", argOptional))
+                
+                argsCode = filter(None, argsCode)
             else:
                 if hydrator.hasPRNGArgument():
                     argsCode.append('random')

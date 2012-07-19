@@ -1024,12 +1024,14 @@ class ClusteredReferenceHydratorNode(HydratorNode):
         
     def getXMLArguments(self):
         return { 'field'              : { 'type': 'field_ref' }, 
+                 'position_field'     : { 'type': 'position_field', 'optional': True }, 
                  'count_field'        : { 'type': 'field_ref' }, 
                  'nested_cardinality' : { 'type': 'literal' } 
                }
         
     def getConstructorArguments(self):
         return [ 'FieldSetter(field)',
+                 'FieldSetter(position_field)*',
                  'FieldGetter(count_field)',
                  'RandomSetInspector(count_field)',
                  'Literal(nested_cardinality)' 

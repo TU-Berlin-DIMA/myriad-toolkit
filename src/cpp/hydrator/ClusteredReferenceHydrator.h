@@ -30,10 +30,24 @@ template<class RecordType, class RefRecordType> class ClusteredReferenceHydrator
 public:
 
 	typedef void (RecordType::*RefRecordSetter)(const AutoPtr<RefRecordType>&);
+    typedef void (RecordType::*PositionSetter)(const I32u&);
     typedef const I32u& (RefRecordType::*NestedCountGetter)() const;
 
 	ClusteredReferenceHydrator(RefRecordSetter parentSetter, NestedCountGetter countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
 		_parentSetter(parentSetter),
+		_positionSetter(NULL),
+		_countGetter(countGetter),
+		_parentSet(parentSet),
+		_referenceSetCardinality(parentSet.cardinality()),
+        _nestedSetCardinality(nestedSetCardinality),
+        _maxNestedPerParent(_nestedSetCardinality/_referenceSetCardinality),
+        _parent(NULL)
+	{
+	}
+
+	ClusteredReferenceHydrator(RefRecordSetter parentSetter, PositionSetter positionSetter, NestedCountGetter countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
+		_parentSetter(parentSetter),
+		_positionSetter(positionSetter),
 		_countGetter(countGetter),
 		_parentSet(parentSet),
 		_referenceSetCardinality(parentSet.cardinality()),
@@ -60,6 +74,11 @@ public:
 		    if (nestedRecordGenID % _maxNestedPerParent < nestedCount)
 		    {
 		        (recordPtr->*_parentSetter)(_parent);
+
+		        if (_positionSetter != NULL)
+				{
+		        	(recordPtr->*_positionSetter)(static_cast<I32u>(nestedRecordGenID-(parentRecordGenID*_maxNestedPerParent)));
+				}
 		    }
 		    else
 		    {
@@ -71,6 +90,8 @@ public:
 private:
 
 	RefRecordSetter _parentSetter;
+
+	PositionSetter _positionSetter;
 
 	NestedCountGetter _countGetter;
 
