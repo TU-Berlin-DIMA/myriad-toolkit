@@ -90,6 +90,10 @@ config/$(MYRIAD_DGEN_NAME)-frontend.template.xml: ../vendor/myriad-toolkit/src/c
 	@echo 'Processing $@'
 	cp $< $@
 
+config/$(MYRIAD_DGEN_NAME)-frontend.xml: ../src/config/$(MYRIAD_DGEN_NAME)-frontend.xml
+	@echo 'Processing $@'
+	cp $< $@
+
 config/%.xsd: ../vendor/myriad-toolkit/src/config/%.xsd
 	@echo 'Processing $@'
 	cp $< $@
