@@ -176,7 +176,7 @@ If you want to use the Python parallel deployment frontend, you have to setup yo
 Cloud Environments Configuration
 --------------------------------
 
-The `<cloud-enviroments>` section consists of a list of <cloud-env> elements, each one representing a single distributed computation environment. Each <cloud-env> defines of a list of *slave hosts* and a single *master host*. This is very similar to the contens of the `masters` and `slaves` files in Hadoop.
+The `<cloud-enviroments>` section consists of a list of `<cloud-env>` elements, each one representing a single distributed computation environment. Each `<cloud-env>` defines of a list of *slave hosts* and a single *master host*. This is very similar to the contens of the `masters` and `slaves` files in Hadoop.
 
 For instance, consider a scenario where you have a 10 node cluster but only want to use the first five nodes for the data generation process. This will translate into the following `<cloud-env>` entry:
 
