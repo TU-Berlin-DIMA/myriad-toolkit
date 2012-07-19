@@ -1,10 +1,11 @@
 Getting Started
-===================================
+===============
 
 This document contains a brief description of the project layout and instructions for building and running the *${{dgen_name}}* data generator. Users that are not familiar with the build and setup specifics of Myriad based data generators should read the following text carefully before they start using the downloaded software.
 
 In the following discussion, we refer to the set of core components comprising the Myriad toolkit as *toolkit* and to the set of toolkit extensions 
 comprising the *${{dgen_name}}* data generator as *${{dgen_name}} extensions* or *generator extensions*.
+
 
 Folder Structure
 ================
@@ -25,12 +26,30 @@ The basic layout of all Myriad-based data generators looks like that:
           python/     toolkit Python sources
           script/     script files (e.g. Python parallel frontend)
 
-Please note that if you are cloning the data generator project from a Git repository, the Myriad toolkit package is most likely configured as a submodule pointing to the `vendor/myriad` folder and you have to explicitly initialize the submodule repository to and fetch the contents under `vendor/myriad`. To do this, execute the following commands:
+
+Initializing Git Submodules
+===========================
+
+If you are cloning the data generator project from a Git repository, the Myriad toolkit package is most likely configured as a submodule pointing to the `vendor/myriad-toolkit` folder and you have to explicitly initialize the submodule repository to and fetch the contents under `vendor/myriad-toolkit`. To do this, execute the following commands:
 
     <project-root>$ git submodule init
     <project-root>$ git submodule update
 
-After that you should be able to see the toolkit contents under `vendor/myriad`.
+After that you should be able to see the toolkit contents under `vendor/myriad-toolkit`. 
+
+By default, git submodules are checked out in a so called *detached HEAD* mode, meaning that the `original_branch` of the `origin` repository is cloned in a separate tree that does not track the `origin`. This means that the output of the `git branch` command will look somewhat like that:
+
+    <project-root>/vendor/myriad-toolkit$ git branch
+    * (no branch)
+      original_branch
+
+
+Note that in order to push submodule changesets upstream, you first have to explicitly switch the branch in that submodule. For instance, if you want to work directly on the `v0.2.x` branch in the `vendor/myriad-toolkit` submodule, go to the `vendor/myriad-toolkit` folder and issue the following commands:
+
+    <project-root>/vendor/myriad-toolkit$ git checkout v0.2.x
+    <project-root>/vendor/myriad-toolkit$ git branch
+    * v0.2.x
+      original_branch
 
 
 Prerequisites
