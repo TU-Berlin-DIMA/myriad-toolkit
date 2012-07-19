@@ -313,7 +313,7 @@ class XMLReader(object):
         # read cardinality estimator (mandatory)
         self.__readCardinalityEstimator(recordSequenceNode, xPathContext.xpathEval("./m:cardinality_estimator").pop())
         # read generator tasks (mandatory)
-        self.__readSequenceIterator(recordSequenceNode, xPathContext.xpathEval("./m:generator_task").pop())
+        self.__readSequenceIterator(recordSequenceNode, xPathContext.xpathEval("./m:sequence_iterator").pop())
         
         astContext.getRecordSequences().setRecordSequence(recordSequenceNode)
         
