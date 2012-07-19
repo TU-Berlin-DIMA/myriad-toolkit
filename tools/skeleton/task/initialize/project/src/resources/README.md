@@ -43,13 +43,16 @@ By default, git submodules are checked out in a so called *detached HEAD* mode. 
     * (no branch)
       main_branch
 
-
 Note that in order to push submodule changesets upstream, you first have to explicitly switch the branch in that submodule. For instance, if you want to work directly on the `v0.2.x` branch in the `vendor/myriad-toolkit` submodule, go to the `vendor/myriad-toolkit` folder and issue the following commands:
 
     <project-root>/vendor/myriad-toolkit$ git checkout v0.2.x
     <project-root>/vendor/myriad-toolkit$ git branch
     * v0.2.x
       main_branch
+      
+If you don't envision making changes to the submodule you can leave the detached HEAD as it is. In this case, to propagete updates in the submodules to your local repository you need to issue the following command:
+
+    <project-root>$ git submodule sync
 
 
 Prerequisites
