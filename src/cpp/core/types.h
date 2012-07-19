@@ -21,6 +21,7 @@
 
 #include "types/MyriadDate.h"
 
+#include <Poco/Exception.h>
 #include <Poco/Types.h>
 
 #include <stdint.h>
@@ -84,7 +85,7 @@ template<class RecordType, class T> struct MethodTraits
 
 template<typename T> inline const T& nullValue()
 {
-    throw std::exception("Unsupported null value for this type");
+    throw Poco::RuntimeException("Unsupported null value for this type");
 }
 
 template<> inline const I16& nullValue<I16>()

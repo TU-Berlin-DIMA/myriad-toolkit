@@ -226,6 +226,7 @@ void AbstractGeneratorConfig::computeLinearScalePartitioning(const string& key)
 	I64u genIDBegin = static_cast<ID> ((chunkSize * chunkID()) + 0.5);
 	I64u genIDEnd = static_cast<ID> ((chunkSize * (chunkID() + 1) + 0.5));
 
+	setString("generator." + key + ".sequence.base_cardinality", getString("partitioning." + key + ".base-cardinality"));
 	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
 	setString("generator." + key + ".partition.begin", toString(genIDBegin));
 	setString("generator." + key + ".partition.end", toString(genIDEnd));

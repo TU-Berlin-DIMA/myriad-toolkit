@@ -376,19 +376,23 @@ class RecordSequencesNode(AbstractNode):
     '''
     
     __sequences = {}
+    __sequenceList = []
     
     def __init__(self, *args, **kwargs):
         super(RecordSequencesNode, self).__init__(*args, **kwargs)
         self.__sequences = {}
+        self.__sequenceList = []
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        for node in self.__sequences.itervalues():
+        for node in self.__sequenceList:
             node.accept(visitor)
         visitor.postVisit(self)
         
     def setRecordSequence(self, node):
-        self.__sequences[node.getAttribute('key')] = node
+        if not self.hasRecordSequence(node.getAttribute('key')):
+            self.__sequenceList.append(node)
+            self.__sequences[node.getAttribute('key')] = node
     
     def getRecordSequence(self, key):
         return self.__sequences.get(key)
@@ -397,7 +401,7 @@ class RecordSequencesNode(AbstractNode):
         return self.__sequences.has_key(key)
     
     def getRecordSequences(self):
-        return self.__sequences.itervalues()
+        return self.__sequenceList
 
 
 class RecordSequenceNode(AbstractNode):
