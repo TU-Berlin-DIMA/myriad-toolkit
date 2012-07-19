@@ -17,14 +17,17 @@ The basic layout of all Myriad-based data generators looks like that:
     src/              generator extension sources
       config/         extension specific config files
       cpp/            extension specific C++ sources
+      resources/      install package resources
     
     vendor/           third party libraries
-      myriad/         Myriad toolkit
+      myriad-toolkit/ Myriad toolkit
+        bin/          contains the Myriad CLI tools (e.g. assistant)
         src/          Myriad toolkit sources
           config/     common config-related files
           cpp/        toolkit C++ sources
           python/     toolkit Python sources
           script/     script files (e.g. Python parallel frontend)
+        tools/        sources for the CLI tools
 
 
 Initializing Git Submodules
