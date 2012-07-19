@@ -37,11 +37,11 @@ If you are cloning the data generator project from a Git repository, the Myriad 
 
 After that you should be able to see the toolkit contents under `vendor/myriad-toolkit`. 
 
-By default, git submodules are checked out in a so called *detached HEAD* mode, meaning that the `original_branch` of the `origin` repository is cloned in a separate tree that does not track the `origin`. This means that the output of the `git branch` command will look somewhat like that:
+By default, git submodules are checked out in a so called *detached HEAD* mode. This means that the changeset to which the submodule points is cloned in a detached tree that does not track back the `origin` repository. The output of the `git branch` right after the initial `git submodule update` therefore should look somewhat like that:
 
     <project-root>/vendor/myriad-toolkit$ git branch
     * (no branch)
-      original_branch
+      main_branch
 
 
 Note that in order to push submodule changesets upstream, you first have to explicitly switch the branch in that submodule. For instance, if you want to work directly on the `v0.2.x` branch in the `vendor/myriad-toolkit` submodule, go to the `vendor/myriad-toolkit` folder and issue the following commands:
@@ -49,7 +49,7 @@ Note that in order to push submodule changesets upstream, you first have to expl
     <project-root>/vendor/myriad-toolkit$ git checkout v0.2.x
     <project-root>/vendor/myriad-toolkit$ git branch
     * v0.2.x
-      original_branch
+      main_branch
 
 
 Prerequisites
@@ -108,8 +108,9 @@ For a full list of all supported options type:
 
 Upon configuration, go to the `build` folder and issue the following commands:
 
-<project-root>/build> make -s all
-<project-root>/build> make -s install
+    <project-root>/build> make -s prototype
+    <project-root>/build> make -s all
+    <project-root>/build> make -s install
 
 This should build and install the data generator under `<install-path>/${{dgen_name}}`. For the remainder of this document, we will use `<${{dgen_name}}-install>` as an alias for `<install-path>/${{dgen_name}}`.
 
