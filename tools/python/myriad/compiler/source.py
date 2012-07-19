@@ -38,13 +38,13 @@ from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.util.stringutil import StringTransformer
 
-class ArgumentTransformerFactory(object):
+class ArgumentTransformer(object):
     
     _log = logging.getLogger("source.transformer.factory")
     _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_\*]*)\)(\*)?$')
     
     def createTransformer(transformerDescriptor):
-        m = ArgumentTransformerFactory._descriptor_pattern.match(transformerDescriptor)
+        m = ArgumentTransformer._descriptor_pattern.match(transformerDescriptor)
         if (m):
             transformerType = m.group(1)
             argTransformer = None
@@ -66,17 +66,33 @@ class ArgumentTransformerFactory(object):
                 argKey = None
             else:
                 message = "Unknown argument transformer type `%s`" % (transformerType)
-                ArgumentTransformerFactory._log.error(message)
+                ArgumentTransformer._log.error(message)
                 raise RuntimeError(message)
             
             return (argTransformer, argKey, argOptional)
         else:
             message = "Bad argument transformer descriptor `%s`" % (transformerDescriptor)
-            ArgumentTransformerFactory._log.error(message)
+            ArgumentTransformer._log.error(message)
             raise RuntimeError(message)
+        
+    def compileConstructorArguments(self, argsContainerNode, env = {}):
+        argsCode = []
+        
+        for transformerDescriptor in argsContainerNode.getConstructorArguments():
+            (argTransformer, argKey, argOptional) = ArgumentTransformer.createTransformer(transformerDescriptor)
+            
+            if argKey is None:
+                argument = None
+            else:
+                argument = argsContainerNode.getArgument(argKey)
+            
+            argsCode.append(argTransformer.transform(argument, env.get("config", "config"), argOptional))
+        
+        return filter(None, argsCode)
         
     # static methods
     createTransformer = staticmethod(createTransformer)
+    compileConstructorArguments = staticmethod(compileConstructorArguments)
 
 
 class FieldTransfomer(object):
@@ -1212,23 +1228,11 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         
         sequenceIterator = recordSequence.getSequenceIterator()
-        argsCode = []
-        
-        for transformerDescriptor in sequenceIterator.getConstructorArguments():
-            (argTransformer, argKey, argOptional) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
-            
-            if argKey is None:
-                argument = None
-            else:
-                argument = hydrator.getArgument(argKey)
-            
-            argsCode.append(argTransformer.transform(argument, "_config", argOptional))
-        
-        argsCode = filter(None, argsCode)
+        sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
             
         print >> wfile, '        if (stage.name() == "default")'
         print >> wfile, '        {'
-        print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(argsCode))
+        print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(sequenceIteratorArgsCode))
         print >> wfile, '        }'
         print >> wfile, '    }'
         print >> wfile, '};'
@@ -1257,17 +1261,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             argsCode = []
             
             if hydrator.hasNewArgsSupport():
-                for transformerDescriptor in hydrator.getConstructorArguments():
-                    (argTransformer, argKey, argOptional) = ArgumentTransformerFactory.createTransformer(transformerDescriptor)
-                    
-                    if argKey is None:
-                        argument = None
-                    else:
-                        argument = hydrator.getArgument(argKey)
-                    
-                    argsCode.append(argTransformer.transform(argument, "config", argOptional))
-                
-                argsCode = filter(None, argsCode)
+                argsCode = ArgumentTransformer.compileConstructorArguments(self, hydrator, {'config': 'config'})
             else:
                 if hydrator.hasPRNGArgument():
                     argsCode.append('random')
