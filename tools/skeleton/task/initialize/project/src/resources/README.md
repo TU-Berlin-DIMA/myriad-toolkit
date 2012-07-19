@@ -50,9 +50,9 @@ Note that in order to push submodule changesets upstream, you first have to expl
     * v0.2.x
       main_branch
       
-If you don't envision making changes to the submodule you can leave the detached HEAD as it is. In this case, to propagete updates in the submodules to your local repository you need to issue the following command:
+If you don't envision making changes to the submodule you can leave the detached HEAD as it is. In this case, to propagete updates in the submodules to your local repository you need to execute the update command:
 
-    <project-root>$ git submodule sync
+    <project-root>$ git submodule update
 
 
 Prerequisites
