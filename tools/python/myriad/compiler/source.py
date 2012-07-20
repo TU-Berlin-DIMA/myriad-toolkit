@@ -195,6 +195,9 @@ class RandomSetInspectorTransfomer(object):
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
             return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName)
+        if isinstance(argumentNode, ResolvedRecordReferenceRefArgumentNode):
+            typeName = StringTransformer.us2ccAll(argumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
+            return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName)
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 

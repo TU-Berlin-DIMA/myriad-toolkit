@@ -554,7 +554,7 @@ template<typename T> Decimal CombinedPrFunction<T>::pdf(T x) const
 			return _bucketProbabilities[i] * (1.0 / static_cast<Decimal>(_buckets[i].length()));
 		}
 
-		throw RuntimeException("Unknown pdf(x) for x = " + toString<T>(x));
+		throw RuntimeException(AbstractFunction::name() + ": unknown pdf(x) for x = " + toString<T>(x));
 	}
 }
 

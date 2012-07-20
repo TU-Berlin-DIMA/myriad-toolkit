@@ -54,6 +54,9 @@ public:
 	I64u genID() const;
 	void genID(const I64u v);
 
+    I64u& genIDRef() const;
+    void genIDRef(const I64u& v);
+
 private:
 
 	ID	meta_genid;

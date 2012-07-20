@@ -1058,7 +1058,11 @@ class ReferenceHydratorNode(HydratorNode):
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
         refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
+        # TODO: this is a quick and dirty hack, a better solution is needed here
+        if isinstance(self.getArgument("pivot_field"), ResolvedDirectFieldRefArgumentNode):
+            fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
+        elif isinstance(self.getArgument("pivot_field"), ResolvedRecordReferenceRefArgumentNode):
+            fieldType = 'I64u'
         
         return "ReferenceHydrator< %s, %s, %s >" % (recordType, refRecordType, fieldType)
         
