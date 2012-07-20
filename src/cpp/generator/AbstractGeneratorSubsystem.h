@@ -92,8 +92,9 @@ private:
 	 * Prepares all generators for the next stage.
 	 *
 	 * @param stage
+	 * @return the number of runnable tasks for this stage
 	 */
-	void prepareStage(RecordGenerator::Stage stage);
+	unsigned short prepareStage(RecordGenerator::Stage stage);
 
 	/**
 	 * Cleans up all generators upon execution of the current stage.

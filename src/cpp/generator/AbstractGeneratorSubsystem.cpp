@@ -175,7 +175,7 @@ void AbstractGeneratorSubsystem::uninitialize()
 	_initialized = false;
 }
 
-void AbstractGeneratorSubsystem::prepareStage(RecordGenerator::Stage stage)
+unsigned short AbstractGeneratorSubsystem::prepareStage(RecordGenerator::Stage stage)
 {
 	list<RecordGenerator*>& generators = _generatorPool.getAll();
 
@@ -196,6 +196,8 @@ void AbstractGeneratorSubsystem::prepareStage(RecordGenerator::Stage stage)
 	{
 		_threadPool.addCapacity(runnableCount - _threadPool.capacity());
 	}
+
+	return runnableCount;
 }
 
 void AbstractGeneratorSubsystem::cleanupStage(RecordGenerator::Stage stage)
@@ -230,11 +232,9 @@ void AbstractGeneratorSubsystem::start()
 		{
 			if (!_executeStages[it->id()])
 			{
-				_logger.information(format("Skipping stage `%s`", it->name()));
+				_logger.debug(format("Skipping stage `%s`", it->name()));
 				continue;
 			}
-
-			_logger.information(format("Entering stage `%s`", it->name()));
 
 			// start stage timer
 			stageTimer.restart();
@@ -243,7 +243,14 @@ void AbstractGeneratorSubsystem::start()
 			_notificationCenter.postNotification(new StartStage(it->id()));
 
 			// prepare generators for the next stage
-			prepareStage(*it);
+			unsigned short runnableCount = prepareStage(*it);
+
+			if (runnableCount == 0)
+			{
+				continue;
+			}
+
+			_logger.information(format("Entering stage `%s`", it->name()));
 
 			// spawn separate threads for each RUNNABLE task
 			ThreadExecutor execute(*this);
@@ -261,7 +268,7 @@ void AbstractGeneratorSubsystem::start()
 			// stop the stage timer
 			stageTimer.stop();
 
-			_logger.information(format("Stage `%s` completed in %d seconds, moving to the next stage", it->name(), stageTimer.elapsedSeconds()));
+			_logger.information(format("Stage `%s` completed in %d seconds", it->name(), stageTimer.elapsedSeconds()));
 		}
 
 		// stop the total timer
