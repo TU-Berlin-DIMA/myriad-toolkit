@@ -1,5 +1,5 @@
 # ignore the soft link to the myriad assistant
-myriad-assistant
+# myriad-assistant
 
 # ignore the user-specific build setup settings (makefile.defs)
 makefile.defs

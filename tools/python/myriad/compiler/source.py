@@ -457,6 +457,25 @@ class GeneratorSubsystemCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace Myriad {'
         print >> wfile, ''
+        print >> wfile, '// the initial stage ID should always be zero'
+        print >> wfile, 'I32u RecordGenerator::Stage::NEXT_STAGE_ID = 0;'
+        print >> wfile, ''
+        print >> wfile, '// register the valid stages for the Myriad generator extension'
+        print >> wfile, 'RecordGenerator::StageList initList()'
+        print >> wfile, '{'
+        print >> wfile, '    RecordGenerator::StageList tmp;'
+        print >> wfile, ''
+        
+        for recordSequence in astRoot.getSpecification().getRecordSequences().getRecordSequences():
+            print >> wfile, '    tmp.push_back(RecordGenerator::Stage("%s"));' % (recordSequence.getAttribute("key"))
+        
+        print >> wfile, ''
+        print >> wfile, '    return tmp;'
+        print >> wfile, '}'
+        print >> wfile, ''
+        print >> wfile, 'const RecordGenerator::StageList RecordGenerator::STAGES(initList());'
+        print >> wfile, ''
+        print >> wfile, '// register the record sequence generators'
         print >> wfile, 'void BaseGeneratorSubsystem::registerGenerators()'
         print >> wfile, '{'
         
@@ -1234,7 +1253,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
             
             print >> wfile, ''
-            print >> wfile, '        if (stage.name() == "default")'
+            print >> wfile, '        if (stage.name() == name())'
             print >> wfile, '        {'
             print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(sequenceIteratorArgsCode))
             print >> wfile, '        }'

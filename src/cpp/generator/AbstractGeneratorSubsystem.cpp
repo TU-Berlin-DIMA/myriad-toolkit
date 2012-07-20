@@ -29,26 +29,6 @@ using namespace Poco;
 
 namespace Myriad {
 
-// the initial stage ID should always be zero
-I32u RecordGenerator::Stage::NEXT_STAGE_ID = 0;
-
-// register the valid stages for the Myriad generator extension
-RecordGenerator::StageList initList()
-{
-	RecordGenerator::StageList tmp;
-
-	tmp.push_back(RecordGenerator::Stage("default"));
-	tmp.push_back(RecordGenerator::Stage("stage-1"));
-	tmp.push_back(RecordGenerator::Stage("stage-2"));
-	tmp.push_back(RecordGenerator::Stage("stage-3"));
-	tmp.push_back(RecordGenerator::Stage("stage-4"));
-	tmp.push_back(RecordGenerator::Stage("stage-5"));
-
-	return tmp;
-}
-
-const RecordGenerator::StageList RecordGenerator::STAGES(initList());
-
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // helper function objects
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
