@@ -433,9 +433,19 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 	AutoPtr<RecordType> recordPtr = _recordFactory();
 	recordPtr->genID(genID);
 
-	_hydrate(recordPtr);
-
-	return recordPtr;
+	while(true) // protect against InvalidRecordExceptions
+	{
+		try
+		{
+			_hydrate(recordPtr);
+			return recordPtr;
+		}
+		catch(const InvalidRecordException& e)
+		{
+			// use modValidGenID
+			recordPtr->genID(e.prevValidGenIDMin() + genID % e.prevValidGenIDSize());
+		}
+	}
 }
 
 template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run()
@@ -466,12 +476,12 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 		{
 		    hydrate(recordPtr);
 		}
-		catch(InvalidRecordException& e)
+		catch(const InvalidRecordException& e)
 		{
 		    current = e.nextValidGenID();
 		    _random.atChunk(current);
 
-	        if(progressCounter + e.invalidRangeCount() >= 1000)
+	        if(progressCounter + e.invalidRangeSize() >= 1000)
 	        {
 	            progressCounter = 0;
 	            StageTask<RecordType>::_progress = (current - first) / static_cast<Decimal>(last - first);

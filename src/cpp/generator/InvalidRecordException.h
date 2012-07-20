@@ -26,22 +26,40 @@ class InvalidRecordException
 {
 public:
 
-    InvalidRecordException(I64u currentGenID, I64u nextValidGenID) :
-            _currentGenID(currentGenID), _nextValidGenID(nextValidGenID)
+    InvalidRecordException(I64u currentGenID, I64u maxPeriodSize, I64u currentPeriodSize) :
+    	_currentGenID(currentGenID)
     {
+    	_nextValidGenID = ((_currentGenID/maxPeriodSize)+1)*maxPeriodSize;
+    	_prevValidGenIDMin = _nextValidGenID - maxPeriodSize;
+    	_prevValidGenIDMax = _prevValidGenIDMin + currentPeriodSize;
     }
 
-    I64u currentGenID()
+    I64u currentGenID() const
     {
         return _currentGenID;
     }
 
-    I64u nextValidGenID()
+    I64u nextValidGenID() const
     {
         return _nextValidGenID;
     }
 
-    I64u invalidRangeCount()
+    I64u prevValidGenIDMin() const
+    {
+        return _prevValidGenIDMin;
+    }
+
+    I64u prevValidGenIDMax() const
+    {
+        return _prevValidGenIDMax;
+    }
+
+    I64u prevValidGenIDSize() const
+    {
+    	return _prevValidGenIDMax - _prevValidGenIDMin;
+    }
+
+    I64u invalidRangeSize() const
     {
         return _nextValidGenID-_currentGenID;
     }
@@ -50,6 +68,8 @@ private:
 
     I64u _currentGenID;
     I64u _nextValidGenID;
+    I64u _prevValidGenIDMin;
+    I64u _prevValidGenIDMax;
 };
 
 } // namespace Myriad

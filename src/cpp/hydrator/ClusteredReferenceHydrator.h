@@ -82,7 +82,7 @@ public:
 		    }
 		    else
 		    {
-		        throw InvalidRecordException(nestedRecordGenID, (parentRecordGenID+1)*_maxNestedPerParent);
+		        throw InvalidRecordException(nestedRecordGenID, _maxNestedPerParent, nestedCount);
 		    }
 		}
 	}
