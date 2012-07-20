@@ -303,7 +303,8 @@ class XMLReader(object):
         recordSequenceNode = RandomSequenceNode(key=xmlContext.prop("key"))
         
         # read record type (mandatory)
-        self.__readRecordType(recordSequenceNode, xPathContext.xpathEval("./m:record_type").pop())
+        recordTypeXMLNode = xPathContext.xpathEval("./m:record_type")
+        self.__readRecordType(recordSequenceNode, recordTypeXMLNode.pop())
         # read hydrators (optional)
         hydratorsXMLNode = xPathContext.xpathEval("./m:hydrators")
         self.__readHydrators(recordSequenceNode, hydratorsXMLNode.pop() if len(hydratorsXMLNode) > 0 else None)
@@ -311,9 +312,11 @@ class XMLReader(object):
         hydrationPlanXMLNode = xPathContext.xpathEval("./m:hydration_plan")
         self.__readHydrationPlan(recordSequenceNode, hydrationPlanXMLNode.pop() if len(hydrationPlanXMLNode) > 0 else None)
         # read cardinality estimator (mandatory)
-        self.__readCardinalityEstimator(recordSequenceNode, xPathContext.xpathEval("./m:cardinality_estimator").pop())
-        # read generator tasks (mandatory)
-        self.__readSequenceIterator(recordSequenceNode, xPathContext.xpathEval("./m:sequence_iterator").pop())
+        cardinalityEstimatorXMLNode = xPathContext.xpathEval("./m:cardinality_estimator")
+        self.__readCardinalityEstimator(recordSequenceNode, cardinalityEstimatorXMLNode.pop())
+        # read generator tasks (optional)
+        sequenceIteratorXMLNode = xPathContext.xpathEval("./m:sequence_iterator")
+        self.__readSequenceIterator(recordSequenceNode, sequenceIteratorXMLNode.pop() if len(sequenceIteratorXMLNode) > 0 else None)
         
         astContext.getRecordSequences().setRecordSequence(recordSequenceNode)
         
@@ -412,6 +415,10 @@ class XMLReader(object):
             hydrationPlanNode.addHydrator(astContext.getHydrators().getHydrator(hydratorRef.prop("ref")))
         
     def __readSequenceIterator(self, astContext, xmlContext):
+        # sanity check (XML element is not mandatory)
+        if (xmlContext == None):
+            return
+        
         # derive xPath context from the given xmlContext node
         xPathContext = self.__createXPathContext(xmlContext)
         

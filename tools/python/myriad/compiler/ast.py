@@ -438,6 +438,10 @@ class RandomSequenceNode(RecordSequenceNode):
     
     def __init__(self, *args, **kwargs):
         super(RandomSequenceNode, self).__init__(*args, **kwargs)
+        self.__cardinalityEstimator = None
+        self.__hydrators = None
+        self.__hydrationPlan = None
+        self.__sequenceIterator = None
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -445,7 +449,8 @@ class RandomSequenceNode(RecordSequenceNode):
         self.__hydrators.accept(visitor)
         self.__hydrationPlan.accept(visitor)
         self.__cardinalityEstimator.accept(visitor)
-        self.__sequenceIterator.accept(visitor)
+        if self.__sequenceIterator is not None:
+            self.__sequenceIterator.accept(visitor)
         visitor.postVisit(self)
         
     def setHydrators(self, node):
@@ -473,6 +478,9 @@ class RandomSequenceNode(RecordSequenceNode):
         
     def getSequenceIterator(self):
         return self.__sequenceIterator
+        
+    def hasSequenceIterator(self):
+        return self.__sequenceIterator is not None
         
 
 class RecordTypeNode(AbstractNode):

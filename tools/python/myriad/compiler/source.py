@@ -955,7 +955,7 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    const AutoPtr<%s>& %s() const;' % (StringTransformer.sourceType(referenceType), StringTransformer.us2cc(referenceName))
             print >> wfile, ''
         
-        print >> wfile, 'private:'
+        print >> wfile, 'protected:'
         print >> wfile, ''
         print >> wfile, '    // meta'
         print >> wfile, '    const %sMeta& _meta;' % (typeNameCC)
@@ -1225,15 +1225,17 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '        // call generator implementation'
         print >> wfile, '        RandomSetGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
-        print >> wfile, ''
         
-        sequenceIterator = recordSequence.getSequenceIterator()
-        sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
+        if recordSequence.hasSequenceIterator():
+            sequenceIterator = recordSequence.getSequenceIterator()
+            sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
             
-        print >> wfile, '        if (stage.name() == "default")'
-        print >> wfile, '        {'
-        print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(sequenceIteratorArgsCode))
-        print >> wfile, '        }'
+            print >> wfile, ''
+            print >> wfile, '        if (stage.name() == "default")'
+            print >> wfile, '        {'
+            print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(sequenceIteratorArgsCode))
+            print >> wfile, '        }'
+            
         print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''

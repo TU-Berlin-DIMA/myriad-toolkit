@@ -208,7 +208,7 @@
       <xs:element name="hydrators" type="myriad:hydrators" minOccurs="0" maxOccurs="1" />
       <xs:element name="hydration_plan" type="myriad:hydration_plan" minOccurs="0" maxOccurs="1" />
       <xs:element name="cardinality_estimator" type="myriad:cardinality_estimator" minOccurs="1" maxOccurs="1" />
-      <xs:element name="sequence_iterator" type="myriad:sequence_iterator" minOccurs="1" maxOccurs="1" />
+      <xs:element name="sequence_iterator" type="myriad:sequence_iterator" minOccurs="0" maxOccurs="1" />
     </xs:sequence>
     <xs:attribute name="key" type="xs:NCName" use="required" />
   </xs:complexType>
