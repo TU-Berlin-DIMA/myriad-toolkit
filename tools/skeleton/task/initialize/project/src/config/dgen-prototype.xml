@@ -5,7 +5,7 @@
   <parameters>
     <!-- naming convention {generator_name}.{parameter_name} -->
     <!-- 
-    <parameter key="mytype.myparameter">parameter_value</parameter>
+    <parameter key="mytype.sequence.base_cardinality">1000</parameter>
     -->
   </parameters>
 
@@ -68,12 +68,14 @@
       <!--  * linear_scale_estimator(I64u: base_cardinality) -->
       <!-- 
       <cardinality_estimator type="linear_scale_estimator">
-        <argument key="base_cardinality" type="I64u" value="%user_connections.sequence.base_cardinality%" />
+        <argument key="base_cardinality" type="I64u" value="%mytype.sequence.base_cardinality%" />
       </cardinality_estimator>
+      -->
       <!-- supported sequence_iterator types: -->
       <!--  * partitioned_iterator() -->
       <!-- 
       <sequence_iterator type="partitioned_iterator" />
+      -->
     </random_sequence>
   </record_sequences>
 </generator_prototype>
