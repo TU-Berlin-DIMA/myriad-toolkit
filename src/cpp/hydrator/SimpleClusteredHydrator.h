@@ -51,7 +51,7 @@ public:
 		Decimal cdf = _probability.cdf(x);
 		Decimal pdf = _probability.pdf(x);
 
-		return Interval<I64u>(cdf * _sequenceCardinalityDecimal, (cdf + pdf) * _sequenceCardinalityDecimal);
+		return Interval<I64u>((cdf-pdf) * _sequenceCardinalityDecimal + 0.5, cdf * _sequenceCardinalityDecimal + 0.5);
 	}
 
 private:
