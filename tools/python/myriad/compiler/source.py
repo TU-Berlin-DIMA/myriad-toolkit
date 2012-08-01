@@ -1347,8 +1347,16 @@ class RecordGeneratorCompiler(SourceCompiler):
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
             if hydrator.isInvertible():
                 fieldType = hydrator.getArgument("field").getFieldRef().getAttribute("type")
+                # treat Enum types as I64u / I32u depending on the C++ architecture
+                if fieldType == 'Enum':
+                    if self._args.is_arch64:
+                        fieldType = 'I64u'
+                    else:
+                        fieldType = 'I32u'
+                # lazy initialize container array for this fieldType
                 if not invertibleHydrators.has_key(fieldType):
                     invertibleHydrators[fieldType] = []
+                # append hydrator to the container array
                 invertibleHydrators[fieldType].append(hydrator)
         
         for fieldType in sorted(invertibleHydrators.keys()):

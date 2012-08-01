@@ -233,7 +233,8 @@ class AbstractTask(object):
                 # add extra args from the .myriad-settings file
                 args.dgen_name = p.getProperty("MYRIAD_DGEN_NAME");
                 args.dgen_ns = p.getProperty("MYRIAD_DGEN_NS");
-                args.dgen_project_path = myriadProjectPath
+                args.is_arch64 = p.getProperty("MYRIAD_IS_ARCH64").lower() == 'true'
+                args.dgen_project_path = p.getProperty("MYRIAD_DGEN_NS")
             else:
                 raise myriad.error.UninitializedProjectError(myriadProjectPath)
                 
