@@ -35,16 +35,23 @@ namespace Myriad {
 
 // forward declarations
 class RecordGenerator;
-template<class RecordType> class HydratorChain;
-template<class RecordType> class RecordFactory;
-template<class RecordType> class RecordMeta;
+template<class RecordType>
+class HydratorChain;
+template<class RecordType>
+class RecordFactory;
+template<class RecordType>
+class RecordMeta;
+template<class RecordType>
+class RecordRangePredicate;
 
-template<class RecordType> struct RecordTraits
+template<class RecordType>
+struct RecordTraits
 {
 	typedef RecordMeta<RecordType> RecordMetaType;
 	typedef RecordGenerator GeneratorType;
 	typedef HydratorChain<RecordType> HydratorChainType;
 	typedef RecordFactory<RecordType> RecordFactoryType;
+	typedef RecordRangePredicate<RecordType> RecordRangePredicateType;
 };
 
 class Record: public Poco::RefCountedObject
@@ -73,10 +80,11 @@ inline void Record::genID(const I64u v)
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// sequence inspector
+// record factory
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<class RecordType> class RecordFactory
+template<class RecordType>
+class RecordFactory
 {
 public:
 
@@ -97,12 +105,18 @@ private:
 	const RecordMetaType _meta;
 };
 
-template<class RecordType> inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()() const
+template<class RecordType>
+inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()() const
 {
 	return new RecordType(_meta);
 }
 
-template<class RecordType> class RecordMeta
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// record meta
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<class RecordType>
+class RecordMeta
 {
 public:
 
@@ -112,6 +126,58 @@ public:
 
 	RecordMeta(const map<string, vector<string> >& enumSets)
 	{
+	}
+};
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// record field traits
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+/**
+ * Unspecialized traits object for introspection on record fields.
+ */
+template <I16u fid, class RecordType>
+struct RecordFieldTraits
+{
+	typedef typename MethodTraits<RecordType, I64u>::Getter GetterType;
+	typedef typename MethodTraits<RecordType, I64u>::Setter SetterType;
+
+	static const char* name;
+
+	SetterType setter()
+	{
+		throw RuntimeException("Trying to access setter for unknown field");
+	}
+
+	GetterType getter()
+	{
+		throw RuntimeException("Trying to access getter for unknown field");
+	}
+};
+
+template <I16u fid, class RecordType>
+const char* RecordFieldTraits<fid, RecordType>::name = "unknown_field";
+
+/**
+ * Specialized traits object for introspection on record fields.
+ */
+template <class RecordType>
+struct RecordFieldTraits<0, RecordType>
+{
+	typedef I64u FieldType;
+	typedef typename MethodTraits<RecordType, FieldType>::Getter GetterType;
+	typedef typename MethodTraits<RecordType, FieldType>::Setter SetterType;
+
+	static const char* name;
+
+	SetterType setter()
+	{
+		return static_cast<SetterType>(&Record::genIDRef);
+	}
+
+	GetterType getter()
+	{
+		return static_cast<GetterType>(&Record::genIDRef);
 	}
 };
 
