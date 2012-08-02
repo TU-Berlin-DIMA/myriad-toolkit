@@ -31,25 +31,27 @@ template<class RecordType> class RecordRangePredicate: public RecordHydrator<Rec
 {
 public:
 
-	RecordRangePredicate()
+	RecordRangePredicate() :
+		_intervals(new Interval<I64u>[32])
 	{
 	}
 
 	virtual ~RecordRangePredicate()
 	{
+		delete[] _intervals;
 	}
 
 	/**
-	 * The operator for this function object. It receives a RangePredicate
-	 * for the handled RecordType and returns the range of genIDs
-	 * valid for the predicate.
-	 *
-	 * @FIXME: A union of intervals is a more appropriate return value here
+	 * @TODO: implement generic logic or throw a runtime exception here
 	 */
-	template<typename T, I16u fid> Interval<I64u> get(I16u fid)
+	template<I16u fid> Interval<I64u> get()
 	{
-		typename MethodTraits<RecordType, T>::Getter getter = RecordFieldTraits<RecordType, fid>::getter;
+		return Interval<I64u>(0, 0);
 	}
+
+private:
+
+	Interval<I64u>* _intervals;
 };
 
 }  // namespace Myriad

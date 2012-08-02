@@ -28,6 +28,8 @@ template<class RecordType> class RecordRangeFilter: public RecordHydrator<Record
 {
 public:
 
+	typedef typename RecordTraits<RecordType>::RecordRangePredicateType RecordRangePredicateType;
+
 	RecordRangeFilter()
 	{
 	}
@@ -41,6 +43,7 @@ public:
 	 * for the handled RecordType and returns the range of genIDs
 	 * valid for the predicate.
 	 *
+	 * @TODO: Figure out how to implement this logic.
 	 * @FIXME: A union of intervals is a more appropriate return value here
 	 */
 	virtual const Interval<I64u> operator()(const RecordTraits<RecordType>::RecordRangePredicateType& predicate) const = 0;

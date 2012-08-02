@@ -33,7 +33,10 @@ using namespace Poco;
 
 namespace Myriad {
 
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // forward declarations
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
 class RecordGenerator;
 template<class RecordType>
 class HydratorChain;
@@ -44,15 +47,25 @@ class RecordMeta;
 template<class RecordType>
 class RecordRangePredicate;
 
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// record traits
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
 template<class RecordType>
 struct RecordTraits
 {
-	typedef RecordMeta<RecordType> RecordMetaType;
+	typedef RecordMeta<RecordType> MetaType;
 	typedef RecordGenerator GeneratorType;
 	typedef HydratorChain<RecordType> HydratorChainType;
-	typedef RecordFactory<RecordType> RecordFactoryType;
-	typedef RecordRangePredicate<RecordType> RecordRangePredicateType;
+	typedef RecordFactory<RecordType> FactoryType;
+	typedef RecordRangePredicate<RecordType> RangePredicateType;
+
+	enum Field { UNKNOWN, GEN_ID };
 };
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// record type
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 class Record: public Poco::RefCountedObject
 {
@@ -61,7 +74,7 @@ public:
 	I64u genID() const;
 	void genID(const I64u v);
 
-    I64u& genIDRef() const;
+	const I64u& genIDRef() const;
     void genIDRef(const I64u& v);
 
 private:
@@ -79,6 +92,16 @@ inline void Record::genID(const I64u v)
 	meta_genid = v;
 }
 
+inline const I64u& Record::genIDRef() const
+{
+	return meta_genid;
+}
+
+inline void Record::genIDRef(const I64u& v)
+{
+	meta_genid = v;
+}
+
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // record factory
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -88,7 +111,7 @@ class RecordFactory
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::RecordMetaType RecordMetaType;
+	typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
 
 	RecordFactory(RecordMetaType meta)
 		: _meta(meta)
@@ -130,7 +153,7 @@ public:
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// record field traits
+// record field inspection structures
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 /**
@@ -139,17 +162,18 @@ public:
 template <I16u fid, class RecordType>
 struct RecordFieldTraits
 {
-	typedef typename MethodTraits<RecordType, I64u>::Getter GetterType;
-	typedef typename MethodTraits<RecordType, I64u>::Setter SetterType;
+	typedef I64u FieldType;
+	typedef typename MethodTraits<RecordType, FieldType>::Getter GetterType;
+	typedef typename MethodTraits<RecordType, FieldType>::Setter SetterType;
 
 	static const char* name;
 
-	SetterType setter()
+	static SetterType setter()
 	{
 		throw RuntimeException("Trying to access setter for unknown field");
 	}
 
-	GetterType getter()
+	static GetterType getter()
 	{
 		throw RuntimeException("Trying to access getter for unknown field");
 	}
@@ -159,27 +183,30 @@ template <I16u fid, class RecordType>
 const char* RecordFieldTraits<fid, RecordType>::name = "unknown_field";
 
 /**
- * Specialized traits object for introspection on record fields.
+ * Unspecialized traits object for introspection on record fields.
  */
 template <class RecordType>
-struct RecordFieldTraits<0, RecordType>
+struct RecordFieldTraits<1, RecordType>
 {
 	typedef I64u FieldType;
-	typedef typename MethodTraits<RecordType, FieldType>::Getter GetterType;
-	typedef typename MethodTraits<RecordType, FieldType>::Setter SetterType;
+	typedef typename MethodTraits<Record, FieldType>::Getter GetterType;
+	typedef typename MethodTraits<Record, FieldType>::Setter SetterType;
 
 	static const char* name;
 
-	SetterType setter()
+	static SetterType setter()
 	{
 		return static_cast<SetterType>(&Record::genIDRef);
 	}
 
-	GetterType getter()
+	static GetterType getter()
 	{
 		return static_cast<GetterType>(&Record::genIDRef);
 	}
 };
+
+template <class RecordType>
+const char* RecordFieldTraits<1, RecordType>::name = "gen_id";
 
 } // namespace Myriad
 
