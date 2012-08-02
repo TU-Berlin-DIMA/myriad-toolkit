@@ -388,7 +388,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
 
 		in.close();
 	}
-    catch(Exception& e)
+    catch(Poco::Exception& e)
     {
         in.close();
         throw e;

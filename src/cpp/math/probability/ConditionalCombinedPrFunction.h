@@ -178,7 +178,7 @@ template<typename T1, typename T2>  void ConditionalCombinedPrFunction<T1, T2>::
 
         in.close();
     }
-    catch(Exception& e)
+    catch(Poco::Exception& e)
     {
         in.close();
         throw e;
