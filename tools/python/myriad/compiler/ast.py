@@ -966,9 +966,22 @@ class ConditionalRandomizedHydratorNode(HydratorNode):
         
     def hasPRNGArgument(self):
         return True
+    
+    def hasNewArgsSupport(self):
+        return True
         
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'getter(condition_field)', 'probability']
+    def getXMLArguments(self):
+        return { 'field'          : { 'type': 'field_ref' }, 
+                 'condition_field': { 'type': 'field_ref' }, 
+                 'probability'    : { 'type': 'function_ref' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'EnvVariable(random)',
+                 'FieldSetter(field)',
+                 'FieldGetter(condition_field)',
+                 'FunctionRef(probability)' 
+               ]
 
 
 class ReferencedRecordHydratorNode(HydratorNode):
