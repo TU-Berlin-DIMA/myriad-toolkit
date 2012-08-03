@@ -39,42 +39,42 @@ template<typename T> class CombinedPrFunction: public UnivariatePrFunction<T>
 public:
 
 	CombinedPrFunction() :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 	}
 
 	CombinedPrFunction(const string& path) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(istream& in) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(const string& name, const string& path) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(const string& name, istream& in) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(map<string, Any>& params) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
 	CombinedPrFunction(const string& name, map<string, Any>& params) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
@@ -133,8 +133,6 @@ private:
 	Decimal* _bucketProbabilities;
 
 	Decimal* _cumulativeProbabilites;
-
-    Decimal _EPSILON;
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -202,12 +200,6 @@ template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decima
 	int max = _numberOfValues + _numberOfBuckets - 1;
 	int mid = 0;
 
-	// protect against invalid y
-	if (y >= 1.0)
-	{
-	    return max;
-	}
-
 	// continue searching while [min, max] is not empty
 	while (max >= min)
 	{
@@ -215,22 +207,20 @@ template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decima
 		mid = (min + max) / 2;
 
 		// determine which subarray to search
-		if (_cumulativeProbabilites[mid] <  y - _EPSILON)
+		if (_cumulativeProbabilites[mid] <  y)
 		{
 			// change min index to search upper subarray
 			min = mid + 1;
 		}
-		else if (_cumulativeProbabilites[mid] > y + _EPSILON)
+		else if (_cumulativeProbabilites[mid] > y)
 		{
 			// change max index to search lower subarray
 			max = mid - 1;
 		}
 		else
 		{
-		    // key found at index mid
-		    // for all but the last position, increment the index by one to
-		    // compensate for the fact that buckets are defined as Y < y rather than Y <= y
-            return (static_cast<size_t>(mid) == _numberOfValues + _numberOfBuckets - 1) ? mid : mid+1;
+			// key found at index mid
+			return mid;
 		}
 	}
 
@@ -564,7 +554,7 @@ template<typename T> Decimal CombinedPrFunction<T>::pdf(T x) const
 			return _bucketProbabilities[i] * (1.0 / static_cast<Decimal>(_buckets[i].length()));
 		}
 
-		throw RuntimeException(AbstractFunction::name() + ": unknown pdf(x) for x = " + toString<T>(x));
+		throw RuntimeException("Unknown pdf(x) for x = " + toString<T>(x));
 	}
 }
 
