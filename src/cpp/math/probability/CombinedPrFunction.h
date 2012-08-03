@@ -22,8 +22,10 @@
 #include "core/types.h"
 #include "math/Function.h"
 
-#include <Poco/Exception.h>
 #include <Poco/Any.h>
+#include <Poco/Exception.h>
+#include <Poco/String.h>
+#include <Poco/RegularExpression.h>
 
 #include <string>
 #include <fstream>
@@ -116,6 +118,12 @@ private:
 
 	size_t findBucket(const T x, bool exact = true) const;
 
+	static RegularExpression headerLine1Format;
+	static RegularExpression headerLine2Format;
+	static RegularExpression headerLine3Format;
+	static RegularExpression valueLineFormat;
+	static RegularExpression bucketLineFormat;
+
 	Decimal _notNullProbability;
 
 	// TODO: replace with an interval
@@ -136,6 +144,16 @@ private:
 
     Decimal _EPSILON;
 };
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// static template members
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename T> RegularExpression CombinedPrFunction<T>::headerLine1Format( "\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::headerLine2Format( "\\W*@numberofbins\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::headerLine3Format( "\\W*@nullprobability\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::valueLineFormat( "\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*(.+)\\W*\\}\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*\\}\\W*(#(.+))?");
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // private member function templates
@@ -416,27 +434,52 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 	// reset old state
 	reset();
 
-	READ_STATE currentState = NOE;
-	I16u currentLineNumber = 0;
-	string currentLine;
+	// reader variables
+	READ_STATE currentState = NOE; // current reader machine state
+	string currentLine; // the current line
+	I16u currentItemIndex = 0; // current item index
+	I16u currentLineNumber = 1; // current line number
+	RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
+	// reader finite state machine
 	while (currentState != END)
 	{
+		// the special FIN stage contains only final initialization constructs
+		// and does not a currentLine
+		if (currentState == FIN)
+		{
+			_min = std::min(_buckets[0].min(), _values[0]);
+			_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
+
+			currentState = END;
+			continue;
+		}
+
 		// read next line
 		getline(in, currentLine);
 
+		// trim whitespace
+		trimInPlace(currentLine);
+
+		// check if this line is empty or contains a single comment
+		if (currentLine.empty() || currentLine.at(0) == '#')
+		{
+			currentLineNumber++;
+			continue; // skip this line
+		}
+
 		if (currentState == NOE)
 		{
-			if (!in.good() || currentLine.substr(0, 20) != "@numberofexactvals =")
+				if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
 			{
-				throw DataException("Unexpected distribution header at line 1, should be `@numberofexactvals = {x}`");
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofexactvals = ' + x", currentLineNumber, currentLine));
 			}
 
-			I32 numberOfValues = atoi(currentLine.substr(20).c_str());
+			I32 numberOfValues = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
 			if (numberOfValues <= 0 && numberOfValues > 65536)
 			{
-				throw DataException("Invalid number of exact values `" + toString(numberOfValues) +  "`");
+				throw DataException("Invalid number of exact values '" + toString(numberOfValues) +  "'");
 			}
 
 			_numberOfValues = numberOfValues;
@@ -447,16 +490,16 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 		}
 		else if (currentState == NOB)
 		{
-			if (!in.good() || currentLine.substr(0, 15) != "@numberofbins =")
+			if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
 			{
-				throw DataException("Unexpected distribution header at line 2, should be `@numberofbins = {x}`");
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofbins = ' + x", currentLineNumber, currentLine));
 			}
 
-			I32 numberOfBuckets = atoi(currentLine.substr(15).c_str());
+			I32 numberOfBuckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
 			if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
 			{
-				throw DataException("Invalid number of buckets `" + toString(numberOfBuckets) +  "`");
+				throw DataException("Invalid number of buckets '" + toString(numberOfBuckets) +  "'");
 			}
 
 			_numberOfBuckets = numberOfBuckets;
@@ -469,87 +512,71 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 		}
 		else if (currentState == NPR)
 		{
-			if (!in.good() || currentLine.substr(0, 18) != "@nullprobability =")
+			if (!in.good() || !headerLine3Format.match(currentLine, 0, posVec))
 			{
-				throw DataException("Unexpected file header (line 3)");
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@nullprobability = ' + x", currentLineNumber, currentLine));
 			}
 
-			_notNullProbability = 1.0 - atof(currentLine.substr(18).c_str());
+			_notNullProbability = 1.0 - atof(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
 			currentState = VLN;
-			currentLineNumber = 0;
+			currentItemIndex = 0;
 		}
 		else if (currentState == VLN)
 		{
-			if (!in.good())
+			if (!in.good() || !valueLineFormat.match(currentLine, 0, posVec))
 			{
-				throw DataException("Bad exact value line at index #" + toString(currentLineNumber));
+				throw DataException(format("line %hu: Bad value probability line '%s;, should be: 'p(X) = ' + p_x + ' for X = {' + x + ') }'", currentLineNumber, currentLine));
 			}
 
-			size_t tab1 = currentLine.find_first_of('\t');
-			size_t lend = currentLine.find_last_of('#');
+			Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
+			T value = fromString<T>(currentLine.substr(posVec[3].offset, posVec[3].length));
 
-			if (lend == string::npos)
-			{
-				lend = currentLine.length();
-			}
-
-			Decimal probability = fromString<Decimal>(currentLine.substr(0, tab1));
-			T value = fromString<T>(currentLine.substr(tab1+1, lend-tab1-1));
-
-			_values[currentLineNumber] = value;
-			_valueProbabilities[currentLineNumber] = probability;
+			_values[currentItemIndex] = value;
+			_valueProbabilities[currentItemIndex] = probability;
 			_valueProbability += probability;
-			_cumulativeProbabilites[currentLineNumber] = _valueProbability;
+			_cumulativeProbabilites[currentItemIndex] = _valueProbability;
 
-			currentLineNumber++;
+			currentItemIndex++;
 
-			if (currentLineNumber >= _numberOfValues)
+			if (currentItemIndex >= _numberOfValues)
 			{
 				currentState = BLN;
-				currentLineNumber = 0;
+				currentItemIndex = 0;
 			}
 		}
 		else if (currentState == BLN)
 		{
-			if (!in.good())
+			if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
 			{
-				throw DataException("Bad line for bin at index #" + toString(currentLineNumber));
+				throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [' + x_min + ', ' + x_max + ') }'", currentLineNumber, currentLine));
 			}
 
-			size_t tab1 = currentLine.find_first_of('\t');
-			size_t tab2 = currentLine.find_last_of('\t');
-			size_t lend = currentLine.find_last_of('#');
+			Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
+			T min = fromString<T>(currentLine.substr(posVec[3].offset, posVec[3].length));
+			T max = fromString<T>(currentLine.substr(posVec[4].offset, posVec[4].length));
 
-			if (lend == string::npos)
-			{
-				lend = currentLine.length();
-			}
-
-			Decimal probability = fromString<Decimal>(currentLine.substr(0, tab1));
-			T min = fromString<T>(currentLine.substr(tab1+1, tab2-tab1-1));
-			T max = fromString<T>(currentLine.substr(tab2+1, lend-tab2-1));
-
-			_buckets[currentLineNumber].set(min, max);
-			_bucketProbabilities[currentLineNumber] = probability;
+			_buckets[currentItemIndex].set(min, max);
+			_bucketProbabilities[currentItemIndex] = probability;
 			_bucketProbability += probability;
-			_cumulativeProbabilites[currentLineNumber+_numberOfValues] = _valueProbability + _bucketProbability;
+			_cumulativeProbabilites[currentItemIndex+_numberOfValues] = _valueProbability + _bucketProbability;
 
-			currentLineNumber++;
+			currentItemIndex++;
 
-			if (currentLineNumber >= _numberOfBuckets)
+			if (currentItemIndex >= _numberOfBuckets)
 			{
 				currentState = FIN;
-				currentLineNumber = 0;
+				currentItemIndex = 0;
 			}
 		}
-		else if (currentState == FIN)
-		{
-			_min = std::min(_buckets[0].min(), _values[0]);
-			_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
 
-			currentState = END;
-		}
+		currentLineNumber++;
+	}
+
+	// protect against unexpected reader state
+	if (currentState != END)
+	{
+		throw RuntimeException("Unexpected state in CombinedPrFunction reader at line " + currentLineNumber);
 	}
 
 	// check if extra normalization is required
