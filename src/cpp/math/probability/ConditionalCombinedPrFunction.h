@@ -208,15 +208,15 @@ template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::i
 
     // read first line
     getline(in, line);
-    if (!in.good() || line.substr(0, 21) != "# numberofconditions:")
+    if (!in.good() || line.substr(0, 21) != "@numberofconditions =")
     {
-        throw DataException("Unexpected file header (line 1)");
+        throw DataException("Unexpected conditional combined probability function header, should be `@numberofconditions = {x}`");
     }
     I32 numberOfx2Buckets = atoi(line.substr(21).c_str());
 
     if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
     {
-        throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
+        throw DataException("Invalid number of condition cases`" + toString(numberOfx2Buckets) +  "`");
     }
 
     _numberOfx2Buckets = numberOfx2Buckets;
@@ -234,15 +234,15 @@ template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::i
         }
 
         getline(in, line);
-        if (!in.good() || line.substr(0, 12) != "# condition:")
+        if (!in.good() || line.substr(0, 12) != "@condition =")
         {
-            throw DataException("Unexpected condition format, expected format is `# condition: {min}{TAB}{max}`");
+            throw DataException("Unexpected condition line format, should be `@condition = {min}{TAB}{max}`");
         }
 
         size_t tab1 = line.find_first_of('\t');
         if (tab1 == string::npos)
         {
-            throw DataException("Unexpected condition format, expected format is `# condition: {min}{TAB}{max}`");
+            throw DataException("Unexpected condition line format, should be `@condition = {min}{TAB}{max}`");
         }
 
         T2 min = fromString<T2>(line.substr(12, tab1-12));
@@ -259,7 +259,7 @@ template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>
 
     if (i == nullValue<size_t>())
     {
-        throw LogicException(format("Unknown distribution for evidence x2 = '%s'", toString<T2>(x2)));
+        throw LogicException(format("Unknown case for condition = '%s'", toString<T2>(x2)));
     }
 
     return _x1Pr[i].pdf(x1);
@@ -271,7 +271,7 @@ template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>
 
     if (i == nullValue<size_t>())
     {
-        throw LogicException(format("Unknown distribution for evidence x2 = '%s'", toString<T2>(x2)));
+        throw LogicException(format("Unknown case for condition = '%s'", toString<T2>(x2)));
     }
 
     return _x1Pr[i].cdf(x1);
@@ -283,7 +283,7 @@ template<typename T1, typename T2> T1 ConditionalCombinedPrFunction<T1, T2>::inv
 
     if (i == nullValue<size_t>())
     {
-        throw LogicException(format("Unknown distribution for evidence x2 = '%s'", toString<T2>(x2)));
+        throw LogicException(format("Unknown case for condition = '%s'", toString<T2>(x2)));
     }
 
     return _x1Pr[i].invcdf(y);

@@ -411,114 +411,148 @@ template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
  */
 template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
 {
+	enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
+
 	// reset old state
 	reset();
 
-	string line, binMin, binMax;
+	READ_STATE currentState = NOE;
+	I16u currentLineNumber = 0;
+	string currentLine;
 
-	// read first line
-	getline(in, line);
-	if (!in.good() || line.substr(0, 20) != "# numberofexactvals:")
+	while (currentState != END)
 	{
-		throw DataException("Unexpected file header (line 1)");
-	}
-	I32 numberOfValues = atoi(line.substr(20).c_str());
+		// read next line
+		getline(in, currentLine);
 
-	if (numberOfValues <= 0 && numberOfValues > 65536)
-	{
-		throw DataException("Invalid number of exact values `" + toString(numberOfValues) +  "`");
-	}
-
-	// read second line
-	getline(in, line);
-	if (!in.good() || line.substr(0, 15) != "# numberofbins:")
-	{
-		throw DataException("Unexpected file header (line 2)");
-	}
-	I32 numberOfBuckets = atoi(line.substr(15).c_str());
-
-	if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
-	{
-		throw DataException("Invalid number of lines `" + toString(numberOfBuckets) +  "`");
-	}
-
-	// read third line
-	getline(in, line);
-	if (!in.good() || line.substr(0, 18) != "# nullprobability:")
-	{
-		throw DataException("Unexpected file header (line 3)");
-	}
-	Decimal nullProbability = atof(line.substr(18).c_str());
-
-	_notNullProbability = 1.0 - nullProbability;
-
-	_numberOfValues = numberOfValues;
-	_values = new T[numberOfValues];
-	_valueProbabilities = new Decimal[numberOfValues];
-
-	_numberOfBuckets = numberOfBuckets;
-	_buckets = new Interval<T>[numberOfBuckets];
-	_bucketProbabilities = new Decimal[numberOfBuckets];
-
-	_cumulativeProbabilites = new Decimal[numberOfValues+numberOfBuckets];
-
-	for (I16u i = 0; i < numberOfValues; i++)
-	{
-		if (!in.good())
+		if (currentState == NOE)
 		{
-			throw DataException("Bad line for bin #" + toString(i));
+			if (!in.good() || currentLine.substr(0, 20) != "@numberofexactvals =")
+			{
+				throw DataException("Unexpected distribution header at line 1, should be `@numberofexactvals = {x}`");
+			}
+
+			I32 numberOfValues = atoi(currentLine.substr(20).c_str());
+
+			if (numberOfValues <= 0 && numberOfValues > 65536)
+			{
+				throw DataException("Invalid number of exact values `" + toString(numberOfValues) +  "`");
+			}
+
+			_numberOfValues = numberOfValues;
+			_values = new T[numberOfValues];
+			_valueProbabilities = new Decimal[numberOfValues];
+
+			currentState = NOB;
 		}
-
-		getline(in, line);
-
-		size_t tab1 = line.find_first_of('\t');
-        size_t lend = line.find_last_of('#');
-
-        if (lend == string::npos)
-        {
-            lend = line.length();
-        }
-
-		Decimal probability = fromString<Decimal>(line.substr(0, tab1));
-		T value = fromString<T>(line.substr(tab1+1, lend-tab1-1));
-
-		_values[i] = value;
-		_valueProbabilities[i] = probability;
-		_valueProbability += probability;
-		_cumulativeProbabilites[i] = _valueProbability;
-	}
-
-	for (I16u i = 0; i < numberOfBuckets; i++)
-	{
-		if (!in.good())
+		else if (currentState == NOB)
 		{
-			throw DataException("Bad line for bin #" + toString(i));
+			if (!in.good() || currentLine.substr(0, 15) != "@numberofbins =")
+			{
+				throw DataException("Unexpected distribution header at line 2, should be `@numberofbins = {x}`");
+			}
+
+			I32 numberOfBuckets = atoi(currentLine.substr(15).c_str());
+
+			if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
+			{
+				throw DataException("Invalid number of buckets `" + toString(numberOfBuckets) +  "`");
+			}
+
+			_numberOfBuckets = numberOfBuckets;
+			_buckets = new Interval<T>[numberOfBuckets];
+			_bucketProbabilities = new Decimal[numberOfBuckets];
+
+			_cumulativeProbabilites = new Decimal[_numberOfValues+_numberOfBuckets];
+
+			currentState = NPR;
 		}
+		else if (currentState == NPR)
+		{
+			if (!in.good() || currentLine.substr(0, 18) != "@nullprobability =")
+			{
+				throw DataException("Unexpected file header (line 3)");
+			}
 
-		getline(in, line);
+			_notNullProbability = 1.0 - atof(currentLine.substr(18).c_str());
 
-		size_t tab1 = line.find_first_of('\t');
-		size_t tab2 = line.find_last_of('\t');
-        size_t lend = line.find_last_of('#');
+			currentState = VLN;
+			currentLineNumber = 0;
+		}
+		else if (currentState == VLN)
+		{
+			if (!in.good())
+			{
+				throw DataException("Bad exact value line at index #" + toString(currentLineNumber));
+			}
 
-        if (lend == string::npos)
-        {
-            lend = line.length();
-        }
+			size_t tab1 = currentLine.find_first_of('\t');
+			size_t lend = currentLine.find_last_of('#');
 
-		Decimal probability = fromString<Decimal>(line.substr(0, tab1));
-		T min = fromString<T>(line.substr(tab1+1, tab2-tab1-1));
-		T max = fromString<T>(line.substr(tab2+1, lend-tab2-1));
+			if (lend == string::npos)
+			{
+				lend = currentLine.length();
+			}
 
-		_buckets[i].set(min, max);
-		_bucketProbabilities[i] = probability;
-		_bucketProbability += probability;
-		_cumulativeProbabilites[i+numberOfValues] = _valueProbability + _bucketProbability;
+			Decimal probability = fromString<Decimal>(currentLine.substr(0, tab1));
+			T value = fromString<T>(currentLine.substr(tab1+1, lend-tab1-1));
+
+			_values[currentLineNumber] = value;
+			_valueProbabilities[currentLineNumber] = probability;
+			_valueProbability += probability;
+			_cumulativeProbabilites[currentLineNumber] = _valueProbability;
+
+			currentLineNumber++;
+
+			if (currentLineNumber >= _numberOfValues)
+			{
+				currentState = BLN;
+				currentLineNumber = 0;
+			}
+		}
+		else if (currentState == BLN)
+		{
+			if (!in.good())
+			{
+				throw DataException("Bad line for bin at index #" + toString(currentLineNumber));
+			}
+
+			size_t tab1 = currentLine.find_first_of('\t');
+			size_t tab2 = currentLine.find_last_of('\t');
+			size_t lend = currentLine.find_last_of('#');
+
+			if (lend == string::npos)
+			{
+				lend = currentLine.length();
+			}
+
+			Decimal probability = fromString<Decimal>(currentLine.substr(0, tab1));
+			T min = fromString<T>(currentLine.substr(tab1+1, tab2-tab1-1));
+			T max = fromString<T>(currentLine.substr(tab2+1, lend-tab2-1));
+
+			_buckets[currentLineNumber].set(min, max);
+			_bucketProbabilities[currentLineNumber] = probability;
+			_bucketProbability += probability;
+			_cumulativeProbabilites[currentLineNumber+_numberOfValues] = _valueProbability + _bucketProbability;
+
+			currentLineNumber++;
+
+			if (currentLineNumber >= _numberOfBuckets)
+			{
+				currentState = FIN;
+				currentLineNumber = 0;
+			}
+		}
+		else if (currentState == FIN)
+		{
+			_min = std::min(_buckets[0].min(), _values[0]);
+			_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
+
+			currentState = END;
+		}
 	}
 
-	_min = std::min(_buckets[0].min(), _values[0]);
-	_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
-
+	// check if extra normalization is required
 	if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
 	{
 		normalize();
