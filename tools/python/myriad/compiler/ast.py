@@ -752,16 +752,13 @@ class HydratorNode(AbstractNode):
     def getConcreteType(self):
         return "RecordHydrator"
         
-    def hasPRNGArgument(self):
-        return False
-    
-    def hasNewArgsSupport(self):
-        return False
-        
     def isInvertible(self):
         return False
-        
-    def getConstructorArgumentsOrder(self):
+    
+    def getXMLArguments(self):
+        return {}
+    
+    def getConstructorArguments(self):
         return []
 
 
@@ -779,12 +776,6 @@ class ClusteredReferenceHydratorNode(HydratorNode):
         refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
         
         return "ClusteredReferenceHydrator< %s, %s >" % (recordType, refRecordType)
-        
-    def hasPRNGArgument(self):
-        return True
-    
-    def hasNewArgsSupport(self):
-        return True
         
     def getXMLArguments(self):
         return { 'field'              : { 'type': 'field_ref' }, 
@@ -819,12 +810,6 @@ class ConditionalRandomizedHydratorNode(HydratorNode):
         
         return "ConditionalRandomizedHydrator< %s, %s, %s, %s >" % (recordType, fieldType, conditionFieldType, probabilityType)
         
-    def hasPRNGArgument(self):
-        return True
-    
-    def hasNewArgsSupport(self):
-        return True
-        
     def getXMLArguments(self):
         return { 'field'          : { 'type': 'field_ref' }, 
                  'condition_field': { 'type': 'field_ref' }, 
@@ -853,12 +838,6 @@ class ConstValueHydratorNode(HydratorNode):
         fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
         
         return "ConstValueHydrator< %s, %s >" % (recordType, fieldType)
-        
-    def hasPRNGArgument(self):
-        return False
-    
-    def hasNewArgsSupport(self):
-        return True
         
     def getXMLArguments(self):
         return { 'field'              : { 'type': 'field_ref' }, 
@@ -890,12 +869,6 @@ class ReferencedRecordHydratorNode(HydratorNode):
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
         
         return "ReferencedRecordHydrator< %s, %s, %s, %s >" % (recordType, refRecordType, fieldType, probabilityType)
-        
-    def hasPRNGArgument(self):
-        return True
-    
-    def hasNewArgsSupport(self):
-        return True
         
     def getXMLArguments(self):
         return { 'field'      : { 'type': 'field_ref' }, 
@@ -932,12 +905,6 @@ class ReferenceHydratorNode(HydratorNode):
         
         return "ReferenceHydrator< %s, %s, %s >" % (recordType, refRecordType, fieldType)
         
-    def hasPRNGArgument(self):
-        return True
-    
-    def hasNewArgsSupport(self):
-        return True
-        
     def getXMLArguments(self):
         return { 'field'      : { 'type': 'field_ref' }, 
                  'pivot_field': { 'type': 'field_ref' }, 
@@ -969,14 +936,20 @@ class SimpleClusteredHydratorNode(HydratorNode):
         
         return "SimpleClusteredHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
         
-    def hasPRNGArgument(self):
-        return False
-        
     def isInvertible(self):
         return True
         
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'probability', 'sequence_cardinality']
+    def getXMLArguments(self):
+        return { 'field'      : { 'type': 'field_ref' }, 
+                 'probability': { 'type': 'function_ref' }, 
+                 'sequence_cardinality': { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'FieldSetter(field)',
+                 'FunctionRef(probability)',
+                 'Literal(sequence_cardinality)' 
+               ]
 
 
 class SimpleRandomizedHydratorNode(HydratorNode):
@@ -995,11 +968,16 @@ class SimpleRandomizedHydratorNode(HydratorNode):
         
         return "SimpleRandomizedHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
         
-    def hasPRNGArgument(self):
-        return True
+    def getXMLArguments(self):
+        return { 'field'      : { 'type': 'field_ref' }, 
+                 'probability': { 'type': 'function_ref' }
+               }
         
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'probability']
+    def getConstructorArguments(self):
+        return [ 'EnvVariable(random)',
+                 'FieldSetter(field)',
+                 'FunctionRef(probability)'
+               ]
 
 
 #

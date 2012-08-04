@@ -1302,20 +1302,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '        HydratorChain<%s>(opMode, random),' % (typeNameCC)
         
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            argsCode = []
-            
-            if hydrator.hasNewArgsSupport():
-                argsCode = ArgumentTransformer.compileConstructorArguments(self, hydrator, {'config': 'config'})
-            else:
-                if hydrator.hasPRNGArgument():
-                    argsCode.append('random')
-                for argKey in hydrator.getConstructorArgumentsOrder():
-                    m = self._getter_pattern.match(argKey)
-                    if (m):
-                        argsCode.append(self._getterCode(hydrator.getArgument(m.group(1))))
-                    else:
-                        argsCode.append(self._argumentCode(hydrator.getArgument(argKey)))
-            
+            argsCode = ArgumentTransformer.compileConstructorArguments(self, hydrator, {'config': 'config'})
             print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)
