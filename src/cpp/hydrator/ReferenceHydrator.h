@@ -21,6 +21,7 @@
 
 #include "hydrator/RandomRecordHydrator.h"
 #include "math/random/RandomStream.h"
+#include "reflection/getter/ValueGetter.h"
 
 namespace Myriad {
 
@@ -30,15 +31,19 @@ public:
 
 	typedef void (RecordType::*RefRecordSetter)(const AutoPtr<RefRecordType>&);
 	typedef void (RefRecordType::*PivotFieldSetter)(const T&);
-	typedef const T& (RecordType::*PivotValueGetter)() const;
 
-	ReferenceHydrator(RandomStream& random, RefRecordSetter referenceSetter, PivotFieldSetter pivotSetter, RandomSetInspector<RefRecordType> referenceSet, PivotValueGetter pivotGetter) :
+	ReferenceHydrator(RandomStream& random, RefRecordSetter referenceSetter, PivotFieldSetter pivotSetter, RandomSetInspector<RefRecordType> referenceSet, ValueGetter<RecordType, T>* pivotGetter) :
 		RandomRecordHydrator<RecordType>(random),
 		_referenceSetter(referenceSetter),
 		_referenceSet(referenceSet),
 		_invertibleHydrator(_referenceSet.template invertableHydrator<T>(pivotSetter)),
 		_pivotGetter(pivotGetter)
 	{
+	}
+
+	~ReferenceHydrator()
+	{
+		delete _pivotGetter;
 	}
 
 	void operator()(AutoPtr<RecordType> recordPtr) const
@@ -53,7 +58,7 @@ public:
 		else
 		{
 			// get the interval from the referenced PRDG sequence where [T = t]
-			Interval<I64u> pivotRange = _invertibleHydrator((recordPtr->*_pivotGetter)());
+			Interval<I64u> pivotRange = _invertibleHydrator((*_pivotGetter)(recordPtr));
 
 			// hydrate a record with a random genID from the tRange interval
 			const AutoPtr<RefRecordType> refRecordPtr = _referenceSet.at(random(pivotRange.min(), pivotRange.max()-1));
@@ -70,7 +75,7 @@ private:
 
 	const InvertibleHydrator<RefRecordType, T>& _invertibleHydrator;
 
-	PivotValueGetter _pivotGetter;
+	ValueGetter<RecordType, T>* _pivotGetter;
 };
 
 }  // namespace Myriad

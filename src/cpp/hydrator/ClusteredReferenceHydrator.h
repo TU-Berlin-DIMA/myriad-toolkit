@@ -22,6 +22,7 @@
 #include "generator/InvalidRecordException.h"
 #include "hydrator/RandomRecordHydrator.h"
 #include "math/random/RandomStream.h"
+#include "reflection/getter/ValueGetter.h"
 
 namespace Myriad {
 
@@ -31,9 +32,8 @@ public:
 
 	typedef void (RecordType::*RefRecordSetter)(const AutoPtr<RefRecordType>&);
     typedef void (RecordType::*PositionSetter)(const I32u&);
-    typedef const I32u& (RefRecordType::*NestedCountGetter)() const;
 
-	ClusteredReferenceHydrator(RefRecordSetter parentSetter, NestedCountGetter countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
+	ClusteredReferenceHydrator(RefRecordSetter parentSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
 		_parentSetter(parentSetter),
 		_positionSetter(NULL),
 		_countGetter(countGetter),
@@ -45,7 +45,7 @@ public:
 	{
 	}
 
-	ClusteredReferenceHydrator(RefRecordSetter parentSetter, PositionSetter positionSetter, NestedCountGetter countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
+	ClusteredReferenceHydrator(RefRecordSetter parentSetter, PositionSetter positionSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
 		_parentSetter(parentSetter),
 		_positionSetter(positionSetter),
 		_countGetter(countGetter),
@@ -55,6 +55,11 @@ public:
         _maxNestedPerParent(_nestedSetCardinality/_referenceSetCardinality),
         _parent(NULL)
 	{
+	}
+
+	virtual ~ClusteredReferenceHydrator()
+	{
+		delete _countGetter;
 	}
 
 	void operator()(AutoPtr<RecordType> recordPtr) const
@@ -69,7 +74,7 @@ public:
 		        const_cast< ClusteredReferenceHydrator<RecordType, RefRecordType>* >(this)->_parent = _parentSet.at(parentRecordGenID);
 		    }
 		    
-		    I64u nestedCount = (_parent->*_countGetter)();
+		    I64u nestedCount = (*_countGetter)(_parent);
 
 		    if (nestedRecordGenID % _maxNestedPerParent < nestedCount)
 		    {
@@ -93,7 +98,7 @@ private:
 
 	PositionSetter _positionSetter;
 
-	NestedCountGetter _countGetter;
+	ValueGetter<RefRecordType, I32u>* _countGetter;
 
 	RandomSetInspector<RefRecordType> _parentSet;
 

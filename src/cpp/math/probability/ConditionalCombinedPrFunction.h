@@ -23,8 +23,10 @@
 #include "math/Function.h"
 #include "math/probability/CombinedPrFunction.h"
 
-#include <Poco/Exception.h>
 #include <Poco/Any.h>
+#include <Poco/Exception.h>
+#include <Poco/String.h>
+#include <Poco/RegularExpression.h>
 
 #include <string>
 #include <iostream>
@@ -89,10 +91,20 @@ private:
 
     size_t findBucket(const T2 x) const;
 
+	static RegularExpression headerLine1Format;
+	static RegularExpression headerLine2Format;
+
     size_t _numberOfx2Buckets;
     Interval<T2>* _x2Buckets;
     CombinedPrFunction<T1>* _x1Pr;
 };
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// static template members
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine1Format("\\W*@numberofconditions\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine2Format("\\W*@condition\\W*=\\W*\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*(#(.+))?");
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // private member function templates
@@ -201,56 +213,85 @@ template<typename T1, typename T2>  void ConditionalCombinedPrFunction<T1, T2>::
  */
 template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
 {
+	enum READ_STATE { NOC, CON, END };
+
     // reset old state
     reset();
 
-    string line;
+	// reader variables
+	READ_STATE currentState = NOC; // current reader machine state
+    string currentLine; // the current line
+	I16u currentX2BucketIndex = 0; // current item index
+	I16u currentLineNumber = 1; // current line number
+	RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
-    // read first line
-    getline(in, line);
-    if (!in.good() || line.substr(0, 21) != "# numberofconditions:")
-    {
-        throw DataException("Unexpected file header (line 1)");
-    }
-    I32 numberOfx2Buckets = atoi(line.substr(21).c_str());
+	// reader finite state machine
+	while (currentState != END)
+	{
+		// read next line
+		getline(in, currentLine);
 
-    if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
-    {
-        throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
-    }
+		// trim whitespace
+		trimInPlace(currentLine);
 
-    _numberOfx2Buckets = numberOfx2Buckets;
-    _x2Buckets = new Interval<T1>[numberOfx2Buckets];
-    _x1Pr = new CombinedPrFunction<T1>[numberOfx2Buckets];
+		// check if this line is empty or contains a single comment
+		if (currentLine.empty() || currentLine.at(0) == '#')
+		{
+			currentLineNumber++;
+			continue; // skip this line
+		}
 
-    // read second (empty) line
-    getline(in, line);
+		if (currentState == NOC)
+		{
+			if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
+			{
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofconditions = [' + x", currentLineNumber, currentLine));
+			}
 
-    for (I16u i = 0; i < numberOfx2Buckets; i++)
-    {
-        if (!in.good())
-        {
-            throw DataException("Bad line for bin #" + toString(i));
-        }
+			I32 numberOfx2Buckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
-        getline(in, line);
-        if (!in.good() || line.substr(0, 12) != "# condition:")
-        {
-            throw DataException("Unexpected condition format, expected format is `# condition: {min}{TAB}{max}`");
-        }
+		    if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
+		    {
+		        throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
+		    }
 
-        size_t tab1 = line.find_first_of('\t');
-        if (tab1 == string::npos)
-        {
-            throw DataException("Unexpected condition format, expected format is `# condition: {min}{TAB}{max}`");
-        }
+		    _numberOfx2Buckets = numberOfx2Buckets;
+		    _x2Buckets = new Interval<T1>[numberOfx2Buckets];
+		    _x1Pr = new CombinedPrFunction<T1>[numberOfx2Buckets];
 
-        T2 min = fromString<T2>(line.substr(12, tab1-12));
-        T2 max = fromString<T2>(line.substr(tab1+1));
+			currentX2BucketIndex = 0;
+			currentState = (numberOfx2Buckets > 0) ? CON : END;
+		}
+		else if (currentState == CON)
+		{
+			if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
+			{
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber, currentLine));
+			}
 
-        _x2Buckets[i].set(min, max);
-        _x1Pr[i].initialize(in);
-    }
+	        T2 min = fromString<T2>(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+	        T2 max = fromString<T2>(currentLine.substr(posVec[2].offset, posVec[2].length).c_str());
+
+	        _x2Buckets[currentX2BucketIndex].set(min, max);
+	        _x1Pr[currentX2BucketIndex].initialize(in, currentLineNumber);
+
+			currentX2BucketIndex++;
+
+			if (currentX2BucketIndex >= _numberOfx2Buckets)
+			{
+				currentState = END;
+				currentX2BucketIndex = 0;
+			}
+		}
+
+		currentLineNumber++;
+	}
+
+	// protect against unexpected reader state
+	if (currentState != END)
+	{
+		throw RuntimeException("Unexpected state in ConditionalCombinedPrFunction reader at line " + currentLineNumber);
+	}
 }
 
 template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>::pdf(T1 x1, T2 x2) const

@@ -129,7 +129,7 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 		// read first line
 		getline(in, line);
 
-		if (!in.good() || line.substr(0, 17) != "# numberofvalues:")
+		if (!in.good() || line.substr(0, 17) != "@numberofvalues =")
 		{
 			throw DataException("Unexpected file header");
 		}

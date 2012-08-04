@@ -480,31 +480,21 @@ class XMLReader(object):
     def __hydratorFactory(self, hydratorXMLNode, i):
         t = hydratorXMLNode.prop("type")
         
-        if t == "clustered_sequence_hydrator":
-            return ClusteredEnumSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "conditional_hydrator":
-            return ConditionalHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "const_hydrator":
-            return ConstValueHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "enum_set_hydrator":
-            return EnumSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "randomized_sequence_hydrator":
-            return MultiplicativeGroupHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "range_set_hydrator":
-            return RangeSetHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "simple_randomized_hydrator":
-            return SimpleRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "simple_clustered_hydrator":
-            return SimpleClusteredHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "conditional_randomized_hydrator":
-            return ConditionalRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "reference_hydrator":
-            return ReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "clustered_reference_hydrator":
             return ClusteredReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "conditional_randomized_hydrator":
+            return ConditionalRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "const_hydrator":
+            return ConstValueHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
         if t == "referenced_record_hydrator":
             return ReferencedRecordHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        
+        if t == "reference_hydrator":
+            return ReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "simple_clustered_hydrator":
+            return SimpleClusteredHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        if t == "simple_randomized_hydrator":
+            return SimpleRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+
         raise RuntimeError('Unsupported hydrator type `%s`' % (t))
 
     def __argumentFactory(self, argumentXMLNode, enclosingRecordType = None):

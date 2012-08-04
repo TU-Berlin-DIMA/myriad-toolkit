@@ -22,8 +22,10 @@
 #include "core/types.h"
 #include "math/Function.h"
 
-#include <Poco/Exception.h>
 #include <Poco/Any.h>
+#include <Poco/Exception.h>
+#include <Poco/String.h>
+#include <Poco/RegularExpression.h>
 
 #include <string>
 #include <fstream>
@@ -39,42 +41,42 @@ template<typename T> class CombinedPrFunction: public UnivariatePrFunction<T>
 public:
 
 	CombinedPrFunction() :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
 	{
 	}
 
 	CombinedPrFunction(const string& path) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(istream& in) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(const string& name, const string& path) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
 	{
 		initialize(path);
 	}
 
 	CombinedPrFunction(const string& name, istream& in) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
 	{
 		initialize(in);
 	}
 
 	CombinedPrFunction(map<string, Any>& params) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
 	CombinedPrFunction(const string& name, map<string, Any>& params) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0)
+		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
@@ -87,6 +89,8 @@ public:
 	void initialize(const string& path);
 
 	void initialize(istream& path);
+
+	void initialize(istream& in, I16u& currentLineNumber);
 
 	size_t numberOfBuckets() const;
 
@@ -116,6 +120,12 @@ private:
 
 	size_t findBucket(const T x, bool exact = true) const;
 
+	static RegularExpression headerLine1Format;
+	static RegularExpression headerLine2Format;
+	static RegularExpression headerLine3Format;
+	static RegularExpression valueLineFormat;
+	static RegularExpression bucketLineFormat;
+
 	Decimal _notNullProbability;
 
 	// TODO: replace with an interval
@@ -133,7 +143,19 @@ private:
 	Decimal* _bucketProbabilities;
 
 	Decimal* _cumulativeProbabilites;
+
+    Decimal _EPSILON;
 };
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// static template members
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename T> RegularExpression CombinedPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::headerLine2Format("\\W*@numberofbins\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::headerLine3Format("\\W*@nullprobability\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::valueLineFormat( "\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*(.+)\\W*\\}\\W*(#(.+))?");
+template<typename T> RegularExpression CombinedPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*\\}\\W*(#(.+))?");
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // private member function templates
@@ -200,6 +222,12 @@ template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decima
 	int max = _numberOfValues + _numberOfBuckets - 1;
 	int mid = 0;
 
+	// protect against invalid y
+	if (y >= 1.0)
+	{
+	    return max;
+	}
+
 	// continue searching while [min, max] is not empty
 	while (max >= min)
 	{
@@ -207,20 +235,22 @@ template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decima
 		mid = (min + max) / 2;
 
 		// determine which subarray to search
-		if (_cumulativeProbabilites[mid] <  y)
+		if (_cumulativeProbabilites[mid] <  y - _EPSILON)
 		{
 			// change min index to search upper subarray
 			min = mid + 1;
 		}
-		else if (_cumulativeProbabilites[mid] > y)
+		else if (_cumulativeProbabilites[mid] > y + _EPSILON)
 		{
 			// change max index to search lower subarray
 			max = mid - 1;
 		}
 		else
 		{
-			// key found at index mid
-			return mid;
+		    // key found at index mid
+		    // for all but the last position, increment the index by one to
+		    // compensate for the fact that buckets are defined as Y < y rather than Y <= y
+            return (static_cast<size_t>(mid) == _numberOfValues + _numberOfBuckets - 1) ? mid : mid+1;
 		}
 	}
 
@@ -378,7 +408,7 @@ template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
 
 		in.close();
 	}
-    catch(Exception& e)
+    catch(Poco::Exception& e)
     {
         in.close();
         throw e;
@@ -395,120 +425,168 @@ template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
     }
 }
 
+template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
+{
+	I16u currentLineNumber = 1;
+	initialize(in, currentLineNumber);
+}
+
 /**
  * Load the distribution data from the given input stream. For each entry add a
  * [min, max) interval of domain values to a lookup table.
  */
-template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
+template<typename T> void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 {
+	enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
+
 	// reset old state
 	reset();
 
-	string line, binMin, binMax;
+	// reader variables
+	READ_STATE currentState = NOE; // current reader machine state
+	string currentLine; // the current line
+	I16u currentItemIndex = 0; // current item index
+	RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
-	// read first line
-	getline(in, line);
-	if (!in.good() || line.substr(0, 20) != "# numberofexactvals:")
+	// reader finite state machine
+	while (currentState != END)
 	{
-		throw DataException("Unexpected file header (line 1)");
-	}
-	I32 numberOfValues = atoi(line.substr(20).c_str());
-
-	if (numberOfValues <= 0 && numberOfValues > 65536)
-	{
-		throw DataException("Invalid number of exact values `" + toString(numberOfValues) +  "`");
-	}
-
-	// read second line
-	getline(in, line);
-	if (!in.good() || line.substr(0, 15) != "# numberofbins:")
-	{
-		throw DataException("Unexpected file header (line 2)");
-	}
-	I32 numberOfBuckets = atoi(line.substr(15).c_str());
-
-	if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
-	{
-		throw DataException("Invalid number of lines `" + toString(numberOfBuckets) +  "`");
-	}
-
-	// read third line
-	getline(in, line);
-	if (!in.good() || line.substr(0, 18) != "# nullprobability:")
-	{
-		throw DataException("Unexpected file header (line 3)");
-	}
-	Decimal nullProbability = atof(line.substr(18).c_str());
-
-	_notNullProbability = 1.0 - nullProbability;
-
-	_numberOfValues = numberOfValues;
-	_values = new T[numberOfValues];
-	_valueProbabilities = new Decimal[numberOfValues];
-
-	_numberOfBuckets = numberOfBuckets;
-	_buckets = new Interval<T>[numberOfBuckets];
-	_bucketProbabilities = new Decimal[numberOfBuckets];
-
-	_cumulativeProbabilites = new Decimal[numberOfValues+numberOfBuckets];
-
-	for (I16u i = 0; i < numberOfValues; i++)
-	{
-		if (!in.good())
+		// the special FIN stage contains only final initialization constructs
+		// and does not a currentLine
+		if (currentState == FIN)
 		{
-			throw DataException("Bad line for bin #" + toString(i));
+			_min = std::min(_buckets[0].min(), _values[0]);
+			_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
+
+			currentState = END;
+			continue;
 		}
 
-		getline(in, line);
+		// read next line
+		getline(in, currentLine);
 
-		size_t tab1 = line.find_first_of('\t');
-        size_t lend = line.find_last_of('#');
+		// trim whitespace
+		trimInPlace(currentLine);
 
-        if (lend == string::npos)
-        {
-            lend = line.length();
-        }
-
-		Decimal probability = fromString<Decimal>(line.substr(0, tab1));
-		T value = fromString<T>(line.substr(tab1+1, lend-tab1-1));
-
-		_values[i] = value;
-		_valueProbabilities[i] = probability;
-		_valueProbability += probability;
-		_cumulativeProbabilites[i] = _valueProbability;
-	}
-
-	for (I16u i = 0; i < numberOfBuckets; i++)
-	{
-		if (!in.good())
+		// check if this line is empty or contains a single comment
+		if (currentLine.empty() || currentLine.at(0) == '#')
 		{
-			throw DataException("Bad line for bin #" + toString(i));
+			currentLineNumber++;
+			continue; // skip this line
 		}
 
-		getline(in, line);
+		if (currentState == NOE)
+		{
+			if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
+			{
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofexactvals = ' + x", currentLineNumber, currentLine));
+			}
 
-		size_t tab1 = line.find_first_of('\t');
-		size_t tab2 = line.find_last_of('\t');
-        size_t lend = line.find_last_of('#');
+			I32 numberOfValues = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
-        if (lend == string::npos)
-        {
-            lend = line.length();
-        }
+			if (numberOfValues <= 0 && numberOfValues > 65536)
+			{
+				throw DataException("Invalid number of exact values '" + toString(numberOfValues) +  "'");
+			}
 
-		Decimal probability = fromString<Decimal>(line.substr(0, tab1));
-		T min = fromString<T>(line.substr(tab1+1, tab2-tab1-1));
-		T max = fromString<T>(line.substr(tab2+1, lend-tab2-1));
+			_numberOfValues = numberOfValues;
+			_values = new T[numberOfValues];
+			_valueProbabilities = new Decimal[numberOfValues];
 
-		_buckets[i].set(min, max);
-		_bucketProbabilities[i] = probability;
-		_bucketProbability += probability;
-		_cumulativeProbabilites[i+numberOfValues] = _valueProbability + _bucketProbability;
+			currentState = NOB;
+		}
+		else if (currentState == NOB)
+		{
+			if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
+			{
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofbins = ' + x", currentLineNumber, currentLine));
+			}
+
+			I32 numberOfBuckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+
+			if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
+			{
+				throw DataException("Invalid number of buckets '" + toString(numberOfBuckets) +  "'");
+			}
+
+			_numberOfBuckets = numberOfBuckets;
+			_buckets = new Interval<T>[numberOfBuckets];
+			_bucketProbabilities = new Decimal[numberOfBuckets];
+
+			_cumulativeProbabilites = new Decimal[_numberOfValues+_numberOfBuckets];
+
+			currentState = NPR;
+		}
+		else if (currentState == NPR)
+		{
+			if (!in.good() || !headerLine3Format.match(currentLine, 0, posVec))
+			{
+				throw DataException(format("line %hu: Bad header line `%s`, should be: '@nullprobability = ' + x", currentLineNumber, currentLine));
+			}
+
+			_notNullProbability = 1.0 - atof(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+
+			currentItemIndex = 0;
+			currentState = (_numberOfValues > 0) ? VLN : BLN;
+		}
+		else if (currentState == VLN)
+		{
+			if (!in.good() || !valueLineFormat.match(currentLine, 0, posVec))
+			{
+				throw DataException(format("line %hu: Bad value probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = {' + x + ') }'", currentLineNumber, currentLine));
+			}
+
+			Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
+			T value = fromString<T>(currentLine.substr(posVec[3].offset, posVec[3].length));
+
+			_values[currentItemIndex] = value;
+			_valueProbabilities[currentItemIndex] = probability;
+			_valueProbability += probability;
+			_cumulativeProbabilites[currentItemIndex] = _valueProbability;
+
+			currentItemIndex++;
+
+			if (currentItemIndex >= _numberOfValues)
+			{
+				currentState = (_numberOfBuckets > 0) ? BLN : FIN;
+				currentItemIndex = 0;
+			}
+		}
+		else if (currentState == BLN)
+		{
+			if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
+			{
+				throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [' + x_min + ', ' + x_max + ') }'", currentLineNumber, currentLine));
+			}
+
+			Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
+			T min = fromString<T>(currentLine.substr(posVec[3].offset, posVec[3].length));
+			T max = fromString<T>(currentLine.substr(posVec[4].offset, posVec[4].length));
+
+			_buckets[currentItemIndex].set(min, max);
+			_bucketProbabilities[currentItemIndex] = probability;
+			_bucketProbability += probability;
+			_cumulativeProbabilites[currentItemIndex+_numberOfValues] = _valueProbability + _bucketProbability;
+
+			currentItemIndex++;
+
+			if (currentItemIndex >= _numberOfBuckets)
+			{
+				currentState = FIN;
+				currentItemIndex = 0;
+			}
+		}
+
+		currentLineNumber++;
 	}
 
-	_min = std::min(_buckets[0].min(), _values[0]);
-	_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
+	// protect against unexpected reader state
+	if (currentState != END)
+	{
+		throw RuntimeException("Unexpected state in CombinedPrFunction reader at line " + currentLineNumber);
+	}
 
+	// check if extra normalization is required
 	if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
 	{
 		normalize();
@@ -554,7 +632,7 @@ template<typename T> Decimal CombinedPrFunction<T>::pdf(T x) const
 			return _bucketProbabilities[i] * (1.0 / static_cast<Decimal>(_buckets[i].length()));
 		}
 
-		throw RuntimeException("Unknown pdf(x) for x = " + toString<T>(x));
+		throw RuntimeException(AbstractFunction::name() + ": unknown pdf(x) for x = " + toString<T>(x));
 	}
 }
 

@@ -172,9 +172,29 @@ class FieldGetterTransfomer(object):
             return None
         
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
-            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
-            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
-            return '&%s::%s' % (typeName, fieldAccessMethodName)
+            recordTypeNameUS = argumentNode.getRecordTypeRef().getAttribute("key")
+            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
+            
+            fieldNode = argumentNode.getFieldRef()
+            fieldType = fieldNode.getAttribute("type")
+            fieldName = fieldNode.getAttribute("name")
+                
+            return "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)}
+
+        elif isinstance(argumentNode, ResolvedReferencedFieldRefArgumentNode):
+            recordTypeNameUS = argumentNode.getRecordTypeRef().getAttribute("key")
+            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
+            
+            referenceName = argumentNode.getRecordReferenceRef().getAttribute("name")
+            referenceTypeNameUS = argumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key")
+            referenceTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(referenceTypeNameUS))
+            
+            fieldNode = fieldArgumentNode.getFieldRef()
+            fieldType = fieldNode.getAttribute("type")
+            fieldName = fieldNode.getAttribute("name")
+
+            return "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)}
+        
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
@@ -217,7 +237,7 @@ class FunctionRefTransfomer(object):
             configPrefix = ""
             
         if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
-            functionType = argumentNode.getAttribute("type")
+            functionType = argumentNode.getAttribute("concrete_type")
             functionName = argumentNode.getAttribute("ref")
             return '%sfunc< %s >("%s")' % (configPrefix, functionType, functionName)
         else:

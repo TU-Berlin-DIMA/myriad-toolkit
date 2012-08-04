@@ -765,186 +765,41 @@ class HydratorNode(AbstractNode):
         return []
 
 
-class ClusteredEnumSetHydratorNode(HydratorNode):
+class ClusteredReferenceHydratorNode(HydratorNode):
     '''
     classdocs
     '''
     
     def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ClusteredEnumSetHydrator")
-        super(ClusteredEnumSetHydratorNode, self).__init__(*args, **kwargs)
+        kwargs.update(template_type="ClusteredReferenceHydrator")
+        super(ClusteredReferenceHydratorNode, self).__init__(*args, **kwargs)
     
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
         
-        return "ClusteredEnumSetHydrator< %s, %s >" % (recordType, fieldType)
-        
-    def hasPRNGArgument(self):
-        return False
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'interval_field', 'enum_cardinality', 'cardinality']
-
-
-class ConditionalHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ConditionalHydrator")
-        super(ConditionalHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        trueHydratorType = self.getArgument("if_true").getHydratorRef().getAttribute("type_alias")
-        falseHydratorType = self.getArgument("if_false").getHydratorRef().getAttribute("type_alias") 
-        
-        return "ConditionalHydrator< %s, %s, %s, %s >" % (recordType, fieldType, trueHydratorType, falseHydratorType)
-        
-    def hasPRNGArgument(self):
-        return False
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'compare_value', 'if_true', 'if_false']
-
-
-class ConstValueHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ConstValueHydrator")
-        super(ConstValueHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        
-        return "ConstValueHydrator< %s, %s >" % (recordType, fieldType)
-        
-    def hasPRNGArgument(self):
-        return False
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'const_value']
-
-
-class EnumSetHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="EnumSetHydrator")
-        super(EnumSetHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        
-        return "EnumSetHydrator< %s, %s >" % (recordType, fieldType)
+        return "ClusteredReferenceHydrator< %s, %s >" % (recordType, refRecordType)
         
     def hasPRNGArgument(self):
         return True
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'probability']
-
-
-class MultiplicativeGroupHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
     
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="MultiplicativeGroupHydrator")
-        super(MultiplicativeGroupHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-
-        return "MultiplicativeGroupHydrator< %s >" % (recordType)
-        
-    def hasPRNGArgument(self):
-        return False
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'cardinality', 'begin', 'end']
-
-
-class RangeSetHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="RangeSetHydrator")
-        super(RangeSetHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        
-        return "RangeSetHydrator< %s, %s >" % (recordType, fieldType)
-        
-    def hasPRNGArgument(self):
+    def hasNewArgsSupport(self):
         return True
         
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'range', 'probability']
-
-
-class SimpleRandomizedHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="SimpleRandomizedHydrator")
-        super(SimpleRandomizedHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
+    def getXMLArguments(self):
+        return { 'field'              : { 'type': 'field_ref' }, 
+                 'position_field'     : { 'type': 'position_field', 'optional': True }, 
+                 'count_field'        : { 'type': 'field_ref' }, 
+                 'nested_cardinality' : { 'type': 'literal' } 
+               }
         
-        return "SimpleRandomizedHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
-        
-    def hasPRNGArgument(self):
-        return True
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'probability']
-
-
-class SimpleClusteredHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="SimpleClusteredHydrator")
-        super(SimpleClusteredHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        
-        return "SimpleClusteredHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
-        
-    def hasPRNGArgument(self):
-        return False
-        
-    def isInvertible(self):
-        return True
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'probability', 'sequence_cardinality']
+    def getConstructorArguments(self):
+        return [ 'FieldSetter(field)',
+                 'FieldSetter(position_field)*',
+                 'FieldGetter(count_field)',
+                 'RandomSetInspector(count_field)',
+                 'Literal(nested_cardinality)' 
+               ]
 
 
 class ConditionalRandomizedHydratorNode(HydratorNode):
@@ -984,6 +839,41 @@ class ConditionalRandomizedHydratorNode(HydratorNode):
                ]
 
 
+class ConstValueHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ConstValueHydrator")
+        super(ConstValueHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        
+        return "ConstValueHydrator< %s, %s >" % (recordType, fieldType)
+        
+    def hasPRNGArgument(self):
+        return False
+    
+    def hasNewArgsSupport(self):
+        return True
+        
+    def getXMLArguments(self):
+        return { 'field'              : { 'type': 'field_ref' }, 
+                 'const_value'        : { 'type': 'literal' }
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'FieldSetter(field)',
+                 'Literal(const_value)'
+               ]
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'const_value']
+
+
 class ReferencedRecordHydratorNode(HydratorNode):
     '''
     classdocs
@@ -1019,43 +909,6 @@ class ReferencedRecordHydratorNode(HydratorNode):
                  'FieldSetter(pivot_field)',
                  'RandomSetInspector(pivot_field)',
                  'FunctionRef(probability)' 
-               ]
-
-
-class ClusteredReferenceHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ClusteredReferenceHydrator")
-        super(ClusteredReferenceHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-        
-        return "ClusteredReferenceHydrator< %s, %s >" % (recordType, refRecordType)
-        
-    def hasPRNGArgument(self):
-        return True
-    
-    def hasNewArgsSupport(self):
-        return True
-        
-    def getXMLArguments(self):
-        return { 'field'              : { 'type': 'field_ref' }, 
-                 'position_field'     : { 'type': 'position_field', 'optional': True }, 
-                 'count_field'        : { 'type': 'field_ref' }, 
-                 'nested_cardinality' : { 'type': 'literal' } 
-               }
-        
-    def getConstructorArguments(self):
-        return [ 'FieldSetter(field)',
-                 'FieldSetter(position_field)*',
-                 'FieldGetter(count_field)',
-                 'RandomSetInspector(count_field)',
-                 'Literal(nested_cardinality)' 
                ]
 
 
@@ -1098,6 +951,55 @@ class ReferenceHydratorNode(HydratorNode):
                  'RandomSetInspector(pivot_field)',
                  'FieldGetter(pivot_value)' 
                ]
+
+
+class SimpleClusteredHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="SimpleClusteredHydrator")
+        super(SimpleClusteredHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
+        
+        return "SimpleClusteredHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
+        
+    def hasPRNGArgument(self):
+        return False
+        
+    def isInvertible(self):
+        return True
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'probability', 'sequence_cardinality']
+
+
+class SimpleRandomizedHydratorNode(HydratorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="SimpleRandomizedHydrator")
+        super(SimpleRandomizedHydratorNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
+        
+        return "SimpleRandomizedHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
+        
+    def hasPRNGArgument(self):
+        return True
+        
+    def getConstructorArgumentsOrder(self):
+        return ['field', 'probability']
 
 
 #
