@@ -29,17 +29,14 @@ using namespace Poco;
 
 namespace Myriad {
 
-class CustomDiscreteProbability;
-
 /**
  * Basic template for all discrete maps.
  *
+ * @deprecated(Aug 7, 2012)
  */
 template<class Domain, class Range> class DiscreteMap: public UnaryFunction<Domain, Range>
 {
 public:
-
-	friend class CustomDiscreteProbability;
 
 	DiscreteMap(const string& name) :
 		UnaryFunction<Domain, Range> (name)

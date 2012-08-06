@@ -189,12 +189,6 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
     }
 }
 
-void AbstractGeneratorConfig::setProbability(const ID x, const Element* probability)
-{
-	CustomDiscreteProbability& f = func<CustomDiscreteProbability>(probability->getAttribute("function"));
-	f.define(x, fromString<Decimal>(probability->getAttribute("value")));
-}
-
 void AbstractGeneratorConfig::computeFixedPartitioning(const string& key)
 {
 	ID cardinality = fromString<ID> (getString("partitioning." + key + ".cardinality"));

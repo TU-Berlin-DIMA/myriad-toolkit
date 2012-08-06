@@ -142,17 +142,6 @@ protected:
 	void bindEnumSet(const string& key, Path path);
 
 	/**
-	 * Helper function - binds a XML configured record set to a vector.
-	 *
-	 * @param doc
-	 * @param id
-	 * @param set
-	 *
-	 * @deprecated
-	 */
-	template<class T> void bindRecordSet(const AutoPtr<XML::Document>& doc, const string& id, vector<AutoPtr<T> >& set);
-
-	/**
 	 * Helper function - loads functions.
 	 */
 	virtual void configureFunctions()
@@ -173,14 +162,6 @@ protected:
 	virtual void configureSets()
 	{
 	}
-
-	/**
-	 * Helper function - defines a probability point in a custom probability.
-	 *
-	 * @param genID
-	 * @param probability
-	 */
-	void setProbability(const ID genID, const XML::Element* probability);
 
 	/**
 	 * Helper partitioning function for fixed size subsequences.
@@ -254,119 +235,6 @@ protected:
 	 */
 	Logger& _logger;
 };
-
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// template methods
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-template<class T> void AbstractGeneratorConfig::bindRecordSet(const AutoPtr<XML::Document>& doc, const string& id, vector<AutoPtr<T> >& set)
-{
-	XML::Element* containerEl = doc->getElementById(id, "id");
-	if (containerEl == NULL || containerEl->tagName() != "object-set")
-	{
-		throw ConfigException(format("No <object-set> element found for `%s`", id));
-	}
-
-	ObjectBuilder objectBuilder;
-	AutoPtr<XML::NodeList> strings = containerEl->getElementsByTagName("object");
-
-	set.resize(strings->length());
-	for (ID i = 0; i < strings->length(); i++)
-	{
-		objectBuilder.addParameter("gen_id", i);
-
-		XML::Element* o = static_cast<XML::Element*> (strings->item(i));
-
-		// read object properties
-		AutoPtr<XML::NodeList> properties = o->getElementsByTagName("property");
-		for (unsigned long int j = 0; j < properties->length(); j++)
-		{
-			XML::Element* p = static_cast<XML::Element*> (properties->item(j));
-			objectBuilder.addParameter(p->getAttribute("name"), p->innerText());
-		}
-
-		// read object functions
-		ObjectBuilder functionBuilder;
-		AutoPtr<XML::NodeList> functions = o->getElementsByTagName("function");
-		for (unsigned long int j = 0; j < functions->length(); j++)
-		{
-			XML::Element* f = static_cast<XML::Element*> (functions->item(j));
-			// read name and type
-			String name = f->getAttribute("name");
-			String type = f->getAttribute("type");
-			String functionName = format("%s-%Lu", name, i);
-
-			// read function parameters
-			AutoPtr<XML::NodeList> parameters = f->getElementsByTagName("param");
-			for (unsigned long int j = 0; j < parameters->length(); j++)
-			{
-				XML::Element* p = static_cast<XML::Element*> (parameters->item(j));
-				functionBuilder.addParameter(p->getAttribute("name"), fromString<Decimal>(p->innerText()));
-			}
-
-			// create function of the specified type
-			if (type == "custom-discrete-probability")
-			{
-				// read function parameters
-				AutoPtr<XML::NodeList> probabilities = f->getElementsByTagName("probability");
-				for (unsigned long int j = 0; j < probabilities->length(); j++)
-				{
-					XML::Element* p = static_cast<XML::Element*> (probabilities->item(j));
-					functionBuilder.addParameter(p->getAttribute("argument"), fromString<Decimal>(p->getAttribute("value")));
-				}
-
-				CustomDiscreteProbability* f = functionBuilder.create<CustomDiscreteProbability> (functionName);
-				addFunction(f);
-				objectBuilder.addParameter(name, f);
-			}
-			else if (type == "interval-map")
-			{
-				IntervalMap<ID, ID>* f = functionBuilder.create<IntervalMap<ID, ID> > (functionName);
-				addFunction(f);
-				objectBuilder.addParameter(name, f);
-			}
-			else if (type == "id-range-map")
-			{
-				DiscreteMap<ID, Interval<ID> >* f = functionBuilder.create<DiscreteMap<ID, Interval<ID> > > (functionName);
-				addFunction(f);
-				objectBuilder.addParameter(name, f);
-			}
-			else if (type == "pareto")
-			{
-				ParetoPrFunction* f = functionBuilder.create<ParetoPrFunction> (functionName);
-				addFunction(f);
-				objectBuilder.addParameter(name, f);
-			}
-			else if (type == "normal")
-			{
-				NormalPrFunction* f = functionBuilder.create<NormalPrFunction> (functionName);
-				addFunction(f);
-				objectBuilder.addParameter(name, f);
-			}
-			else if (type == "bounded-normal")
-			{
-				BoundedNormalPrFunction* f = functionBuilder.create<BoundedNormalPrFunction> (name);
-				addFunction(f);
-				objectBuilder.addParameter(name, f);
-			}
-			else
-			{
-				throw FeatureConfigurationException(format("Unsupported function type '%s' for function", type, name));
-			}
-
-			functionBuilder.clear();
-		}
-
-		set[i] = objectBuilder.create<T>();
-		objectBuilder.clear();
-
-		AutoPtr<XML::NodeList> probabilities = o->getElementsByTagName("probability");
-		for (unsigned long int j = 0; j < probabilities->length(); j++)
-		{
-			setProbability(i, static_cast<XML::Element*> (probabilities->item(j)));
-		}
-	}
-}
 
 } // namespace Myriad
 
