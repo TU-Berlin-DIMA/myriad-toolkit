@@ -282,78 +282,6 @@ class SourceCompiler(object):
         self._dgenName = args.dgen_name
         
         self._log = logging.getLogger("source.compiler")
-        
-    def _argumentCode(self, argumentNode, configVarName = 'config'):
-        
-        if configVarName:
-            configPrefix = '%s.'  % (configVarName)
-        else:
-            configPrefix = ''
-        
-        if isinstance(argumentNode, LiteralArgumentNode):
-            attributeType = argumentNode.getAttribute("type").strip()
-            attributeValue = argumentNode.getAttribute("value").strip()
-            
-            m = self._expr_pattern.match(attributeValue)
-            if (m):
-                return '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(2))
-            
-            m = self._param_pattern.match(attributeValue)
-            if (m):
-                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType if m.group(1) == None else m.group(1)[1:-1], m.group(2)), attributeValue)
-                return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1])
-            else:
-                if attributeType == "String":
-                    return '"%s"' % (attributeValue)
-                else:
-                    return '%s' % (attributeValue)
-        
-        elif isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
-            functionType = argumentNode.getAttribute("concrete_type")
-            functionName = argumentNode.getAttribute("ref")
-            return '%sfunc< %s > ("%s")' % (configPrefix, functionType, functionName)
-        
-        elif isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
-            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
-            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
-            return '&%s::%s' % (typeName, fieldAccessMethodName)
-        
-        elif isinstance(argumentNode, ResolvedHydratorRefArgumentNode):
-            hydratorVarName = StringTransformer.us2cc(argumentNode.getHydratorRef().getAttribute("key"))
-            return '_%s' % (hydratorVarName)
-        
-        elif isinstance(argumentNode, StringSetRefArgumentNode):
-            stringSetKey = argumentNode.getAttribute("ref")
-            return '%sstringSet("%s")' % (configPrefix, stringSetKey)
-        
-        else:
-            return "NULL /* unknown */"
-        
-    def _getterCode(self, fieldArgumentNode):
-        
-        if isinstance(fieldArgumentNode, ResolvedDirectFieldRefArgumentNode):
-            recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
-            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
-            
-            fieldNode = fieldArgumentNode.getFieldRef()
-            fieldType = fieldNode.getAttribute("type")
-            fieldName = fieldNode.getAttribute("name")
-                
-            return "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)}
-
-        elif isinstance(fieldArgumentNode, ResolvedReferencedFieldRefArgumentNode):
-            recordTypeNameUS = fieldArgumentNode.getRecordTypeRef().getAttribute("key")
-            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
-            
-            referenceName = fieldArgumentNode.getRecordReferenceRef().getAttribute("name")
-            referenceTypeNameUS = fieldArgumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key")
-            referenceTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(referenceTypeNameUS))
-            
-            fieldNode = fieldArgumentNode.getFieldRef()
-            fieldType = fieldNode.getAttribute("type")
-            fieldName = fieldNode.getAttribute("name")
-
-            return "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)}
 
 
 class FrontendCompiler(SourceCompiler):
@@ -676,8 +604,7 @@ class ConfigCompiler(SourceCompiler):
             
             if cardinalityEstimatorType == 'linear_scale_estimator':
                 print >> wfile, '        // setup linear scale estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
-                print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), self._argumentCode(cardinalityEstimator.getArgument("base_cardinality"), None))
-#                print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("base_cardinality"), None))
+                print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("base_cardinality"), None))
                 print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
         
         print >> wfile, '    }'
@@ -697,9 +624,10 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '        // bind string sets to config members with the bindStringSet method'
         
+        literalTransformer = LiteralTransfomer()
         nodeFilter = DepthFirstNodeFilter(filterType=EnumSetNode)
         for enumSet in nodeFilter.getAll(astRoot):
-            print >> wfile, '        bindEnumSet("%(n)s", %(p)s);' % {'n': enumSet.getAttribute("key"), 'p': self._argumentCode(enumSet.getArgument("path"), None)}
+            print >> wfile, '        bindEnumSet("%(n)s", %(p)s);' % {'n': enumSet.getAttribute("key"), 'p': literalTransformer.transform(enumSet.getArgument("path"), None)}
 
         print >> wfile, '    }'
         print >> wfile, '};'
@@ -1374,8 +1302,9 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, 'template<> const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
             print >> wfile, '{'
             
+            fieldSetterTransformer = FieldSetterTransfomer()
             for hydrator in invertibleHydrators[fieldType]:
-                print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': self._argumentCode(hydrator.getArgument("field"))}
+                print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': fieldSetterTransformer.transform(hydrator.getArgument("field"))}
                 print >> wfile, '    {'
                 print >> wfile, '        return _%s;' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
                 print >> wfile, '    }'
