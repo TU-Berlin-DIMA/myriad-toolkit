@@ -258,7 +258,7 @@ class EnvVariableTransfomer(object):
 
 class SourceCompiler(object):
     '''
-    classdocs
+    An abstract compiler type for all C++ source compiler components. 
     '''
     
     BUFFER_SIZE = 512
@@ -269,9 +269,6 @@ class SourceCompiler(object):
     _dgenName = None
     
     _log = None
-    
-    _expr_pattern = re.compile('%(\([\w.\-]+\))?([\w.\-]+)%')    
-    _param_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, args):
         '''
