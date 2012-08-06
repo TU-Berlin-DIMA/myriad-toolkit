@@ -448,32 +448,26 @@ class XMLReader(object):
         raise RuntimeError('Invalid generator task type `%s`' % (sequenceIteratorType))
         
     def __functionFactory(self, functionXMLNode):
-        functionType = functionXMLNode.prop("type")
         
-        functionMatch = None
-        functionNode = None
-        
-        if (functionType == "custom_discrete_probability"):
-            return CustomDiscreteProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        # @todo: second and third component should be mandatory 
+        functionMatch = re.match(r"([a-z\_]+)(\[([a-zA-Z0-9\_]+)(;([a-zA-Z0-9\_,]+))?\])?", functionXMLNode.prop("type"))
+        # check if type is syntactically correct
+        if (functionMatch is None):
+            raise RuntimeError('Invalid function type `%s`' % (functionXMLNode.prop("type")))
+        # grab the function type
+        functionType = functionMatch.group(1)
+
+        # factory logic
         if (functionType == "normal_probability"):
             return NormalProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "pareto_probability"):
             return ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         if (functionType == "uniform_probability"):
             return UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-
-        functionMatch = re.match(r"combined_probability\[(.*)\]", functionType)
-        if (functionMatch != None):
-            return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType=functionMatch.group(1))
-        
-        functionMatch = re.match(r"conditional_combined_probability\[(.*),(.*)\]", functionType)
-        if (functionMatch != None):
-            return ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType1=functionMatch.group(1), domainType2=functionMatch.group(2))
-        
-        if (functionType == "q_histogram_probability"):
-            return QHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-        if (functionType == "conditional_q_histogram_probability"):
-            return ConditionalQHistogramProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        if (functionType == "conditional_combined_probability"):
+            return ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType1=functionMatch.group(3), domainType2=functionMatch.group(5))
+        if (functionMatch != "combined_probability"):
+            return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType=functionMatch.group(3))
 
         raise RuntimeError('Invalid function type `%s`' % (functionType))
     

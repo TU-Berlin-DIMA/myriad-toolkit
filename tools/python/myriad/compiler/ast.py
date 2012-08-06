@@ -167,11 +167,15 @@ class FunctionNode(AbstractNode):
     
     __arguments = {}
     
+    orderkey = None
+    
     def __init__(self, *args, **kwargs):
         if not kwargs.has_key("concrete_type"):
             kwargs.update(concrete_type=kwargs["type"])
         super(FunctionNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
+        self.orderkey = None
+        self.setArgument(LiteralArgumentNode(key='key', type='String', value=self.getAttribute("key")))
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -186,11 +190,17 @@ class FunctionNode(AbstractNode):
     def getArgument(self, key):
         return self.__arguments.get(key)
         
-    def getConstructorArgumentsOrder(self):
-        return []
+    def setOrderKey(self, key):
+        self.orderkey = key
     
     def getConcreteType(self):
         return self.getAttribute("concrete_type")
+    
+    def getXMLArguments(self):
+        return {}
+    
+    def getConstructorArguments(self):
+        return [ 'Literal(key)' ]
 
     
 
@@ -203,8 +213,17 @@ class ParetoProbabilityFunctionNode(FunctionNode):
         kwargs.update(type="ParetoPrFunction")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
-    def getConstructorArgumentsOrder(self):
-        return ["x_min", "alpha"]
+    def getXMLArguments(self):
+        return { 'x_min'              : { 'type': 'literal' }, 
+                 'alpha'              : { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        args = super(ParetoProbabilityFunctionNode, self).getConstructorArguments()
+        args.extend(['Literal(x_min)',
+                     'Literal(alpha)'
+                     ])
+        return args
 
     
 class NormalProbabilityFunctionNode(FunctionNode):
@@ -216,20 +235,19 @@ class NormalProbabilityFunctionNode(FunctionNode):
         kwargs.update(type="NormalPrFunction")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
-    def getConstructorArgumentsOrder(self):
-        return ["mean", "stddev"]
-    
+    def getXMLArguments(self):
+        return { 'mean'               : { 'type': 'literal' }, 
+                 'stddev'             : { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        args = super(NormalProbabilityFunctionNode, self).getConstructorArguments()
+        args.extend(['Literal(mean)',
+                     'Literal(stddev)'
+                     ])
+        return args
 
-class CustomDiscreteProbabilityFunctionNode(FunctionNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(type="CustomDiscreteProbability")
-        super(CustomDiscreteProbabilityFunctionNode, self).__init__(*args, **kwargs)
 
-    
 class UniformProbabilityFunctionNode(FunctionNode):
     '''
     classdocs
@@ -239,8 +257,17 @@ class UniformProbabilityFunctionNode(FunctionNode):
         kwargs.update(type="UniformPrFunction")
         super(UniformProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
-    def getConstructorArgumentsOrder(self):
-        return ["x_min", "x_max"]
+    def getXMLArguments(self):
+        return { 'x_min'             : { 'type': 'literal' }, 
+                 'x_max'             : { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        args = super(UniformProbabilityFunctionNode, self).getConstructorArguments()
+        args.extend(['Literal(x_min)',
+                     'Literal(x_max)'
+                     ])
+        return args
     
 
 class CombinedProbabilityFunctionNode(FunctionNode):
@@ -253,8 +280,14 @@ class CombinedProbabilityFunctionNode(FunctionNode):
         kwargs.update(concrete_type="CombinedPrFunction<%s>" % kwargs.get("domainType", "I64u"))
         super(CombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
-    def getConstructorArgumentsOrder(self):
-        return ["path"]
+    def getXMLArguments(self):
+        return { 'path'               : { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        args = super(CombinedProbabilityFunctionNode, self).getConstructorArguments()
+        args.extend(['Literal(path)'])
+        return args
     
 
 class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
@@ -267,45 +300,15 @@ class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
         kwargs.update(concrete_type="ConditionalCombinedPrFunction<%s, %s>" % (kwargs.get("domainType1", "I64u"), kwargs.get("domainType2", "I64u")))
         super(ConditionalCombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
-    def getConstructorArgumentsOrder(self):
-        return ["path"]
-
-
-class QHistogramProbabilityFunctionNode(FunctionNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(type="QHistogramPrFunction")
-        super(QHistogramProbabilityFunctionNode, self).__init__(*args, **kwargs)
+    def getXMLArguments(self):
+        return { 'path'               : { 'type': 'literal' } 
+               }
         
-    def getConstructorArgumentsOrder(self):
-        return ["path"]
-    
+    def getConstructorArguments(self):
+        args = super(ConditionalCombinedProbabilityFunctionNode, self).getConstructorArguments()
+        args.extend(['Literal(path)'])
+        return args
 
-class ConditionalQHistogramProbabilityFunctionNode(FunctionNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(type="ConditionalQHistogramPrFunction")
-        super(ConditionalQHistogramProbabilityFunctionNode, self).__init__(*args, **kwargs)
-        
-    def getConstructorArgumentsOrder(self):
-        return ["path"]
-    
-
-class CustomDiscreteProbabilityFunctionNode(FunctionNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(type="CustomDiscreteProbability")
-        super(CustomDiscreteProbabilityFunctionNode, self).__init__(*args, **kwargs)
-    
 
 #
 # Enum Sets

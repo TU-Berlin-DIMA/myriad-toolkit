@@ -667,7 +667,9 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '        // TODO: this piece of auto-generating code / Config API needs to be rewritten'
         print >> wfile, ''
-        
+
+
+        literalTransformer = LiteralTransfomer()
         nodeFilter = DepthFirstNodeFilter(filterType=CardinalityEstimatorNode)
         for cardinalityEstimator in nodeFilter.getAll(astRoot.getSpecification().getRecordSequences()):
             cardinalityEstimatorType = cardinalityEstimator.getAttribute("type")
@@ -675,6 +677,7 @@ class ConfigCompiler(SourceCompiler):
             if cardinalityEstimatorType == 'linear_scale_estimator':
                 print >> wfile, '        // setup linear scale estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
                 print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), self._argumentCode(cardinalityEstimator.getArgument("base_cardinality"), None))
+#                print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("base_cardinality"), None))
                 print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
         
         print >> wfile, '    }'
@@ -685,9 +688,7 @@ class ConfigCompiler(SourceCompiler):
         
         nodeFilter = DepthFirstNodeFilter(filterType=FunctionNode)
         for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
-            argsCode = ['"%s"' % (function.getAttribute("key"))]
-            for argKey in function.getConstructorArgumentsOrder():
-                argsCode.append(self._argumentCode(function.getArgument(argKey), None))
+            argsCode = ArgumentTransformer.compileConstructorArguments(self, function, {'config': None})
             print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getConcreteType(), 'a': ', '.join(argsCode)}
 
         print >> wfile, '    }'
