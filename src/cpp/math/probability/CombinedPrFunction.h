@@ -90,6 +90,8 @@ public:
 
 	void initialize(istream& path);
 
+	void initialize(istream& in, I16u& currentLineNumber);
+
 	size_t numberOfBuckets() const;
 
 	T min() const;

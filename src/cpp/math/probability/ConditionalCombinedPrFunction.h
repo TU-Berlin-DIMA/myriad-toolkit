@@ -225,18 +225,14 @@ template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::i
 	I16u currentLineNumber = 1; // current line number
 	RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
-    // read first line
-    getline(in, line);
-    if (!in.good() || line.substr(0, 21) != "# numberofconditions:")
-    {
-        throw DataException("Unexpected file header (line 1)");
-    }
-    I32 numberOfx2Buckets = atoi(line.substr(21).c_str());
+	// reader finite state machine
+	while (currentState != END)
+	{
+		// read next line
+		getline(in, currentLine);
 
-    if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
-    {
-        throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
-    }
+		// trim whitespace
+		trimInPlace(currentLine);
 
 		// check if this line is empty or contains a single comment
 		if (currentLine.empty() || currentLine.at(0) == '#')
@@ -254,17 +250,14 @@ template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::i
 
 			I32 numberOfx2Buckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
-        getline(in, line);
-        if (!in.good() || line.substr(0, 12) != "# condition:")
-        {
-            throw DataException("Unexpected condition format, expected format is `# condition: {min}{TAB}{max}`");
-        }
+		    if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
+		    {
+		        throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
+		    }
 
-        size_t tab1 = line.find_first_of('\t');
-        if (tab1 == string::npos)
-        {
-            throw DataException("Unexpected condition format, expected format is `# condition: {min}{TAB}{max}`");
-        }
+		    _numberOfx2Buckets = numberOfx2Buckets;
+		    _x2Buckets = new Interval<T1>[numberOfx2Buckets];
+		    _x1Pr = new CombinedPrFunction<T1>[numberOfx2Buckets];
 
 			currentX2BucketIndex = 0;
 			currentState = (numberOfx2Buckets > 0) ? CON : END;
