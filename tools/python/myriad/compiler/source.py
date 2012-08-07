@@ -1214,7 +1214,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#ifndef %sUTIL_H_' % (typeNameUC)
         print >> wfile, '#define %sUTIL_H_' % (typeNameUC)
         print >> wfile, ''
-        print >> wfile, '#include "record/base/Base%s.h"' % (typeNameCC)
+        print >> wfile, '#include "record/base/Base%sUtil.h"' % (typeNameCC)
         print >> wfile, ''
         print >> wfile, 'namespace Myriad {'
         print >> wfile, ''
@@ -1222,7 +1222,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
         print >> wfile, ''
-        print >> wfile, '#endif /* BASE%sUTIL_H_ */' % (typeNameUC)
+        print >> wfile, '#endif /* %sUTIL_H_ */' % (typeNameUC)
 
 
 class RecordGeneratorCompiler(SourceCompiler):
