@@ -1032,7 +1032,8 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// serialize method specialization'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
-        print >> wfile, 'template<> inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'template<>' 
+        print >> wfile, 'inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         
         for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
@@ -1364,7 +1365,8 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    /**'
         print >> wfile, '     * Invertible hydrator getter.'
         print >> wfile, '     */'
-        print >> wfile, '    template<typename T> const InvertibleHydrator<%(t)s, T>& invertableHydrator(typename MethodTraits<%(t)s, T>::Setter setter)' % {'t': typeNameCC}
+        print >> wfile, '    template<typename T>' 
+        print >> wfile, '    const InvertibleHydrator<%(t)s, T>& invertableHydrator(typename MethodTraits<%(t)s, T>::Setter setter)' % {'t': typeNameCC}
         print >> wfile, '    {'
         print >> wfile, '        return HydratorChain<%s>::invertableHydrator<T>(setter);' % (typeNameCC)
         print >> wfile, '    }'
@@ -1404,7 +1406,8 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '/**'
             print >> wfile, ' * Invertible hydrator getter (%s specialization).' % (fieldType)
             print >> wfile, ' */'
-            print >> wfile, 'template<> const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
+            print >> wfile, 'template<>' 
+            print >> wfile, 'const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
             print >> wfile, '{'
             
             fieldSetterTransformer = FieldSetterTransfomer()
