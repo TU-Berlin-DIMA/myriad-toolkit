@@ -46,8 +46,8 @@ template<class RecordType> class RandomSetGenerator: public RecordGenerator
 public:
 
 	typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
-	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
+	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
+	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
 
 	/**
 	 * Constructor.
@@ -85,7 +85,7 @@ public:
 	 * Creates a new hydrator chain which works on the provided RandomStream
 	 * reference.
 	 */
-	virtual HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random) = 0;
+	virtual RecordHydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random) = 0;
 
 	/**
 	 * Record factory method.
@@ -154,9 +154,9 @@ template<class RecordType> class RandomSetInspector
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
-	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
+	typedef typename RecordTraits<RecordType>::GeneratorType RecordGeneratorType;
+	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
+	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 
 	RandomSetInspector(RandomSetGenerator<RecordType>& generator) :
 		_generator(generator),
@@ -211,7 +211,7 @@ private:
 	/**
 	 * Hydrator for the generated records.
 	 */
-	HydratorChainType _hydrate;
+	RecordHydratorChainType _hydrate;
 
 	/**
 	 * Logger instance.
@@ -230,9 +230,9 @@ template<class RecordType> class RandomSetDefaultGeneratingTask: public StageTas
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
-	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
+	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
+	typedef typename RecordTraits<RecordType>::GeneratorType RecordGeneratorType;
+	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
 
 	RandomSetDefaultGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
 		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
@@ -281,8 +281,8 @@ template<class RecordType, class ProbabilityType> class RandomSetTimeSpanGenerat
 public:
 
 	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
-	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
+	typedef typename RecordTraits<RecordType>::GeneratorType RecordGeneratorType;
+	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
 
 	typedef void (RecordType::*DateTimeSetter)(const DateTime&);
 
@@ -466,7 +466,7 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 
 	_random.atChunk(current);
 
-	HydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
+	RecordHydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
 	while (current < last)
 	{
 		AutoPtr<RecordType> recordPtr = _recordFactory();
@@ -587,7 +587,7 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 
 	_random.atChunk(current);
 
-	HydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
+	RecordHydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
 	while (current < last)
 	{
 		if (current >= currentPeriodLast)

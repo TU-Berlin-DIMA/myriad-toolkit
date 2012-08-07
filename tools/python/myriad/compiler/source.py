@@ -751,8 +751,10 @@ class RecordTypeCompiler(SourceCompiler):
             self._log.warning("compiling record C++ sources for `%s`" % (recordSequence.getAttribute("key")))
             self.compileBaseRecordMeta(recordSequence.getRecordType())
             self.compileBaseRecordType(recordSequence.getRecordType())
+            self.compileBaseRecordUtil(recordSequence.getRecordType())
             self.compileRecordMeta(recordSequence.getRecordType())
             self.compileRecordType(recordSequence.getRecordType())
+            self.compileRecordUtil(recordSequence.getRecordType())
             
     def compileBaseRecordMeta(self, recordType):
         try:
@@ -879,11 +881,18 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, '// forward declarations'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'class %s;' % (typeNameCC)
         print >> wfile, 'class %sConfig;' % (typeNameCC)
         print >> wfile, 'class %sGenerator;' % (typeNameCC)
         print >> wfile, 'class %sHydratorChain;' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// record type'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'class Base%s: public Record' % (typeNameCC)
         print >> wfile, '{'
@@ -1003,19 +1012,28 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace Myriad {'
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, '// record traits specialization'
-        print >> wfile, 'template<> struct RecordTraits<%s::%s>' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
+        print >> wfile, 'template<>'
+        print >> wfile, 'struct RecordTraits<%s::%s>' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '{'
-        print >> wfile, '    typedef %s::%sMeta RecordMetaType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '    typedef %s::%sMeta MetaType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sGenerator GeneratorType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sHydratorChain HydratorChainType;' % (self._args.dgen_ns, typeNameCC)
-        print >> wfile, '    typedef RecordFactory<%s::%s> RecordFactoryType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '    typedef RecordFactory<%s::%s> FactoryType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '    typedef RecordRangePredicate<%s::%s> RangePredicateType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, ''
+        print >> wfile, '    enum Field { UNKNOWN, GEN_ID, %s };' % ', '.join([StringTransformer.uc(field.getAttribute("name")) for field in sorted(recordType.getFields(), key=lambda f: f.orderkey)])
         print >> wfile, '};'
         print >> wfile, ''
-        print >> wfile, '// template specialization of operator<<'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// serialize method specialization'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'template<> inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
-#        print >> wfile, '    out << '
         
         for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
             fieldType = field.getAttribute("type")
@@ -1088,7 +1106,8 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'namespace Myriad {'
         print >> wfile, ''
         print >> wfile, '// template specialization of operator<<'
-        print >> wfile, 'template<> inline void OutputCollector<%(ns)s::%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'template<>'
+        print >> wfile, 'inline void OutputCollector<%(ns)s::%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         print >> wfile, '    OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(out, record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
 #        print >> wfile, '    _out << '
@@ -1115,6 +1134,94 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#endif /* %s_H_ */' % (typeNameUC)
 
         wfile.close()
+            
+    def compileBaseRecordUtil(self, recordType):
+        try:
+            os.makedirs("%s/cpp/record/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        wfile = open("%s/cpp/record/base/Base%sUtil.h" % (self._srcPath, typeNameCC), "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ file for `%s`' % (recordType.getAttribute("key"))
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASE%sUTIL_H_' % (typeNameUC)
+        print >> wfile, '#define BASE%sUTIL_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/%s.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'namespace Myriad {'
+        print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// record field inspection structures'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        
+        for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+            
+            print >> wfile, ''
+            print >> wfile, '// %s' % (fieldName)
+            print >> wfile, 'template<>'
+            print >> wfile, 'struct RecordFieldTraits<RecordTraits<%(ns)s::%(t)s>::%(k)s, %(ns)s::%(t)s>' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.uc(fieldName)}
+            print >> wfile, '{'
+            print >> wfile, '    typedef %s FieldType;' % (fieldType)
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Getter GetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Setter SetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
+            print >> wfile, ''
+            print >> wfile, '    static const char* name;'
+            print >> wfile, ''
+            print >> wfile, '    static inline SetterType setter()'
+            print >> wfile, '    {'
+            print >> wfile, '        return static_cast<SetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
+            print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    static inline GetterType getter()'
+            print >> wfile, '    {'
+            print >> wfile, '        return static_cast<GetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
+            print >> wfile, '    }'
+            print >> wfile, '};'
+        
+        print >> wfile, ''
+        print >> wfile, '} // namespace Myriad'
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sUTIL_H_ */' % (typeNameUC)
+
+        wfile.close()
+    
+    def compileRecordUtil(self, recordType):
+        try:
+            os.makedirs("%s/cpp/record" % (self._srcPath))
+        except OSError:
+            pass
+        
+        typeNameUS = recordType.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        sourcePath = "%s/cpp/record/%sUtil.h" % (self._srcPath, typeNameCC)
+        
+        if (os.path.isfile(sourcePath)):
+            return
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '#ifndef %sUTIL_H_' % (typeNameUC)
+        print >> wfile, '#define %sUTIL_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "record/base/Base%s.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'namespace Myriad {'
+        print >> wfile, ''
+        print >> wfile, '// put your extra RecordFieldTraits specializations here'
+        print >> wfile, ''
+        print >> wfile, '} // namespace Myriad'
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sUTIL_H_ */' % (typeNameUC)
 
 
 class RecordGeneratorCompiler(SourceCompiler):
@@ -1167,6 +1274,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '#include "generator/%sGenerator.h"' % (StringTransformer.sourceType(referenceType))
             
         print >> wfile, '#include "record/%s.h"' % (typeNameCC)
+        print >> wfile, '#include "record/%sUtil.h"' % (typeNameCC)
         
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
             print >> wfile, '#include "hydrator/%s.h"' % (hydrator.getAttribute("template_type"))
