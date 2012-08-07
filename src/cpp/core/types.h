@@ -70,12 +70,13 @@ struct NullValue
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// field method traits
+// method type traits
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+// TODO: rename to MethodTypeTraits
 template<class RecordType, class T> struct MethodTraits
 {
-    typedef const T& (RecordType::*Getter)();
+    typedef const T& (RecordType::*Getter)() const;
     typedef void (RecordType::*Setter)(const T&);
 };
 

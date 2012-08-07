@@ -45,7 +45,7 @@ template<class RecordType> class RandomSetGenerator: public RecordGenerator
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::RecordMetaType RecordMetaType;
+	typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
 	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
 	typedef typename RecordTraits<RecordType>::HydratorChainType HydratorChainType;
 
