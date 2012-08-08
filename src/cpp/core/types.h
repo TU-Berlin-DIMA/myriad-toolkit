@@ -84,8 +84,8 @@ template<class RecordType, class T> struct MethodTraits
     typedef void (RecordType::*Setter)(const T&);
     // getter / setter signatures in record range predicate types
     typedef const Interval<T>& (RecordType::*RangeGetter)() const;
-    typedef void (RecordType::*RangeSetterLong)(const T&, const T&);
-    typedef void (RecordType::*RangeSetterShort)(T&);
+    typedef void (RecordType::*RangeSetterLong)(T, T);
+    typedef void (RecordType::*RangeSetterShort)(T);
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
