@@ -119,8 +119,8 @@ public:
     {
     }
 
-    void genID(const I64u& min, I64u& max);
-    void genID(I64u& v);
+    void genID(I64u min, I64u max);
+    void genID(I64u v);
     const Interval<I64u>& genID() const;
 
 private:
@@ -129,15 +129,15 @@ private:
 };
 
 template<class RecordType>
-inline void RecordRangePredicate<RecordType>::genID(const I64u& min, I64u& max)
+inline void RecordRangePredicate<RecordType>::genID(I64u min, I64u max)
 {
     _gen_id_range.set(min, max);
 }
 
 template<class RecordType>
-inline void RecordRangePredicate<RecordType>::genID(I64u& v)
+inline void RecordRangePredicate<RecordType>::genID(I64u v)
 {
-    _gen_id_range.set(v, ++v);
+    _gen_id_range.set(v++, v);
 }
 
 template<class RecordType>

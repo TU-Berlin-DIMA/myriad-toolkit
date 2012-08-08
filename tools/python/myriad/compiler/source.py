@@ -1026,8 +1026,8 @@ class RecordTypeCompiler(SourceCompiler):
                 
             if StringTransformer.isNumericType(fieldType):
                 parameters = {'n' : StringTransformer.us2cc(fieldName), 't': StringTransformer.sourceType(fieldType)}
-                print >> wfile, '    void %(n)s(const %(t)s& min, const %(t)s& max);' % parameters
-                print >> wfile, '    void %(n)s(%(t)s& v);' % parameters
+                print >> wfile, '    void %(n)s(%(t)s min, %(t)s max);' % parameters
+                print >> wfile, '    void %(n)s(%(t)s v);' % parameters
                 print >> wfile, '    const Interval<%(t)s>& %(n)s() const;' % parameters
                 print >> wfile, ''
         
@@ -1051,14 +1051,14 @@ class RecordTypeCompiler(SourceCompiler):
 
             if StringTransformer.isNumericType(fieldType):
                 parameters = {'T': typeNameCC, 'n' : StringTransformer.us2cc(fieldName), 't': StringTransformer.sourceType(fieldType)}
-                print >> wfile, 'inline void Base%(T)sRangePredicate::%(n)s(const %(t)s& min, const %(t)s& max)' % parameters
+                print >> wfile, 'inline void Base%(T)sRangePredicate::%(n)s(%(t)s min, %(t)s max)' % parameters
                 print >> wfile, '{'
                 print >> wfile, '    _%s_range.set(min, max);' % (fieldName)
                 print >> wfile, '}'
                 print >> wfile, ''
-                print >> wfile, 'inline void Base%(T)sRangePredicate::%(n)s(%(t)s& v)' % parameters
+                print >> wfile, 'inline void Base%(T)sRangePredicate::%(n)s(%(t)s v)' % parameters
                 print >> wfile, '{'
-                print >> wfile, '    _%s_range.set(v, ++v);' % (fieldName)
+                print >> wfile, '    _%s_range.set(v++, v);' % (fieldName)
                 print >> wfile, '}'
                 print >> wfile, ''
                 print >> wfile, 'inline const Interval<%(t)s>& Base%(T)sRangePredicate::%(n)s() const' % parameters
