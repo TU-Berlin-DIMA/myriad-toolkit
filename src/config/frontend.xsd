@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad" xmlns:myriad="http://www.dima.tu-berlin.de/myriad" elementFormDefault="qualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/frontend" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/frontend" elementFormDefault="qualified">
   <xs:element name="myriad" type="myriad:root-type">
     <xs:key name="cloud-env-key">
       <xs:selector xpath=".//myriad:cloud-env" />

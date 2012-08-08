@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/prototype" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/prototype" elementFormDefault="qualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dima.tu-berlin.de/myriad/prototype" xmlns:myriad="http://www.dima.tu-berlin.de/myriad/prototype" elementFormDefault="qualified" attributeFormDefault="unqualified">
 
   <!-- permitted root elements -->
 
@@ -162,7 +162,7 @@
       <xs:element name="probability" type="myriad:probability-point-inline" minOccurs="0" maxOccurs="unbounded" />
     </xs:choice>
     <xs:attribute name="key" type="xs:string" use="required" />
-    <xs:attribute name="type" type="xs:Name" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
   </xs:complexType>
   <!-- probability points for the custom discrete probability type -->
   <xs:complexType name="probability-point-inline">
@@ -191,8 +191,8 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="enum_set">
+    <xs:group ref="myriad:arguments" />
     <xs:attribute name="key" type="xs:NCName" use="required" />
-    <xs:attribute name="path" type="xs:string" use="required" />
   </xs:complexType>
 
   <!-- record sequences -->
@@ -215,11 +215,17 @@
   <xs:complexType name="record_type">
     <xs:sequence>
       <xs:element name="field" type="myriad:field_type" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="reference" type="myriad:reference_type" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="field_type">
-    <xs:attribute name="name" type="xs:string" />
-    <xs:attribute name="type" type="xs:string" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="enumref" type="xs:string" />
+  </xs:complexType>
+  <xs:complexType name="reference_type">
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="hydrators">
     <xs:sequence>

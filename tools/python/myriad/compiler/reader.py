@@ -442,8 +442,6 @@ class XMLReader(object):
         
         if (sequenceIteratorType == "partitioned_iterator"):
             return PartitionedSequenceIteratorNode()
-#        if (sequenceIteratorType == "nested_iterator"):
-#            return NestedSequenceIteratorNode()
 
         raise RuntimeError('Invalid generator task type `%s`' % (sequenceIteratorType))
         

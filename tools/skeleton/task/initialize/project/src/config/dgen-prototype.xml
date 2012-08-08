@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<generator_prototype xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/prototype" xsi:schemaLocation="http://www.dima.tu-berlin.de/myriad/prototype specification.xsd">
+<generator_prototype xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/prototype">
 
   <!-- configurable parameters -->
   <parameters>
     <!-- naming convention {generator_name}.{parameter_name} -->
-    <!-- 
-    <parameter key="mytype.sequence.base_cardinality">1000</parameter>
-    -->
+    <parameter key="sample_type.sequence.base_cardinality">1000</parameter>
   </parameters>
 
   <!-- function configuration -->
@@ -37,45 +35,42 @@
 
   <record_sequences>
     <!-- users -->
-    <random_sequence key="mytype">
-      <!-- supported core types: I16, I16u, I32, I32u, I64, I64u, Decimal, String, Date -->
-      <!-- supported enum types: Enum, with an additional enumref='{enum_set.key}' attribute -->
-      <!-- supported ref. types: all record_sequence keys defined in this XML document -->
-      <!-- 
+    <random_sequence key="sample_type">
       <record_type>
         <field name="id" type="I64u" />
+        <!-- add more fields and references here, supported types are: -->
+        <!--  * core types: I16, I16u, I32, I32u, I64, I64u, Decimal, String, Date -->
+        <!--  * enum types: Enum, with an additional enumref='{enum_set.key}' attribute -->
+        <!--  * ref. types: all record_sequence keys defined in this XML document -->
+        <!--
         <field name='some_enum_parameter' type='Enum' enumref='enumset.key' />
         <reference name='reference_alias' type='othertype_key' />
+        -->
       </record_type>
-      -->
-      -->
-      <!-- supported hydrator types: -->
-      <!--  * randomized_sequence_hydrator<RT>(RT#Setter: field, I64u: cardinality, I64u: begin, I64u: end) -->
-      <!--
       <hydrators>
         <hydrator key="id_hydrator" type="randomized_sequence_hydrator">
           <argument key="field" type="field_ref" ref="id" />
           <argument key="cardinality" type="long" value="%user.sequence.cardinality%" />
         </hydrator>
+        <!-- add more hydrators here, supported hydrator types are: -->
+        <!--  * randomized_sequence_hydrator<RT>(RT#Setter: field, I64u: cardinality, I64u: begin, I64u: end) -->
       </hydrators>
       <hydration_plan>
         <hydrator_ref ref="id_hydrator" />
+        <!-- add more hydrator references here -->
+        <!-- 
         <hydrator_ref ref="gender_hydrator" />
         <hydrator_ref ref="first_name_hydrator" />
+        -->
       </hydration_plan>
-      -->
-      <!-- supported cardinality estimator types: -->
+      <!-- supported cardinality estimator types are: -->
       <!--  * linear_scale_estimator(I64u: base_cardinality) -->
-      <!-- 
       <cardinality_estimator type="linear_scale_estimator">
-        <argument key="base_cardinality" type="I64u" value="%mytype.sequence.base_cardinality%" />
+        <argument key="base_cardinality" type="I64u" value="%sample_type.sequence.base_cardinality%" />
       </cardinality_estimator>
-      -->
       <!-- supported sequence_iterator types: -->
       <!--  * partitioned_iterator() -->
-      <!-- 
       <sequence_iterator type="partitioned_iterator" />
-      -->
     </random_sequence>
   </record_sequences>
 </generator_prototype>

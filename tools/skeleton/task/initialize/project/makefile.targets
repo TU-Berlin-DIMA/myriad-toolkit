@@ -20,7 +20,7 @@ CONFIG_FILES    += $(shell cd ../vendor/myriad-toolkit/src && ls config/*xsd)
 CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 
 # uncomment one of the following lines depending on whether you maintain a 
-# dgen-frontend.xml script in your src/config folder or not 
+# $(MYRIAD_DGEN_NAME)-frontend.xml script in your src/config folder or not 
 CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 #CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.xml
 
@@ -86,7 +86,7 @@ bin/$(MYRIAD_DGEN_NAME)-%: ../vendor/myriad-toolkit/src/script/myriad-%
 	@echo 'Processing: $@'
 	cp $< $@ && chmod 0755 $@
 
-config/$(MYRIAD_DGEN_NAME)-frontend.template.xml: ../vendor/myriad-toolkit/src/config/myriad-frontend.template.xml
+config/$(MYRIAD_DGEN_NAME)-frontend.template.xml: ../src/config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 	@echo 'Processing $@'
 	cp $< $@
 
