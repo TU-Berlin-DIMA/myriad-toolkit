@@ -898,12 +898,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-    
         print >> wfile, '    Base%(t)s(const %(t)sMeta& meta) : ' % { 't': typeNameCC }
         print >> wfile, '        _meta(meta)'
         print >> wfile, '    {'
         print >> wfile, '    }'
-
         print >> wfile, ''
         
         for field in recordType.getFields():
@@ -1008,6 +1006,66 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '}'
             print >> wfile, ''
         
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// range predicate type'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
+        print >> wfile, 'class Base%(t)sRangePredicate: public RecordRangePredicate<%(t)s>' % { 't': typeNameCC }
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    Base%(t)sRangePredicate()' % { 't': typeNameCC }
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        
+        for field in recordType.getFields():
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+                
+            if StringTransformer.isNumericType(fieldType):
+                parameters = {'n' : StringTransformer.us2cc(fieldName), 't': StringTransformer.sourceType(fieldType)}
+                print >> wfile, '    void %(n)s(const %(t)s& min, const %(t)s& max);' % parameters
+                print >> wfile, '    void %(n)s(%(t)s& v);' % parameters
+                print >> wfile, '    const Interval<%(t)s>& %(n)s() const;' % parameters
+                print >> wfile, ''
+        
+        print >> wfile, 'protected:'
+        print >> wfile, ''
+        print >> wfile, '    // fields'
+
+        for field in recordType.getFields():
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+                
+            if StringTransformer.isNumericType(fieldType):
+                print >> wfile, '    Interval<%s> _%s_range;' % (StringTransformer.sourceType(field.getAttribute("type")), field.getAttribute("name"))
+            
+        print >> wfile, '};'
+        print >> wfile, ''
+
+        for field in recordType.getFields():
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+
+            if StringTransformer.isNumericType(fieldType):
+                parameters = {'T': typeNameCC, 'n' : StringTransformer.us2cc(fieldName), 't': StringTransformer.sourceType(fieldType)}
+                print >> wfile, 'inline void Base%(T)sRangePredicate::%(n)s(const %(t)s& min, const %(t)s& max)' % parameters
+                print >> wfile, '{'
+                print >> wfile, '    _%s_range.set(min, max);' % (fieldName)
+                print >> wfile, '}'
+                print >> wfile, ''
+                print >> wfile, 'inline void Base%(T)sRangePredicate::%(n)s(%(t)s& v)' % parameters
+                print >> wfile, '{'
+                print >> wfile, '    _%s_range.set(v, ++v);' % (fieldName)
+                print >> wfile, '}'
+                print >> wfile, ''
+                print >> wfile, 'inline const Interval<%(t)s>& Base%(T)sRangePredicate::%(n)s() const' % parameters
+                print >> wfile, '{'
+                print >> wfile, '    return _%s_range;' % (fieldName)
+                print >> wfile, '}'
+                print >> wfile, '' 
+        
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, 'namespace Myriad {'
@@ -1041,14 +1099,7 @@ class RecordTypeCompiler(SourceCompiler):
             fieldName = field.getAttribute("name")
             
             if StringTransformer.isVectorType(fieldType):
-                pass
-# FIXME            
-#                print >> wfile, '        for(size_t i = 0; i < record.%s().length(); i++)' % (StringTransformer.us2cc(fieldName) + "()")
-#                print >> wfile, '        {'
-#                print >> wfile, '            record.%-26s << " | " << ' % (StringTransformer.us2cc(fieldName) + "GetOne(i)")
-#                print >> wfile, '        }'
-#            elif fieldType == "Date":
-#                print >> wfile, '        %-40s << " | " << ' % ( "toString(record." + StringTransformer.us2cc(fieldName) + "())")
+                raise RuntimeError("Unsupported vector type field '%s'" % fieldType)
             elif fieldType == "Enum":
                 print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
                 print >> wfile, '    out << \'|\';'
@@ -1111,23 +1162,6 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'inline void OutputCollector<%(ns)s::%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         print >> wfile, '    OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(out, record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
-#        print >> wfile, '    _out << '
-#        
-#        for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
-#            fieldType = field.getAttribute("type")
-#            fieldName = field.getAttribute("name")
-#            
-#            if StringTransformer.isVectorType(fieldType):
-#                pass
-## FIXME            
-##                print >> wfile, '        for(size_t i = 0; i < record.%s().length(); i++)' % (StringTransformer.us2cc(fieldName) + "()")
-##                print >> wfile, '        {'
-##                print >> wfile, '            record.%-26s << " | " << ' % (StringTransformer.us2cc(fieldName) + "GetOne(i)")
-##                print >> wfile, '        }'
-#            else:
-#                print >> wfile, '        record.%-30s << " | " << ' % (StringTransformer.us2cc(fieldName) + "()")
-#
-#        print >> wfile, '        \'\\n\';'
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -1171,19 +1205,17 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, 'struct RecordFieldTraits<RecordTraits<%(ns)s::%(t)s>::%(k)s, %(ns)s::%(t)s>' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.uc(fieldName)}
             print >> wfile, '{'
             print >> wfile, '    typedef %s FieldType;' % (fieldType)
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Getter GetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Setter SetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Setter FieldSetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Getter FieldGetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
             print >> wfile, ''
-            print >> wfile, '    static const char* name;'
-            print >> wfile, ''
-            print >> wfile, '    static inline SetterType setter()'
+            print >> wfile, '    static inline FieldSetterType setter()'
             print >> wfile, '    {'
-            print >> wfile, '        return static_cast<SetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
+            print >> wfile, '        return static_cast<FieldSetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
             print >> wfile, '    }'
             print >> wfile, ''
-            print >> wfile, '    static inline GetterType getter()'
+            print >> wfile, '    static inline FieldGetterType getter()'
             print >> wfile, '    {'
-            print >> wfile, '        return static_cast<GetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
+            print >> wfile, '        return static_cast<FieldGetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
             print >> wfile, '    }'
             print >> wfile, '};'
         

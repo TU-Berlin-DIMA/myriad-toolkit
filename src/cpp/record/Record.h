@@ -71,35 +71,79 @@ class Record: public Poco::RefCountedObject
 {
 public:
 
-	I64u genID() const;
 	void genID(const I64u v);
+	I64u genID() const;
 
-	const I64u& genIDRef() const;
     void genIDRef(const I64u& v);
+	const I64u& genIDRef() const;
 
 private:
 
-	ID	meta_genid;
+	ID	_gen_id;
 };
-
-inline I64u Record::genID() const
-{
-	return meta_genid;
-}
 
 inline void Record::genID(const I64u v)
 {
-	meta_genid = v;
+    _gen_id = v;
 }
 
-inline const I64u& Record::genIDRef() const
+inline I64u Record::genID() const
 {
-	return meta_genid;
+	return _gen_id;
 }
 
 inline void Record::genIDRef(const I64u& v)
 {
-	meta_genid = v;
+    _gen_id = v;
+}
+
+inline const I64u& Record::genIDRef() const
+{
+	return _gen_id;
+}
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// record range predicate
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<class RecordType>
+class RecordRangePredicate
+{
+public:
+
+    RecordRangePredicate()
+    {
+    }
+
+    virtual ~RecordRangePredicate()
+    {
+    }
+
+    void genID(const I64u& min, I64u& max);
+    void genID(I64u& v);
+    const Interval<I64u>& genID() const;
+
+private:
+
+    Interval<I64u> _gen_id_range;
+};
+
+template<class RecordType>
+inline void RecordRangePredicate<RecordType>::genID(const I64u& min, I64u& max)
+{
+    _gen_id_range.set(min, max);
+}
+
+template<class RecordType>
+inline void RecordRangePredicate<RecordType>::genID(I64u& v)
+{
+    _gen_id_range.set(v, ++v);
+}
+
+template<class RecordType>
+inline const Interval<I64u>& RecordRangePredicate<RecordType>::genID() const
+{
+    return _gen_id_range;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -163,24 +207,21 @@ template <I16u fid, class RecordType>
 struct RecordFieldTraits
 {
 	typedef I64u FieldType;
-	typedef typename MethodTraits<RecordType, FieldType>::Getter GetterType;
-	typedef typename MethodTraits<RecordType, FieldType>::Setter SetterType;
+	typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType;
+	typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType;
+    typedef typename MethodTraits<RecordType, FieldType>::Setter RangeSetterType;
+    typedef typename MethodTraits<RecordType, FieldType>::Setter RangeGetterType;
 
-	static const char* name;
-
-	static SetterType setter()
+	static FieldSetterType setter()
 	{
 		throw RuntimeException("Trying to access setter for unknown field");
 	}
 
-	static GetterType getter()
+	static FieldGetterType getter()
 	{
 		throw RuntimeException("Trying to access getter for unknown field");
 	}
 };
-
-template <I16u fid, class RecordType>
-const char* RecordFieldTraits<fid, RecordType>::name = "unknown_field";
 
 /**
  * Unspecialized traits object for introspection on record fields.
@@ -189,24 +230,19 @@ template <class RecordType>
 struct RecordFieldTraits<1, RecordType>
 {
 	typedef I64u FieldType;
-	typedef typename MethodTraits<Record, FieldType>::Getter GetterType;
-	typedef typename MethodTraits<Record, FieldType>::Setter SetterType;
+	typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType;
+	typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType;
 
-	static const char* name;
-
-	static SetterType setter()
+	static FieldSetterType setter()
 	{
-		return static_cast<SetterType>(&Record::genIDRef);
+		return static_cast<FieldSetterType>(&Record::genIDRef);
 	}
 
-	static GetterType getter()
+	static FieldGetterType getter()
 	{
-		return static_cast<GetterType>(&Record::genIDRef);
+		return static_cast<FieldGetterType>(&Record::genIDRef);
 	}
 };
-
-template <class RecordType>
-const char* RecordFieldTraits<1, RecordType>::name = "gen_id";
 
 } // namespace Myriad
 

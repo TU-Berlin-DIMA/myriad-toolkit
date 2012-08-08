@@ -96,6 +96,9 @@ class StringTransformer(object):
         else:
             return s
         
+    def isNumericType(s):
+        return s in ['I16', 'I32', 'I64', 'I16u', 'I32u', 'I64u', 'Decimal', 'Enum']
+        
     def isVectorType(s):
         r = StringTransformer._complex_type_pattern.match(s)
         if r:
@@ -120,5 +123,6 @@ class StringTransformer(object):
     us2ccAll = staticmethod(us2ccAll)
     ucFirst = staticmethod(ucFirst)
     sourceType = staticmethod(sourceType)
+    isNumericType = staticmethod(isNumericType)
     isVectorType = staticmethod(isVectorType)
     coreType = staticmethod(coreType)
