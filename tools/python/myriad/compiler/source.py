@@ -889,9 +889,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'class %sConfig;' % (typeNameCC)
         print >> wfile, 'class %sGenerator;' % (typeNameCC)
         print >> wfile, 'class %sHydratorChain;' % (typeNameCC)
+        print >> wfile, 'class %sRangePredicate;' % (typeNameCC)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// record type'
+        print >> wfile, '// base record type'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'class Base%s: public Record' % (typeNameCC)
@@ -1007,7 +1008,7 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, ''
         
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// range predicate type'
+        print >> wfile, '// base range predicate type'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'class Base%(t)sRangePredicate: public RecordRangePredicate<%(t)s>' % { 't': typeNameCC }
@@ -1081,7 +1082,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    typedef %s::%sGenerator GeneratorType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sHydratorChain HydratorChainType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef RecordFactory<%s::%s> FactoryType;' % (self._args.dgen_ns, typeNameCC)
-        print >> wfile, '    typedef RecordRangePredicate<%s::%s> RangePredicateType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '    typedef %s::%sRangePredicate RangePredicateType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, ''
         print >> wfile, '    enum Field { UNKNOWN, GEN_ID, %s };' % ', '.join([StringTransformer.uc(field.getAttribute("name")) for field in sorted(recordType.getFields(), key=lambda f: f.orderkey)])
         print >> wfile, '};'
@@ -1142,6 +1143,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// record type'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'class %(t)s: public Base%(t)s' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
@@ -1151,6 +1156,19 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// range predicate type'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
+        print >> wfile, 'class %(t)sRangePredicate: public Base%(t)sRangePredicate' % { 't': typeNameCC }
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    %(t)sRangePredicate()' % { 't': typeNameCC }
+        print >> wfile, '    {'
+        print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
@@ -1199,24 +1217,64 @@ class RecordTypeCompiler(SourceCompiler):
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             
+            parameters = {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.uc(fieldName), 'f': StringTransformer.us2cc(fieldName)}
             print >> wfile, ''
             print >> wfile, '// %s' % (fieldName)
             print >> wfile, 'template<>'
-            print >> wfile, 'struct RecordFieldTraits<RecordTraits<%(ns)s::%(t)s>::%(k)s, %(ns)s::%(t)s>' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.uc(fieldName)}
+            print >> wfile, 'struct RecordFieldTraits<RecordTraits<%(ns)s::%(t)s>::%(k)s, %(ns)s::%(t)s>' % parameters
             print >> wfile, '{'
             print >> wfile, '    typedef %s FieldType;' % (fieldType)
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Setter FieldSetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Getter FieldGetterType;' % {'ns': self._args.dgen_ns, 't': typeNameCC }
+            print >> wfile, '    // record field getter / setter types'
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Setter FieldSetterType;' % parameters
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Getter FieldGetterType;' % parameters
+            print >> wfile, '    // range predicate getter / setter types'
+            print >> wfile, '    typedef typename RecordTraits<%(ns)s::%(t)s>::RangePredicateType RecordRangePredicateType;' % parameters
+            print >> wfile, '    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterShort RangeSetterShortType;'
+            print >> wfile, '    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterLong RangeSetterLongType;'
+            print >> wfile, '    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeGetter RangeGetterType;'
             print >> wfile, ''
             print >> wfile, '    static inline FieldSetterType setter()'
             print >> wfile, '    {'
-            print >> wfile, '        return static_cast<FieldSetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
+            print >> wfile, '        return static_cast<FieldSetterType>(&%(ns)s::%(t)s::%(f)s);' % parameters
             print >> wfile, '    }'
             print >> wfile, ''
             print >> wfile, '    static inline FieldGetterType getter()'
             print >> wfile, '    {'
-            print >> wfile, '        return static_cast<FieldGetterType>(&%(ns)s::%(t)s::%(k)s);' % {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.us2cc(fieldName)}
+            print >> wfile, '        return static_cast<FieldGetterType>(&%(ns)s::%(t)s::%(f)s);' % parameters
             print >> wfile, '    }'
+            
+            if StringTransformer.isNumericType(fieldType):
+                print >> wfile, ''
+                print >> wfile, '    static inline RangeSetterShortType rangeSetterShort()'
+                print >> wfile, '    {'
+                print >> wfile, '        return static_cast<RangeSetterShortType>(&RecordRangePredicateType::%(f)s);' % parameters
+                print >> wfile, '    }'
+                print >> wfile, ''
+                print >> wfile, '    static inline RangeSetterLongType rangeSetterLong()'
+                print >> wfile, '    {'
+                print >> wfile, '        return static_cast<RangeSetterLongType>(&RecordRangePredicateType::%(f)s);' % parameters
+                print >> wfile, '    }'
+                print >> wfile, ''
+                print >> wfile, '    static inline RangeGetterType rangeGetter()'
+                print >> wfile, '    {'
+                print >> wfile, '        return static_cast<RangeGetterType>(&RecordRangePredicateType::%(f)s);' % parameters
+                print >> wfile, '    }'
+            else:
+                print >> wfile, ''
+                print >> wfile, '    static inline RangeSetterShortType rangeSetterShort()'
+                print >> wfile, '    {'
+                print >> wfile, '        throw RuntimeException("Trying to access record range predicate setter for non-numeric field `%s`");' % fieldName      
+                print >> wfile, '    }'
+                print >> wfile, ''
+                print >> wfile, '    static inline RangeSetterLongType rangeSetterLong()'
+                print >> wfile, '    {'
+                print >> wfile, '        throw RuntimeException("Trying to access record range predicate setter for non-numeric field `%s`");' % fieldName
+                print >> wfile, '    }'
+                print >> wfile, ''
+                print >> wfile, '    static inline RangeGetterType rangeGetter()'
+                print >> wfile, '    {'
+                print >> wfile, '        throw RuntimeException("Trying to access record range predicate getter for non-numeric field `%s`");' % fieldName
+                print >> wfile, '    }'
             print >> wfile, '};'
         
         print >> wfile, ''

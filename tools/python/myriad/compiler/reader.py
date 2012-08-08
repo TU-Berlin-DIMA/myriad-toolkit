@@ -28,7 +28,7 @@ from myriad.compiler.ast import * #@UnusedWildImport
 
 class XMLReader(object):
     '''
-    Reads the initial AST from an XML file.
+    Reads the AST from an XML file.
     '''
     
     __NAMESPACE = "http://www.dima.tu-berlin.de/myriad/prototype"

@@ -207,20 +207,39 @@ template <I16u fid, class RecordType>
 struct RecordFieldTraits
 {
 	typedef I64u FieldType;
+	// record field getter / setter types
 	typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType;
 	typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType;
-    typedef typename MethodTraits<RecordType, FieldType>::Setter RangeSetterType;
-    typedef typename MethodTraits<RecordType, FieldType>::Setter RangeGetterType;
+	// range predicate getter / setter types
+	typedef typename RecordTraits<RecordType>::RangePredicateType RecordRangePredicateType;
+    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterShort RangeSetterShortType;
+    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterLong RangeSetterLongType;
+    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeGetter RangeGetterType;
 
 	static FieldSetterType setter()
 	{
-		throw RuntimeException("Trying to access setter for unknown field");
+		throw RuntimeException("Trying to access record field setter for unknown field");
 	}
 
 	static FieldGetterType getter()
 	{
-		throw RuntimeException("Trying to access getter for unknown field");
+		throw RuntimeException("Trying to access record field getter for unknown field");
 	}
+
+    static RangeSetterShortType rangeSetterShort()
+    {
+        throw RuntimeException("Trying to access record range predicate setter for unknown field");
+    }
+
+    static RangeSetterLongType rangeSetterLong()
+    {
+        throw RuntimeException("Trying to access record range predicate setter for unknown field");
+    }
+
+    static RangeGetterType rangeGetter()
+    {
+        throw RuntimeException("Trying to access record range predicate getter for unknown field");
+    }
 };
 
 /**
@@ -230,8 +249,14 @@ template <class RecordType>
 struct RecordFieldTraits<1, RecordType>
 {
 	typedef I64u FieldType;
+    // record field getter / setter types
 	typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType;
 	typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType;
+    // range predicate getter / setter types
+    typedef typename RecordTraits<RecordType>::RangePredicateType RecordRangePredicateType;
+    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterShort RangeSetterShortType;
+    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterLong RangeSetterLongType;
+    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeGetter RangeGetterType;
 
 	static FieldSetterType setter()
 	{
@@ -242,6 +267,21 @@ struct RecordFieldTraits<1, RecordType>
 	{
 		return static_cast<FieldGetterType>(&Record::genIDRef);
 	}
+
+    static RangeSetterShortType rangeSetterShort()
+    {
+        return static_cast<RangeSetterShortType>(&RecordRangePredicateType::genID);
+    }
+
+    static RangeSetterLongType rangeSetterLong()
+    {
+        return static_cast<RangeSetterLongType>(&RecordRangePredicateType::genID);
+    }
+
+    static RangeGetterType rangeGetter()
+    {
+        return static_cast<RangeGetterType>(&RecordRangePredicateType::genID);
+    }
 };
 
 } // namespace Myriad

@@ -52,6 +52,9 @@ typedef double Decimal;
 typedef MyriadDate Date;
 typedef std::string String;
 
+// forward declarations of auxiliary complex types
+template<typename T> class Interval;
+
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // explicit null type constants
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -76,8 +79,13 @@ struct NullValue
 // TODO: rename to MethodTypeTraits
 template<class RecordType, class T> struct MethodTraits
 {
+    // getter / setter signatures in record types
     typedef const T& (RecordType::*Getter)() const;
     typedef void (RecordType::*Setter)(const T&);
+    // getter / setter signatures in record range predicate types
+    typedef const Interval<T>& (RecordType::*RangeGetter)() const;
+    typedef void (RecordType::*RangeSetterLong)(const T&, const T&);
+    typedef void (RecordType::*RangeSetterShort)(T&);
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
