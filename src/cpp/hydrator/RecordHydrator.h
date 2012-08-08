@@ -19,9 +19,6 @@
 #ifndef RECORDHYDRATOR_H_
 #define RECORDHYDRATOR_H_
 
-#define NEW_HYDRATORS // use new hydrator class implementations
-#define NEW_SURROGATE_KEY_HYDRATION // use old hydrator class implementations
-
 #include <Poco/AutoPtr.h>
 
 using namespace Poco;
