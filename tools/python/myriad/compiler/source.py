@@ -682,14 +682,6 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, '        BaseGeneratorConfig::configureSets();'
         print >> wfile, '        // override or add enumerated sets here'
         print >> wfile, '    }'
-#        print >> wfile, ''
-#        print >> wfile, '    void configureSets(const AutoPtr<XML::Document>& doc)'
-#        print >> wfile, '    {'
-#        print >> wfile, '        BaseGeneratorConfig::configureSets(doc);'
-#        print >> wfile, ''
-#        print >> wfile, '        // bind string sets to config members with the bindStringSet method'
-#        print >> wfile, '        // bind object sets to config members with the bindObjectSet method'
-#        print >> wfile, '    }'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -1075,6 +1067,11 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// record traits specialization'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
+        
+        fieldConstants = []
+        fieldConstants.extend([StringTransformer.uc(field.getAttribute("name")) for field in sorted(recordType.getFields(), key=lambda f: f.orderkey)])
+        fieldConstants.extend([StringTransformer.uc(field.getAttribute("name")) for field in sorted(recordType.getReferences(), key=lambda f: f.orderkey)])
+
         print >> wfile, 'template<>'
         print >> wfile, 'struct RecordTraits<%s::%s>' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '{'
@@ -1084,7 +1081,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    typedef RecordFactory<%s::%s> FactoryType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sRangePredicate RangePredicateType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, ''
-        print >> wfile, '    enum Field { UNKNOWN, GEN_ID, %s };' % ', '.join([StringTransformer.uc(field.getAttribute("name")) for field in sorted(recordType.getFields(), key=lambda f: f.orderkey)])
+        print >> wfile, '    enum Field { UNKNOWN, GEN_ID, %s };' % ', '.join(fieldConstants)
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
@@ -1175,7 +1172,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, 'namespace Myriad {'
         print >> wfile, ''
-        print >> wfile, '// template specialization of operator<<'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// record serialize method specialization'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
         print >> wfile, 'template<>'
         print >> wfile, 'inline void OutputCollector<%(ns)s::%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
@@ -1275,6 +1275,52 @@ class RecordTypeCompiler(SourceCompiler):
                 print >> wfile, '    {'
                 print >> wfile, '        throw RuntimeException("Trying to access record range predicate getter for non-numeric field `%s`");' % fieldName
                 print >> wfile, '    }'
+            print >> wfile, '};'
+        
+        for field in sorted(recordType.getReferences(), key=lambda f: f.orderkey):
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+            
+            parameters = {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.uc(fieldName), 'f': StringTransformer.us2cc(fieldName)}
+            print >> wfile, ''
+            print >> wfile, '// %s' % (fieldName)
+            print >> wfile, 'template<>'
+            print >> wfile, 'struct RecordFieldTraits<RecordTraits<%(ns)s::%(t)s>::%(k)s, %(ns)s::%(t)s>' % parameters
+            print >> wfile, '{'
+            print >> wfile, '    typedef %s::%s FieldType;' % (self._args.dgen_ns, fieldType)
+            print >> wfile, '    // record field getter / setter types'
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Setter FieldSetterType;' % parameters
+            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Getter FieldGetterType;' % parameters
+            print >> wfile, '    // range predicate getter / setter types'
+            print >> wfile, '    typedef typename RecordTraits<%(ns)s::%(t)s>::RangePredicateType RecordRangePredicateType;' % parameters
+            print >> wfile, '    typedef typename MethodTraits<RecordRangePredicateType, AutoPtr<FieldType> >::RangeSetterShort RangeSetterShortType;'
+            print >> wfile, '    typedef typename MethodTraits<RecordRangePredicateType, AutoPtr<FieldType> >::RangeSetterLong RangeSetterLongType;'
+            print >> wfile, '    typedef typename MethodTraits<RecordRangePredicateType, AutoPtr<FieldType> >::RangeGetter RangeGetterType;'
+            print >> wfile, ''
+            print >> wfile, '    static inline FieldSetterType setter()'
+            print >> wfile, '    {'
+            print >> wfile, '        return static_cast<FieldSetterType>(&%(ns)s::%(t)s::%(f)s);' % parameters
+            print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    static inline FieldGetterType getter()'
+            print >> wfile, '    {'
+            print >> wfile, '        return static_cast<FieldGetterType>(&%(ns)s::%(t)s::%(f)s);' % parameters
+            print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    static inline RangeSetterShortType rangeSetterShort()'
+            print >> wfile, '    {'
+            print >> wfile, '        throw RuntimeException("Trying to access record range predicate setter for non-numeric field `%s`");' % fieldName      
+            print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    static inline RangeSetterLongType rangeSetterLong()'
+            print >> wfile, '    {'
+            print >> wfile, '        throw RuntimeException("Trying to access record range predicate setter for non-numeric field `%s`");' % fieldName
+            print >> wfile, '    }'
+            print >> wfile, ''
+            print >> wfile, '    static inline RangeGetterType rangeGetter()'
+            print >> wfile, '    {'
+            print >> wfile, '        throw RuntimeException("Trying to access record range predicate getter for non-numeric field `%s`");' % fieldName
+            print >> wfile, '    }'
             print >> wfile, '};'
         
         print >> wfile, ''
