@@ -107,7 +107,7 @@ HashRandomStream::Seed hashRandomStreamInitElementOffset()
 {
 	HashRandomStream::Seed tmp;
 
-	// 1
+	// 1 = 2^0
 	tmp.v[0] = 1ULL;
 
 	return tmp;

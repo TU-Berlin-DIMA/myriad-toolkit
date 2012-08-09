@@ -33,7 +33,7 @@ public:
 	typedef void (RefRecordType::*PivotFieldSetter)(const T&);
 
 	ReferenceHydrator(RandomStream& random, RefRecordSetter referenceSetter, PivotFieldSetter pivotSetter, RandomSetInspector<RefRecordType> referenceSet, ValueGetter<RecordType, T>* pivotGetter) :
-		RandomRecordHydrator<RecordType>(random),
+		RandomRecordHydrator<RecordType>(random, 1),
 		_referenceSetter(referenceSetter),
 		_referenceSet(referenceSet),
 		_invertibleHydrator(_referenceSet.template invertableHydrator<T>(pivotSetter)),
@@ -50,21 +50,13 @@ public:
 	{
 		RandomStream& random = const_cast<ReferenceHydrator<RecordType, RefRecordType, T>*>(this)->_random;
 
-		if (!RecordHydrator<RecordType>::_enabled)
-		{
-			// consume 1 random number
-			random();
-		}
-		else
-		{
-			// get the interval from the referenced PRDG sequence where [T = t]
-			Interval<I64u> pivotRange = _invertibleHydrator((*_pivotGetter)(recordPtr));
+        // get the interval from the referenced PRDG sequence where [T = t]
+        Interval<I64u> pivotRange = _invertibleHydrator((*_pivotGetter)(recordPtr));
 
-			// hydrate a record with a random genID from the tRange interval
-			const AutoPtr<RefRecordType> refRecordPtr = _referenceSet.at(random(pivotRange.min(), pivotRange.max()-1));
+        // hydrate a record with a random genID from the tRange interval
+        const AutoPtr<RefRecordType> refRecordPtr = _referenceSet.at(random(pivotRange.min(), pivotRange.max()-1));
 
-			(recordPtr->*_referenceSetter)(refRecordPtr);
-		}
+        (recordPtr->*_referenceSetter)(refRecordPtr);
 	}
 
 private:

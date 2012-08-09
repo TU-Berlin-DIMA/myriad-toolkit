@@ -25,7 +25,6 @@
 #include <Poco/AutoPtr.h>
 #include <vector>
 
-
 using namespace Poco;
 using namespace std;
 
@@ -66,7 +65,8 @@ inline void BaseHydratorChain::ensurePosition(I64u position) const
 /**
  * Interface template for all HydratorChain.
  */
-template<class RecordType> class HydratorChain : public BaseHydratorChain
+template<class RecordType>
+class HydratorChain : public BaseHydratorChain
 {
 public:
 
@@ -79,18 +79,37 @@ public:
 	}
 
 	/**
-	 * Object hydrating function (external PRNG).
+	 * Object hydrating function.
 	 */
 	virtual void operator()(AutoPtr<RecordType> recordPtr) const = 0;
 
 	/**
 	 * Invertible hydrator getter.
 	 */
-	template<typename T> const InvertibleHydrator<RecordType, T>& invertableHydrator(typename MethodTraits<RecordType, T>::Setter setter)
+	template<typename T>
+	const InvertibleHydrator<RecordType, T>& invertableHydrator(typename MethodTraits<RecordType, T>::Setter setter)
 	{
-		throw LogicException("The hydrator object associated with the specified setter is not invertable");
+		throw LogicException("The hydrator object associated with the specified setter is not invertible");
 	}
+
+protected:
+
+    template<class HydratorType>
+    void apply(HydratorType& hydrator, AutoPtr<RecordType>& recordPtr) const;
 };
+
+template<class RecordType> template<class HydratorType>
+inline void HydratorChain<RecordType>::apply(HydratorType& hydrator, AutoPtr<RecordType>& recordPtr) const
+{
+    if (hydrator.enabled())
+    {
+        hydrator(recordPtr);
+    }
+    else
+    {
+        const_cast<HydratorChain<RecordType>*>(this)->_random.skip(hydrator.randomStreamArity());
+    }
+}
 
 } // namespace Myriad
 

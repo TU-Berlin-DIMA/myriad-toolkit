@@ -140,6 +140,12 @@ public:
 		return next();
 	}
 
+	void skip(UInt64 pos)
+	{
+        appendToSeed(_elementS, _elementS, OFFSET_ELEMENT, pos);
+        _currentHash = computeHash();
+	}
+
 	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 	// HierarchicalRNG interface
 	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~

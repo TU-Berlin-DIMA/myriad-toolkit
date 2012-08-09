@@ -29,7 +29,9 @@ template<class RecordType> class RecordHydrator
 {
 public:
 
-	RecordHydrator() : _enabled(true)
+	RecordHydrator(I16u randomStreamArity = 0, bool enabled = true) :
+        _randomStreamArity(randomStreamArity),
+        _enabled(enabled)
 	{
 	}
 
@@ -37,12 +39,24 @@ public:
 	{
 	}
 
+    inline I16u randomStreamArity() const
+    {
+        return _randomStreamArity;
+    }
+
+    inline bool enabled() const
+    {
+        return _enabled;
+    }
+
 	/**
 	 * Object hydrating function (external PRNG).
 	 */
 	virtual void operator()(AutoPtr<RecordType> recordPtr) const = 0;
 
 protected:
+
+    I16u _randomStreamArity;
 
 	bool _enabled;
 };
@@ -53,7 +67,8 @@ public:
 
 	typedef void (RecordType::*ValueSetter)(const T&);
 
-	InvertibleHydrator(ValueSetter valueSetter) :
+	InvertibleHydrator(ValueSetter valueSetter, I16u randomStreamArity = 0, bool enabled = true) :
+	    RecordHydrator<RecordType>(randomStreamArity, enabled),
 		_valueSetter(valueSetter)
 	{
 	}

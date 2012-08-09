@@ -36,6 +36,7 @@ public:
 	typedef void (RecordType::*ValueSetter)(const T&);
 
 	ConstValueHydrator(ValueSetter setter, const T& constValue) :
+	    RecordHydrator<RecordType>(0),
 		_setter(setter),
 		_constValue(constValue)
 	{
@@ -43,10 +44,7 @@ public:
 
 	void operator()(AutoPtr<RecordType> recordPtr) const
 	{
-		if (RecordHydrator<RecordType>::_enabled)
-		{
-			(recordPtr->*_setter)(_constValue);
-		}
+        (recordPtr->*_setter)(_constValue);
 	}
 
 private:

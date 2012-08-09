@@ -1448,7 +1448,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         
         for hydrator in recordSequence.getHydrationPlan().getAll():
-            print >> wfile, '        _%s(recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
+            print >> wfile, '        apply(_%s, recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
         
         print >> wfile, '    }'
         print >> wfile, ''

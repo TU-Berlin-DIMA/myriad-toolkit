@@ -34,7 +34,7 @@ public:
 	typedef void (RecordType::*ValueSetter)(const T&);
 
 	ConditionalRandomizedHydrator(RandomStream& random, ValueSetter setter, ValueGetter<RecordType, C>* getter, const P& probability) :
-		RandomRecordHydrator<RecordType>(random),
+		RandomRecordHydrator<RecordType>(random, 1),
 		_setter(setter),
 		_getter(getter),
 		_probability(probability)
@@ -51,14 +51,7 @@ public:
 		RandomStream& random = const_cast<ConditionalRandomizedHydrator<RecordType, T, C, P>*>(this)->_random;
 		const C& condition = (*_getter)(recordPtr);
 
-		if (!RecordHydrator<RecordType>::_enabled)
-		{
-			random();
-		}
-		else
-		{
-			(recordPtr->*_setter)(static_cast<T>(_probability.sample(random(), condition)));
-		}
+        (recordPtr->*_setter)(static_cast<T>(_probability.sample(random(), condition)));
 	}
 
 private:

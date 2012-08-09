@@ -34,6 +34,7 @@ public:
     typedef void (RecordType::*PositionSetter)(const I32u&);
 
 	ClusteredReferenceHydrator(RefRecordSetter parentSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
+	    RecordHydrator<RecordType>(0),
 		_parentSetter(parentSetter),
 		_positionSetter(NULL),
 		_countGetter(countGetter),
@@ -46,6 +47,7 @@ public:
 	}
 
 	ClusteredReferenceHydrator(RefRecordSetter parentSetter, PositionSetter positionSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
+	    RecordHydrator<RecordType>(0),
 		_parentSetter(parentSetter),
 		_positionSetter(positionSetter),
 		_countGetter(countGetter),
@@ -64,33 +66,35 @@ public:
 
 	void operator()(AutoPtr<RecordType> recordPtr) const
 	{
-		if (RecordHydrator<RecordType>::_enabled)
-		{
-		    I64u nestedRecordGenID = recordPtr->genID();
-		    I64u parentRecordGenID = nestedRecordGenID/_maxNestedPerParent;
-		    
-		    if (_parent.isNull() || _parent->genID() != parentRecordGenID)
-		    {
-		        const_cast< ClusteredReferenceHydrator<RecordType, RefRecordType>* >(this)->_parent = _parentSet.at(parentRecordGenID);
-		    }
-		    
-		    I64u nestedCount = (*_countGetter)(_parent);
+        I64u nestedRecordGenID = recordPtr->genID();
+        I64u parentRecordGenID = nestedRecordGenID/_maxNestedPerParent;
 
-		    if (nestedRecordGenID % _maxNestedPerParent < nestedCount)
-		    {
-		        (recordPtr->*_parentSetter)(_parent);
+        if (_parent.isNull() || _parent->genID() != parentRecordGenID)
+        {
+            const_cast< ClusteredReferenceHydrator<RecordType, RefRecordType>* >(this)->_parent = _parentSet.at(parentRecordGenID);
+        }
 
-		        if (_positionSetter != NULL)
-				{
-		        	(recordPtr->*_positionSetter)(static_cast<I32u>(nestedRecordGenID-(parentRecordGenID*_maxNestedPerParent)));
-				}
-		    }
-		    else
-		    {
-		        throw InvalidRecordException(nestedRecordGenID, _maxNestedPerParent, nestedCount);
-		    }
-		}
+        I64u nestedCount = (*_countGetter)(_parent);
+
+        if (nestedRecordGenID % _maxNestedPerParent < nestedCount)
+        {
+            (recordPtr->*_parentSetter)(_parent);
+
+            if (_positionSetter != NULL)
+            {
+                (recordPtr->*_positionSetter)(static_cast<I32u>(nestedRecordGenID-(parentRecordGenID*_maxNestedPerParent)));
+            }
+        }
+        else
+        {
+            throw InvalidRecordException(nestedRecordGenID, _maxNestedPerParent, nestedCount);
+        }
 	}
+
+    inline I16u randomStreamArity() const
+    {
+        return 0;
+    }
 
 private:
 

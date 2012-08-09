@@ -30,7 +30,7 @@ public:
 	typedef void (RecordType::*ValueSetter)(const T&);
 
 	SimpleClusteredHydrator(ValueSetter valueSetter, const P& probability, const I64u sequenceCardinality) :
-		InvertibleHydrator<RecordType, T>(valueSetter),
+		InvertibleHydrator<RecordType, T>(valueSetter, 0),
 		_valueSetter(valueSetter),
 		_probability(probability),
 		_sequenceCardinality(sequenceCardinality),
@@ -40,10 +40,7 @@ public:
 
 	void operator()(AutoPtr<RecordType> recordPtr) const
 	{
-		if (RecordHydrator<RecordType>::_enabled)
-		{
-			(recordPtr->*_valueSetter)(static_cast<T>(_probability.sample((recordPtr->genID() % _sequenceCardinality)/_sequenceCardinalityDecimal)));
-		}
+        (recordPtr->*_valueSetter)(static_cast<T>(_probability.sample((recordPtr->genID() % _sequenceCardinality)/_sequenceCardinalityDecimal)));
 	}
 
 	const Interval<I64u> operator()(const T& x) const

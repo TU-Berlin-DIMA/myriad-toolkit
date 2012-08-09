@@ -29,7 +29,9 @@ template<class RecordType> class RandomRecordHydrator : public RecordHydrator<Re
 {
 public:
 
-	RandomRecordHydrator(RandomStream& random) : RecordHydrator<RecordType>(), _random(random)
+	RandomRecordHydrator(RandomStream& random, I16u randomStreamArity = 0, bool enabled = true) :
+	    RecordHydrator<RecordType>(randomStreamArity, enabled),
+	    _random(random)
 	{
 	}
 
