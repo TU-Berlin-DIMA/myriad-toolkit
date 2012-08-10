@@ -55,7 +55,7 @@ public:
 
 private:
 
-    const InvertibleFieldSetterType& _fieldSetter;
+    InvertibleFieldSetterType& _fieldSetter;
 };
 
 } // namespace Myriad
