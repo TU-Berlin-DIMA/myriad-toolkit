@@ -55,13 +55,13 @@ public:
 //~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, class PrFunctionType>
-class ClusteredValueProvider<ValueType, CxtRecordType, PrFunctionType, ConstValueProvider<I64u, CxtRecordType> >: public ValueProvider<ValueType, CxtRecordType>
+class ClusteredValueProvider<ValueType, CxtRecordType, PrFunctionType, ConstRangeProvider<I64u, CxtRecordType> >: public ValueProvider<ValueType, CxtRecordType>
 {
 public:
 
     ClusteredValueProvider(ConstValueProvider<I64u, CxtRecordType>& valueProvider) :
         ValueProvider<ValueType, CxtRecordType>(0, false), // TODO: invertibility may be possible in some cases
-        _valueProvider(valueProvider)
+        _rangeProvider(valueProvider)
     {
     }
 
@@ -71,12 +71,12 @@ public:
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
     {
-    	return _valueProvider(ctxRecordPtr, random);
+    	return _rangeProvider(ctxRecordPtr, random);
     }
 
 private:
 
-    ConstValueProvider<I64u, CxtRecordType>& _valueProvider;
+    ConstRangeProvider<I64u, CxtRecordType>& _rangeProvider;
 };
 
 //~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
