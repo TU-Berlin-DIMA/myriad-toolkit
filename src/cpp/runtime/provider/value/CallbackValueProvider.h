@@ -34,9 +34,12 @@ class CallbackValueProvider : public ValueProvider<ValueType, CxtRecordType>
 {
 public:
 
-	CallbackValueProvider(CallbackType& callback, const I16u arity) :
-		ValueProvider<ValueType, CxtRecordType>(arity),
-        _callback(callback)
+    typedef const ValueType (CallbackType::*CallbackMethodType)(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random);
+
+    CallbackValueProvider(CallbackType& callbackObject, CallbackMethodType callbackMethod, const I16u arity) :
+        ValueProvider<ValueType, CxtRecordType>(arity),
+        _callbackObject(callbackObject),
+        _callbackMethod(callbackMethod)
     {
     }
 
@@ -46,12 +49,13 @@ public:
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
     {
-        return _callback(ctxRecordPtr, random);
+        return (_callbackObject.*_callbackMethod)(ctxRecordPtr, random);
     }
 
 private:
 
-    CallbackType& _callback;
+    CallbackType& _callbackObject;
+    CallbackMethodType _callbackMethod;
 };
 
 } // namespace Myriad

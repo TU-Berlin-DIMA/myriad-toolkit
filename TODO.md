@@ -4,7 +4,7 @@ x Add a `RecordRangePredicateBinder` -- a generic template component that binds 
 x Add a `RecordRangePredicateBinderChain` -- may be directly integrated into the `RecordRangePredicateBinder` type. 
 * Implement the clustered_value_provider.
 x Implement the const_value_provider.
-* Implement the callback_value_provider.
+x Implement the callback_value_provider.
 * Implement the context_field_value_provider (the value_getter components can be refactored/reused here).
 * Implement the random_value_provider.
 * Implement the clustered_reference_provider.

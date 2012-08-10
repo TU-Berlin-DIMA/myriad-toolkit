@@ -34,24 +34,24 @@ class ConstValueProvider: public ValueProvider<ValueType, CxtRecordType>
 {
 public:
 
-	ConstValueProvider(const ValueType& constValue) :
-		ValueProvider<ValueType, CxtRecordType>(0),
-		_constValue(constValue)
-	{
-	}
+    ConstValueProvider(const ValueType& constValue) :
+        ValueProvider<ValueType, CxtRecordType>(0),
+        _constValue(constValue)
+    {
+    }
 
-	virtual ~ConstValueProvider()
-	{
-	}
+    virtual ~ConstValueProvider()
+    {
+    }
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
-	{
+    {
         return _constValue;
-	}
+    }
 
 private:
 
-	const ValueType _constValue;
+    const ValueType _constValue;
 };
 
 } // namespace Myriad
