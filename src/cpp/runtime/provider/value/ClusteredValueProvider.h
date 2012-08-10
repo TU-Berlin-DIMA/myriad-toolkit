@@ -20,23 +20,23 @@
 #define CLUSTEREDVALUEPROVIDER_H_
 
 #include "runtime/provider/value/ValueProvider.h"
+#include "runtime/provider/value/ConstValueProvider.h"
 
 using namespace Poco;
 
 namespace Myriad {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// value provider for constant values
+// value provider for clustered values
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<typename ValueType, class CxtRecordType>
+template<typename ValueType, class CxtRecordType, class PrFunctionType, class RangeProviderType>
 class ClusteredValueProvider: public ValueProvider<ValueType, CxtRecordType>
 {
 public:
 
-    ClusteredValueProvider(const ValueType& constValue) :
-        ValueProvider<ValueType, CxtRecordType>(0),
-        _constValue(constValue)
+    ClusteredValueProvider(RangeProviderType& valueProvider) :
+        ValueProvider<ValueType, CxtRecordType>(0, false)
     {
     }
 
@@ -46,13 +46,67 @@ public:
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
     {
-        return _constValue;
+        throw LogicException("Unsupported RangeProviderType in ClusteredValueProvider");
+    }
+};
+
+//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// value provider for clustered values (const cardinality specialization)
+//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename ValueType, class CxtRecordType, class PrFunctionType>
+class ClusteredValueProvider<ValueType, CxtRecordType, PrFunctionType, ConstValueProvider<I64u, CxtRecordType> >: public ValueProvider<ValueType, CxtRecordType>
+{
+public:
+
+    ClusteredValueProvider(ConstValueProvider<I64u, CxtRecordType>& valueProvider) :
+        ValueProvider<ValueType, CxtRecordType>(0, false), // TODO: invertibility may be possible in some cases
+        _valueProvider(valueProvider)
+    {
+    }
+
+    virtual ~ClusteredValueProvider()
+    {
+    }
+
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    {
+    	return _valueProvider(ctxRecordPtr, random);
     }
 
 private:
 
-    const ValueType _constValue;
+    ConstValueProvider<I64u, CxtRecordType>& _valueProvider;
 };
+
+//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// value provider for clustered values (const cardinality specialization)
+//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+//template<typename ValueType, class CxtRecordType, class PrFunctionType>
+//class ClusteredValueProvider<ValueType, CxtRecordType, PrFunctionType, ConstValueProvider<I64u, CxtRecordType> >: public ValueProvider<ValueType, CxtRecordType>
+//{
+//public:
+//
+//    ClusteredValueProvider(ConstValueProvider<I64u, CxtRecordType>& valueProvider) :
+//        ValueProvider<ValueType, CxtRecordType>(0),
+//        _valueProvider(valueProvider)
+//    {
+//    }
+//
+//    virtual ~ClusteredValueProvider()
+//    {
+//    }
+//
+//    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+//    {
+//    	return _valueProvider(ctxRecordPtr, random);
+//    }
+//
+//private:
+//
+//    ConstValueProvider<I64u, CxtRecordType>& _valueProvider;
+//};
 
 } // namespace Myriad
 

@@ -16,34 +16,32 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef VALUEPROVIDER_H_
-#define VALUEPROVIDER_H_
+#ifndef ABSTRACTSETTER_H_
+#define ABSTRACTSETTER_H_
 
 #include "core/types.h"
 #include "math/random/RandomStream.h"
 
 #include <Poco/AutoPtr.h>
 
-using namespace CppUnit;
-
 namespace Myriad {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// generic value provider template
+// generic range provider template
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<typename ValueType, class CxtRecordType>
-class ValueProvider
+template<class RecordType, I16u fid>
+class AbstractSetter
 {
 public:
 
-    ValueProvider(const I16u arity, bool invertible) :
+    AbstractSetter(const I16u arity, bool invertible) :
     	_arity(arity),
     	_invertible(invertible)
     {
     }
 
-    virtual ~ValueProvider()
+    virtual ~AbstractSetter()
     {
     }
 
@@ -57,19 +55,7 @@ public:
     	return _invertible;
     }
 
-    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr)
-	{
-    	if (_invertible)
-    	{
-    		throw RuntimeException("Trying to access missing fieldValueRange method implementation in an invertible FieldSetter");
-    	}
-    	else
-    	{
-    		throw RuntimeException("Trying to access fieldValueRange method of non-invertible FieldSetter");
-    	}
-	}
-
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random) = 0;
+    virtual const void operator()(AutoPtr<RecordType>& ctxRecordPtr, RandomStream& random) = 0;
 
 private:
 
@@ -80,4 +66,4 @@ private:
 
 } // namespace Myriad
 
-#endif /* VALUEPROVIDER_H_ */
+#endif /* ABSTRACTSETTER_H_ */

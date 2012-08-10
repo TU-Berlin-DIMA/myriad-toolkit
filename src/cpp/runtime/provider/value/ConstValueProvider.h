@@ -35,7 +35,7 @@ class ConstValueProvider: public ValueProvider<ValueType, CxtRecordType>
 public:
 
     ConstValueProvider(const ValueType& constValue) :
-        ValueProvider<ValueType, CxtRecordType>(0),
+        ValueProvider<ValueType, CxtRecordType>(0, true),
         _constValue(constValue)
     {
     }
@@ -43,6 +43,20 @@ public:
     virtual ~ConstValueProvider()
     {
     }
+
+    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr)
+	{
+    	if (_constValue == value)
+    	{
+			// value range is the whole ctxRecordPtr.genID() interval
+			return Interval<I64u>(0, cxtRecordPtr->meta().cardinality());
+    	}
+    	else
+    	{
+			// value range is zero
+			return Interval<I64u>(0, 0);
+    	}
+	}
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
     {
