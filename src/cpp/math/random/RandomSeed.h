@@ -27,13 +27,13 @@
 using namespace std;
 using namespace Poco;
 
+namespace Myriad {
+
 // forward declarations;
 template<class T> T readComponent(const string& s);
-template<> int readComponent(const string& s);
-template<> unsigned int readComponent(const string& s);
-template<> unsigned long int readComponent(const string& s);
-
-namespace Myriad {
+template<> int readComponent<int>(const string& s);
+template<> unsigned int readComponent<unsigned int>(const string& s);
+template<> unsigned long int readComponent<unsigned long int>(const string& s);
 
 /**
  * A random seed template. Basically, a random seed is a wrapper around a
@@ -147,26 +147,26 @@ private:
 
 };
 
-} // namespace Myriad
-
 template<class T> inline T readComponent(const string& s)
 {
 	throw RuntimeException("Read component not supported");
 }
 
-template<> inline int readComponent(const string& s)
+template<> inline int readComponent<int>(const string& s)
 {
 	return atoi(s.c_str());
 }
 
-template<> inline unsigned int readComponent(const string& s)
+template<> inline unsigned int readComponent<unsigned int>(const string& s)
 {
 	return strtoul(s.c_str(), 0, 0);
 }
 
-template<> inline unsigned long int readComponent(const string& s)
+template<> inline unsigned long int readComponent<unsigned long int>(const string& s)
 {
 	return strtoul(s.c_str(), 0, 0);
 }
+
+} // namespace Myriad
 
 #endif /* RANDOMSEED_H_ */
