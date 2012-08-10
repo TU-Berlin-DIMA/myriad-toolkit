@@ -235,42 +235,6 @@ private:
     PrFunctionType& _probability;
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// value provider from a probability function
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-template<typename ValueType, class CxtRecordType, class CustomProviderType>
-class CallbackValueProvider : public ValueProvider<ValueType, CxtRecordType>
-{
-public:
-
-	typedef typename RecordTraits<CxtRecordType>::HydratorChainType CtxHydratorChainType;
-    typedef const ValueType (*CallbackType)(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random);
-
-	CallbackValueProvider(CustomProviderType customValueProvider) :
-        _customValueProvider(customValueProvider)
-    {
-    }
-
-    virtual ~CallbackValueProvider()
-    {
-    }
-
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
-    {
-        return _customValueProvider(ctxRecordPtr, random);
-    }
-
-    virtual I16u arity() const
-    {
-        return _customValueProvider.arity();
-    }
-
-private:
-
-    CustomProviderType _customValueProvider;
-};
-
 } // namespace Myriad
 
 #endif /* RECORDRANGEPREDICATEBUILDER_H_ */

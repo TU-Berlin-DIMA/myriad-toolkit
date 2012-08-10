@@ -3,7 +3,7 @@ x Add a `RecordRangePredicate` template type (the single argument of the `Record
 x Add a `RecordRangePredicateBinder` -- a generic template component that binds values to `RecordRangePredicate` predicates (we need two flavors: for scalar fields of another record and for (potentially conditional -- how to handle that?!?!) probabilities.
 x Add a `RecordRangePredicateBinderChain` -- may be directly integrated into the `RecordRangePredicateBinder` type. 
 * Implement the clustered_value_provider.
-* Implement the const_value_provider.
+x Implement the const_value_provider.
 * Implement the callback_value_provider.
 * Implement the context_field_value_provider (the value_getter components can be refactored/reused here).
 * Implement the random_value_provider.

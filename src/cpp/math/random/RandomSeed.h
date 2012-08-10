@@ -64,15 +64,24 @@ public:
 	{
 		seed.append(",");
 
+		for (unsigned int i = 0; i < x; i++)
+		{
+			v[i] = 0;
+		}
+
 		unsigned int i = 0;
 		size_t l = 0, r;
-
 		while (i < x && string::npos != (r = seed.find(',', l)))
 		{
 			v[i] = readComponent<T> (seed.substr(l, r - l));
 
 			l = r + 1;
 			i++;
+		}
+
+		if (i < x)
+		{
+			throw RuntimeException("Not enough random seed components found");
 		}
 	}
 
