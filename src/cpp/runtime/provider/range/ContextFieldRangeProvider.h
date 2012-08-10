@@ -50,7 +50,7 @@ public:
 
     virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
     {
-        return _fieldSetter.fieldValueRange(ctxRecordPtr);
+        return _fieldSetter.fieldValueRange(ctxRecordPtr, random);
     }
 
 private:

@@ -44,7 +44,7 @@ public:
     {
     }
 
-    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr)
+    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
 	{
     	if (_constValue == value)
     	{

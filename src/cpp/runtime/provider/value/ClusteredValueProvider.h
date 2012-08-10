@@ -35,8 +35,10 @@ class ClusteredValueProvider: public ValueProvider<ValueType, CxtRecordType>
 {
 public:
 
-    ClusteredValueProvider(RangeProviderType& valueProvider) :
-        ValueProvider<ValueType, CxtRecordType>(0, false)
+    ClusteredValueProvider(const PrFunctionType& prFunction, RangeProviderType& rangeProvider) :
+        ValueProvider<ValueType, CxtRecordType>(_rangeProvider.arity()+1, false),
+        _prFunction(prFunction),
+        _rangeProvider(rangeProvider)
     {
     }
 
@@ -44,69 +46,28 @@ public:
     {
     }
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
-    {
-        throw LogicException("Unsupported RangeProviderType in ClusteredValueProvider");
-    }
-};
+    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+	{
+        Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr, random);
+		Decimal currentRangeLength = currentRange.length();
 
-//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// value provider for clustered values (const cardinality specialization)
-//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+		Decimal cdf = _prFunction.cdf(value);
+		Decimal pdf = _prFunction.pdf(value);
 
-template<typename ValueType, class CxtRecordType, class PrFunctionType>
-class ClusteredValueProvider<ValueType, CxtRecordType, PrFunctionType, ConstRangeProvider<I64u, CxtRecordType> >: public ValueProvider<ValueType, CxtRecordType>
-{
-public:
-
-    ClusteredValueProvider(ConstValueProvider<I64u, CxtRecordType>& valueProvider) :
-        ValueProvider<ValueType, CxtRecordType>(0, false), // TODO: invertibility may be possible in some cases
-        _rangeProvider(valueProvider)
-    {
-    }
-
-    virtual ~ClusteredValueProvider()
-    {
-    }
+		return Interval<I64u>((cdf-pdf) * currentRangeLength + 0.5, cdf * currentRangeLength + 0.5);
+	}
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
     {
-    	return _rangeProvider(ctxRecordPtr, random);
+    	throw RuntimeException("Unimplemented method exception");
     }
 
 private:
 
+    const PrFunctionType& _prFunction;
+
     ConstRangeProvider<I64u, CxtRecordType>& _rangeProvider;
 };
-
-//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// value provider for clustered values (const cardinality specialization)
-//~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-//template<typename ValueType, class CxtRecordType, class PrFunctionType>
-//class ClusteredValueProvider<ValueType, CxtRecordType, PrFunctionType, ConstValueProvider<I64u, CxtRecordType> >: public ValueProvider<ValueType, CxtRecordType>
-//{
-//public:
-//
-//    ClusteredValueProvider(ConstValueProvider<I64u, CxtRecordType>& valueProvider) :
-//        ValueProvider<ValueType, CxtRecordType>(0),
-//        _valueProvider(valueProvider)
-//    {
-//    }
-//
-//    virtual ~ClusteredValueProvider()
-//    {
-//    }
-//
-//    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
-//    {
-//    	return _valueProvider(ctxRecordPtr, random);
-//    }
-//
-//private:
-//
-//    ConstValueProvider<I64u, CxtRecordType>& _valueProvider;
-//};
 
 } // namespace Myriad
 

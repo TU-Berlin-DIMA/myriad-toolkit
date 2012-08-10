@@ -48,15 +48,15 @@ public:
     {
     }
 
+    virtual Interval<I64u> fieldValueRange(const AutoPtr<RecordType>& ctxRecordPtr, RandomStream& random)
+	{
+    	return _valueProvider.fieldValueRange((ctxRecordPtr->*_fieldGetter)(), ctxRecordPtr, random);
+	}
+
     virtual const void operator()(AutoPtr<RecordType>& ctxRecordPtr, RandomStream& random)
     {
     	(ctxRecordPtr->*_fieldSetter)(static_cast<RecordFieldType>(_valueProvider(ctxRecordPtr, random)));
     }
-
-    virtual Interval<I64u> fieldValueRange(const AutoPtr<RecordType>& ctxRecordPtr)
-	{
-    	return _valueProvider.fieldValueRange((ctxRecordPtr->*_fieldGetter)(), ctxRecordPtr);
-	}
 
 private:
 

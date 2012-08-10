@@ -55,6 +55,18 @@ public:
     	return _invertible;
     }
 
+    virtual Interval<I64u> fieldValueRange(const AutoPtr<RecordType>& ctxRecordPtr, RandomStream& random)
+	{
+    	if (_invertible)
+    	{
+    		throw RuntimeException("Trying to access missing fieldValueRange method implementation in an invertible FieldSetter");
+    	}
+    	else
+    	{
+    		throw RuntimeException("Trying to access fieldValueRange method of non-invertible FieldSetter");
+    	}
+	}
+
     virtual const void operator()(AutoPtr<RecordType>& ctxRecordPtr, RandomStream& random) = 0;
 
 private:
