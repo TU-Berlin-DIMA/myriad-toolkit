@@ -697,9 +697,9 @@ template<typename T> T CombinedPrFunction<T>::invcdf(Decimal y) const
 
 			Decimal z = ((y - cdfBefore) / _bucketProbabilities[i-_numberOfValues]) * b.length();
 
-			T x = static_cast<T>(b.min() + static_cast<T>(z));
+			T x = static_cast<T>(b.min() + static_cast<I32u>(z));
 
-			if ((z - static_cast<T>(z) >= 0.999999))
+			if ((z - static_cast<I32u>(z) >= 0.999999))
 			{
 				x++;
 			}
