@@ -692,9 +692,25 @@ template<typename T> T CombinedPrFunction<T>::invcdf(Decimal y) const
 		}
 		else
 		{
-			const Interval<T> b = _buckets[i-_numberOfValues];
+			const Interval<T>& b = _buckets[i-_numberOfValues];
 			Decimal cdfBefore = i > 0 ? _cumulativeProbabilites[i-1] : 0;
-			return static_cast<T>(b.min() + ((y - cdfBefore) / _bucketProbabilities[i-_numberOfValues]) * b.length());
+
+			Decimal z = ((y - cdfBefore) / _bucketProbabilities[i-_numberOfValues]) * b.length();
+
+			T x = static_cast<T>(b.min() + static_cast<T>(z));
+
+			if ((z - static_cast<T>(z) >= 0.999999))
+			{
+				x++;
+			}
+
+			// FIXME: a quick and dirty hack to protect against out of range behavior, needs rewrite
+			if (x >= b.max())
+			{
+				x--;
+			}
+
+			return x;
 		}
 	}
 	else
