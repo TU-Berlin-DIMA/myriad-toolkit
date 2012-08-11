@@ -36,7 +36,7 @@ class ClusteredValueProvider: public ValueProvider<ValueType, CxtRecordType>
 public:
 
     ClusteredValueProvider(const PrFunctionType& prFunction, RangeProviderType& rangeProvider) :
-        ValueProvider<ValueType, CxtRecordType>(_rangeProvider.arity()+1, false),
+        ValueProvider<ValueType, CxtRecordType>(rangeProvider.arity()+1, true),
         _prFunction(prFunction),
         _rangeProvider(rangeProvider)
     {
@@ -47,19 +47,23 @@ public:
     }
 
     virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
-	{
+    {
         Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr, random);
-		Decimal currentRangeLength = currentRange.length();
+        Decimal currentRangeLength = currentRange.length();
 
-		Decimal cdf = _prFunction.cdf(value);
-		Decimal pdf = _prFunction.pdf(value);
+        Decimal cdf = _prFunction.cdf(value);
+        Decimal pdf = _prFunction.pdf(value);
 
-		return Interval<I64u>((cdf-pdf) * currentRangeLength + 0.5, cdf * currentRangeLength + 0.5);
-	}
+        return Interval<I64u>(currentRange.min() + (cdf-pdf) * currentRangeLength + 0.5, currentRange.min() + cdf * currentRangeLength + 0.5);
+    }
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
     {
-    	throw RuntimeException("Unimplemented method exception");
+        Interval<I64u> currentRange = _rangeProvider(ctxRecordPtr, random);
+        I64u currentRangeLength = currentRange.length();
+        Decimal currentRangeLengthDecimal = currentRange.length();
+
+        return static_cast<ValueType>(_prFunction.sample(((ctxRecordPtr->genID() - currentRange.min()) % currentRangeLength)/currentRangeLengthDecimal));
     }
 
 private:

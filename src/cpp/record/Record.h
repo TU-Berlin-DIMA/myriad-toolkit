@@ -167,6 +167,11 @@ public:
 	 */
 	AutoPtr<RecordType> operator()() const;
 
+	/**
+	 * Object generating function.
+	 */
+	AutoPtr<RecordType> operator()(const I64u& genID) const;
+
 private:
 
 	const RecordMetaType _meta;
@@ -176,6 +181,14 @@ template<class RecordType>
 inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()() const
 {
 	return new RecordType(_meta);
+}
+
+template<class RecordType>
+inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()(const I64u& genID) const
+{
+	AutoPtr<RecordType> record(new RecordType(_meta));
+	record->genID(genID);
+	return record;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
