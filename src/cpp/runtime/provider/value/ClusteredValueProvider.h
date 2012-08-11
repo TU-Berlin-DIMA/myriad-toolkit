@@ -70,7 +70,7 @@ private:
 
     const PrFunctionType& _prFunction;
 
-    ConstRangeProvider<I64u, CxtRecordType>& _rangeProvider;
+    RangeProviderType& _rangeProvider;
 };
 
 } // namespace Myriad
