@@ -24,8 +24,6 @@
 
 #include <Poco/AutoPtr.h>
 
-using namespace CppUnit;
-
 namespace Myriad {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -57,19 +55,20 @@ public:
     	return _invertible;
     }
 
-    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    // TODO: rename to simply 'valueRange'
+    virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
 	{
     	if (_invertible)
     	{
-    		throw RuntimeException("Trying to access missing fieldValueRange method implementation in an invertible FieldSetter");
+    		throw RuntimeException("Trying to access missing valueRange method implementation in an invertible ValueProvider");
     	}
     	else
     	{
-    		throw RuntimeException("Trying to access fieldValueRange method of non-invertible FieldSetter");
+    		throw RuntimeException("Trying to access valueRange method of non-invertible FieldSetter");
     	}
 	}
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random) = 0;
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random) = 0;
 
 private:
 

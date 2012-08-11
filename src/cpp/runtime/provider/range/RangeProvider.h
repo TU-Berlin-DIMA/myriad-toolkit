@@ -49,7 +49,7 @@ public:
     	return _arity;
     }
 
-    virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random) = 0;
+    virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random) = 0;
 
 private:
 

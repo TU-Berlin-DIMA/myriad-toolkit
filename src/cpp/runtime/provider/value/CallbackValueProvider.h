@@ -34,7 +34,7 @@ class CallbackValueProvider : public ValueProvider<ValueType, CxtRecordType>
 {
 public:
 
-    typedef const ValueType (CallbackType::*CallbackMethodType)(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random);
+    typedef const ValueType (CallbackType::*CallbackMethodType)(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random);
 
     CallbackValueProvider(CallbackType& callbackObject, CallbackMethodType callbackMethod, const I16u arity) :
         ValueProvider<ValueType, CxtRecordType>(arity, false),
@@ -47,9 +47,9 @@ public:
     {
     }
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
-        return (_callbackObject.*_callbackMethod)(ctxRecordPtr, random);
+        return (_callbackObject.*_callbackMethod)(cxtRecordPtr, random);
     }
 
 private:

@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef ABSTRACTSETTER_H_
-#define ABSTRACTSETTER_H_
+#ifndef ABSTRACTREFERENCEPROVIDER_H_
+#define ABSTRACTREFERENCEPROVIDER_H_
 
 #include "core/types.h"
 #include "math/random/RandomStream.h"
@@ -27,21 +27,21 @@
 namespace Myriad {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// generic range provider template
+// generic reference provider template
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<class RecordType, I16u fid>
-class AbstractSetter
+template<typename RefRecordType, class CxtRecordType>
+class AbstractReferenceProvider
 {
 public:
 
-    AbstractSetter(const I16u arity, bool invertible) :
+    AbstractReferenceProvider(const I16u arity, bool invertible) :
     	_arity(arity),
     	_invertible(invertible)
     {
     }
 
-    virtual ~AbstractSetter()
+    virtual ~AbstractReferenceProvider()
     {
     }
 
@@ -55,19 +55,19 @@ public:
     	return _invertible;
     }
 
-    virtual Interval<I64u> valueRange(const AutoPtr<RecordType>& cxtRecordPtr, RandomStream& random)
+    virtual Interval<I64u> referenceRange(const I64u& refRecordID, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
 	{
     	if (_invertible)
     	{
-    		throw RuntimeException("Trying to access missing valueRange method implementation in an invertible FieldSetter");
+    		throw RuntimeException("Trying to access missing referenceRange method implementation in an invertible ReferenceProvider");
     	}
     	else
     	{
-    		throw RuntimeException("Trying to access valueRange method of non-invertible FieldSetter");
+    		throw RuntimeException("Trying to access referenceRange method of non-invertible ReferenceProvider");
     	}
 	}
 
-    virtual const void operator()(AutoPtr<RecordType>& cxtRecordPtr, RandomStream& random) = 0;
+    virtual const AutoPtr<RefRecordType>& operator()(AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random) = 0;
 
 private:
 
@@ -78,4 +78,4 @@ private:
 
 } // namespace Myriad
 
-#endif /* ABSTRACTSETTER_H_ */
+#endif /* ABSTRACTREFERENCEPROVIDER_H_ */

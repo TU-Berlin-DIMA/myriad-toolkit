@@ -44,11 +44,11 @@ public:
     {
     }
 
-    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
 	{
     	if (_constValue == value)
     	{
-			// value range is the whole ctxRecordPtr.genID() interval
+			// value range is the whole cxtRecordPtr.genID() interval
 			return Interval<I64u>(0, cxtRecordPtr->meta().cardinality());
     	}
     	else
@@ -58,7 +58,7 @@ public:
     	}
 	}
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         return _constValue;
     }

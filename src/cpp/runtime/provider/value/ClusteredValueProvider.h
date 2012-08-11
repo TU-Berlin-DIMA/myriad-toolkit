@@ -20,7 +20,6 @@
 #define CLUSTEREDVALUEPROVIDER_H_
 
 #include "runtime/provider/value/ValueProvider.h"
-#include "runtime/provider/value/ConstValueProvider.h"
 
 using namespace Poco;
 
@@ -46,7 +45,7 @@ public:
     {
     }
 
-    virtual Interval<I64u> fieldValueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr, random);
         Decimal currentRangeLength = currentRange.length();
@@ -57,13 +56,13 @@ public:
         return Interval<I64u>(currentRange.min() + (cdf-pdf) * currentRangeLength + 0.5, currentRange.min() + cdf * currentRangeLength + 0.5);
     }
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
-        Interval<I64u> currentRange = _rangeProvider(ctxRecordPtr, random);
+        Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr, random);
         I64u currentRangeLength = currentRange.length();
         Decimal currentRangeLengthDecimal = currentRange.length();
 
-        return static_cast<ValueType>(_prFunction.sample(((ctxRecordPtr->genID() - currentRange.min()) % currentRangeLength)/currentRangeLengthDecimal));
+        return static_cast<ValueType>(_prFunction.sample(((cxtRecordPtr->genID() - currentRange.min()) % currentRangeLength)/currentRangeLengthDecimal));
     }
 
 private:

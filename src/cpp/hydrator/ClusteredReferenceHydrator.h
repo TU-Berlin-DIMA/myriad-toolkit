@@ -106,9 +106,9 @@ private:
 
 	RandomSetInspector<RefRecordType> _parentSet;
 
-	I64u _referenceSetCardinality;
+//	I64u _referenceSetCardinality;
 
-    I64u _nestedSetCardinality;
+//    I64u _nestedSetCardinality;
 
     I32u _maxNestedPerParent;
 

@@ -37,7 +37,7 @@ class ValueProvider;
 // generic range predicate builder template
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<class RecordType, class CtxRecordType, I16u fid1 = 0, I16u fid2 = 0, I16u fid3 = 0, I16u fid4 = 0, I16u fid5 = 0>
+template<class RecordType, class CxtRecordType, I16u fid1 = 0, I16u fid2 = 0, I16u fid3 = 0, I16u fid4 = 0, I16u fid5 = 0>
 class RecordRangePredicateBuilder
 {
 public:
@@ -57,11 +57,11 @@ public:
     typedef typename RecordFieldTraits<fid4, RecordType>::RangeSetterShortType FieldSetter4Type;
     typedef typename RecordFieldTraits<fid5, RecordType>::RangeSetterShortType FieldSetter5Type;
     // value provider types
-    typedef ValueProvider<Field1Type, CtxRecordType>* ValueProvider1Type;
-    typedef ValueProvider<Field2Type, CtxRecordType>* ValueProvider2Type;
-    typedef ValueProvider<Field3Type, CtxRecordType>* ValueProvider3Type;
-    typedef ValueProvider<Field4Type, CtxRecordType>* ValueProvider4Type;
-    typedef ValueProvider<Field5Type, CtxRecordType>* ValueProvider5Type;
+    typedef ValueProvider<Field1Type, CxtRecordType>* ValueProvider1Type;
+    typedef ValueProvider<Field2Type, CxtRecordType>* ValueProvider2Type;
+    typedef ValueProvider<Field3Type, CxtRecordType>* ValueProvider3Type;
+    typedef ValueProvider<Field4Type, CxtRecordType>* ValueProvider4Type;
+    typedef ValueProvider<Field5Type, CxtRecordType>* ValueProvider5Type;
 
     RecordRangePredicateBuilder(ValueProvider1Type valueProvider1 = NULL, ValueProvider2Type valueProvider2 = NULL, ValueProvider3Type valueProvider3 = NULL, ValueProvider4Type valueProvider4 = NULL, ValueProvider5Type valueProvider5 = NULL) :
         _valueProvider1(valueProvider1),
@@ -128,27 +128,27 @@ public:
     /**
      * Object hydrating function (external PRNG).
      */
-    void operator()(const AutoPtr<CtxRecordType>& ctxRecordPtr, RecordRangePredicateType& predicate, RandomStream& random)
+    void operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RecordRangePredicateType& predicate, RandomStream& random)
     {
         if (fid1 > 0)
         {
-            (predicate.*_fieldSetter1)((*_valueProvider1)(ctxRecordPtr, random));
+            (predicate.*_fieldSetter1)((*_valueProvider1)(cxtRecordPtr, random));
         }
         if (fid2 > 0)
         {
-            (predicate.*_fieldSetter2)((*_valueProvider2)(ctxRecordPtr, random));
+            (predicate.*_fieldSetter2)((*_valueProvider2)(cxtRecordPtr, random));
         }
         if (fid3 > 0)
         {
-            (predicate.*_fieldSetter3)((*_valueProvider3)(ctxRecordPtr, random));
+            (predicate.*_fieldSetter3)((*_valueProvider3)(cxtRecordPtr, random));
         }
         if (fid4 > 0)
         {
-            (predicate.*_fieldSetter4)((*_valueProvider4)(ctxRecordPtr, random));
+            (predicate.*_fieldSetter4)((*_valueProvider4)(cxtRecordPtr, random));
         }
         if (fid5 > 0)
         {
-            (predicate.*_fieldSetter5)((*_valueProvider5)(ctxRecordPtr, random));
+            (predicate.*_fieldSetter5)((*_valueProvider5)(cxtRecordPtr, random));
         }
     }
 
@@ -172,24 +172,24 @@ private:
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, I16u fid>
-class CtxRecordFieldValueProvider : public ValueProvider<ValueType, CxtRecordType>
+class CxtRecordFieldValueProvider : public ValueProvider<ValueType, CxtRecordType>
 {
 public:
 
     typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldGetterType FieldGetterType;
 
-    CtxRecordFieldValueProvider() :
+    CxtRecordFieldValueProvider() :
         _getter(RecordFieldTraits<fid, CxtRecordType>::getter())
     {
     }
 
-    virtual ~CtxRecordFieldValueProvider()
+    virtual ~CxtRecordFieldValueProvider()
     {
     }
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
-        return (ctxRecordPtr->*_getter)();
+        return (cxtRecordPtr->*_getter)();
     }
 
     virtual I16u arity() const
@@ -220,7 +220,7 @@ public:
     {
     }
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         return _probability.sample(random());
     }

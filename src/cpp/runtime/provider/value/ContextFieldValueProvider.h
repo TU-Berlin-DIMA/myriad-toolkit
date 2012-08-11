@@ -47,9 +47,9 @@ public:
     {
     }
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
-        return (ctxRecordPtr->*_fieldGetter)();
+        return (cxtRecordPtr->*_fieldGetter)();
     }
 
 private:

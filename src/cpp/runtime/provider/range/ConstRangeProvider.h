@@ -50,7 +50,7 @@ public:
     {
     }
 
-    virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         return _constRange;
     }

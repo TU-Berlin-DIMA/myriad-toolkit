@@ -44,7 +44,7 @@ public:
     {
     }
 
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& ctxRecordPtr, RandomStream& random)
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         return static_cast<ValueType>(_prFunction.sample(random()));
     }
