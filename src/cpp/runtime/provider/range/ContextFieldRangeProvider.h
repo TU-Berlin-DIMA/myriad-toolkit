@@ -19,7 +19,7 @@
 #ifndef CONTEXTFIELDRANGEPROVIDER_H_
 #define CONTEXTFIELDRANGEPROVIDER_H_
 
-#include "runtime/provider/range/RangeProvider.h"
+#include "runtime/provider/range/AbstractRangeProvider.h"
 
 using namespace Poco;
 
@@ -30,12 +30,12 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
-class ContextFieldRangeProvider: public RangeProvider<RangeType, CxtRecordType>
+class ContextFieldRangeProvider: public AbstractRangeProvider<RangeType, CxtRecordType>
 {
 public:
 
     ContextFieldRangeProvider(InvertibleFieldSetterType& fieldSetter) :
-        RangeProvider<RangeType, CxtRecordType>(0),
+    	AbstractRangeProvider<RangeType, CxtRecordType>(0),
         _fieldSetter(fieldSetter)
     {
     	if (!_fieldSetter.invertible())

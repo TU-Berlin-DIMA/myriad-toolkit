@@ -19,7 +19,7 @@
 #ifndef CONSTRANGEPROVIDER_H_
 #define CONSTRANGEPROVIDER_H_
 
-#include "runtime/provider/range/RangeProvider.h"
+#include "runtime/provider/range/AbstractRangeProvider.h"
 
 using namespace Poco;
 
@@ -30,18 +30,18 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename RangeType, class CxtRecordType>
-class ConstRangeProvider: public RangeProvider<RangeType, CxtRecordType>
+class ConstRangeProvider: public AbstractRangeProvider<RangeType, CxtRecordType>
 {
 public:
 
     ConstRangeProvider(const Interval<RangeType>& constRange) :
-        RangeProvider<RangeType, CxtRecordType>(0),
+        AbstractRangeProvider<RangeType, CxtRecordType>(0),
         _constRange(constRange)
     {
     }
 
     ConstRangeProvider(const RangeType& min, const RangeType& max) :
-        RangeProvider<RangeType, CxtRecordType>(0),
+    	AbstractRangeProvider<RangeType, CxtRecordType>(0),
         _constRange(min, max)
     {
     }
