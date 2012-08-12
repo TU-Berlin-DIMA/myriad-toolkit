@@ -206,7 +206,7 @@ public:
 	}
 
 	RecordMeta(const map<string, vector<string> >& enumSets, const I64u cardinality = 0) :
-		_cardinality(0) // FIXME: mandatory cardinality
+		_cardinality(cardinality) // FIXME: mandatory cardinality
 	{
 	}
 

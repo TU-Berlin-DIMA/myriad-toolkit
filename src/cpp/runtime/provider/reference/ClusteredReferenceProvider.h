@@ -38,23 +38,23 @@ class ClusteredReferenceProvider: public AbstractReferenceProvider<RefRecordType
 {
 public:
 
-	typedef typename RecordFieldTraits<posFieldID, RefRecordType>::FieldSetterType PosFieldSetterType;
-	typedef ConstValueProvider<I32u, CxtRecordType> MaxChildrenValueProviderType;
-	typedef RandomSetInspector<RefRecordType> RefRecordSetType;
+    typedef typename RecordFieldTraits<posFieldID, CxtRecordType>::FieldSetterType PosFieldSetterType;
+    typedef ConstValueProvider<I32u, CxtRecordType> MaxChildrenValueProviderType;
+    typedef RandomSetInspector<RefRecordType> RefRecordSetType;
 
     ClusteredReferenceProvider(MaxChildrenValueProviderType& maxChildrenProvider, ChildrenCountValueProviderType& childrenCountProvider, RandomSetInspector<RefRecordType> parentSet) :
-    	AbstractReferenceProvider<RefRecordType, CxtRecordType>(0, true),
+        AbstractReferenceProvider<RefRecordType, CxtRecordType>(0, true),
         _maxChildrenValue(nullValue<I32u>()),
         _maxChildrenProvider(maxChildrenProvider),
         _childrenCountProvider(childrenCountProvider),
         _parentSet(parentSet),
-        _posFieldSetter(posFieldID != 0 ? RecordFieldTraits<posFieldID, RefRecordType>::setter() : NULL)
+        _posFieldSetter(posFieldID != 0 ? RecordFieldTraits<posFieldID, CxtRecordType>::setter() : NULL)
     {
-    	// make sure that the _childrenCountProvider does not consume random records
-    	if (_childrenCountProvider.arity() > 0)
-    	{
-    		throw RuntimeException("Cannot use childrenCountProviders with arity() > 0 in a ClusteredReferenceProvider");
-    	}
+        // make sure that the _childrenCountProvider does not consume random records
+        if (_childrenCountProvider.arity() > 0)
+        {
+            throw RuntimeException("Cannot use childrenCountProviders with arity() > 0 in a ClusteredReferenceProvider");
+        }
     }
 
     virtual ~ClusteredReferenceProvider()
@@ -62,23 +62,24 @@ public:
     }
 
     virtual Interval<I64u> referenceRange(const I64u& refRecordID, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
-	{
-    	// lazy initialize max nested per parent
-    	if (_maxChildrenValue == nullValue<I32u>())
-    	{
-    		_maxChildrenValue = _maxChildrenProvider(cxtRecordPtr, random);
-    	}
+    {
+        // lazy initialize max nested per parent
+        if (_maxChildrenValue == nullValue<I32u>())
+        {
+            _maxChildrenValue = _maxChildrenProvider(cxtRecordPtr, random);
+        }
 
-    	return Interval<I64u>(refRecordID * _maxChildrenValue, (refRecordID + 1)* _maxChildrenValue);
-	}
+        // TODO: return the exact range (i.e. the range without the black IDs)
+        return Interval<I64u>(refRecordID * _maxChildrenValue, (refRecordID + 1)* _maxChildrenValue);
+    }
 
     virtual const AutoPtr<RefRecordType>& operator()(AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
-    	// lazy initialize max nested per parent
-    	if (_maxChildrenValue == nullValue<I32u>())
-    	{
-    		_maxChildrenValue = _maxChildrenProvider(cxtRecordPtr, random);
-    	}
+        // lazy initialize max nested per parent
+        if (_maxChildrenValue == nullValue<I32u>())
+        {
+            _maxChildrenValue = _maxChildrenProvider(cxtRecordPtr, random);
+        }
 
         I64u nestedRecordGenID = cxtRecordPtr->genID();
         I64u parentRecordGenID = nestedRecordGenID/_maxChildrenValue;
@@ -92,7 +93,7 @@ public:
         // Currently this does not influence the execution order as we only
         // permit _childrenCountProvider instances with zero arity.
         // Nevertheless, a cleaner solution will not hurt here.
-        I64u nestedCount = _childrenCountProvider(_parent, random);
+        I32u nestedCount = _childrenCountProvider(_parent, random);
 
         if (nestedRecordGenID % _maxChildrenValue < nestedCount)
         {
@@ -101,14 +102,12 @@ public:
                 (cxtRecordPtr->*_posFieldSetter)(static_cast<I32u>(nestedRecordGenID-(parentRecordGenID*_maxChildrenValue)));
             }
 
-        	return _parent;
+            return _parent;
         }
         else
         {
             throw InvalidRecordException(nestedRecordGenID, _maxChildrenValue, nestedCount);
         }
-
-    	throw RuntimeException("not implemented");
     }
 
 private:
@@ -119,7 +118,7 @@ private:
 
     ChildrenCountValueProviderType& _childrenCountProvider;
 
-    RefRecordSetType& _parentSet;
+    RefRecordSetType _parentSet;
 
     PosFieldSetterType _posFieldSetter;
 
