@@ -56,7 +56,7 @@ public:
     }
 
     // TODO: rename to simply 'valueRange'
-    virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr)
 	{
     	if (_invertible)
     	{

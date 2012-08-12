@@ -55,7 +55,7 @@ public:
     	return _invertible;
     }
 
-    virtual Interval<I64u> valueRange(const AutoPtr<RecordType>& cxtRecordPtr, RandomStream& random)
+    virtual Interval<I64u> valueRange(const AutoPtr<RecordType>& cxtRecordPtr)
 	{
     	if (_invertible)
     	{

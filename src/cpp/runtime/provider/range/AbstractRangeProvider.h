@@ -16,48 +16,45 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef CONTEXTFIELDRANGEPROVIDER_H_
-#define CONTEXTFIELDRANGEPROVIDER_H_
+#ifndef ABSTRACTRANGEPROVIDER_H_
+#define ABSTRACTRANGEPROVIDER_H_
 
-#include "runtime/provider/range/AbstractRangeProvider.h"
+#include "core/types.h"
 
-using namespace Poco;
+#include <Poco/AutoPtr.h>
 
 namespace Myriad {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// range provider for constant ranges
+// generic range provider template
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
-class ContextFieldRangeProvider: public AbstractRangeProvider<RangeType, CxtRecordType>
+template<typename RangeType, class CxtRecordType>
+class AbstractRangeProvider
 {
 public:
 
-    ContextFieldRangeProvider(InvertibleFieldSetterType& fieldSetter) :
-    	AbstractRangeProvider<RangeType, CxtRecordType>(0),
-        _fieldSetter(fieldSetter)
-    {
-    	if (!_fieldSetter.invertible())
-    	{
-    		throw LogicException("Cannot use non-invertible FieldSetter in ContextFieldRangeProvider");
-    	}
-    }
-
-    virtual ~ContextFieldRangeProvider()
+    AbstractRangeProvider(const I16u arity) :
+    	_arity(arity)
     {
     }
 
-    virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr)
+    virtual ~AbstractRangeProvider()
     {
-        return _fieldSetter.valueRange(cxtRecordPtr);
     }
+
+    I16u arity() const
+    {
+    	return _arity;
+    }
+
+    virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr) = 0;
 
 private:
 
-    InvertibleFieldSetterType& _fieldSetter;
+    const I16u _arity;
 };
 
 } // namespace Myriad
 
-#endif /* CONTEXTFIELDRANGEPROVIDER_H_ */
+#endif /* ABSTRACTRANGEPROVIDER_H_ */

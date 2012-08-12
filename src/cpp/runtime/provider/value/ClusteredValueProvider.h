@@ -45,9 +45,9 @@ public:
     {
     }
 
-    virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr)
     {
-        Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr, random);
+        Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr);
         Decimal currentRangeLength = currentRange.length();
 
         Decimal cdf = _prFunction.cdf(value);
@@ -58,7 +58,7 @@ public:
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
-        Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr, random);
+        Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr);
         I64u currentRangeLength = currentRange.length();
         Decimal currentRangeLengthDecimal = currentRange.length();
 
