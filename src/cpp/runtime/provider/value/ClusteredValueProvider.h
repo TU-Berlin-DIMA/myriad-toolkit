@@ -19,7 +19,7 @@
 #ifndef CLUSTEREDVALUEPROVIDER_H_
 #define CLUSTEREDVALUEPROVIDER_H_
 
-#include "runtime/provider/value/ValueProvider.h"
+#include "runtime/provider/value/AbstractValueProvider.h"
 
 using namespace Poco;
 
@@ -30,12 +30,12 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, class PrFunctionType, class RangeProviderType>
-class ClusteredValueProvider: public ValueProvider<ValueType, CxtRecordType>
+class ClusteredValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
     ClusteredValueProvider(const PrFunctionType& prFunction, RangeProviderType& rangeProvider) :
-        ValueProvider<ValueType, CxtRecordType>(rangeProvider.arity()+1, true),
+        AbstractValueProvider<ValueType, CxtRecordType>(rangeProvider.arity()+1, true), // TODO: is this always invertible?
         _prFunction(prFunction),
         _rangeProvider(rangeProvider)
     {

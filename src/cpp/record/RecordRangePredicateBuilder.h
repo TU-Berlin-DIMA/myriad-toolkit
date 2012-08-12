@@ -31,7 +31,7 @@ namespace Myriad
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType>
-class ValueProvider;
+class AbstractValueProvider;
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // generic range predicate builder template
@@ -57,11 +57,11 @@ public:
     typedef typename RecordFieldTraits<fid4, RecordType>::RangeSetterShortType FieldSetter4Type;
     typedef typename RecordFieldTraits<fid5, RecordType>::RangeSetterShortType FieldSetter5Type;
     // value provider types
-    typedef ValueProvider<Field1Type, CxtRecordType>* ValueProvider1Type;
-    typedef ValueProvider<Field2Type, CxtRecordType>* ValueProvider2Type;
-    typedef ValueProvider<Field3Type, CxtRecordType>* ValueProvider3Type;
-    typedef ValueProvider<Field4Type, CxtRecordType>* ValueProvider4Type;
-    typedef ValueProvider<Field5Type, CxtRecordType>* ValueProvider5Type;
+    typedef AbstractValueProvider<Field1Type, CxtRecordType>* ValueProvider1Type;
+    typedef AbstractValueProvider<Field2Type, CxtRecordType>* ValueProvider2Type;
+    typedef AbstractValueProvider<Field3Type, CxtRecordType>* ValueProvider3Type;
+    typedef AbstractValueProvider<Field4Type, CxtRecordType>* ValueProvider4Type;
+    typedef AbstractValueProvider<Field5Type, CxtRecordType>* ValueProvider5Type;
 
     RecordRangePredicateBuilder(ValueProvider1Type valueProvider1 = NULL, ValueProvider2Type valueProvider2 = NULL, ValueProvider3Type valueProvider3 = NULL, ValueProvider4Type valueProvider4 = NULL, ValueProvider5Type valueProvider5 = NULL) :
         _valueProvider1(valueProvider1),
@@ -172,7 +172,7 @@ private:
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, I16u fid>
-class CxtRecordFieldValueProvider : public ValueProvider<ValueType, CxtRecordType>
+class CxtRecordFieldValueProvider : public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
@@ -207,7 +207,7 @@ private:
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, class PrFunctionType>
-class ProbabilityValueProvider : public ValueProvider<ValueType, CxtRecordType>
+class ProbabilityValueProvider : public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 

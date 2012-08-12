@@ -19,7 +19,7 @@
 #ifndef RANDOMVALUEPROVIDER_H_
 #define RANDOMVALUEPROVIDER_H_
 
-#include "runtime/provider/value/ValueProvider.h"
+#include "runtime/provider/value/AbstractValueProvider.h"
 
 using namespace Poco;
 
@@ -30,12 +30,12 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, class PrFunctionType>
-class RandomValueProvider: public ValueProvider<ValueType, CxtRecordType>
+class RandomValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
     RandomValueProvider(const PrFunctionType& prFunction) :
-        ValueProvider<ValueType, CxtRecordType>(1, false),
+    	AbstractValueProvider<ValueType, CxtRecordType>(1, false),
         _prFunction(prFunction)
     {
     }

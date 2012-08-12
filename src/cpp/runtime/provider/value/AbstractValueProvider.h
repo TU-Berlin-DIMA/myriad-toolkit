@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef VALUEPROVIDER_H_
-#define VALUEPROVIDER_H_
+#ifndef ABSTRACTVALUEPROVIDER_H_
+#define ABSTRACTVALUEPROVIDER_H_
 
 #include "core/types.h"
 #include "math/random/RandomStream.h"
@@ -31,17 +31,17 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType>
-class ValueProvider
+class AbstractValueProvider
 {
 public:
 
-    ValueProvider(const I16u arity, bool invertible) :
+    AbstractValueProvider(const I16u arity, bool invertible) :
     	_arity(arity),
     	_invertible(invertible)
     {
     }
 
-    virtual ~ValueProvider()
+    virtual ~AbstractValueProvider()
     {
     }
 
@@ -79,4 +79,4 @@ private:
 
 } // namespace Myriad
 
-#endif /* VALUEPROVIDER_H_ */
+#endif /* ABSTRACTVALUEPROVIDER_H_ */

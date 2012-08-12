@@ -19,7 +19,7 @@
 #ifndef CONSTVALUEPROVIDER_H_
 #define CONSTVALUEPROVIDER_H_
 
-#include "runtime/provider/value/ValueProvider.h"
+#include "runtime/provider/value/AbstractValueProvider.h"
 
 using namespace Poco;
 
@@ -30,12 +30,12 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType>
-class ConstValueProvider: public ValueProvider<ValueType, CxtRecordType>
+class ConstValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
     ConstValueProvider(const ValueType& constValue) :
-        ValueProvider<ValueType, CxtRecordType>(0, true),
+    	AbstractValueProvider<ValueType, CxtRecordType>(0, true),
         _constValue(constValue)
     {
     }

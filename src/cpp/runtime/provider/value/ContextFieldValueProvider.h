@@ -19,7 +19,7 @@
 #ifndef CONTEXTFIELDVALUEPROVIDER_H_
 #define CONTEXTFIELDVALUEPROVIDER_H_
 
-#include "runtime/provider/value/ValueProvider.h"
+#include "runtime/provider/value/AbstractValueProvider.h"
 
 using namespace Poco;
 
@@ -30,7 +30,7 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, I16u fid>
-class ContextFieldValueProvider: public ValueProvider<ValueType, CxtRecordType>
+class ContextFieldValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
@@ -38,7 +38,7 @@ public:
 	typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
 
     ContextFieldValueProvider() :
-        ValueProvider<ValueType, CxtRecordType>(0, false),
+    	AbstractValueProvider<ValueType, CxtRecordType>(0, false),
         _fieldGetter(RecordFieldTraits<fid, CxtRecordType>::getter())
     {
     }

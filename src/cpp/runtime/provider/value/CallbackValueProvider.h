@@ -19,7 +19,7 @@
 #ifndef CALLBACKVALUEPROVIDER_H_
 #define CALLBACKVALUEPROVIDER_H_
 
-#include "runtime/provider/value/ValueProvider.h"
+#include "runtime/provider/value/AbstractValueProvider.h"
 
 using namespace Poco;
 
@@ -30,14 +30,14 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, class CallbackType>
-class CallbackValueProvider : public ValueProvider<ValueType, CxtRecordType>
+class CallbackValueProvider : public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
     typedef const ValueType (CallbackType::*CallbackMethodType)(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random);
 
     CallbackValueProvider(CallbackType& callbackObject, CallbackMethodType callbackMethod, const I16u arity) :
-        ValueProvider<ValueType, CxtRecordType>(arity, false),
+    	AbstractValueProvider<ValueType, CxtRecordType>(arity, false),
         _callbackObject(callbackObject),
         _callbackMethod(callbackMethod)
     {
