@@ -47,7 +47,7 @@ public:
         _maxChildrenValue(nullValue<I32u>()),
         _maxChildrenProvider(maxChildrenProvider),
         _childrenCountProvider(childrenCountProvider),
-        _parentSet(parentSet),
+        _referenceSequence(parentSet),
         _posFieldSetter(posFieldID != 0 ? RecordFieldTraits<posFieldID, CxtRecordType>::setter() : NULL)
     {
         // make sure that the _childrenCountProvider does not consume random records
@@ -84,16 +84,16 @@ public:
         I64u nestedRecordGenID = cxtRecordPtr->genID();
         I64u parentRecordGenID = nestedRecordGenID/_maxChildrenValue;
 
-        if (_parent.isNull() || _parent->genID() != parentRecordGenID)
+        if (_reference.isNull() || _reference->genID() != parentRecordGenID)
         {
-            _parent = _parentSet.at(parentRecordGenID);
+            _reference = _referenceSequence.at(parentRecordGenID);
         }
 
         // FIXME: the random argument here is wrong
         // Currently this does not influence the execution order as we only
         // permit _childrenCountProvider instances with zero arity.
         // Nevertheless, a cleaner solution will not hurt here.
-        I32u nestedCount = _childrenCountProvider(_parent, random);
+        I32u nestedCount = _childrenCountProvider(_reference, random);
 
         if (nestedRecordGenID % _maxChildrenValue < nestedCount)
         {
@@ -102,7 +102,7 @@ public:
                 (cxtRecordPtr->*_posFieldSetter)(static_cast<I32u>(nestedRecordGenID-(parentRecordGenID*_maxChildrenValue)));
             }
 
-            return _parent;
+            return _reference;
         }
         else
         {
@@ -112,17 +112,17 @@ public:
 
 private:
 
+    AutoPtr<RefRecordType> _reference;
+
     I32u _maxChildrenValue;
 
     MaxChildrenValueProviderType& _maxChildrenProvider;
 
     ChildrenCountValueProviderType& _childrenCountProvider;
 
-    RefRecordSetType _parentSet;
+    RefRecordSetType _referenceSequence;
 
     PosFieldSetterType _posFieldSetter;
-
-    AutoPtr<RefRecordType> _parent;
 };
 
 } // namespace Myriad
