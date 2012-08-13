@@ -55,6 +55,14 @@ public:
     }
 
     /**
+     * Get a constant pointer to the valueHolder.
+     */
+    const AutoPtr<RecordType>& valueHolder() const
+    {
+        return _valueHolder;
+    }
+
+    /**
      * Generic template method - binds a value to a particular record field.
      *
      * @throws RuntimeException if the fiels is already bound to another value.

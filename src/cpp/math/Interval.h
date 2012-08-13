@@ -68,6 +68,21 @@ public:
 		return _min <= x && x < _max;
 	}
 
+	void intersect(const Interval<Domain>& other)
+	{
+	    if (other._min < _max && _min < other._max)
+	    {
+	        // intervals intersect, adjust end points
+            _min = (other._min > _min) ? other._min : _min;
+            _max = (other._max < _max) ? other._max : _max;
+	    }
+	    else
+        {
+	        // do not intersect, empty interval
+            _min = _max;
+        }
+	}
+
 	friend std::ostream& operator<< <Domain>(std::ostream& stream, const Interval<Domain>& interval);
 
 	friend bool operator< <Domain>(Interval<Domain> const& l, Interval<Domain> const& r);

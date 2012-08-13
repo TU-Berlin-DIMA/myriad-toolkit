@@ -35,6 +35,8 @@ class AbstractSetter
 {
 public:
 
+    typedef EqualityPredicate<RecordType> EqualityPredicateType;
+
     AbstractSetter(const I16u arity, bool invertible) :
     	_arity(arity),
     	_invertible(invertible)
@@ -66,6 +68,14 @@ public:
     		throw RuntimeException("Trying to access valueRange method of non-invertible FieldSetter");
     	}
 	}
+
+    void filterRange(const EqualityPredicateType& predicate, Interval<I64u>& currentRange)
+    {
+        if (!predicate.bound(fid))
+        {
+            currentRange.intersect(valueRange(predicate.valueHolder()));
+        }
+    }
 
     virtual const void operator()(AutoPtr<RecordType>& cxtRecordPtr, RandomStream& random) = 0;
 
