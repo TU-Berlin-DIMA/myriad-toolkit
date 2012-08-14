@@ -67,4 +67,4 @@ private:
 
 } // namespace Myriad
 
-#endif /* CONTEXTFIELDRANGEPROVIDER_H_ */
+#endif /* FIELDSETTER_H_ */

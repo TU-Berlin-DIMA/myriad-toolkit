@@ -61,11 +61,13 @@ public:
     {
     }
 
-    virtual Interval<I64u> referenceRange(const I64u& refRecordID, const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    virtual Interval<I64u> referenceRange(const I64u& refRecordID, const AutoPtr<CxtRecordType>& cxtRecordPtr)
     {
         // lazy initialize max nested per parent
         if (_maxChildrenValue == nullValue<I32u>())
         {
+        	// TODO: passing a mock random object here is really not pretty
+        	RandomStream random;
             _maxChildrenValue = _maxChildrenProvider(cxtRecordPtr, random);
         }
 
