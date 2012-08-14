@@ -39,8 +39,10 @@ public:
     typedef EqualityPredicateProvider<RefRecordType, CxtRecordType> EqualityPredicateProviderType;
     typedef RandomSetInspector<RefRecordType> RefRecordSetType;
 
-    RandomReferenceProvider(EqualityPredicateProvider<RefRecordType> equalityPredicateProvider, RandomSetInspector<RefRecordType> parentSet) :
-        AbstractReferenceProvider<RefRecordType, CxtRecordType>(1, false)
+    RandomReferenceProvider(EqualityPredicateProvider<RefRecordType, CxtRecordType>& equalityPredicateProvider, RandomSetInspector<RefRecordType> referenceSequence) :
+        AbstractReferenceProvider<RefRecordType, CxtRecordType>(1, false),
+        _equalityPredicateProvider(equalityPredicateProvider),
+        _referenceSequence(referenceSequence)
     {
     }
 
@@ -51,7 +53,7 @@ public:
     virtual const AutoPtr<RefRecordType>& operator()(AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         // create EqualityPredicate
-        EqualityPredicateType& predicate = _equalityPredicateProvider(cxtRecordPtr, random);
+        const EqualityPredicateType& predicate = _equalityPredicateProvider(cxtRecordPtr, random);
 
         // apply predicate filter to get the corresponding record genIDs range
         Interval<I64u> genIDRange = _referenceSequence.filter(predicate);

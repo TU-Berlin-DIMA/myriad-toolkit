@@ -178,6 +178,8 @@ public:
 
 	const AutoPtr<RecordType> at(const I64u genID) const;
 
+	Interval<I64u> filter(const EqualityPredicate<RecordType>& predicate);
+
 	const I64u cardinality() const
 	{
 	    return _generator.cardinality();
@@ -446,6 +448,11 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 			recordPtr->genID(e.prevValidGenIDMin() + genID % e.prevValidGenIDSize());
 		}
 	}
+}
+
+template<class RecordType> inline Interval<I64u> RandomSetInspector<RecordType>::filter(const EqualityPredicate<RecordType>& predicate)
+{
+	return _hydrate.filter(predicate);
 }
 
 template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run()

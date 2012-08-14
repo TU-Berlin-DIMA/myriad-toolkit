@@ -49,7 +49,7 @@ public:
     /**
      * Check if a predicate field (i.e. a field of the RecordType) is bound.
      */
-    bool bound(I16u fid)
+    bool bound(I16u fid) const
     {
         return (_boundValues >> fid) & static_cast<I64u>(1);
     }

@@ -71,7 +71,7 @@ public:
 
     void filterRange(const EqualityPredicateType& predicate, Interval<I64u>& currentRange)
     {
-        if (!predicate.bound(fid))
+        if (predicate.bound(fid))
         {
             currentRange.intersect(valueRange(predicate.valueHolder()));
         }

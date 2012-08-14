@@ -104,7 +104,9 @@ public:
 
 	template<class T> T operator()(T min, T max)
 	{
-		return min + static_cast<T> ((max - min + 1.0) * next());
+//		return min + static_cast<T> ((max - min + 1.0) * next());
+		// FIXME: adapt dependant components to the new operator() semantics
+		return min + static_cast<T> ((max - min) * next());
 	}
 
 	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~

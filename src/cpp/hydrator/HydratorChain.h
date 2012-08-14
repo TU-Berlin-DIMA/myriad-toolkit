@@ -20,6 +20,7 @@
 #define HYDRATORCHAIN_H_
 
 #include "hydrator/RecordHydrator.h"
+#include "runtime/predicate/EqualityPredicate.h"
 
 #include <Poco/AutoReleasePool.h>
 #include <Poco/AutoPtr.h>
@@ -84,7 +85,15 @@ public:
 	virtual void operator()(AutoPtr<RecordType> recordPtr) const = 0;
 
 	/**
-	 * Invertible hydrator getter.
+	 * Predicate filter function. TODO: declare as pure virtual function
+	 */
+	virtual Interval<I64u> filter(const EqualityPredicate<RecordType>& predicate)
+	{
+		throw RuntimeException("HydratorChain object does not implement a 'filter(predicate)' function");
+	}
+
+	/**
+	 * Invertible hydrator getter. TODO: remove this from the API
 	 */
 	template<typename T>
 	const InvertibleHydrator<RecordType, T>& invertableHydrator(typename MethodTraits<RecordType, T>::Setter setter)
@@ -94,6 +103,9 @@ public:
 
 protected:
 
+	/**
+	 * Apply a hydrator if enabled. TODO: remove this from the API
+	 */
     template<class HydratorType>
     void apply(HydratorType& hydrator, AutoPtr<RecordType>& recordPtr) const;
 };
