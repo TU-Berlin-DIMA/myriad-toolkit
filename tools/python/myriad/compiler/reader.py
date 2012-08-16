@@ -25,74 +25,191 @@ import libxml2
 from myriad.compiler.ast import * #@UnusedWildImport
 from myriad.util.stringutil import StringTransformer
 
-class ArgumentXMLReader(object):
+class AbstractReader(object):
     
-    _log = logging.getLogger("argument.reader.factory")
-    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_\*]*)\)(\*)?$')
+    __NAMESPACE = "http://www.dima.tu-berlin.de/myriad/prototype"
     
-    def createReader(readerDescriptor):
-        m = ArgumentXMLReader._descriptor_pattern.match(readerDescriptor)
-        if (m):
-            readerType = m.group(1)
-            argTransformer = None
-            argKey = m.group(2)
-            argOptional = m.group(3) is not None 
-            
-            if (readerType == "literal"):
-                argTransformer = LiteralArgumentReader()
-            elif (readerType == "field_ref"):
-                argTransformer = FieldRefArgumentReader()
-            elif (readerType == "function_ref"):
-                argTransformer = FunctionRefArgumentReader()
-            elif (readerType == "value_provider"):
-                argTransformer = ValueProviderArgumentReader(varName=argKey)
-                argKey = None
-            else:
-                message = "Unknown argument reader type `%s`" % (readerType)
-                ArgumentXMLReader._log.error(message)
-                raise RuntimeError(message)
-            
-            return (argTransformer, argKey, argOptional)
+    def __init__(self, *args, **kwargs):
+        pass
+        
+    def _createXPathContext(xmlNode):
+        context = xmlNode.get_doc().xpathNewContext()
+        context.xpathRegisterNs("m", AbstractReader.__NAMESPACE)
+        context.setContextNode(xmlNode)
+        return context
+        
+    # static methods
+    _createXPathContext = staticmethod(_createXPathContext)
+
+
+class ArgumentReader(AbstractReader):
+    
+    _descriptor = {}
+    _log = logging.getLogger("argument.reader")
+
+    def __init__(self, *args, **kwargs):
+        super(ArgumentReader, self).__init__(*args, **kwargs)
+        self._descriptor = kwargs["descriptor"]
+    
+    def read(self, argContainerXMLNode, argsContainerNode):
+        raise RuntimeError("Called abstract method ArgumentReader.read()")
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        raise RuntimeError("Called abstract method ArgumentReader.parse()")
+    
+    def createReader(argKey, argDescriptor):
+        argType = argDescriptor.get('type', None)
+        argOptional = argDescriptor.get('optional', False)
+        argDescriptorUpdated = {'key': argKey, 'type': argType, 'optional': argOptional}
+        
+        if (argType == "literal"):
+            return LiteralArgumentReader(descriptor=argDescriptorUpdated)
+        elif (argType == "field_ref"):
+            return FieldRefArgumentReader(descriptor=argDescriptorUpdated)
+        elif (argType == "function_ref"):
+            return FunctionRefArgumentReader(descriptor=argDescriptorUpdated)
+        elif (argType == "value_provider"):
+            return ValueProviderArgumentReader(descriptor=argDescriptorUpdated)
         else:
-            message = "Bad argument reader descriptor `%s`" % (readerDescriptor)
-            ArgumentXMLReader._log.error(message)
+            message = "Unknown argument reader type `%s`" % (argType)
+            ArgumentReader._log.error(message)
             raise RuntimeError(message)
         
-    def readArguments(self, argsContainerXMLNode, argsContainerNode, env = {}):
-        argsCode = []
-        
-        for transformerDescriptor in argsContainerNode.getConstructorArguments():
-            (argTransformer, argKey, argOptional) = ArgumentXMLReader.createTransformer(transformerDescriptor)
-            
-            if argKey is None:
-                argument = None
-            else:
-                argument = argsContainerNode.getArgument(argKey)
-            
-            argsCode.append(argTransformer.transform(argument, env.get("config", "config"), argOptional))
-        
-        return filter(None, argsCode)
+    def readArguments(argsContainerXMLNode, argsContainerNode):
+        for argKey, argDescriptor in argsContainerNode.getXMLArguments().iteritems():
+            argReader = ArgumentReader.createReader(argKey, argDescriptor)
+            argsContainerNode.setArgument(argReader.read(argsContainerXMLNode, argsContainerNode))
         
     # static methods
     createReader = staticmethod(createReader)
     readArguments = staticmethod(readArguments)
 
 
-class ArgumentReader(object):
+class SingleArgumentReader(ArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(SingleArgumentReader, self).__init__(*args, **kwargs)
+    
+    def read(self, argContainerXMLNode, argsContainerNode):
+        # create XML context and grap argument XML node
+        childContext = AbstractReader._createXPathContext(argContainerXMLNode)
+        argXMLNode = childContext.xpathEval("./m:argument[@key='%s']" % self._descriptor['key'])
+        
+        # check if argument exists
+        if len(argXMLNode) < 1:
+            # argument does not exist, check if argument is optional
+            if not self._descriptor['optional']:
+                # argument is not optional 
+                message = "Cannot find required argument `%s` in container `%s` of type `%s`" % (self._descriptor['key'], argsContainerNode.getAttribute("key"), argsContainerNode.getAttribute("type"))
+                ArgumentReader._log.error(message)
+                raise RuntimeError(message)
+            else:
+                # argument is optional
+                return
+        elif len(argXMLNode) > 1:
+            # argument is not unique
+            message = "Argument `%s` is not unique in container `%s` of type `%s`" % (self._descriptor['key'], argsContainerNode.getAttribute("key"), argsContainerNode.getAttribute("type"))
+            ArgumentReader._log.error(message)
+            raise RuntimeError(message)
+
+        # argument exists, grap the 
+        argXMLNode = argXMLNode.pop()
+        
+        return self.parse(argXMLNode, argsContainerNode)
+
+
+class ListArgumentReader(ArgumentReader):
 
     def __init__(self, *args, **kwargs):
-        pass
+        super(ListArgumentReader, self).__init__(*args, **kwargs)
     
-    def transform(self, argsContainerXMLNode, argsContainerNode, configVarName = "config", optional = False):
-        raise RuntimeError("Called abstract method ArgumentReader.transform()")
+    def read(self, argContainerXMLNode, argsContainerNode):
+        raise RuntimeError("Called abstract method ListArgumentReader.read()")
+
+
+class LiteralArgumentReader(SingleArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(LiteralArgumentReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        argValue = argXMLNode.prop("value")
+        
+        return LiteralArgumentNode(key=argKey, type=argType, value=argValue)
+        
+#        argumentRef = argXMLNode.prop("ref")
+#        if enclosingRecordType:
+#            enclosingRecordType = enclosingRecordType.strip(": ") + ":"
+#        else:
+#            enclosingRecordType = ""
+#        
+#        if (argumentType == "field_ref"):
+#            argumentRef = argumentXMLNode.prop("ref")
+#            if not argumentRef:
+#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
+#                self.__log.error(message)
+#                raise RuntimeError(message)
+#            
+#            if argumentRef.find(":") == -1:
+#                argumentRef = "%s%s" % (enclosingRecordType, argumentRef)
+#                
+#            return UnresolvedFieldRefArgumentNode(key=argumentKey, ref=argumentRef)
+#
+#        if (argumentType == "function_ref"):
+#            argumentRef = argumentXMLNode.prop("ref")
+#            if not argumentRef:
+#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
+#                self.__log.error(message)
+#                raise RuntimeError(message)
+#            return UnresolvedFunctionRefArgumentNode(key=argumentKey, ref=argumentRef)
+#        
+#        # FIXME: this is (probably) obsolete, remove this code
+#        if (argumentType == "hydrator_ref"):
+#            if not argumentRef:
+#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
+#                self.__log.error(message)
+#                raise RuntimeError(message)
+#            return UnresolvedHydratorRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
+#        
+#        # FIXME: this is (probably) obsolete, remove this code
+#        if (argumentType == "string_set_ref"):
+#            if not argumentRef:
+#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
+#                self.__log.error(message)
+#                raise RuntimeError(message)
+#            return StringSetRefArgumentNode(key=argumentKey, ref=argumentRef)
+#        
+#        else:
+#            if not argumentValue:
+#                message = "Missing required attribute `value` for field argument `%s`" % (argumentKey)
+#                self.__log.error(message)
+#                raise RuntimeError(message)
+#            return LiteralArgumentNode(key=argumentKey, type=argumentType, value=argumentValue)
+
+class FieldRefArgumentReader(ArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(FieldRefArgumentReader, self).__init__(*args, **kwargs)
+
+
+class FunctionRefArgumentReader(ArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(FunctionRefArgumentReader, self).__init__(*args, **kwargs)
+
+
+class ValueProviderArgumentReader(ArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(ValueProviderArgumentReader, self).__init__(*args, **kwargs)
 
 
 class XMLReader(object):
     '''
     Reads the AST from an XML file.
     '''
-    
-    __NAMESPACE = "http://www.dima.tu-berlin.de/myriad/prototype"
     
     __args = None
     __log = None
@@ -103,6 +220,7 @@ class XMLReader(object):
         '''
         Constructor
         '''
+        super(XMLReader, self).__init__()
         self.__args = args
         self.__log = logging.getLogger("ast.reader")
     
@@ -130,7 +248,6 @@ class XMLReader(object):
             
         except:
             e = sys.exc_info()[1]
-            print "Unexpected error: %s" % (e)
             raise
         
         # return the final version AST
@@ -293,12 +410,6 @@ class XMLReader(object):
             resolvedHydratorRefArgumentNode.setHydratorRef(hydratorNode)
             parent.setArgument(resolvedHydratorRefArgumentNode)
         
-    def __createXPathContext(self, xmlNode):
-        context = xmlNode.get_doc().xpathNewContext()
-        context.xpathRegisterNs("m", self.__NAMESPACE)
-        context.setContextNode(xmlNode)
-        return context
-
     def __readSpecification(self, astContext, xmlContext):
         # basic tree areas
         self.__readParameters(astContext, xmlContext)
@@ -309,7 +420,7 @@ class XMLReader(object):
         
     def __readParameters(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         # read the parameters for this astContext
         for element in xPathContext.xpathEval(".//m:parameters/m:parameter"):
@@ -318,27 +429,21 @@ class XMLReader(object):
         
     def __readFunctions(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
 
         # attach FunctionNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:functions/m:function"):
-            functionNode = self.__functionFactory(element)
-            
-            childContext = self.__createXPathContext(element)
-            for child in childContext.xpathEval("./m:argument"):
-                functionNode.setArgument(self.__argumentFactory(child))
-
-            astContext.getFunctions().setFunction(functionNode)
+            astContext.getFunctions().setFunction(self.__functionFactory(element))
 
     def __readEnumSets(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
 
         # attach FunctionNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:enum_sets/m:enum_set"):
             enumSetNode = EnumSetNode(key=element.prop("key"))
             
-            childContext = self.__createXPathContext(element)
+            childContext = AbstractReader._createXPathContext(element)
             for child in childContext.xpathEval("./m:argument"):
                 enumSetNode.setArgument(self.__argumentFactory(child))
             
@@ -346,7 +451,7 @@ class XMLReader(object):
             
     def __readRecordSequences(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         # attach FunctionNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:record_sequences/m:*"):
@@ -359,7 +464,7 @@ class XMLReader(object):
             
     def __readRandomSequence(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         recordSequenceNode = RandomSequenceNode(key=xmlContext.prop("key"))
         
@@ -386,7 +491,7 @@ class XMLReader(object):
         
     def __readRecordType(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         recordTypeNode = RecordTypeNode(key=astContext.getAttribute("key"))
         
@@ -425,7 +530,7 @@ class XMLReader(object):
         
     def __readCardinalityEstimator(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         cardinalityEstimatorNode = self.__cardinalityEstimatorFactory(xmlContext)
         
@@ -444,14 +549,14 @@ class XMLReader(object):
             return
         
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         i = 0
         for hydrator in xPathContext.xpathEval("./m:hydrator"):
             hydratorNode = self.__hydratorFactory(hydrator, i)
             hydratorNode.setOrderKey(i)
             
-            childContext = self.__createXPathContext(hydrator)
+            childContext = AbstractReader._createXPathContext(hydrator)
             for argument in childContext.xpathEval("./m:argument"):
                 hydratorNode.setArgument(self.__argumentFactory(argument, astContext.getRecordType().getAttribute("key")))
 
@@ -468,7 +573,7 @@ class XMLReader(object):
             return
         
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         for hydratorRef in xPathContext.xpathEval("./m:hydrator_ref"):
             if not astContext.getHydrators().hasHydrator(hydratorRef.prop("ref")):
@@ -488,16 +593,12 @@ class XMLReader(object):
             return
         
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         i = 0
         for setter in xPathContext.xpathEval("./m:setter"):
             setterNode = self.__setterFactory(setter)
             setterNode.setOrderKey(i) # TODO: derive order from dependency graph
-            
-#            childContext = self.__createXPathContext(setter)
-#            for argument in childContext.xpathEval("./m:argument"):
-#                setterNode.setArgument(self.__argumentFactory(argument, astContext.getRecordType().getAttribute("key")))
 
             setterChainNode.setSetter(setterNode)
             i = i+1
@@ -508,7 +609,7 @@ class XMLReader(object):
             return
         
         # derive xPath context from the given xmlContext node
-        xPathContext = self.__createXPathContext(xmlContext)
+        xPathContext = AbstractReader._createXPathContext(xmlContext)
         
         sequenceIteratorNode = self.__sequenceIteratorFactory(xmlContext)
         
@@ -544,18 +645,24 @@ class XMLReader(object):
         functionType = functionMatch.group(1)
 
         # factory logic
+        functionNode = None
         if (functionType == "normal_probability"):
-            return NormalProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-        if (functionType == "pareto_probability"):
-            return ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-        if (functionType == "uniform_probability"):
-            return UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-        if (functionType == "conditional_combined_probability"):
-            return ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType1=functionMatch.group(3), domainType2=functionMatch.group(5))
-        if (functionMatch != "combined_probability"):
-            return CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType=functionMatch.group(3))
-
-        raise RuntimeError('Invalid function type `%s`' % (functionType))
+            functionNode = NormalProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        elif (functionType == "pareto_probability"):
+            functionNode = ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        elif (functionType == "uniform_probability"):
+            functionNode = UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+        elif (functionType == "conditional_combined_probability"):
+            functionNode = ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType1=functionMatch.group(3), domainType2=functionMatch.group(5))
+        elif (functionMatch != "combined_probability"):
+            functionNode = CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType=functionMatch.group(3))
+        else:
+            raise RuntimeError('Invalid function type `%s`' % (functionType))
+        
+        # append arguments
+        ArgumentReader.readArguments(functionXMLNode, functionNode)
+        
+        return functionNode
     
     def __hydratorFactory(self, hydratorXMLNode, i):
         t = hydratorXMLNode.prop("type")

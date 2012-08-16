@@ -65,27 +65,27 @@ class CompileModelTask(AbstractTask):
         reader = XMLReader(args)
         ast = reader.read()
         
-        astPrinter = PrintVisitor()
-        nodeFilter = DepthFirstNodeFilter(filterType=RandomSequenceNode)
-        for randomSequence in nodeFilter.getAll(ast.getSpecification().getRecordSequences()):
-            if randomSequence.getAttribute("key") == "customer":
-                astPrinter.traverse(randomSequence.getSetterChain())
+#        astPrinter = PrintVisitor()
+#        nodeFilter = DepthFirstNodeFilter(filterType=RandomSequenceNode)
+#        for randomSequence in nodeFilter.getAll(ast.getSpecification().getRecordSequences()):
+#            if randomSequence.getAttribute("key") == "customer":
+#                astPrinter.traverse(randomSequence.getSetterChain())
 
-#        # compile output collector
-#        frontendCompiler = FrontendCompiler(args=args)
-#        frontendCompiler.compile(ast)
-#        # compile generator config
-#        generatorSubsystemCompiler = GeneratorSubsystemCompiler(args=args)
-#        generatorSubsystemCompiler.compile(ast)
-#        # compile generator config
-#        configCompiler = ConfigCompiler(args=args)
-#        configCompiler.compile(ast)
-#        # compile output collector
-#        outputCollectorCompiler = OutputCollectorCompiler(args=args)
-#        outputCollectorCompiler.compile(ast)
-#        # compile record types
-#        recordCompiler = RecordTypeCompiler(args=args)
-#        recordCompiler.compile(ast.getSpecification().getRecordSequences())
-#        # compile record generators
-#        generatorCompiler = RecordGeneratorCompiler(args=args)
-#        generatorCompiler.compile(ast.getSpecification().getRecordSequences())
+        # compile output collector
+        frontendCompiler = FrontendCompiler(args=args)
+        frontendCompiler.compile(ast)
+        # compile generator config
+        generatorSubsystemCompiler = GeneratorSubsystemCompiler(args=args)
+        generatorSubsystemCompiler.compile(ast)
+        # compile generator config
+        configCompiler = ConfigCompiler(args=args)
+        configCompiler.compile(ast)
+        # compile output collector
+        outputCollectorCompiler = OutputCollectorCompiler(args=args)
+        outputCollectorCompiler.compile(ast)
+        # compile record types
+        recordCompiler = RecordTypeCompiler(args=args)
+        recordCompiler.compile(ast.getSpecification().getRecordSequences())
+        # compile record generators
+        generatorCompiler = RecordGeneratorCompiler(args=args)
+        generatorCompiler.compile(ast.getSpecification().getRecordSequences())

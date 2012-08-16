@@ -366,6 +366,13 @@ class EnumSetNode(AbstractNode):
     def getArgument(self, key):
         return self.__arguments.get(key)
         
+    def getXMLArguments(self):
+        return { 'path'               : { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'Literal(path)' ]
+
 
 #
 # Record Sequences
@@ -451,7 +458,7 @@ class RandomSequenceNode(RecordSequenceNode):
         self._recordType.accept(visitor)
         if self.__setterChain is not None:
             self.__setterChain.accept(visitor)
-        else:
+        if self.__hydrators is not None:
             self.__hydrators.accept(visitor)
             self.__hydrationPlan.accept(visitor)
         self.__cardinalityEstimator.accept(visitor)
