@@ -25,13 +25,10 @@ import re
 from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
-from myriad.compiler.ast import ResolvedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedDirectFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedRecordReferenceRefArgumentNode
 from myriad.compiler.ast import ResolvedReferencedFieldRefArgumentNode
-from myriad.compiler.ast import ResolvedHydratorRefArgumentNode
 from myriad.compiler.ast import RecordEnumFieldNode
-from myriad.compiler.ast import StringSetRefArgumentNode
 from myriad.compiler.ast import DepthFirstNodeFilter
 from myriad.compiler.ast import EnumSetNode
 from myriad.compiler.ast import FunctionNode
@@ -189,7 +186,7 @@ class FieldGetterTransfomer(object):
             referenceTypeNameUS = argumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key")
             referenceTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(referenceTypeNameUS))
             
-            fieldNode = fieldArgumentNode.getFieldRef()
+            fieldNode = argumentNode.getFieldRef()
             fieldType = fieldNode.getAttribute("type")
             fieldName = fieldNode.getAttribute("name")
 

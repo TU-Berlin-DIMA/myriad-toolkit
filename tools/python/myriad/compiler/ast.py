@@ -144,8 +144,6 @@ class FunctionsNode(AbstractNode):
     
     def accept(self, visitor):
         visitor.preVisit(self)
-#        for node in self.__functions.itervalues():
-#            node.accept(visitor)
         for key, node in sorted(self.__functions.iteritems()):
             node.accept(visitor)
         visitor.postVisit(self)
@@ -435,6 +433,7 @@ class RandomSequenceNode(RecordSequenceNode):
     '''
     
     __cardinalityEstimator = None
+    __setterChain = None
     __hydrators = None
     __hydrationPlan = None
     __sequenceIterator = None
@@ -442,6 +441,7 @@ class RandomSequenceNode(RecordSequenceNode):
     def __init__(self, *args, **kwargs):
         super(RandomSequenceNode, self).__init__(*args, **kwargs)
         self.__cardinalityEstimator = None
+        self.__setterChain = None
         self.__hydrators = None
         self.__hydrationPlan = None
         self.__sequenceIterator = None
@@ -449,12 +449,21 @@ class RandomSequenceNode(RecordSequenceNode):
     def accept(self, visitor):
         visitor.preVisit(self)
         self._recordType.accept(visitor)
-        self.__hydrators.accept(visitor)
-        self.__hydrationPlan.accept(visitor)
+        if self.__setterChain is not None:
+            self.__setterChain.accept(visitor)
+        else:
+            self.__hydrators.accept(visitor)
+            self.__hydrationPlan.accept(visitor)
         self.__cardinalityEstimator.accept(visitor)
         if self.__sequenceIterator is not None:
             self.__sequenceIterator.accept(visitor)
         visitor.postVisit(self)
+        
+    def setSetterChain(self, node):
+        self.__setterChain = node
+        
+    def getSetterChain(self):
+        return self.__setterChain
         
     def setHydrators(self, node):
         self.__hydrators = node
@@ -661,7 +670,7 @@ class ResolvedRecordReferenceNode(RecordReferenceNode):
         return self.__recordTypeRef
 
 
-class HydratorsNode(RecordSequenceNode):
+class HydratorsNode(AbstractNode):
     '''
     classdocs
     '''
@@ -688,10 +697,7 @@ class HydratorsNode(RecordSequenceNode):
         return self.__hydrators.has_key(key)
     
     def getAll(self):
-        if sorted:
-            return self.__hydrators.itervalues()
-        else:
-            return self.__hydrators.itervalues()
+        return self.__hydrators.itervalues()
 
 
 class HydrationPlanNode(AbstractNode):
@@ -981,6 +987,143 @@ class SimpleRandomizedHydratorNode(HydratorNode):
                  'FieldSetter(field)',
                  'FunctionRef(probability)'
                ]
+
+
+#
+# Setter Chain
+# 
+
+class SetterChainNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __setters = {}
+    
+    def __init__(self, *args, **kwargs):
+        super(SetterChainNode, self).__init__(*args, **kwargs)
+        self.__setters = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__setters.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setSetter(self, node):
+        self.__setters[node.getAttribute('key')] = node
+    
+    def getSetter(self, key):
+        return self.__setters.get(key)
+    
+    def hasSetter(self, key):
+        return self.__setters.has_key(key)
+    
+    def getAll(self):
+        return self.__setters.itervalues()
+    
+
+#
+# Setter
+# 
+ 
+class SetterNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __arguments = {}
+    
+    orderkey = None
+    
+    def __init__(self, *args, **kwargs):
+        super(SetterNode, self).__init__(*args, **kwargs)
+        self.__arguments = {}
+        self.orderkey = None
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__arguments.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
+    
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+        
+    def setOrderKey(self, key):
+        self.orderkey = key
+        
+    def getConcreteType(self):
+        return "AbstractSetter"
+        
+    def isInvertible(self):
+        return False
+    
+    def getXMLArguments(self):
+        return {}
+    
+    def getConstructorArguments(self):
+        return []
+
+
+class FieldSetterNode(SetterNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="FieldSetter")
+        super(FieldSetterNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
+        
+        return "FieldSetterNode< %s, %s, %s >" % (recordType, fieldType, probabilityType)
+        
+    def isInvertible(self):
+        return True
+        
+    def getXMLArguments(self):
+        return { 'field' : { 'type': 'field_ref' }, 
+                 'value' : { 'type': 'value_provider' }, 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'ValueProviderRef(value_provider)' ]
+
+
+class ReferenceSetterNode(SetterNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ReferenceSetter")
+        super(ReferenceSetterNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
+        
+        return "ReferenceSetterNode< %s, %s, %s >" % (recordType, fieldType, probabilityType)
+        
+    def isInvertible(self):
+        return True
+        
+    def getXMLArguments(self):
+        return { 'field' : { 'type': 'field_ref' }, 
+                 'value' : { 'type': 'value_provider' }, 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'ValueProviderRef(value_provider)' ]
 
 
 #

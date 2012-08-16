@@ -18,10 +18,10 @@ import UserDict
 # This implementation by alane@sourceforge.net.
 
 class TextSub(UserDict.UserDict):
-    def __init__(self, dict = None):
+    def __init__(self, dicttionary = None):
         self.re = None
         self.regex = None
-        UserDict.UserDict.__init__(self, dict)
+        UserDict.UserDict.__init__(self, dicttionary)
         
     def compile(self):
         if len(self.data) > 0:

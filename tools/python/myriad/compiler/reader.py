@@ -18,12 +18,73 @@ Created on Dec 15, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
-import os
 import re
 import sys
 import logging
 import libxml2
 from myriad.compiler.ast import * #@UnusedWildImport
+from myriad.util.stringutil import StringTransformer
+
+class ArgumentXMLReader(object):
+    
+    _log = logging.getLogger("argument.reader.factory")
+    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_\*]*)\)(\*)?$')
+    
+    def createReader(readerDescriptor):
+        m = ArgumentXMLReader._descriptor_pattern.match(readerDescriptor)
+        if (m):
+            readerType = m.group(1)
+            argTransformer = None
+            argKey = m.group(2)
+            argOptional = m.group(3) is not None 
+            
+            if (readerType == "literal"):
+                argTransformer = LiteralArgumentReader()
+            elif (readerType == "field_ref"):
+                argTransformer = FieldRefArgumentReader()
+            elif (readerType == "function_ref"):
+                argTransformer = FunctionRefArgumentReader()
+            elif (readerType == "value_provider"):
+                argTransformer = ValueProviderArgumentReader(varName=argKey)
+                argKey = None
+            else:
+                message = "Unknown argument reader type `%s`" % (readerType)
+                ArgumentXMLReader._log.error(message)
+                raise RuntimeError(message)
+            
+            return (argTransformer, argKey, argOptional)
+        else:
+            message = "Bad argument reader descriptor `%s`" % (readerDescriptor)
+            ArgumentXMLReader._log.error(message)
+            raise RuntimeError(message)
+        
+    def readArguments(self, argsContainerXMLNode, argsContainerNode, env = {}):
+        argsCode = []
+        
+        for transformerDescriptor in argsContainerNode.getConstructorArguments():
+            (argTransformer, argKey, argOptional) = ArgumentXMLReader.createTransformer(transformerDescriptor)
+            
+            if argKey is None:
+                argument = None
+            else:
+                argument = argsContainerNode.getArgument(argKey)
+            
+            argsCode.append(argTransformer.transform(argument, env.get("config", "config"), argOptional))
+        
+        return filter(None, argsCode)
+        
+    # static methods
+    createReader = staticmethod(createReader)
+    readArguments = staticmethod(readArguments)
+
+
+class ArgumentReader(object):
+
+    def __init__(self, *args, **kwargs):
+        pass
+    
+    def transform(self, argsContainerXMLNode, argsContainerNode, configVarName = "config", optional = False):
+        raise RuntimeError("Called abstract method ArgumentReader.transform()")
 
 
 class XMLReader(object):
@@ -311,6 +372,9 @@ class XMLReader(object):
         # read hydration plan (optional)
         hydrationPlanXMLNode = xPathContext.xpathEval("./m:hydration_plan")
         self.__readHydrationPlan(recordSequenceNode, hydrationPlanXMLNode.pop() if len(hydrationPlanXMLNode) > 0 else None)
+        # read setter chain (optional)
+        setterChainXMLNode = xPathContext.xpathEval("./m:setter_chain")
+        self.__readSetterChain(recordSequenceNode, setterChainXMLNode.pop() if len(setterChainXMLNode) > 0 else None)
         # read cardinality estimator (mandatory)
         cardinalityEstimatorXMLNode = xPathContext.xpathEval("./m:cardinality_estimator")
         self.__readCardinalityEstimator(recordSequenceNode, cardinalityEstimatorXMLNode.pop())
@@ -413,6 +477,30 @@ class XMLReader(object):
                 raise RuntimeError(message)
                 
             hydrationPlanNode.addHydrator(astContext.getHydrators().getHydrator(hydratorRef.prop("ref")))
+                    
+    def __readSetterChain(self, astContext, xmlContext):
+        # create and attach the AST node
+        setterChainNode = SetterChainNode()
+        astContext.setSetterChain(setterChainNode)
+        
+        # sanity check (XML element is not mandatory)
+        if (xmlContext == None):
+            return
+        
+        # derive xPath context from the given xmlContext node
+        xPathContext = self.__createXPathContext(xmlContext)
+        
+        i = 0
+        for setter in xPathContext.xpathEval("./m:setter"):
+            setterNode = self.__setterFactory(setter)
+            setterNode.setOrderKey(i) # TODO: derive order from dependency graph
+            
+#            childContext = self.__createXPathContext(setter)
+#            for argument in childContext.xpathEval("./m:argument"):
+#                setterNode.setArgument(self.__argumentFactory(argument, astContext.getRecordType().getAttribute("key")))
+
+            setterChainNode.setSetter(setterNode)
+            i = i+1
         
     def __readSequenceIterator(self, astContext, xmlContext):
         # sanity check (XML element is not mandatory)
@@ -488,6 +576,16 @@ class XMLReader(object):
             return SimpleRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
 
         raise RuntimeError('Unsupported hydrator type `%s`' % (t))
+
+    def __setterFactory(self, setterXMLNode):
+        t = setterXMLNode.prop("type")
+        
+        if t == "field_setter":
+            return FieldSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
+        if t == "reference_setter":
+            return ReferenceSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
+
+        raise RuntimeError('Unsupported setter type `%s`' % (t))
 
     def __argumentFactory(self, argumentXMLNode, enclosingRecordType = None):
         argumentType = argumentXMLNode.prop("type")

@@ -18,11 +18,11 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
-from myriad.compiler.debug import PrintVisitor
+from myriad.compiler.ast import SetterChainNode
+from myriad.compiler.debug import PrintVisitor #@UnusedImport
 from myriad.compiler.reader import XMLReader
-from myriad.compiler.source import *
+from myriad.compiler.source import * #@UnusedWildImport
 from myriad.task.common import AbstractTask
-import os, re
 
 
 TASK_PREFIX = "compile"
@@ -65,24 +65,27 @@ class CompileModelTask(AbstractTask):
         reader = XMLReader(args)
         ast = reader.read()
         
-#        astPrinter = PrintVisitor()
-#        astPrinter.traverse(ast)
+        astPrinter = PrintVisitor()
+        nodeFilter = DepthFirstNodeFilter(filterType=RandomSequenceNode)
+        for randomSequence in nodeFilter.getAll(ast.getSpecification().getRecordSequences()):
+            if randomSequence.getAttribute("key") == "customer":
+                astPrinter.traverse(randomSequence.getSetterChain())
 
-        # compile output collector
-        frontendCompiler = FrontendCompiler(args=args)
-        frontendCompiler.compile(ast)
-        # compile generator config
-        generatorSubsystemCompiler = GeneratorSubsystemCompiler(args=args)
-        generatorSubsystemCompiler.compile(ast)
-        # compile generator config
-        configCompiler = ConfigCompiler(args=args)
-        configCompiler.compile(ast)
-        # compile output collector
-        outputCollectorCompiler = OutputCollectorCompiler(args=args)
-        outputCollectorCompiler.compile(ast)
-        # compile record types
-        recordCompiler = RecordTypeCompiler(args=args)
-        recordCompiler.compile(ast.getSpecification().getRecordSequences())
-        # compile record generators
-        generatorCompiler = RecordGeneratorCompiler(args=args)
-        generatorCompiler.compile(ast.getSpecification().getRecordSequences())
+#        # compile output collector
+#        frontendCompiler = FrontendCompiler(args=args)
+#        frontendCompiler.compile(ast)
+#        # compile generator config
+#        generatorSubsystemCompiler = GeneratorSubsystemCompiler(args=args)
+#        generatorSubsystemCompiler.compile(ast)
+#        # compile generator config
+#        configCompiler = ConfigCompiler(args=args)
+#        configCompiler.compile(ast)
+#        # compile output collector
+#        outputCollectorCompiler = OutputCollectorCompiler(args=args)
+#        outputCollectorCompiler.compile(ast)
+#        # compile record types
+#        recordCompiler = RecordTypeCompiler(args=args)
+#        recordCompiler.compile(ast.getSpecification().getRecordSequences())
+#        # compile record generators
+#        generatorCompiler = RecordGeneratorCompiler(args=args)
+#        generatorCompiler.compile(ast.getSpecification().getRecordSequences())
