@@ -19,7 +19,6 @@ Created on Dec 15, 2011
 '''
 
 import re
-import sys
 import logging
 import libxml2
 from myriad.compiler.ast import * #@UnusedWildImport
@@ -184,6 +183,17 @@ class ValueProviderArgumentReader(SingleArgumentReader):
     
     def __init__(self, *args, **kwargs):
         super(ValueProviderArgumentReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        argRef = argXMLNode.prop("ref")
+        
+        if argType != 'function_ref':
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argKey, argType))
+        
+        if not argRef:
+            raise RuntimeError("Missing required attribute `ref` for `function_ref` argument `%s`" % (argKey))
 
 
 class XMLReader(object):

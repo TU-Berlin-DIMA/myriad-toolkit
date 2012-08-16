@@ -1477,7 +1477,237 @@ class ResolvedHydratorRefArgumentNode(ArgumentNode):
     def getHydratorRef(self):
         return self.__hydratorRef
 
+
+#
+# Runtime Components
+# 
+
+class AbstractRuntimeComponentNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __arguments = {}
+    
+    def __init__(self, *args, **kwargs):
+        if not kwargs.has_key("concrete_type"):
+            kwargs.update(concrete_type=kwargs["type"])
+        super(AbstractRuntimeComponentNode, self).__init__(*args, **kwargs)
+        self.__arguments = {}
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__arguments.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+    
+    def getConcreteType(self):
+        raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getConcreteType() method")
         
+    def getXMLArguments(self):
+        raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getXMLArguments() method")
+        
+    def getConstructorArguments(self):
+        raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getXMLArguments() method")
+        
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
+    
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+
+
+#
+# Runtime Components: Value Providers 
+# 
+
+class AbstractValueProviderNode(AbstractRuntimeComponentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(AbstractValueProviderNode, self).__init__(*args, **kwargs)
+
+
+class ClusteredValueProviderNode(AbstractValueProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ClusteredValueProvider")
+        super(ClusteredValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        # template<typename ValueType, class CxtRecordType, class PrFunctionType, class RangeProviderType>
+        valueType = 'UNKNOWN' # @todo: read value
+        cxtRecordType = 'UNKNOWN' # @todo: read value
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
+        rangeProviderType = self.getArgument("cardinality").getAttribute("concrete_type")
+        
+        return "ClusteredValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, rangeProviderType)
+        
+    def getXMLArguments(self):
+        return { 'probability' : { 'type': 'function_ref' }, 
+                 'cardinality' : { 'type': 'range_provider' }, 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'FunctionRef(probability)', 
+                 'RangeProviderRef(cardinality)' 
+               ]
+
+
+class ConstValueProviderNode(AbstractValueProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ConstValueProvider")
+        super(ConstValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        # template<typename ValueType, class CxtRecordType>
+        valueType = 'UNKNOWN' # @todo: read value
+        cxtRecordType = 'UNKNOWN' # @todo: read value
+        
+        return "ConstValueProvider< %s, %s >" % (valueType, cxtRecordType)
+        
+    def getXMLArguments(self):
+        return { 'value' : { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'Literal(value)' 
+               ]
+
+
+class ContextFieldValueProviderNode(AbstractValueProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ContextFieldValueProvider")
+        super(ContextFieldValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        # template<typename ValueType, class CxtRecordType, I16u fid>
+        valueType = 'UNKNOWN' # @todo: read value
+        cxtRecordType = 'UNKNOWN' # @todo: read value
+        fid = 'UNKNOWN' # @todo: read value
+        
+        return "ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, fid)
+        
+    def getXMLArguments(self):
+        return { 'field' : { 'type': 'field_ref' } 
+               }
+        
+    def getConstructorArguments(self):
+        return []
+
+
+class RandomValueProviderNode(AbstractValueProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="RandomValueProvider")
+        super(RandomValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        # template<typename ValueType, class CxtRecordType, class PrFunctionType>
+        valueType = 'UNKNOWN' # @todo: read value
+        cxtRecordType = 'UNKNOWN' # @todo: read value
+        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
+        
+        # @todo: handle 3 or 4 parameter template depending on the optional XML argument 'condition'
+        return "RandomValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, probabilityType)
+        
+    def getXMLArguments(self):
+        return { 'probability' : { 'type': 'function_ref' }, 
+                 'condition'   : { 'type': 'field_ref', 'optional': True }, 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'FunctionRef(probability)'
+               ]
+
+
+#
+# Runtime Components: Range Providers 
+# 
+
+class AbstractRangeProviderNode(AbstractRuntimeComponentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(AbstractRangeProviderNode, self).__init__(*args, **kwargs)
+
+
+class ConstRangeProviderNode(AbstractRangeProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ConstRangeProvider")
+        super(ConstRangeProviderNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        # template<typename RangeType, class CxtRecordType>
+        rangeType = 'UNKNOWN' # @todo: read value
+        cxtRecordType = 'UNKNOWN' # @todo: read value
+        
+        return "ConstRangeProvider< %s, %s >" % (rangeType, cxtRecordType)
+        
+    def getXMLArguments(self):
+        return { 'min' : { 'type': 'literal' }, 
+                 'max' : { 'type': 'literal' }, 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'Literal(min)', 
+                 'Literal(max)' 
+               ]
+
+
+class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ContextFieldRangeProvider")
+        super(ContextFieldRangeProviderNode, self).__init__(*args, **kwargs)
+    
+    def getConcreteType(self):
+        # template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
+        rangeType = 'UNKNOWN' # @todo: read value
+        cxtRecordType = 'UNKNOWN' # @todo: read value
+        fieldSetterType = 'UNKNOWN' # @todo: read value
+        
+        return "ContextFieldRangeProvider< %s, %s, %s >" % (rangeType, cxtRecordType, fieldSetterType)
+        
+    def getXMLArguments(self):
+        return { 'field' : { 'type': 'field_ref' }, 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'SetterRef(field)'
+               ]
+
+
+#
+# AST traverse trategies
+# 
+
 class DepthFirstNodeFilter(AbstractVisitor):
     '''
     classdocs
