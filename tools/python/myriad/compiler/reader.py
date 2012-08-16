@@ -78,7 +78,7 @@ class ArgumentReader(AbstractReader):
     def readArguments(argsContainerXMLNode, argsContainerNode):
         for argKey, argDescriptor in argsContainerNode.getXMLArguments().iteritems():
             argReader = ArgumentReader.createReader(argKey, argDescriptor)
-            argsContainerNode.setArgument(argReader.read(argsContainerXMLNode, argsContainerNode))
+            argReader.read(argsContainerXMLNode, argsContainerNode)
         
     # static methods
     createReader = staticmethod(createReader)
@@ -111,11 +111,11 @@ class SingleArgumentReader(ArgumentReader):
             message = "Argument `%s` is not unique in container `%s` of type `%s`" % (self._descriptor['key'], argsContainerNode.getAttribute("key"), argsContainerNode.getAttribute("type"))
             ArgumentReader._log.error(message)
             raise RuntimeError(message)
-
+        
         # argument exists, grap the 
         argXMLNode = argXMLNode.pop()
-        
-        return self.parse(argXMLNode, argsContainerNode)
+        # parse and attach the argument AST node to the parent container        
+        argsContainerNode.setArgument(self.parse(argXMLNode, argsContainerNode))
 
 
 class ListArgumentReader(ArgumentReader):
@@ -138,69 +138,49 @@ class LiteralArgumentReader(SingleArgumentReader):
         argValue = argXMLNode.prop("value")
         
         return LiteralArgumentNode(key=argKey, type=argType, value=argValue)
-        
-#        argumentRef = argXMLNode.prop("ref")
-#        if enclosingRecordType:
-#            enclosingRecordType = enclosingRecordType.strip(": ") + ":"
-#        else:
-#            enclosingRecordType = ""
-#        
-#        if (argumentType == "field_ref"):
-#            argumentRef = argumentXMLNode.prop("ref")
-#            if not argumentRef:
-#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-#                self.__log.error(message)
-#                raise RuntimeError(message)
-#            
-#            if argumentRef.find(":") == -1:
-#                argumentRef = "%s%s" % (enclosingRecordType, argumentRef)
-#                
-#            return UnresolvedFieldRefArgumentNode(key=argumentKey, ref=argumentRef)
-#
-#        if (argumentType == "function_ref"):
-#            argumentRef = argumentXMLNode.prop("ref")
-#            if not argumentRef:
-#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-#                self.__log.error(message)
-#                raise RuntimeError(message)
-#            return UnresolvedFunctionRefArgumentNode(key=argumentKey, ref=argumentRef)
-#        
-#        # FIXME: this is (probably) obsolete, remove this code
-#        if (argumentType == "hydrator_ref"):
-#            if not argumentRef:
-#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-#                self.__log.error(message)
-#                raise RuntimeError(message)
-#            return UnresolvedHydratorRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
-#        
-#        # FIXME: this is (probably) obsolete, remove this code
-#        if (argumentType == "string_set_ref"):
-#            if not argumentRef:
-#                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-#                self.__log.error(message)
-#                raise RuntimeError(message)
-#            return StringSetRefArgumentNode(key=argumentKey, ref=argumentRef)
-#        
-#        else:
-#            if not argumentValue:
-#                message = "Missing required attribute `value` for field argument `%s`" % (argumentKey)
-#                self.__log.error(message)
-#                raise RuntimeError(message)
-#            return LiteralArgumentNode(key=argumentKey, type=argumentType, value=argumentValue)
 
-class FieldRefArgumentReader(ArgumentReader):
+
+class FieldRefArgumentReader(SingleArgumentReader):
     
     def __init__(self, *args, **kwargs):
         super(FieldRefArgumentReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        argRef = argXMLNode.prop("ref")
+        
+        if argType != 'field_ref':
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `field_ref`)" % (argKey, argType))
+        
+        if not argRef:
+            raise RuntimeError("Missing required attribute `ref` for `field_ref` argument `%s`" % (argKey))
+        
+        # TODO: check format {record_key}.{field_key}
+        
+        return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
 
 
-class FunctionRefArgumentReader(ArgumentReader):
+class FunctionRefArgumentReader(SingleArgumentReader):
     
     def __init__(self, *args, **kwargs):
         super(FunctionRefArgumentReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        argRef = argXMLNode.prop("ref")
+        
+        if argType != 'function_ref':
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argKey, argType))
+        
+        if not argRef:
+            raise RuntimeError("Missing required attribute `ref` for `function_ref` argument `%s`" % (argKey))
+
+        return UnresolvedFunctionRefArgumentNode(key=argKey, ref=argRef)
 
 
-class ValueProviderArgumentReader(ArgumentReader):
+class ValueProviderArgumentReader(SingleArgumentReader):
     
     def __init__(self, *args, **kwargs):
         super(ValueProviderArgumentReader, self).__init__(*args, **kwargs)
@@ -543,10 +523,6 @@ class XMLReader(object):
         for hydrator in xPathContext.xpathEval("./m:hydrator"):
             hydratorNode = self.__hydratorFactory(hydrator, i)
             hydratorNode.setOrderKey(i)
-            
-            childContext = AbstractReader._createXPathContext(hydrator)
-            for argument in childContext.xpathEval("./m:argument"):
-                hydratorNode.setArgument(self.__argumentFactory(argument, astContext.getRecordType().getAttribute("key")))
 
             hydratorsNode.setHydrator(hydratorNode)
             i = i+1
@@ -596,15 +572,7 @@ class XMLReader(object):
         if (xmlContext == None):
             return
         
-        # derive xPath context from the given xmlContext node
-        xPathContext = AbstractReader._createXPathContext(xmlContext)
-        
-        sequenceIteratorNode = self.__sequenceIteratorFactory(xmlContext)
-        
-        for child in xPathContext.xpathEval("./m:argument"):
-            sequenceIteratorNode.setArgument(self.__argumentFactory(child))
-
-        astContext.setSequenceIterator(sequenceIteratorNode)
+        astContext.setSequenceIterator(self.__sequenceIteratorFactory(xmlContext))
         
     def __cardinalityEstimatorFactory(self, cardinalityEstimatorXMLNode):
         cardinalityEstimatorType = cardinalityEstimatorXMLNode.prop("type")
@@ -617,10 +585,17 @@ class XMLReader(object):
     def __sequenceIteratorFactory(self, sequenceIteratorXMLNode):
         sequenceIteratorType = sequenceIteratorXMLNode.prop("type")
         
+        # factory logic
+        sequenceIterator = None
         if (sequenceIteratorType == "partitioned_iterator"):
-            return PartitionedSequenceIteratorNode()
-
-        raise RuntimeError('Invalid generator task type `%s`' % (sequenceIteratorType))
+            sequenceIterator = PartitionedSequenceIteratorNode()
+        else:
+            raise RuntimeError('Invalid generator task type `%s`' % (sequenceIteratorType))
+        
+        # append arguments
+        ArgumentReader.readArguments(sequenceIteratorXMLNode, sequenceIterator)
+        
+        return sequenceIterator
         
     def __functionFactory(self, functionXMLNode):
         
@@ -655,83 +630,43 @@ class XMLReader(object):
     def __hydratorFactory(self, hydratorXMLNode, i):
         t = hydratorXMLNode.prop("type")
         
+        # factory logic
+        hydratorNode = None
         if t == "clustered_reference_hydrator":
-            return ClusteredReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "conditional_randomized_hydrator":
-            return ConditionalRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "const_hydrator":
-            return ConstValueHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "referenced_record_hydrator":
-            return ReferencedRecordHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "reference_hydrator":
-            return ReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "simple_clustered_hydrator":
-            return SimpleClusteredHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        if t == "simple_randomized_hydrator":
-            return SimpleRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-
-        raise RuntimeError('Unsupported hydrator type `%s`' % (t))
-
+            hydratorNode = ClusteredReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "conditional_randomized_hydrator":
+            hydratorNode = ConditionalRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "const_hydrator":
+            hydratorNode = ConstValueHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "referenced_record_hydrator":
+            hydratorNode = ReferencedRecordHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "reference_hydrator":
+            hydratorNode = ReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "simple_clustered_hydrator":
+            hydratorNode = SimpleClusteredHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        elif t == "simple_randomized_hydrator":
+            hydratorNode = SimpleRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
+        else:
+            raise RuntimeError('Unsupported hydrator type `%s`' % (t))
+        
+        # append arguments
+        ArgumentReader.readArguments(hydratorXMLNode, hydratorNode)
+        
+        return hydratorNode
+        
     def __setterFactory(self, setterXMLNode):
         t = setterXMLNode.prop("type")
         
+        # factory logic
+        setterNode = None
         if t == "field_setter":
-            return FieldSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
-        if t == "reference_setter":
-            return ReferenceSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
-
-        raise RuntimeError('Unsupported setter type `%s`' % (t))
-
-    def __argumentFactory(self, argumentXMLNode, enclosingRecordType = None):
-        argumentType = argumentXMLNode.prop("type")
-        argumentKey = argumentXMLNode.prop("key")
-        argumentRef = argumentXMLNode.prop("ref")
-        argumentValue = argumentXMLNode.prop("value")
-        
-        if enclosingRecordType:
-            enclosingRecordType = enclosingRecordType.strip(": ") + ":"
+            setterNode = FieldSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
+        elif t == "reference_setter":
+            setterNode = ReferenceSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
         else:
-            enclosingRecordType = ""
+            raise RuntimeError('Unsupported setter type `%s`' % (t))
         
-        if (argumentType == "field_ref"):
-            argumentRef = argumentXMLNode.prop("ref")
-            if not argumentRef:
-                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-                self.__log.error(message)
-                raise RuntimeError(message)
-            
-            if argumentRef.find(":") == -1:
-                argumentRef = "%s%s" % (enclosingRecordType, argumentRef)
-                
-            return UnresolvedFieldRefArgumentNode(key=argumentKey, ref=argumentRef)
-
-        if (argumentType == "function_ref"):
-            argumentRef = argumentXMLNode.prop("ref")
-            if not argumentRef:
-                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-                self.__log.error(message)
-                raise RuntimeError(message)
-            return UnresolvedFunctionRefArgumentNode(key=argumentKey, ref=argumentRef)
+        # append arguments
+        ArgumentReader.readArguments(setterXMLNode, setterNode)
         
-        # FIXME: this is (probably) obsolete, remove this code
-        if (argumentType == "hydrator_ref"):
-            if not argumentRef:
-                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-                self.__log.error(message)
-                raise RuntimeError(message)
-            return UnresolvedHydratorRefArgumentNode(key=argumentKey, ref="%s%s" % (enclosingRecordType, argumentRef))
-        
-        # FIXME: this is (probably) obsolete, remove this code
-        if (argumentType == "string_set_ref"):
-            if not argumentRef:
-                message = "Missing required attribute `ref` for field argument `%s`" % (argumentKey)
-                self.__log.error(message)
-                raise RuntimeError(message)
-            return StringSetRefArgumentNode(key=argumentKey, ref=argumentRef)
-        
-        else:
-            if not argumentValue:
-                message = "Missing required attribute `value` for field argument `%s`" % (argumentKey)
-                self.__log.error(message)
-                raise RuntimeError(message)
-            return LiteralArgumentNode(key=argumentKey, type=argumentType, value=argumentValue)
+        return setterNode

@@ -796,7 +796,7 @@ class ClusteredReferenceHydratorNode(HydratorNode):
         
     def getXMLArguments(self):
         return { 'field'              : { 'type': 'field_ref' }, 
-                 'position_field'     : { 'type': 'position_field', 'optional': True }, 
+                 'position_field'     : { 'type': 'field_ref', 'optional': True }, 
                  'count_field'        : { 'type': 'field_ref' }, 
                  'nested_cardinality' : { 'type': 'literal' } 
                }
