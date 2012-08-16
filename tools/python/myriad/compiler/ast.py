@@ -367,11 +367,12 @@ class EnumSetNode(AbstractNode):
         return self.__arguments.get(key)
         
     def getXMLArguments(self):
-        return { 'path'               : { 'type': 'literal' } 
+        return { 'path' : { 'type': 'literal' } 
                }
         
     def getConstructorArguments(self):
-        return [ 'Literal(path)' ]
+        return [ 'Literal(path)' 
+               ]
 
 
 #
@@ -1169,7 +1170,10 @@ class CardinalityEstimatorNode(AbstractNode):
     def getParent(self):
         return self.__parent
         
-    def getConstructorArgumentsOrder(self):
+    def getXMLArguments(self):
+        return {}
+        
+    def getConstructorArguments(self):
         return []
 
 
@@ -1182,8 +1186,13 @@ class LinearScaleEstimatorNode(CardinalityEstimatorNode):
         kwargs.update(type="linear_scale_estimator")
         super(LinearScaleEstimatorNode, self).__init__(*args, **kwargs)
         
-    def getConstructorArgumentsOrder(self):
-        return ["base_cardinality"]
+    def getXMLArguments(self):
+        return { 'base_cardinality' : { 'type': 'literal' } 
+               }
+        
+    def getConstructorArguments(self):
+        return [ 'Literal(base_cardinality)' 
+               ]
 
 
 #

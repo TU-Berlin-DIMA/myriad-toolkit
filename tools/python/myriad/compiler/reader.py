@@ -232,23 +232,18 @@ class XMLReader(object):
         self.__astRoot.getSpecification().setAttribute("path", self.__args.prototype_path)
         
         # load the XML
-        try:
-            self.__log.info("Reading XML specification from: `%s`." % (self.__args.prototype_path))
+        self.__log.info("Reading XML specification from: `%s`." % (self.__args.prototype_path))
+    
+        # open the model specification XML
+        xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("path"))
+        # construct the remainder of the AST
+        self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
         
-            # open the model specification XML
-            xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("path"))
-            # construct the remainder of the AST
-            self.__readSpecification(self.__astRoot.getSpecification(), xmlDoc)
-            
-            # resolve argument refs
-            self.__resolveRecordReferenceNodes()
-            self.__resolveFieldRefArguments()
-            self.__resolveFunctionRefArguments()
-            self.__resolveHydratorRefArguments()
-            
-        except:
-            e = sys.exc_info()[1]
-            raise
+        # resolve argument refs
+        self.__resolveRecordReferenceNodes()
+        self.__resolveFieldRefArguments()
+        self.__resolveFunctionRefArguments()
+        self.__resolveHydratorRefArguments()
         
         # return the final version AST
         return self.__astRoot
@@ -439,13 +434,10 @@ class XMLReader(object):
         # derive xPath context from the given xmlContext node
         xPathContext = AbstractReader._createXPathContext(xmlContext)
 
-        # attach FunctionNode for each function in the XML document
+        # attach EnumSetNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:enum_sets/m:enum_set"):
             enumSetNode = EnumSetNode(key=element.prop("key"))
-            
-            childContext = AbstractReader._createXPathContext(element)
-            for child in childContext.xpathEval("./m:argument"):
-                enumSetNode.setArgument(self.__argumentFactory(child))
+            ArgumentReader.readArguments(element, enumSetNode)
             
             astContext.getEnumSets().setSet(enumSetNode)
             
@@ -453,7 +445,7 @@ class XMLReader(object):
         # derive xPath context from the given xmlContext node
         xPathContext = AbstractReader._createXPathContext(xmlContext)
         
-        # attach FunctionNode for each function in the XML document
+        # attach RecordSequenceNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:record_sequences/m:*"):
             recordSequenceType = element.get_name()
         
