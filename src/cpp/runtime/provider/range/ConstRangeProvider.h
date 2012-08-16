@@ -41,7 +41,7 @@ public:
     }
 
     ConstRangeProvider(RangeType min, RangeType max) :
-    	AbstractRangeProvider<RangeType, CxtRecordType>(0),
+        AbstractRangeProvider<RangeType, CxtRecordType>(0),
         _constRange(min, max)
     {
     }
