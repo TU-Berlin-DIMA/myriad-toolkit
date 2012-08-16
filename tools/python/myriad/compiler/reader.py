@@ -436,10 +436,12 @@ class XMLReader(object):
 
         # attach EnumSetNode for each function in the XML document
         for element in xPathContext.xpathEval(".//m:enum_sets/m:enum_set"):
-            enumSetNode = EnumSetNode(key=element.prop("key"))
-            ArgumentReader.readArguments(element, enumSetNode)
-            
-            astContext.getEnumSets().setSet(enumSetNode)
+            self.__readEnumSet(astContext, element)
+        
+    def __readEnumSet(self, astContext, xmlContext):
+        enumSetNode = EnumSetNode(key=xmlContext.prop("key"))
+        ArgumentReader.readArguments(xmlContext, enumSetNode)
+        astContext.getEnumSets().setSet(enumSetNode)
             
     def __readRecordSequences(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
@@ -521,14 +523,8 @@ class XMLReader(object):
         astContext.setRecordType(recordTypeNode)
         
     def __readCardinalityEstimator(self, astContext, xmlContext):
-        # derive xPath context from the given xmlContext node
-        xPathContext = AbstractReader._createXPathContext(xmlContext)
-        
         cardinalityEstimatorNode = self.__cardinalityEstimatorFactory(xmlContext)
-        
-        for child in xPathContext.xpathEval("./m:argument"):
-            cardinalityEstimatorNode.setArgument(self.__argumentFactory(child))
-
+        ArgumentReader.readArguments(xmlContext, cardinalityEstimatorNode)
         astContext.setCardinalityEstimator(cardinalityEstimatorNode)
         
     def __readHydrators(self, astContext, xmlContext):
