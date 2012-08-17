@@ -20,7 +20,6 @@ Created on Oct 14, 2011
 
 from myriad.compiler.visitor import AbstractVisitor
 from myriad.util.stringutil import StringTransformer
-from decimal import Decimal
 
 class AbstractNode(object):
     '''

@@ -1499,9 +1499,6 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '#include "record/%s.h"' % (typeNameCC)
         print >> wfile, '#include "record/%sUtil.h"' % (typeNameCC)
         
-        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            print >> wfile, '#include "hydrator/%s.h"' % (hydrator.getAttribute("template_type"))
-
         for componentPath in recordSequence.getSetterChain().getComponentIncludePaths():
             print >> wfile, '#include "%s"' % (componentPath)
         
@@ -1553,33 +1550,23 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'public:'
         print >> wfile, ''
         
-        if recordSequence.getSetterChain().settersCount() > 0:
-            print >> wfile, '    // runtime component typedefs'
-            for setter in recordSequence.getSetterChain().getAll():
-                print >> wfile, '    // runtime components for setter `%s`' % (setter.getAttribute('key'))
-                nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
-                for node in nodeFilter.getAll(setter):
-                    print >> wfile, '    typedef %s %s;' % (node.getConcreteType(), node.getAttribute("type_alias"))
-        else: # TODO: remove this case
-            print >> wfile, '    // hydrator typedefs'
-            for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-                print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
+        print >> wfile, '    // runtime component typedefs'
+        for setter in recordSequence.getSetterChain().getAll():
+            print >> wfile, '    // runtime components for setter `%s`' % (setter.getAttribute('key'))
+            nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+            for node in nodeFilter.getAll(setter):
+                print >> wfile, '    typedef %s %s;' % (node.getConcreteType(), node.getAttribute("type_alias"))
             
         print >> wfile, ''
         print >> wfile, '    Base%sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
         print >> wfile, '        HydratorChain<%s>(opMode, random),' % (typeNameCC)
         
         
-        if recordSequence.getSetterChain().settersCount() > 0: # TODO: remove this case
-            print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
-            nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
-            for node in nodeFilter.getAll(recordSequence.getSetterChain()):
-                argsCode = ArgumentTransformer.compileConstructorArguments(self, node, {'config': 'config'})
-                print >> wfile, '        %s(%s),' % (node.getAttribute("var_name"), ', '.join(argsCode))
-        else: # TODO: remove this case
-            for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-                argsCode = ArgumentTransformer.compileConstructorArguments(self, hydrator, {'config': 'config'})
-                print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
+        print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+        for node in nodeFilter.getAll(recordSequence.getSetterChain()):
+            argsCode = ArgumentTransformer.compileConstructorArguments(self, node, {'config': 'config'})
+            print >> wfile, '        %s(%s),' % (node.getAttribute("var_name"), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)
             
@@ -1598,44 +1585,29 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '        ensurePosition(recordPtr->genID());'
         print >> wfile, ''
         
-        if recordSequence.getSetterChain().settersCount() > 0:
-            print >> wfile, '        Base%(t)sHydratorChain* me = const_cast<Base%(t)sHydratorChain*>(this);' % {'t': typeNameCC}
-            print >> wfile, ''
-            print >> wfile, '        // apply setter chain'
-            for setter in recordSequence.getSetterChain().getAll():
-                print >> wfile, '        me->%s(recordPtr, me->_random);' % (setter.getAttribute("var_name"))
-        else: # TODO: remove this case
-            for hydrator in recordSequence.getHydrationPlan().getAll():
-                print >> wfile, '        apply(_%s, recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
+        print >> wfile, '        Base%(t)sHydratorChain* me = const_cast<Base%(t)sHydratorChain*>(this);' % {'t': typeNameCC}
+        print >> wfile, ''
+        print >> wfile, '        // apply setter chain'
+        for setter in recordSequence.getSetterChain().getAll():
+            print >> wfile, '        me->%s(recordPtr, me->_random);' % (setter.getAttribute("var_name"))
         
         print >> wfile, '    }'
         print >> wfile, ''
         
-        if recordSequence.getSetterChain().settersCount() > 0:
-            print >> wfile, '    /**'
-            print >> wfile, '     * Predicate filter function.'
-            print >> wfile, '     */'
-            print >> wfile, '    virtual Interval<I64u> filter(const EqualityPredicate<%(t)s>& predicate)' % {'t': typeNameCC}
-            print >> wfile, '    {'
-            print >> wfile, '        Interval<I64u> result(0, _sequenceCardinality);'
-            print >> wfile, ''
-            print >> wfile, '        // apply inverse setter chain'
-            for setter in recordSequence.getSetterChain().getFieldSetters():
-                print >> wfile, '        %s.filterRange(predicate, result);' % (setter.getAttribute("var_name"))
-            print >> wfile, ''
-            print >> wfile, '        return result;'
-            print >> wfile, '    }'
-            print >> wfile, ''
-        else: # TODO: remove this case
-            print >> wfile, '    /**'
-            print >> wfile, '     * Invertible hydrator getter.'
-            print >> wfile, '     */'
-            print >> wfile, '    template<typename T>' 
-            print >> wfile, '    const InvertibleHydrator<%(t)s, T>& invertableHydrator(typename MethodTraits<%(t)s, T>::Setter setter)' % {'t': typeNameCC}
-            print >> wfile, '    {'
-            print >> wfile, '        return HydratorChain<%s>::invertableHydrator<T>(setter);' % (typeNameCC)
-            print >> wfile, '    }'
-            print >> wfile, ''
+        print >> wfile, '    /**'
+        print >> wfile, '     * Predicate filter function.'
+        print >> wfile, '     */'
+        print >> wfile, '    virtual Interval<I64u> filter(const EqualityPredicate<%(t)s>& predicate)' % {'t': typeNameCC}
+        print >> wfile, '    {'
+        print >> wfile, '        Interval<I64u> result(0, _sequenceCardinality);'
+        print >> wfile, ''
+        print >> wfile, '        // apply inverse setter chain'
+        for setter in recordSequence.getSetterChain().getFieldSetters():
+            print >> wfile, '        %s.filterRange(predicate, result);' % (setter.getAttribute("var_name"))
+        print >> wfile, ''
+        print >> wfile, '        return result;'
+        print >> wfile, '    }'
+        print >> wfile, ''
 
         if recordSequence.getSetterChain().settersCount() > 0:
             nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
@@ -1646,60 +1618,19 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'protected:'
         print >> wfile, ''
         
-        if recordSequence.getSetterChain().settersCount() > 0:
-            print >> wfile, '    // cardinality'
-            print >> wfile, '    I64u _sequenceCardinality;'
+        print >> wfile, '    // cardinality'
+        print >> wfile, '    I64u _sequenceCardinality;'
+        print >> wfile, ''
+        for setter in recordSequence.getSetterChain().getAll():
+            print >> wfile, '    // runtime components for setter `%s`' % (setter.getAttribute('key'))
+            nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+            for node in nodeFilter.getAll(setter):
+                print >> wfile, '    %s %s;' % (node.getAttribute("type_alias"), node.getAttribute("var_name"))
             print >> wfile, ''
-            for setter in recordSequence.getSetterChain().getAll():
-                print >> wfile, '    // runtime components for setter `%s`' % (setter.getAttribute('key'))
-                nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
-                for node in nodeFilter.getAll(setter):
-                    print >> wfile, '    %s %s;' % (node.getAttribute("type_alias"), node.getAttribute("var_name"))
-                print >> wfile, ''
-        else: # TODO: remove this case
-            print >> wfile, '    // hydrator members'
-            for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-                print >> wfile, '    %s _%s;' % (hydrator.getAttribute("type_alias"), StringTransformer.us2cc(hydrator.getAttribute("key")))
         
         print >> wfile, '    // Logger instance.'
         print >> wfile, '    Logger& _logger;'
         print >> wfile, '};'
-        print >> wfile, ''
-        
-        invertibleHydrators = {}
-        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            if hydrator.isInvertible():
-                fieldType = hydrator.getArgument("field").getFieldRef().getAttribute("type")
-                # treat Enum types as I64u / I32u depending on the C++ architecture
-                if fieldType == 'Enum':
-                    if self._args.is_arch64:
-                        fieldType = 'I64u'
-                    else:
-                        fieldType = 'I32u'
-                # lazy initialize container array for this fieldType
-                if not invertibleHydrators.has_key(fieldType):
-                    invertibleHydrators[fieldType] = []
-                # append hydrator to the container array
-                invertibleHydrators[fieldType].append(hydrator)
-        
-        for fieldType in sorted(invertibleHydrators.keys()):
-            print >> wfile, '/**'
-            print >> wfile, ' * Invertible hydrator getter (%s specialization).' % (fieldType)
-            print >> wfile, ' */'
-            print >> wfile, 'template<>' 
-            print >> wfile, 'const InvertibleHydrator<%(rt)s, %(ft)s>& Base%(rt)sHydratorChain::invertableHydrator<%(ft)s>(MethodTraits<%(rt)s, %(ft)s>::Setter setter)' % { 'rt': typeNameCC, 'ft': fieldType}
-            print >> wfile, '{'
-            
-            fieldSetterTransformer = FieldSetterTransfomer()
-            for hydrator in invertibleHydrators[fieldType]:
-                print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': fieldSetterTransformer.transform(hydrator.getArgument("field")).pop()}
-                print >> wfile, '    {'
-                print >> wfile, '        return _%s;' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
-                print >> wfile, '    }'
-            print >> wfile, ''
-            print >> wfile, '    return HydratorChain<%(rt)s>::invertableHydrator<%(ft)s>(setter);' % { 'rt': typeNameCC, 'ft': fieldType}
-            print >> wfile, '}'
-        
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''

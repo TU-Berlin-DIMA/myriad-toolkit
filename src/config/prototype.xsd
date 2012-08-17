@@ -47,68 +47,6 @@
       </xs:element>
     </xs:sequence>
   </xs:complexType>
-
-  <!-- generator_catalog root type -->
-  
-  <!--
-  <xs:complexType name="generator_catalog">
-    <xs:sequence>
-      <xs:group ref="myriad:imports" />
-      <xs:element name="parameters" type="myriad:parameters_container" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation>A list of generator parameters for this catalog.</xs:documentation>
-        </xs:annotation>
-        <xs:unique name="catalog_parameter_name">
-          <xs:selector xpath=".//myriad:parameter" />
-          <xs:field xpath="@key"></xs:field>
-        </xs:unique>
-      </xs:element>
-      <xs:element name="functions" type="myriad:functions" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation>A list of functions for this catalog.</xs:documentation>
-        </xs:annotation>
-        <xs:unique name="catalog_function_name">
-          <xs:selector xpath=".//myriad:function" />
-          <xs:field xpath="@key"></xs:field>
-        </xs:unique>
-      </xs:element>
-      <xs:element name="string_sets" type="myriad:string_sets" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation>Finite string sets for this catalog.</xs:documentation>
-        </xs:annotation>
-        <xs:unique name="catalog_string_set_name">
-          <xs:selector xpath=".//myriad:string-set" />
-          <xs:field xpath="@key" />
-        </xs:unique>
-      </xs:element>
-      <xs:element name="enum_sets" type="myriad:enum_sets" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation>Enumerations for this catalog.</xs:documentation>
-        </xs:annotation>
-        <xs:unique name="catalog_enum_set_name">
-          <xs:selector xpath=".//myriad:enum_set" />
-          <xs:field xpath="@key" />
-        </xs:unique>
-      </xs:element>
-    </xs:sequence>
-  </xs:complexType>
-  -->
- 
-  <!-- imports -->
-  <!--
-  <xs:group name="imports">
-    <xs:sequence>
-      <xs:element name="import" type="myriad:import" minOccurs="0" maxOccurs="unbounded" />
-    </xs:sequence>
-  </xs:group>
-  <xs:complexType name="imports_container">
-    <xs:group ref="myriad:imports" />
-  </xs:complexType>
-  <xs:complexType name="import">
-    <xs:attribute name="path" type="xs:string" use="required" />
-    <xs:attribute name="namespace" type="xs:NCName" use="required" />
-  </xs:complexType>
-  -->
  
   <!-- parameters and arguments -->
 
@@ -173,15 +111,6 @@
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-  <!-- in-condext defined probability points -->
-  <xs:complexType name="probability-point-context">
-    <xs:simpleContent>
-      <xs:extension base="xs:string">
-        <xs:attribute name="function" type="xs:string" use="required" />
-        <xs:attribute name="value" type="xs:double" use="required" />
-      </xs:extension>
-    </xs:simpleContent>
-  </xs:complexType>
 
   <!-- enum_sets -->
 
@@ -204,9 +133,24 @@
   </xs:complexType>
   <xs:complexType name="random_sequence">
     <xs:sequence>
-      <xs:element name="record_type" type="myriad:record_type" minOccurs="1" maxOccurs="1" />
-      <xs:element name="hydrators" type="myriad:hydrators" minOccurs="0" maxOccurs="1" />
-      <xs:element name="hydration_plan" type="myriad:hydration_plan" minOccurs="0" maxOccurs="1" />
+      <xs:element name="record_type" type="myriad:record_type" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>A user-defined domain type consisting of a list of field and a list of references.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="unique_record_component_name">
+          <xs:selector xpath="./*" />
+          <xs:field xpath="@name" />
+        </xs:unique>
+      </xs:element>
+      <xs:element name="setter_chain" type="myriad:setter_chain" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>A chain of value and field setters to be applied in the PRDG sequence for this record.</xs:documentation>
+        </xs:annotation>
+        <xs:unique name="unique_setter_name">
+          <xs:selector xpath="./myriad:setter" />
+          <xs:field xpath="@key" />
+        </xs:unique>
+      </xs:element>
       <xs:element name="cardinality_estimator" type="myriad:cardinality_estimator" minOccurs="1" maxOccurs="1" />
       <xs:element name="sequence_iterator" type="myriad:sequence_iterator" minOccurs="0" maxOccurs="1" />
     </xs:sequence>
@@ -227,23 +171,15 @@
     <xs:attribute name="name" type="xs:string" use="required" />
     <xs:attribute name="type" type="xs:string" use="required" />
   </xs:complexType>
-  <xs:complexType name="hydrators">
+  <xs:complexType name="setter_chain">
     <xs:sequence>
-      <xs:element name="hydrator" type="myriad:hydrator" minOccurs="1" maxOccurs="unbounded" />
+      <xs:element name="setter" type="myriad:setter" minOccurs="1" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
-  <xs:complexType name="hydrator">
+  <xs:complexType name="setter">
     <xs:group ref="myriad:arguments" />
     <xs:attribute name="key" type="xs:NCName" use="required" />
     <xs:attribute name="type" type="xs:NCName" use="required" />
-  </xs:complexType>
-  <xs:complexType name="hydration_plan">
-    <xs:sequence>
-      <xs:element name="hydrator_ref" type="myriad:hydrator_ref" minOccurs="1" maxOccurs="unbounded" />
-    </xs:sequence>
-  </xs:complexType>
-  <xs:complexType name="hydrator_ref">
-    <xs:attribute name="ref" type="xs:NCName" />
   </xs:complexType>
   <xs:complexType name="cardinality_estimator">
     <xs:group ref="myriad:arguments" />
