@@ -56,27 +56,30 @@ class ArgumentReader(AbstractReader):
     def parse(self, argXMLNode, argsContainerNode):
         raise RuntimeError("Called abstract method ArgumentReader.parse()")
     
-    def createReader(argKey, argDescriptor):
-        argType = argDescriptor.get('type', None)
-        argOptional = argDescriptor.get('optional', False)
-        argDescriptorUpdated = {'key': argKey, 'type': argType, 'optional': argOptional}
+    def createReader(argDescriptor):
+        # set default values in the descriptor
+        argDescriptor['optional'] = argDescriptor.get('optional', False)
         
+        # argument reader factory logic
+        argType = argDescriptor['type']
         if (argType == "literal"):
-            return LiteralArgumentReader(descriptor=argDescriptorUpdated)
+            return LiteralArgumentReader(descriptor=argDescriptor)
         elif (argType == "field_ref"):
-            return FieldRefArgumentReader(descriptor=argDescriptorUpdated)
+            return FieldRefArgumentReader(descriptor=argDescriptor)
         elif (argType == "function_ref"):
-            return FunctionRefArgumentReader(descriptor=argDescriptorUpdated)
+            return FunctionRefArgumentReader(descriptor=argDescriptor)
         elif (argType == "value_provider"):
-            return ValueProviderArgumentReader(descriptor=argDescriptorUpdated)
+            return ValueProviderArgumentReader(descriptor=argDescriptor)
+        elif (argType == "range_provider"):
+            return RangeProviderArgumentReader(descriptor=argDescriptor)
         else:
             message = "Unknown argument reader type `%s`" % (argType)
             ArgumentReader._log.error(message)
             raise RuntimeError(message)
         
     def readArguments(argsContainerXMLNode, argsContainerNode):
-        for argKey, argDescriptor in argsContainerNode.getXMLArguments().iteritems():
-            argReader = ArgumentReader.createReader(argKey, argDescriptor)
+        for argDescriptor in argsContainerNode.getXMLArguments():
+            argReader = ArgumentReader.createReader(argDescriptor)
             argReader.read(argsContainerXMLNode, argsContainerNode)
         
     # static methods
@@ -150,12 +153,12 @@ class FieldRefArgumentReader(SingleArgumentReader):
         argRef = argXMLNode.prop("ref")
         
         if argType != 'field_ref':
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `field_ref`)" % (argKey, argType))
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `field_ref`)" % (argType, argKey))
         
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `field_ref` argument `%s`" % (argKey))
         
-        # TODO: check format {record_key}.{field_key}
+        # @todo: check format {record_key}.{field_key}
         
         return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
 
@@ -171,7 +174,7 @@ class FunctionRefArgumentReader(SingleArgumentReader):
         argRef = argXMLNode.prop("ref")
         
         if argType != 'function_ref':
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argKey, argType))
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argType, argKey))
         
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `function_ref` argument `%s`" % (argKey))
@@ -187,13 +190,46 @@ class ValueProviderArgumentReader(SingleArgumentReader):
     def parse(self, argXMLNode, argsContainerNode):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
-        argRef = argXMLNode.prop("ref")
         
-        if argType != 'function_ref':
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argKey, argType))
+        valueProviderNode = None
+        if argType == 'clustered_value_provider':
+            valueProviderNode = ClusteredValueProviderNode(key=argKey)
+        elif argType == 'const_value_provider':
+            valueProviderNode = ConstValueProviderNode(key=argKey)
+        elif argType == 'context_field_value_provider':
+            valueProviderNode = ContextFieldValueProviderNode(key=argKey)
+        elif argType == 'random_value_provider':
+            valueProviderNode = RandomValueProviderNode(key=argKey)
+        else:
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(clustered|const|context_field|random)_value_provider`)" % (argType, argKey))
         
-        if not argRef:
-            raise RuntimeError("Missing required attribute `ref` for `function_ref` argument `%s`" % (argKey))
+        # recursively read value provider arguments
+        ArgumentReader.readArguments(argXMLNode, valueProviderNode)
+        
+        return valueProviderNode
+
+
+class RangeProviderArgumentReader(SingleArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(RangeProviderArgumentReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        
+        rangeProviderNode = None
+        if argType == 'const_range_provider':
+            rangeProviderNode = ConstRangeProviderNode(key=argKey)
+        elif argType == 'context_field_range_provider':
+            rangeProviderNode = ContextFieldRangeProviderNode(key=argKey)
+        else:
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(const|context_field)_range_provider`)" % (argType, argKey))
+        
+        # recursively read range provider arguments
+        ArgumentReader.readArguments(argXMLNode, rangeProviderNode)
+        
+        return rangeProviderNode
 
 
 class XMLReader(object):
@@ -572,10 +608,30 @@ class XMLReader(object):
         i = 0
         for setter in xPathContext.xpathEval("./m:setter"):
             setterNode = self.__setterFactory(setter)
-            setterNode.setOrderKey(i) # TODO: derive order from dependency graph
+            setterNode.setOrderKey(i) # @todo: derive order from dependency graph
 
             setterChainNode.setSetter(setterNode)
             i = i+1
+        
+        # enumerate type alias values for all runtime components in this chain
+        # ValueProvider nodes 
+        i = 0
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractValueProviderNode)
+        for node in nodeFilter.getAll(setterChainNode):
+            node.setAttribute("type_alias", "ValueProvider%02dType" % (i))
+            i = i+1
+        i = 0
+        # RangeProvider nodes
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractRangeProviderNode)
+        for node in nodeFilter.getAll(setterChainNode):
+            node.setAttribute("type_alias", "RangeProvider%02dType" % (i))
+            i = i+1
+            
+        # set component variable names for all runtime components in this chain
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+        for node in nodeFilter.getAll(setterChainNode):
+            typeAlias = node.getAttribute("type_alias")
+            node.setAttribute("var_name", "_%s%s" % (typeAlias[0].lower(), typeAlias[1:-4]))
         
     def __readSequenceIterator(self, astContext, xmlContext):
         # sanity check (XML element is not mandatory)
@@ -626,9 +682,9 @@ class XMLReader(object):
         elif (functionType == "uniform_probability"):
             functionNode = UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         elif (functionType == "conditional_combined_probability"):
-            functionNode = ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType1=functionMatch.group(3), domainType2=functionMatch.group(5))
+            functionNode = ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type1=functionMatch.group(3), domain_type2=functionMatch.group(5))
         elif (functionMatch != "combined_probability"):
-            functionNode = CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domainType=functionMatch.group(3))
+            functionNode = CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type=functionMatch.group(3))
         else:
             raise RuntimeError('Invalid function type `%s`' % (functionType))
         
@@ -670,9 +726,9 @@ class XMLReader(object):
         # factory logic
         setterNode = None
         if t == "field_setter":
-            setterNode = FieldSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
+            setterNode = FieldSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias="%sType" % StringTransformer.us2ccAll(setterXMLNode.prop("key")))
         elif t == "reference_setter":
-            setterNode = ReferenceSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias=StringTransformer.us2ccAll("%sType" % setterXMLNode.prop("key")))
+            setterNode = ReferenceSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias="%sType" % StringTransformer.us2ccAll(setterXMLNode.prop("key")))
         else:
             raise RuntimeError('Unsupported setter type `%s`' % (t))
         

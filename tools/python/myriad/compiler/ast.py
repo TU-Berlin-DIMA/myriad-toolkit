@@ -20,6 +20,7 @@ Created on Oct 14, 2011
 
 from myriad.compiler.visitor import AbstractVisitor
 from myriad.util.stringutil import StringTransformer
+from decimal import Decimal
 
 class AbstractNode(object):
     '''
@@ -193,6 +194,9 @@ class FunctionNode(AbstractNode):
     
     def getConcreteType(self):
         return self.getAttribute("concrete_type")
+        
+    def getDomainType(self):
+        raise RuntimeError("Calling abstract FunctionNode::getDomainType() method")
     
     def getXMLArguments(self):
         return {}
@@ -211,10 +215,13 @@ class ParetoProbabilityFunctionNode(FunctionNode):
         kwargs.update(type="ParetoPrFunction")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
+    def getDomainType(self):
+        return 'Decimal'
+        
     def getXMLArguments(self):
-        return { 'x_min'              : { 'type': 'literal' }, 
-                 'alpha'              : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'x_min', 'type': 'literal' }, 
+                 { 'key': 'alpha', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         args = super(ParetoProbabilityFunctionNode, self).getConstructorArguments()
@@ -233,10 +240,13 @@ class NormalProbabilityFunctionNode(FunctionNode):
         kwargs.update(type="NormalPrFunction")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
+    def getDomainType(self):
+        return self.getArgument('mean').getAttribute('type')
+        
     def getXMLArguments(self):
-        return { 'mean'               : { 'type': 'literal' }, 
-                 'stddev'             : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'mean', 'type': 'literal' }, 
+                 { 'key': 'stddev', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         args = super(NormalProbabilityFunctionNode, self).getConstructorArguments()
@@ -255,10 +265,13 @@ class UniformProbabilityFunctionNode(FunctionNode):
         kwargs.update(type="UniformPrFunction")
         super(UniformProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
+    def getDomainType(self):
+        return self.getArgument('x_min').getAttribute('type')
+        
     def getXMLArguments(self):
-        return { 'x_min'             : { 'type': 'literal' }, 
-                 'x_max'             : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'x_min', 'type': 'literal' }, 
+                 { 'key': 'x_max', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         args = super(UniformProbabilityFunctionNode, self).getConstructorArguments()
@@ -275,12 +288,15 @@ class CombinedProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="CombinedPrFunction")
-        kwargs.update(concrete_type="CombinedPrFunction<%s>" % kwargs.get("domainType", "I64u"))
+        kwargs.update(concrete_type="CombinedPrFunction<%s>" % kwargs["domain_type"])
         super(CombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
+    def getDomainType(self):
+        return self.getAttribute('domain_type')
+        
     def getXMLArguments(self):
-        return { 'path'               : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'path', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         args = super(CombinedProbabilityFunctionNode, self).getConstructorArguments()
@@ -295,12 +311,15 @@ class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="ConditionalCombinedPrFunction")
-        kwargs.update(concrete_type="ConditionalCombinedPrFunction<%s, %s>" % (kwargs.get("domainType1", "I64u"), kwargs.get("domainType2", "I64u")))
+        kwargs.update(concrete_type="ConditionalCombinedPrFunction<%s, %s>" % (kwargs["domain_type1"], kwargs["domain_type2"]))
         super(ConditionalCombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
+    def getDomainType(self):
+        return self.getAttribute('domain_type1')
+        
     def getXMLArguments(self):
-        return { 'path'               : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'path', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         args = super(ConditionalCombinedProbabilityFunctionNode, self).getConstructorArguments()
@@ -367,8 +386,8 @@ class EnumSetNode(AbstractNode):
         return self.__arguments.get(key)
         
     def getXMLArguments(self):
-        return { 'path' : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'path', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'Literal(path)' 
@@ -469,6 +488,7 @@ class RandomSequenceNode(RecordSequenceNode):
         
     def setSetterChain(self, node):
         self.__setterChain = node
+        node.setParent(self)
         
     def getSetterChain(self):
         return self.__setterChain
@@ -795,11 +815,11 @@ class ClusteredReferenceHydratorNode(HydratorNode):
         return "ClusteredReferenceHydrator< %s, %s >" % (recordType, refRecordType)
         
     def getXMLArguments(self):
-        return { 'field'              : { 'type': 'field_ref' }, 
-                 'position_field'     : { 'type': 'field_ref', 'optional': True }, 
-                 'count_field'        : { 'type': 'field_ref' }, 
-                 'nested_cardinality' : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'position_field', 'type': 'field_ref', 'optional': True }, 
+                 { 'key': 'count_field', 'type': 'field_ref' }, 
+                 { 'key': 'nested_cardinality', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'FieldSetter(field)',
@@ -828,10 +848,10 @@ class ConditionalRandomizedHydratorNode(HydratorNode):
         return "ConditionalRandomizedHydrator< %s, %s, %s, %s >" % (recordType, fieldType, conditionFieldType, probabilityType)
         
     def getXMLArguments(self):
-        return { 'field'          : { 'type': 'field_ref' }, 
-                 'condition_field': { 'type': 'field_ref' }, 
-                 'probability'    : { 'type': 'function_ref' } 
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'condition_field', 'type': 'field_ref' }, 
+                 { 'key': 'probability', 'type': 'function_ref' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'EnvVariable(random)',
@@ -857,9 +877,9 @@ class ConstValueHydratorNode(HydratorNode):
         return "ConstValueHydrator< %s, %s >" % (recordType, fieldType)
         
     def getXMLArguments(self):
-        return { 'field'              : { 'type': 'field_ref' }, 
-                 'const_value'        : { 'type': 'literal' }
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'const_value', 'type': 'literal' }
+               ]
         
     def getConstructorArguments(self):
         return [ 'FieldSetter(field)',
@@ -888,10 +908,10 @@ class ReferencedRecordHydratorNode(HydratorNode):
         return "ReferencedRecordHydrator< %s, %s, %s, %s >" % (recordType, refRecordType, fieldType, probabilityType)
         
     def getXMLArguments(self):
-        return { 'field'      : { 'type': 'field_ref' }, 
-                 'pivot_field': { 'type': 'field_ref' }, 
-                 'probability': { 'type': 'function_ref' } 
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'pivot_field', 'type': 'field_ref' }, 
+                 { 'key': 'probability', 'type': 'function_ref' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'EnvVariable(random)',
@@ -923,10 +943,10 @@ class ReferenceHydratorNode(HydratorNode):
         return "ReferenceHydrator< %s, %s, %s >" % (recordType, refRecordType, fieldType)
         
     def getXMLArguments(self):
-        return { 'field'      : { 'type': 'field_ref' }, 
-                 'pivot_field': { 'type': 'field_ref' }, 
-                 'pivot_value': { 'type': 'field_ref' } 
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'pivot_field', 'type': 'field_ref' }, 
+                 { 'key': 'pivot_value', 'type': 'field_ref' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'EnvVariable(random)',
@@ -957,10 +977,10 @@ class SimpleClusteredHydratorNode(HydratorNode):
         return True
         
     def getXMLArguments(self):
-        return { 'field'      : { 'type': 'field_ref' }, 
-                 'probability': { 'type': 'function_ref' }, 
-                 'sequence_cardinality': { 'type': 'literal' } 
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'probability', 'type': 'function_ref' }, 
+                 { 'key': 'sequence_cardinality', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'FieldSetter(field)',
@@ -986,9 +1006,9 @@ class SimpleRandomizedHydratorNode(HydratorNode):
         return "SimpleRandomizedHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
         
     def getXMLArguments(self):
-        return { 'field'      : { 'type': 'field_ref' }, 
-                 'probability': { 'type': 'function_ref' }
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'probability', 'type': 'function_ref' }
+               ]
         
     def getConstructorArguments(self):
         return [ 'EnvVariable(random)',
@@ -1007,19 +1027,31 @@ class SetterChainNode(AbstractNode):
     '''
     
     __setters = {}
+    __parent = None
     
     def __init__(self, *args, **kwargs):
         super(SetterChainNode, self).__init__(*args, **kwargs)
         self.__setters = {}
+        self.__parent = None
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        for node in self.__setters.itervalues():
+        for node in sorted(self.__setters.itervalues(), key=lambda s: s.orderkey):
             node.accept(visitor)
         visitor.postVisit(self)
         
+    def getCxtRecordType(self):
+        return StringTransformer.us2ccAll(self.__parent.getAttribute('key'))
+
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
+        
     def setSetter(self, node):
         self.__setters[node.getAttribute('key')] = node
+        node.setParent(self)
     
     def getSetter(self, key):
         return self.__setters.get(key)
@@ -1028,110 +1060,10 @@ class SetterChainNode(AbstractNode):
         return self.__setters.has_key(key)
     
     def getAll(self):
-        return self.__setters.itervalues()
+        return sorted(self.__setters.itervalues(), key=lambda s: s.orderkey)
     
-
-#
-# Setter
-# 
- 
-class SetterNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    __arguments = {}
-    
-    orderkey = None
-    
-    def __init__(self, *args, **kwargs):
-        super(SetterNode, self).__init__(*args, **kwargs)
-        self.__arguments = {}
-        self.orderkey = None
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        for node in self.__arguments.itervalues():
-            node.accept(visitor)
-        visitor.postVisit(self)
-        
-    def setArgument(self, node):
-        self.__arguments[node.getAttribute('key')] = node
-        node.setParent(self)
-    
-    def getArgument(self, key):
-        return self.__arguments.get(key)
-        
-    def setOrderKey(self, key):
-        self.orderkey = key
-        
-    def getConcreteType(self):
-        return "AbstractSetter"
-        
-    def isInvertible(self):
-        return False
-    
-    def getXMLArguments(self):
-        return {}
-    
-    def getConstructorArguments(self):
-        return []
-
-
-class FieldSetterNode(SetterNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="FieldSetter")
-        super(FieldSetterNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        
-        return "FieldSetterNode< %s, %s, %s >" % (recordType, fieldType, probabilityType)
-        
-    def isInvertible(self):
-        return True
-        
-    def getXMLArguments(self):
-        return { 'field' : { 'type': 'field_ref' }, 
-                 'value' : { 'type': 'value_provider' }, 
-               }
-        
-    def getConstructorArguments(self):
-        return [ 'ValueProviderRef(value_provider)' ]
-
-
-class ReferenceSetterNode(SetterNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ReferenceSetter")
-        super(ReferenceSetterNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        
-        return "ReferenceSetterNode< %s, %s, %s >" % (recordType, fieldType, probabilityType)
-        
-    def isInvertible(self):
-        return True
-        
-    def getXMLArguments(self):
-        return { 'field' : { 'type': 'field_ref' }, 
-                 'value' : { 'type': 'value_provider' }, 
-               }
-        
-    def getConstructorArguments(self):
-        return [ 'ValueProviderRef(value_provider)' ]
+    def settersCount(self):
+        return len(self.__setters)
 
 
 #
@@ -1187,8 +1119,8 @@ class LinearScaleEstimatorNode(CardinalityEstimatorNode):
         super(LinearScaleEstimatorNode, self).__init__(*args, **kwargs)
         
     def getXMLArguments(self):
-        return { 'base_cardinality' : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'base_cardinality', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'Literal(base_cardinality)' 
@@ -1257,30 +1189,6 @@ class PartitionedSequenceIteratorNode(SequenceIteratorNode):
 
         return "RandomSetDefaultGeneratingTask< %s >" % (recordType)
 
-
-#class NestedSequenceIteratorNode(SequenceIteratorNode):
-#    '''
-#    classdocs
-#    '''
-#    
-#    def __init__(self, *args, **kwargs):
-#        kwargs.update(template_type="PartitionedSequenceIterator")
-#        super(NestedSequenceIteratorNode, self).__init__(*args, **kwargs)
-#        
-#    def getConcreteType(self):
-#        recordType = StringTransformer.us2ccAll(self.getArgument("parent_field").getRecordTypeRef().getAttribute("key"))
-#        refRecordType = StringTransformer.us2ccAll(self.getArgument("parent_field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-#        
-#        return "NestedSequenceIterator< %s, %s >" % (recordType, refRecordType)
-#        
-#    def getXMLArguments(self):
-#        return { 'parent_field' : { 'type': 'field_ref' }, 
-#                 'children_count_field' : { 'type': 'field_ref' }
-#               }
-#        
-#    def getConstructorArguments(self):
-#        return [ 'EnvVariable(_config)'
-#               ]
 
 #
 # Arguments
@@ -1490,16 +1398,18 @@ class AbstractRuntimeComponentNode(ArgumentNode):
     __arguments = {}
     
     def __init__(self, *args, **kwargs):
-        if not kwargs.has_key("concrete_type"):
-            kwargs.update(concrete_type=kwargs["type"])
         super(AbstractRuntimeComponentNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
     
     def accept(self, visitor):
         visitor.preVisit(self)
-        for node in self.__arguments.itervalues():
-            node.accept(visitor)
+        availableArgKeys = self.__arguments.keys() 
+        for argKey in filter(lambda k: k in availableArgKeys, map(lambda a: a['key'], self.getXMLArguments())):
+            self.__arguments[argKey].accept(visitor)
         visitor.postVisit(self)
+    
+    def getCxtRecordType(self):
+        raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getCxtRecordType() method")
     
     def getConcreteType(self):
         raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getConcreteType() method")
@@ -1516,6 +1426,89 @@ class AbstractRuntimeComponentNode(ArgumentNode):
     
     def getArgument(self, key):
         return self.__arguments.get(key)
+    
+
+#
+# Setters
+# 
+ 
+class AbstractSetterNode(AbstractRuntimeComponentNode):
+    '''
+    classdocs
+    '''
+    
+    orderkey = None
+    
+    def __init__(self, *args, **kwargs):
+        super(AbstractSetterNode, self).__init__(*args, **kwargs)
+        self.orderkey = None
+        
+    def setOrderKey(self, key):
+        self.orderkey = key
+        
+    def isInvertible(self):
+        raise RuntimeError("Calling abstract AbstractSetterNode::isInvertible() method")
+    
+    def getCxtRecordType(self):
+        return self.getParent().getCxtRecordType()
+
+
+class FieldSetterNode(AbstractSetterNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="FieldSetter")
+        super(FieldSetterNode, self).__init__(*args, **kwargs)
+        
+    def isInvertible(self):
+        return False # @todo: implement
+    
+    def getConcreteType(self):
+        # template<class RecordType, I16u fid, class ValueProviderType>
+        recordType = self.getParent().getCxtRecordType() 
+        fieldID = self.getArgument("field").getFieldRef().getAttribute("type")
+        valueProviderType = self.getArgument("value").getAttribute("type_alias")
+        
+        return "FieldSetterNode< %s, %s, %s >" % (recordType, fieldID, valueProviderType)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'value', 'type': 'value_provider' }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'RuntimeComponentRef(value_provider)' ]
+
+
+class ReferenceSetterNode(AbstractSetterNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ReferenceSetter")
+        super(ReferenceSetterNode, self).__init__(*args, **kwargs)
+        
+    def isInvertible(self):
+        return False # @todo: implement
+    
+    def getConcreteType(self):
+        # template<class RecordType, I16u fid, class ValueProviderType>
+        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
+        fieldID = self.getArgument("field").getFieldRef().getAttribute("type")
+        referenceProviderType = "UNKNOWN" # @todo: grab this value
+        
+        return "ReferenceSetterNode< %s, %s, %s >" % (recordType, fieldID, referenceProviderType)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+                 { 'key': 'value', 'type': 'reference_provider' }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'RuntimeComponentRef(reference_provider)' ]
 
 
 #
@@ -1529,6 +1522,12 @@ class AbstractValueProviderNode(AbstractRuntimeComponentNode):
     
     def __init__(self, *args, **kwargs):
         super(AbstractValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getValueType(self):
+        raise RuntimeError("Calling abstract AbstractValueProviderNode::getValueType() method")
+    
+    def getCxtRecordType(self):
+        return self.getParent().getCxtRecordType()
 
 
 class ClusteredValueProviderNode(AbstractValueProviderNode):
@@ -1540,23 +1539,26 @@ class ClusteredValueProviderNode(AbstractValueProviderNode):
         kwargs.update(template_type="ClusteredValueProvider")
         super(ClusteredValueProviderNode, self).__init__(*args, **kwargs)
     
+    def getValueType(self):
+        return self.getArgument("probability").getFunctionRef().getDomainType()
+    
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class PrFunctionType, class RangeProviderType>
-        valueType = 'UNKNOWN' # @todo: read value
-        cxtRecordType = 'UNKNOWN' # @todo: read value
+        valueType = self.getValueType()
+        cxtRecordType = self.getParent().getCxtRecordType()
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        rangeProviderType = self.getArgument("cardinality").getAttribute("concrete_type")
+        rangeProviderType = self.getArgument("cardinality").getAttribute("type_alias")
         
         return "ClusteredValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, rangeProviderType)
         
     def getXMLArguments(self):
-        return { 'probability' : { 'type': 'function_ref' }, 
-                 'cardinality' : { 'type': 'range_provider' }, 
-               }
+        return [ { 'key': 'probability', 'type': 'function_ref' }, 
+                 { 'key': 'cardinality', 'type': 'range_provider' }, 
+               ]
         
     def getConstructorArguments(self):
         return [ 'FunctionRef(probability)', 
-                 'RangeProviderRef(cardinality)' 
+                 'RuntimeComponentRef(cardinality)' 
                ]
 
 
@@ -1569,16 +1571,19 @@ class ConstValueProviderNode(AbstractValueProviderNode):
         kwargs.update(template_type="ConstValueProvider")
         super(ConstValueProviderNode, self).__init__(*args, **kwargs)
     
+    def getValueType(self):
+        return self.getArgument("value").getAttribute("type")
+    
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType>
-        valueType = 'UNKNOWN' # @todo: read value
-        cxtRecordType = 'UNKNOWN' # @todo: read value
+        valueType = self.getValueType()
+        cxtRecordType = self.getParent().getCxtRecordType()
         
         return "ConstValueProvider< %s, %s >" % (valueType, cxtRecordType)
         
     def getXMLArguments(self):
-        return { 'value' : { 'type': 'literal' } 
-               }
+        return [ { 'key': 'value', 'type': 'literal' } 
+               ]
         
     def getConstructorArguments(self):
         return [ 'Literal(value)' 
@@ -1594,17 +1599,20 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
         kwargs.update(template_type="ContextFieldValueProvider")
         super(ContextFieldValueProviderNode, self).__init__(*args, **kwargs)
     
+    def getValueType(self):
+        return self.getArgument("field").getFieldRef().getAttribute("type")
+    
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, I16u fid>
-        valueType = 'UNKNOWN' # @todo: read value
-        cxtRecordType = 'UNKNOWN' # @todo: read value
-        fid = 'UNKNOWN' # @todo: read value
+        valueType = self.getValueType()
+        cxtRecordType = self.getParent().getCxtRecordType()
+        fid = 'RecordFieldTraits<%s>::%s' % (cxtRecordType, self.getArgument("field").getFieldRef().getAttribute("key").upper())
         
         return "ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, fid)
         
     def getXMLArguments(self):
-        return { 'field' : { 'type': 'field_ref' } 
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' } 
+               ]
         
     def getConstructorArguments(self):
         return []
@@ -1619,19 +1627,22 @@ class RandomValueProviderNode(AbstractValueProviderNode):
         kwargs.update(template_type="RandomValueProvider")
         super(RandomValueProviderNode, self).__init__(*args, **kwargs)
     
+    def getValueType(self):
+        return self.getArgument("probability").getFunctionRef().getDomainType()
+    
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class PrFunctionType>
-        valueType = 'UNKNOWN' # @todo: read value
-        cxtRecordType = 'UNKNOWN' # @todo: read value
+        valueType = self.getValueType()
+        cxtRecordType = self.getParent().getCxtRecordType()
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         
         # @todo: handle 3 or 4 parameter template depending on the optional XML argument 'condition'
         return "RandomValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, probabilityType)
         
     def getXMLArguments(self):
-        return { 'probability' : { 'type': 'function_ref' }, 
-                 'condition'   : { 'type': 'field_ref', 'optional': True }, 
-               }
+        return [ { 'key': 'probability'    , 'type': 'function_ref' }, 
+                 { 'key': 'condition_field', 'type': 'field_ref', 'optional': True }, 
+               ]
         
     def getConstructorArguments(self):
         return [ 'FunctionRef(probability)'
@@ -1649,6 +1660,12 @@ class AbstractRangeProviderNode(AbstractRuntimeComponentNode):
     
     def __init__(self, *args, **kwargs):
         super(AbstractRangeProviderNode, self).__init__(*args, **kwargs)
+    
+    def getRangeType(self):
+        raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getRangeType() method")
+    
+    def getCxtRecordType(self):
+        return self.getParent().getCxtRecordType()
 
 
 class ConstRangeProviderNode(AbstractRangeProviderNode):
@@ -1660,17 +1677,20 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
         kwargs.update(template_type="ConstRangeProvider")
         super(ConstRangeProviderNode, self).__init__(*args, **kwargs)
     
+    def getRangeType(self):
+        return self.getArgument('min').getAttribute('type')
+    
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType>
-        rangeType = 'UNKNOWN' # @todo: read value
-        cxtRecordType = 'UNKNOWN' # @todo: read value
+        rangeType = self.getRangeType()
+        cxtRecordType = self.getParent().getCxtRecordType()
         
         return "ConstRangeProvider< %s, %s >" % (rangeType, cxtRecordType)
         
     def getXMLArguments(self):
-        return { 'min' : { 'type': 'literal' }, 
-                 'max' : { 'type': 'literal' }, 
-               }
+        return [ { 'key': 'min', 'type': 'literal' }, 
+                 { 'key': 'max', 'type': 'literal' }, 
+               ]
         
     def getConstructorArguments(self):
         return [ 'Literal(min)', 
@@ -1687,17 +1707,20 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
         kwargs.update(template_type="ContextFieldRangeProvider")
         super(ContextFieldRangeProviderNode, self).__init__(*args, **kwargs)
     
+    def getRangeType(self): 
+        self.getArgument('field').getAttribute('type')
+    
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
-        rangeType = 'UNKNOWN' # @todo: read value
-        cxtRecordType = 'UNKNOWN' # @todo: read value
+        rangeType = self.getRangeType()
+        cxtRecordType = 'CxtRecordType' # @todo: read value
         fieldSetterType = 'UNKNOWN' # @todo: read value
         
         return "ContextFieldRangeProvider< %s, %s, %s >" % (rangeType, cxtRecordType, fieldSetterType)
         
     def getXMLArguments(self):
-        return { 'field' : { 'type': 'field_ref' }, 
-               }
+        return [ { 'key': 'field', 'type': 'field_ref' }, 
+               ]
         
     def getConstructorArguments(self):
         return [ 'SetterRef(field)'

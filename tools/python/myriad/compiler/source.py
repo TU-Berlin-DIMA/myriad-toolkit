@@ -22,6 +22,7 @@ import logging
 import os
 import re
 
+from myriad.compiler.ast import AbstractRuntimeComponentNode
 from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
@@ -1461,9 +1462,17 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'public:'
         print >> wfile, ''
         
-        print >> wfile, '    // hydrator typedefs'
-        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
+        if recordSequence.getSetterChain().settersCount() > 0:
+            print >> wfile, '    // runtime component typedefs'
+            for setter in recordSequence.getSetterChain().getAll():
+                print >> wfile, '    // runtime components for setter `%s`' % (setter.getAttribute('key'))
+                nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+                for node in nodeFilter.getAll(setter):
+                    print >> wfile, '    typedef %s %s' % (node.getConcreteType(), node.getAttribute("type_alias")) #, node.getAttribute("var_name")
+        else:
+            print >> wfile, '    // hydrator typedefs'
+            for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+                print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
             
         print >> wfile, ''
         print >> wfile, '    Base%sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
