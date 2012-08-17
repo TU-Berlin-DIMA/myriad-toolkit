@@ -317,9 +317,12 @@ class XMLReader(object):
         self.__resolveFunctionRefArguments()
         self.__resolveHydratorRefArguments()
         
+        # set setter references
+        self.__setFieldSetterReferences()
+        
         # return the final version AST
         return self.__astRoot
-    
+            
     def __resolveRecordReferenceNodes(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedRecordReferenceNode)
         for unresolvedRecordReferenceNode in nodeFilter.getAll(self.__astRoot):
@@ -476,7 +479,14 @@ class XMLReader(object):
             resolvedHydratorRefArgumentNode.setAttribute('type', hydratorNode.getAttribute("type_alias"))
             resolvedHydratorRefArgumentNode.setHydratorRef(hydratorNode)
             parent.setArgument(resolvedHydratorRefArgumentNode)
-        
+    
+    def __setFieldSetterReferences(self):
+        # set reverse references from the record fields to their corresponding setters
+        nodeFilter = DepthFirstNodeFilter(filterType=FieldSetterNode)
+        for setterNode in nodeFilter.getAll(self.__astRoot):
+            field = setterNode.getArgument("field").getFieldRef()
+            field.setSetter(setterNode)
+            
     def __readSpecification(self, astContext, xmlContext):
         # basic tree areas
         self.__readParameters(astContext, xmlContext)

@@ -612,6 +612,7 @@ class RecordFieldNode(AbstractNode):
     
     orderkey = None
     __parent = None
+    __setter = None
     
     def __init__(self, *args, **kwargs):
         super(RecordFieldNode, self).__init__(*args, **kwargs)
@@ -626,6 +627,15 @@ class RecordFieldNode(AbstractNode):
 
     def getParent(self):
         return self.__parent
+
+    def setSetter(self, setter):
+        self.__setter = setter
+
+    def getSetter(self):
+        return self.__setter
+
+    def hasSetter(self):
+        return self.__setter is not None
 
 
 class RecordEnumFieldNode(RecordFieldNode):
@@ -1759,13 +1769,13 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
         return "runtime/provider/range/ContextFieldRangeProvider.h"
     
     def getRangeType(self): 
-        self.getArgument('field').getAttribute('type')
+        return self.getArgument('field').getAttribute('type')
     
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
         rangeType = self.getRangeType()
-        cxtRecordType = 'CxtRecordType' # FIXME: read value
-        fieldSetterType = 'UNKNOWN' # FIXME: read value
+        cxtRecordType = self.getCxtRecordType()
+        fieldSetterType = self.getArgument("field").getFieldRef().getSetter().getAttribute("type_alias")
         
         return "ContextFieldRangeProvider< %s, %s, %s >" % (rangeType, cxtRecordType, fieldSetterType)
         
@@ -1774,7 +1784,7 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
                ]
         
     def getConstructorArguments(self):
-        return [ 'SetterRef(field)'
+        return [ 'FieldSetterRef(field)'
                ]
 
 

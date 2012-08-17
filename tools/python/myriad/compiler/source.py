@@ -55,6 +55,8 @@ class ArgumentTransformer(object):
                 argTransformer = FieldSetterTransfomer()
             elif (transformerType == "FieldGetter"):
                 argTransformer = FieldGetterTransfomer()
+            elif (transformerType == "FieldSetterRef"):
+                argTransformer = FieldSetterRefTransfomer()
             elif (transformerType == "RandomSetInspector"):
                 argTransformer = RandomSetInspectorTransfomer()
             elif (transformerType == "SequenceInspector"):
@@ -146,6 +148,7 @@ class LiteralTransfomer(object):
 
 
 class FieldSetterTransfomer(object):
+    
     def __init__(self, *args, **kwargs):
         super(FieldSetterTransfomer, self).__init__()
     
@@ -200,6 +203,23 @@ class FieldGetterTransfomer(object):
         
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
+
+
+class FieldSetterRefTransfomer(object):
+    
+    def __init__(self, *args, **kwargs):
+        super(FieldSetterRefTransfomer, self).__init__()
+    
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+        
+        if not isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+            raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("name"), type(argumentNode)))
+        elif not argumentNode.getFieldRef().hasSetter():
+            raise RuntimeError("Field `%s` does not have an associated setter" % (argumentNode.getFieldRef().getAttribute("name")))
+        else:
+            return argumentNode.getFieldRef().getSetter().getAttribute("var_name")
 
 
 class RandomSetInspectorTransfomer(object):
@@ -1518,7 +1538,7 @@ class RecordGeneratorCompiler(SourceCompiler):
                 nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
                 for node in nodeFilter.getAll(setter):
                     print >> wfile, '    typedef %s %s;' % (node.getConcreteType(), node.getAttribute("type_alias"))
-        else: # @todo: remove this case
+        else: # TODO: remove this case
             print >> wfile, '    // hydrator typedefs'
             for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
                 print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
@@ -1528,13 +1548,13 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '        HydratorChain<%s>(opMode, random),' % (typeNameCC)
         
         
-        if recordSequence.getSetterChain().settersCount() > 0: # @todo: remove this case
+        if recordSequence.getSetterChain().settersCount() > 0: # TODO: remove this case
             print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
             nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
             for node in nodeFilter.getAll(recordSequence.getSetterChain()):
                 argsCode = ArgumentTransformer.compileConstructorArguments(self, node, {'config': 'config'})
                 print >> wfile, '        %s(%s),' % (node.getAttribute("var_name"), ', '.join(argsCode))
-        else: # @todo: remove this case
+        else: # TODO: remove this case
             for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
                 argsCode = ArgumentTransformer.compileConstructorArguments(self, hydrator, {'config': 'config'})
                 print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
@@ -1562,7 +1582,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '        // apply setter chain'
             for setter in recordSequence.getSetterChain().getAll():
                 print >> wfile, '        me->%s(recordPtr, me->_random);' % (setter.getAttribute("var_name"))
-        else: # @todo: remove this case
+        else: # TODO: remove this case
             for hydrator in recordSequence.getHydrationPlan().getAll():
                 print >> wfile, '        apply(_%s, recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
         
@@ -1584,7 +1604,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '        return result;'
             print >> wfile, '    }'
             print >> wfile, ''
-        else: # @todo: remove this case
+        else: # TODO: remove this case
             print >> wfile, '    /**'
             print >> wfile, '     * Invertible hydrator getter.'
             print >> wfile, '     */'
@@ -1608,7 +1628,7 @@ class RecordGeneratorCompiler(SourceCompiler):
                 for node in nodeFilter.getAll(setter):
                     print >> wfile, '    %s %s;' % (node.getAttribute("type_alias"), node.getAttribute("var_name"))
                 print >> wfile, ''
-        else: # @todo: remove this case
+        else: # TODO: remove this case
             print >> wfile, '    // hydrator members'
             for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
                 print >> wfile, '    %s _%s;' % (hydrator.getAttribute("type_alias"), StringTransformer.us2cc(hydrator.getAttribute("key")))
