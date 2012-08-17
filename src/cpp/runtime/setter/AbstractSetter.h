@@ -69,7 +69,7 @@ public:
     	}
 	}
 
-    void filterRange(const EqualityPredicateType& predicate, Interval<I64u>& currentRange)
+    inline void filterRange(const EqualityPredicateType& predicate, Interval<I64u>& currentRange)
     {
         if (predicate.bound(fid))
         {
