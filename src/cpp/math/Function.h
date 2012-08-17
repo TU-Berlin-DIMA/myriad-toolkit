@@ -169,7 +169,7 @@ public:
 	{
 	}
 
-	virtual Decimal operator()(const Domain1 x1, const Domain1 x2) const = 0;
+	virtual Decimal operator()(const Domain1 x1, const Domain2 x2) const = 0;
 
 	virtual Decimal pdf(Domain1 x1, Domain2 x2) const = 0;
 

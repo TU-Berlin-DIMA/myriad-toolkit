@@ -256,7 +256,7 @@ template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::i
 		    }
 
 		    _numberOfx2Buckets = numberOfx2Buckets;
-		    _x2Buckets = new Interval<T1>[numberOfx2Buckets];
+		    _x2Buckets = new Interval<T2>[numberOfx2Buckets];
 		    _x1Pr = new CombinedPrFunction<T1>[numberOfx2Buckets];
 
 			currentX2BucketIndex = 0;
