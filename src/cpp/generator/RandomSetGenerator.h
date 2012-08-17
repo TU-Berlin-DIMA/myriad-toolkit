@@ -435,10 +435,16 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 	AutoPtr<RecordType> recordPtr = _recordFactory();
 	recordPtr->genID(genID);
 
+	I16u x = 0;
 	while(true) // protect against InvalidRecordExceptions
 	{
 		try
 		{
+		    if (x > 1)
+		    {
+		        throw RuntimeException(format("Subsequent child sequences of effective length zero detected at position %Lu", recordPtr->genID()));
+		    }
+
 			_hydrate(recordPtr);
 			return recordPtr;
 		}
@@ -446,6 +452,7 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 		{
 			// use modValidGenID
 			recordPtr->genID(e.prevValidGenIDMin() + genID % e.prevValidGenIDSize());
+			x++;
 		}
 	}
 }
