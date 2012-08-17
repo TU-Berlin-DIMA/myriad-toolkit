@@ -43,6 +43,8 @@ class AbstractReader(object):
 
 class ArgumentReader(AbstractReader):
     
+    _type_pattern = re.compile('^((collection)<([a-zA-Z_]+)>)|([a-zA-Z_]+)$')
+    
     _descriptor = {}
     _log = logging.getLogger("argument.reader")
 
@@ -60,24 +62,52 @@ class ArgumentReader(AbstractReader):
         # set default values in the descriptor
         argDescriptor['optional'] = argDescriptor.get('optional', False)
         
-        # argument reader factory logic
         argType = argDescriptor['type']
-        if (argType == "literal"):
-            return LiteralArgumentReader(descriptor=argDescriptor)
-        elif (argType == "field_ref"):
-            return FieldRefArgumentReader(descriptor=argDescriptor)
-        elif (argType == "reference_ref"):
-            return ReferenceRefArgumentReader(descriptor=argDescriptor)
-        elif (argType == "function_ref"):
-            return FunctionRefArgumentReader(descriptor=argDescriptor)
-        elif (argType == "value_provider"):
-            return ValueProviderArgumentReader(descriptor=argDescriptor)
-        elif (argType == "range_provider"):
-            return RangeProviderArgumentReader(descriptor=argDescriptor)
-        elif (argType == "reference_provider"):
-            return ReferenceProviderArgumentReader(descriptor=argDescriptor)
+        
+        # argument reader factory logic
+        m = ArgumentReader._type_pattern.match(argDescriptor['type'])
+        if (m):
+            if m.group(1) is not None:
+                argType = m.group(3)
+                encType = m.group(2)
+            else:
+                argType = m.group(4)
+                encType = None
         else:
             message = "Unknown argument reader type `%s`" % (argType)
+            ArgumentReader._log.error(message)
+            raise RuntimeError(message)
+        
+        argReader = None
+        if (argType == "literal"):
+            argReader = LiteralArgumentReader(descriptor=argDescriptor)
+        elif (argType == "field_ref"):
+            argReader = FieldRefArgumentReader(descriptor=argDescriptor)
+        elif (argType == "reference_ref"):
+            argReader = ReferenceRefArgumentReader(descriptor=argDescriptor)
+        elif (argType == "function_ref"):
+            argReader = FunctionRefArgumentReader(descriptor=argDescriptor)
+        elif (argType == "value_provider"):
+            argReader =ValueProviderArgumentReader(descriptor=argDescriptor)
+        elif (argType == "range_provider"):
+            argReader =RangeProviderArgumentReader(descriptor=argDescriptor)
+        elif (argType == "reference_provider"):
+            argReader =ReferenceProviderArgumentReader(descriptor=argDescriptor)
+        elif (argType == "equality_predicate_provider"):
+            argReader = EqualityPredicateProviderReader(descriptor=argDescriptor)
+        elif (argType == "binder"):
+            argReader = BinderReader(descriptor=argDescriptor)
+        else:
+            message = "Unknown argument reader type `%s`" % (argType)
+            ArgumentReader._log.error(message)
+            raise RuntimeError(message)
+        
+        if (encType is None):
+            return argReader
+        elif (encType == "collection"):
+            return CollectionReader(descriptor=argDescriptor,childReader=argReader)
+        else:
+            message = "Unknown eclosing reader type `%s`" % (encType)
             ArgumentReader._log.error(message)
             raise RuntimeError(message)
         
@@ -99,10 +129,10 @@ class SingleArgumentReader(ArgumentReader):
     def read(self, argContainerXMLNode, argsContainerNode):
         # create XML context and grap argument XML node
         childContext = AbstractReader._createXPathContext(argContainerXMLNode)
-        argXMLNode = childContext.xpathEval("./m:argument[@key='%s']" % self._descriptor['key'])
+        argXMLNodes = childContext.xpathEval("./m:argument[@key='%s']" % self._descriptor['key'])
         
         # check if argument exists
-        if len(argXMLNode) < 1:
+        if len(argXMLNodes) < 1:
             # argument does not exist, check if argument is optional
             if not self._descriptor['optional']:
                 # argument is not optional 
@@ -112,16 +142,44 @@ class SingleArgumentReader(ArgumentReader):
             else:
                 # argument is optional
                 return
-        elif len(argXMLNode) > 1:
+        elif len(argXMLNodes) > 1:
             # argument is not unique
             message = "Argument `%s` is not unique in container `%s` of type `%s`" % (self._descriptor['key'], argsContainerNode.getAttribute("key"), argsContainerNode.getAttribute("type"))
             ArgumentReader._log.error(message)
             raise RuntimeError(message)
         
-        # argument exists, grap the 
-        argXMLNode = argXMLNode.pop()
-        # parse and attach the argument AST node to the parent container        
-        argsContainerNode.setArgument(self.parse(argXMLNode, argsContainerNode))
+        # argument exists, pare it and attach it to the parent container
+        argsContainerNode.setArgument(self.parse(argXMLNodes.pop(), argsContainerNode))
+
+
+class CollectionReader(ArgumentReader):
+    
+    _childReader = None
+    
+    def __init__(self, *args, **kwargs):
+        super(CollectionReader, self).__init__(*args, **kwargs)
+        self._childReader = kwargs['childReader']
+        self._descriptor = self._childReader._descriptor
+    
+    def read(self, argContainerXMLNode, argsContainerNode):
+        # create XML context and grap argument XML node
+        childContext = AbstractReader._createXPathContext(argContainerXMLNode)
+        argXMLNodes = childContext.xpathEval("./m:argument[@key='%s']" % self._descriptor['key'])
+        
+        # check if argument exists
+        if len(argXMLNodes) < 1:
+            # argument does not exist, check if argument is optional
+            if not self._descriptor['optional']:
+                # argument is not optional 
+                message = "Cannot find required argument `%s` in container `%s` of type `%s`" % (self._descriptor['key'], argsContainerNode.getAttribute("key"), argsContainerNode.getAttribute("type"))
+                ArgumentReader._log.error(message)
+                raise RuntimeError(message)
+            else:
+                # argument is optional
+                return
+        
+        # arguments exist, parse them and attach them to the parent container
+        argsContainerNode.setArgument(ArgumentCollectionNode(key=self._descriptor['key'],collection=[ self._childReader.parse(argXMLNode, argsContainerNode) for argXMLNode in argXMLNodes ]))
 
 
 class ListArgumentReader(ArgumentReader):
@@ -217,7 +275,9 @@ class ValueProviderArgumentReader(SingleArgumentReader):
         argKey = argXMLNode.prop("key")
         
         valueProviderNode = None
-        if argType == 'clustered_value_provider':
+        if argType == 'callback_value_provider':
+            valueProviderNode = CallbackValueProviderNode(key=argKey)
+        elif argType == 'clustered_value_provider':
             valueProviderNode = ClusteredValueProviderNode(key=argKey)
         elif argType == 'const_value_provider':
             valueProviderNode = ConstValueProviderNode(key=argKey)
@@ -226,7 +286,7 @@ class ValueProviderArgumentReader(SingleArgumentReader):
         elif argType == 'random_value_provider':
             valueProviderNode = RandomValueProviderNode(key=argKey)
         else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(clustered|const|context_field|random)_value_provider`)" % (argType, argKey))
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(callback|clustered|const|context_field|random)_value_provider`)" % (argType, argKey))
         
         # recursively read value provider arguments
         ArgumentReader.readArguments(argXMLNode, valueProviderNode)
@@ -269,13 +329,57 @@ class ReferenceProviderArgumentReader(SingleArgumentReader):
         referenceProviderNode = None
         if argType == 'clustered_reference_provider':
             referenceProviderNode = ClusteredReferenceProviderNode(key=argKey)
+        elif argType == 'random_reference_provider':
+            referenceProviderNode = RandomReferenceProviderNode(key=argKey)
         else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(clustered)_reference_provider`)" % (argType, argKey))
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(clustered|random)_reference_provider`)" % (argType, argKey))
         
         # recursively read range provider arguments
         ArgumentReader.readArguments(argXMLNode, referenceProviderNode)
         
         return referenceProviderNode
+
+
+class EqualityPredicateProviderReader(SingleArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(EqualityPredicateProviderReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        
+        predicateProviderNode = None
+        if argType == 'equality_predicate_provider':
+            predicateProviderNode = EqualityPredicateProviderNode(key=argKey)
+        else:
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `equality_predicate_provider`)" % (argType, argKey))
+        
+        # recursively read value provider arguments
+        ArgumentReader.readArguments(argXMLNode, predicateProviderNode)
+        
+        return predicateProviderNode
+
+
+class BinderReader(SingleArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(BinderReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        
+        binderNode = None
+        if argType == 'predicate_value_binder':
+            binderNode = EqualityPredicateFieldBinderNode(key=argKey)
+        else:
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `predicate_value_binder`)" % (argType, argKey))
+        
+        # recursively read value provider arguments
+        ArgumentReader.readArguments(argXMLNode, binderNode)
+        
+        return binderNode
 
 
 class XMLReader(object):
@@ -676,8 +780,8 @@ class XMLReader(object):
         for node in nodeFilter.getAll(setterChainNode):
             node.setAttribute("type_alias", "ValueProvider%02dType" % (i))
             i = i+1
-        i = 1
         # RangeProvider nodes
+        i = 1
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractRangeProviderNode)
         for node in nodeFilter.getAll(setterChainNode):
             node.setAttribute("type_alias", "RangeProvider%02dType" % (i))
@@ -688,7 +792,19 @@ class XMLReader(object):
         for node in nodeFilter.getAll(setterChainNode):
             node.setAttribute("type_alias", "ReferenceProvider%02dType" % (i))
             i = i+1
-            
+        # PredicateProvider nodes
+        i = 1
+        nodeFilter = DepthFirstNodeFilter(filterType=EqualityPredicateProviderNode)
+        for node in nodeFilter.getAll(setterChainNode):
+            node.setAttribute("type_alias", "PredicateProvider%02dType" % (i))
+            i = i+1
+        # PredicateBinder nodes
+        i = 1
+        nodeFilter = DepthFirstNodeFilter(filterType=EqualityPredicateFieldBinderNode)
+        for node in nodeFilter.getAll(setterChainNode):
+            node.setAttribute("type_alias", "PredicateBinder%02dType" % (i))
+            i = i+1
+        
         # set component variable names for all runtime components in this chain
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
         for node in nodeFilter.getAll(setterChainNode):

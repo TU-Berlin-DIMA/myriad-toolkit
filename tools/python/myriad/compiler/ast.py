@@ -1228,6 +1228,33 @@ class ArgumentNode(AbstractNode):
         return self.__parent
 
 
+class ArgumentCollectionNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    __parent = None
+    __collection = []
+    
+    def __init__(self, *args, **kwargs):
+        super(ArgumentCollectionNode, self).__init__(*args, **kwargs)
+        self.__collection = kwargs['collection']
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__collection:
+            node.accept(visitor)
+        visitor.postVisit(self)
+
+    def setParent(self, parent):
+        self.__parent = parent
+        for arg in self.__collection:
+            arg.setParent(parent)
+
+    def getAll(self):
+        return self.__collection
+    
+
 class LiteralArgumentNode(ArgumentNode):
     '''
     classdocs
@@ -1570,6 +1597,42 @@ class AbstractValueProviderNode(AbstractRuntimeComponentNode):
             return self.getParent().getCxtRecordType()
 
 
+class CallbackValueProviderNode(AbstractValueProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="CallbackValueProvider")
+        super(CallbackValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/value/CallbackValueProvider.h"
+    
+    def getValueType(self):
+        return self.getArgument("type").getAttribute('value')
+    
+    def getConcreteType(self):
+        # template<typename ValueType, class CxtRecordType, class CallbackType>
+        valueType = self.getValueType()
+        cxtRecordType = self.getCxtRecordType()
+        callbackType = "Base%sHydratorChain" % (cxtRecordType)
+        
+        return "CallbackValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, callbackType)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'type', 'type': 'literal' }, 
+                 { 'key': 'name', 'type': 'literal' }, 
+                 { 'key': 'arity', 'type': 'literal' }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'Verbatim(*this)',
+                 'Verbatim(&Base%sHydratorChain::%s)' % (self.getCxtRecordType(), self.getArgument("name").getAttribute("value")),
+                 'Literal(arity)'
+               ]
+
+
 class ClusteredValueProviderNode(AbstractValueProviderNode):
     '''
     classdocs
@@ -1789,6 +1852,80 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
 
 
 #
+# Runtime Components: Predicate Providers 
+# 
+
+class EqualityPredicateProviderNode(AbstractRuntimeComponentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(EqualityPredicateProviderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/predicate/EqualityPredicateProvider.h"
+    
+    def getRefRecordType(self):
+        return self.getParent().getRefRecordType()
+    
+    def getCxtRecordType(self):
+        return self.getParent().getCxtRecordType()
+    
+    def getConcreteType(self):
+        # template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
+        refRecordType = self.getRefRecordType()
+        cxtRecordType = self.getCxtRecordType()
+        
+        return "EqualityPredicateProvider< %s, %s >" % (refRecordType, cxtRecordType)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'binder', 'type': 'collection<binder>' }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'Verbatim(config.generatorPool().get<%sGenerator>().recordFactory())' % (self.getRefRecordType()),
+                 'RuntimeComponentRef(binder)'
+               ]
+
+
+class EqualityPredicateFieldBinderNode(AbstractRuntimeComponentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(EqualityPredicateFieldBinderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/predicate/EqualityPredicateFieldBinder.h"
+    
+    def getRefRecordType(self):
+        return self.getParent().getRefRecordType()
+    
+    def getCxtRecordType(self):
+        return self.getParent().getCxtRecordType()
+    
+    def getConcreteType(self):
+        # template<class RecordType, I16u fid, class CxtRecordType, class ValueProviderType>
+        refRecordType = self.getRefRecordType()
+        fid = self.getArgument("field").getFieldID()
+        cxtRecordType = self.getCxtRecordType()
+        valueProviderType = self.getArgument("value").getAttribute("type_alias")
+        
+        return "EqualityPredicateFieldBinder< %s, %s, %s, %s >" % (refRecordType, fid, cxtRecordType, valueProviderType)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'field', 'type': 'field_ref' },
+                 { 'key': 'value', 'type': 'value_provider' } 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'RuntimeComponentRef(value)'
+               ]
+
+
+#
 # Runtime Components: Reference Providers 
 # 
 
@@ -1801,7 +1938,7 @@ class AbstractReferenceProviderNode(AbstractRuntimeComponentNode):
         super(AbstractReferenceProviderNode, self).__init__(*args, **kwargs)
     
     def getRefRecordType(self):
-        raise RuntimeError("Calling abstract AbstractReferenceProviderNode::getRefRecordType() method")
+        return self.getParent().getArgument("reference").getAttribute("type")
     
     def getCxtRecordType(self):
         return self.getParent().getCxtRecordType()
@@ -1818,9 +1955,6 @@ class ClusteredReferenceProviderNode(AbstractReferenceProviderNode):
     
     def getIncludePath(self):
         return "runtime/provider/reference/ClusteredReferenceProvider.h"
-    
-    def getRefRecordType(self):
-        return StringTransformer.us2ccAll(self.getParent().getArgument("reference").getAttribute("type"))
     
     def getConcreteType(self):
         # template<typename RefRecordType, class CxtRecordType, class ChildrenCountValueProviderType, I16u posFieldID = 0>
@@ -1843,6 +1977,35 @@ class ClusteredReferenceProviderNode(AbstractReferenceProviderNode):
     def getConstructorArguments(self):
         return [ 'RuntimeComponentRef(children_count_max)', 
                  'RuntimeComponentRef(children_count)', 
+                 'SequenceInspector(%s)' % (self.getRefRecordType()), 
+               ]
+
+
+class RandomReferenceProviderNode(AbstractReferenceProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="RandomReferenceProvider")
+        super(RandomReferenceProviderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/reference/RandomReferenceProvider.h"
+    
+    def getConcreteType(self):
+        # template<typename RefRecordType, class CxtRecordType>
+        refRecordType = self.getRefRecordType()
+        cxtRecordType = self.getCxtRecordType()
+        
+        return "RandomReferenceProvider< %s, %s >" % (refRecordType, cxtRecordType)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'predicate', 'type': 'equality_predicate_provider' }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'RuntimeComponentRef(predicate)', 
                  'SequenceInspector(%s)' % (self.getRefRecordType()), 
                ]
 

@@ -23,23 +23,25 @@ import os
 import re
 
 from myriad.compiler.ast import AbstractRuntimeComponentNode
-from myriad.compiler.ast import RandomSequenceNode
+from myriad.compiler.ast import ArgumentCollectionNode
+from myriad.compiler.ast import CallbackValueProviderNode
+from myriad.compiler.ast import CardinalityEstimatorNode
+from myriad.compiler.ast import DepthFirstNodeFilter
+from myriad.compiler.ast import EnumSetNode
+from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import LiteralArgumentNode
+from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
 from myriad.compiler.ast import ResolvedDirectFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedRecordReferenceRefArgumentNode
 from myriad.compiler.ast import ResolvedReferencedFieldRefArgumentNode
 from myriad.compiler.ast import RecordEnumFieldNode
-from myriad.compiler.ast import DepthFirstNodeFilter
-from myriad.compiler.ast import EnumSetNode
-from myriad.compiler.ast import FunctionNode
-from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.util.stringutil import StringTransformer
 
 class ArgumentTransformer(object):
     
     _log = logging.getLogger("source.transformer.factory")
-    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\(([a-zA-Z_\*]*)\)(\*)?$')
+    _descriptor_pattern = re.compile('^([a-zA-Z_]+)\((.+)\)(\*)?$')
     
     def createTransformer(transformerDescriptor):
         m = ArgumentTransformer._descriptor_pattern.match(transformerDescriptor)
@@ -69,6 +71,9 @@ class ArgumentTransformer(object):
             elif (transformerType == "EnvVariable"):
                 argTransformer = EnvVariableTransfomer(varName=argKey)
                 argKey = None
+            elif (transformerType == "Verbatim"):
+                argTransformer = VerbatimTransfomer(verbatimCode=argKey)
+                argKey = None
             else:
                 message = "Unknown argument transformer type `%s`" % (transformerType)
                 ArgumentTransformer._log.error(message)
@@ -91,7 +96,7 @@ class ArgumentTransformer(object):
             else:
                 argument = argsContainerNode.getArgument(argKey)
             
-            argsCode.append(argTransformer.transform(argument, env.get("config", "config"), argOptional))
+            argsCode.extend(argTransformer.transform(argument, env.get("config", "config"), argOptional))
         
         return filter(None, argsCode)
         
@@ -119,7 +124,7 @@ class LiteralTransfomer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
+            return [ None ]
         
         if configVarName is not None:
             configPrefix = configVarName + "."
@@ -132,17 +137,17 @@ class LiteralTransfomer(object):
             
             m = self._expr_pattern.match(attributeValue)
             if (m):
-                return '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(2))
+                return [ '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(2)) ]
             
             m = self._param_pattern.match(attributeValue)
             if (m):
                 exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType if m.group(1) == None else m.group(1)[1:-1], m.group(2)), attributeValue)
-                return "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1])
+                return [ "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1]) ]
             else:
                 if attributeType == "String":
-                    return '"%s"' % (attributeValue)
+                    return [ '"%s"' % (attributeValue) ]
                 else:
-                    return '%s' % (attributeValue)
+                    return [ '%s' % (attributeValue) ]
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
@@ -154,16 +159,16 @@ class FieldSetterTransfomer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
+            return [ None ]
         
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
             fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
-            return '&%s::%s' % (typeName, fieldAccessMethodName)
+            return [ '&%s::%s' % (typeName, fieldAccessMethodName) ]
         if isinstance(argumentNode, ResolvedRecordReferenceRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
             fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getRecordReferenceRef().getAttribute("name"))
-            return '&%s::%s' % (typeName, fieldAccessMethodName)
+            return [ '&%s::%s' % (typeName, fieldAccessMethodName) ]
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
@@ -175,7 +180,7 @@ class FieldGetterTransfomer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
+            return [ None ]
         
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             recordTypeNameUS = argumentNode.getRecordTypeRef().getAttribute("key")
@@ -185,7 +190,7 @@ class FieldGetterTransfomer(object):
             fieldType = fieldNode.getAttribute("type")
             fieldName = fieldNode.getAttribute("name")
                 
-            return "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)}
+            return [ "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)} ]
 
         elif isinstance(argumentNode, ResolvedReferencedFieldRefArgumentNode):
             recordTypeNameUS = argumentNode.getRecordTypeRef().getAttribute("key")
@@ -199,7 +204,7 @@ class FieldGetterTransfomer(object):
             fieldType = fieldNode.getAttribute("type")
             fieldName = fieldNode.getAttribute("name")
 
-            return "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)}
+            return [ "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)} ]
         
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
@@ -212,14 +217,14 @@ class FieldSetterRefTransfomer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
+            return [ None ]
         
         if not isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("name"), type(argumentNode)))
         elif not argumentNode.getFieldRef().hasSetter():
             raise RuntimeError("Field `%s` does not have an associated setter" % (argumentNode.getFieldRef().getAttribute("name")))
         else:
-            return argumentNode.getFieldRef().getSetter().getAttribute("var_name")
+            return [ argumentNode.getFieldRef().getSetter().getAttribute("var_name") ]
 
 
 class RandomSetInspectorTransfomer(object):
@@ -229,7 +234,7 @@ class RandomSetInspectorTransfomer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
+            return [ None ]
         
         if configVarName is not None:
             configPrefix = configVarName + "."
@@ -238,10 +243,10 @@ class RandomSetInspectorTransfomer(object):
             
         if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
-            return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName)
+            return [ '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName) ]
         if isinstance(argumentNode, ResolvedRecordReferenceRefArgumentNode):
             typeName = StringTransformer.us2ccAll(argumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-            return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName)
+            return [ '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName) ]
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
@@ -256,14 +261,14 @@ class SequenceInspectorTransfomer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
+            return [ None ]
         
         if configVarName is not None:
             configPrefix = configVarName + "."
         else:
             configPrefix = ""
             
-        return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, self.__recordTypeName)
+        return [ '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, self.__recordTypeName) ]
 
 
 class FunctionRefTransfomer(object):
@@ -273,7 +278,7 @@ class FunctionRefTransfomer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
+            return [ None ]
         
         if configVarName is not None:
             configPrefix = configVarName + "."
@@ -283,7 +288,7 @@ class FunctionRefTransfomer(object):
         if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
             functionType = argumentNode.getAttribute("concrete_type")
             functionName = argumentNode.getAttribute("ref")
-            return '%sfunc< %s >("%s")' % (configPrefix, functionType, functionName)
+            return [ '%sfunc< %s >("%s")' % (configPrefix, functionType, functionName) ]
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
@@ -295,24 +300,41 @@ class RuntimeComponentRefTransformer(object):
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:
-            return None
-            
+            return [ None ]
+        
         if isinstance(argumentNode, AbstractRuntimeComponentNode):
-            return '%s' % (argumentNode.getAttribute("var_name"))
+            return [ '%s' % (argumentNode.getAttribute("var_name")) ]
+        elif isinstance(argumentNode, ArgumentCollectionNode):
+            result = []
+            for childArgument in argumentNode.getAll():
+                result.extend(self.transform(childArgument, configVarName, optional)) 
+            return result
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
 
 class EnvVariableTransfomer(object):
     
-    __recordTypeName = None
+    __varName = None
 
     def __init__(self, *args, **kwargs):
         super(EnvVariableTransfomer, self).__init__()
-        self.__recordTypeName = kwargs.get("varName")
+        self.__varName = kwargs.get("varName")
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
-        return self.__recordTypeName
+        return [ self.__varName ]
+
+
+class VerbatimTransfomer(object):
+    
+    __verbatimCode = None
+
+    def __init__(self, *args, **kwargs):
+        super(VerbatimTransfomer, self).__init__()
+        self.__verbatimCode = kwargs.get("verbatimCode")
+    
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        return [ self.__verbatimCode ]
 
 
 class SourceCompiler(object):
@@ -660,7 +682,7 @@ class ConfigCompiler(SourceCompiler):
             
             if cardinalityEstimatorType == 'linear_scale_estimator':
                 print >> wfile, '        // setup linear scale estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
-                print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("base_cardinality"), None))
+                print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("base_cardinality"), None).pop())
                 print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
         
         print >> wfile, '    }'
@@ -683,7 +705,7 @@ class ConfigCompiler(SourceCompiler):
         literalTransformer = LiteralTransfomer()
         nodeFilter = DepthFirstNodeFilter(filterType=EnumSetNode)
         for enumSet in nodeFilter.getAll(astRoot):
-            print >> wfile, '        bindEnumSet("%(n)s", %(p)s);' % {'n': enumSet.getAttribute("key"), 'p': literalTransformer.transform(enumSet.getArgument("path"), None)}
+            print >> wfile, '        bindEnumSet("%(n)s", %(p)s);' % {'n': enumSet.getAttribute("key"), 'p': literalTransformer.transform(enumSet.getArgument("path"), None).pop()}
 
         print >> wfile, '    }'
         print >> wfile, '};'
@@ -1614,7 +1636,13 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '        return HydratorChain<%s>::invertableHydrator<T>(setter);' % (typeNameCC)
             print >> wfile, '    }'
             print >> wfile, ''
-            
+
+        if recordSequence.getSetterChain().settersCount() > 0:
+            nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
+            for node in nodeFilter.getAll(recordSequence.getSetterChain()):
+                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random) = 0;' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
+                print >> wfile, ''
+                                
         print >> wfile, 'protected:'
         print >> wfile, ''
         
@@ -1664,7 +1692,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             
             fieldSetterTransformer = FieldSetterTransfomer()
             for hydrator in invertibleHydrators[fieldType]:
-                print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': fieldSetterTransformer.transform(hydrator.getArgument("field"))}
+                print >> wfile, '    if (setter == static_cast<MethodTraits<%(rt)s, %(ft)s>::Setter>(%(fs)s))' % { 'rt': typeNameCC, 'ft': fieldType, 'fs': fieldSetterTransformer.transform(hydrator.getArgument("field")).pop()}
                 print >> wfile, '    {'
                 print >> wfile, '        return _%s;' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
                 print >> wfile, '    }'
@@ -1745,6 +1773,21 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    virtual ~%sHydratorChain()' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
+        
+        if recordSequence.getSetterChain().settersCount() > 0:
+            print >> wfile, ''
+            nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
+            for node in nodeFilter.getAll(recordSequence.getSetterChain()):
+                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random)' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
+                print >> wfile, '    {'
+                if (node.getArgument('type').getAttribute('value').lower() == 'string'):
+                    print >> wfile, '        return "";'
+                else:
+                    print >> wfile, '        return nullValue<%s>();' % (node.getArgument('type').getAttribute('value'))
+                print >> wfile, '    }'
+                print >> wfile, ''
+        
+        
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
