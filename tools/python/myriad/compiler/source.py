@@ -57,6 +57,9 @@ class ArgumentTransformer(object):
                 argTransformer = FieldGetterTransfomer()
             elif (transformerType == "RandomSetInspector"):
                 argTransformer = RandomSetInspectorTransfomer()
+            elif (transformerType == "SequenceInspector"):
+                argTransformer = SequenceInspectorTransfomer(recordTypeName=argKey)
+                argKey = None
             elif (transformerType == "FunctionRef"):
                 argTransformer = FunctionRefTransfomer()
             elif (transformerType == "RuntimeComponentRef"):
@@ -200,6 +203,7 @@ class FieldGetterTransfomer(object):
 
 
 class RandomSetInspectorTransfomer(object):
+    
     def __init__(self, *args, **kwargs):
         super(RandomSetInspectorTransfomer, self).__init__()
     
@@ -220,6 +224,26 @@ class RandomSetInspectorTransfomer(object):
             return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName)
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
+
+
+class SequenceInspectorTransfomer(object):
+    
+    __recordTypeName = None
+
+    def __init__(self, *args, **kwargs):
+        super(SequenceInspectorTransfomer, self).__init__()
+        self.__recordTypeName = kwargs.get("recordTypeName")
+    
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+        
+        if configVarName is not None:
+            configPrefix = configVarName + "."
+        else:
+            configPrefix = ""
+            
+        return '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, self.__recordTypeName)
 
 
 class FunctionRefTransfomer(object):
@@ -258,16 +282,17 @@ class RuntimeComponentRefTransformer(object):
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
+
 class EnvVariableTransfomer(object):
     
-    __varName = None
+    __recordTypeName = None
 
     def __init__(self, *args, **kwargs):
         super(EnvVariableTransfomer, self).__init__()
-        self.__varName = kwargs.get("varName")
+        self.__recordTypeName = kwargs.get("varName")
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
-        return self.__varName
+        return self.__recordTypeName
 
 
 class SourceCompiler(object):
@@ -1553,7 +1578,7 @@ class RecordGeneratorCompiler(SourceCompiler):
             print >> wfile, '        Interval<I64u> result(0, _sequenceCardinality);'
             print >> wfile, ''
             print >> wfile, '        // apply inverse setter chain'
-            for setter in recordSequence.getSetterChain().getAll():
+            for setter in recordSequence.getSetterChain().getFieldSetters():
                 print >> wfile, '        %s.filterRange(predicate, result);' % (setter.getAttribute("var_name"))
             print >> wfile, ''
             print >> wfile, '        return result;'

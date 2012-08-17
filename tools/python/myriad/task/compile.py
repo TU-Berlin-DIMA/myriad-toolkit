@@ -18,7 +18,6 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
-from myriad.compiler.ast import AbstractRuntimeComponentNode
 from myriad.compiler.debug import PrintVisitor #@UnusedImport
 from myriad.compiler.reader import XMLReader
 from myriad.compiler.source import * #@UnusedWildImport

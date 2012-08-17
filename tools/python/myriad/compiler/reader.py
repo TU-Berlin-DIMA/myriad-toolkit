@@ -66,12 +66,16 @@ class ArgumentReader(AbstractReader):
             return LiteralArgumentReader(descriptor=argDescriptor)
         elif (argType == "field_ref"):
             return FieldRefArgumentReader(descriptor=argDescriptor)
+        elif (argType == "reference_ref"):
+            return ReferenceRefArgumentReader(descriptor=argDescriptor)
         elif (argType == "function_ref"):
             return FunctionRefArgumentReader(descriptor=argDescriptor)
         elif (argType == "value_provider"):
             return ValueProviderArgumentReader(descriptor=argDescriptor)
         elif (argType == "range_provider"):
             return RangeProviderArgumentReader(descriptor=argDescriptor)
+        elif (argType == "reference_provider"):
+            return ReferenceProviderArgumentReader(descriptor=argDescriptor)
         else:
             message = "Unknown argument reader type `%s`" % (argType)
             ArgumentReader._log.error(message)
@@ -163,6 +167,27 @@ class FieldRefArgumentReader(SingleArgumentReader):
         return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
 
 
+class ReferenceRefArgumentReader(SingleArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(ReferenceRefArgumentReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        argRef = argXMLNode.prop("ref")
+        
+        if argType != 'reference_ref':
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `reference_ref`)" % (argType, argKey))
+        
+        if not argRef:
+            raise RuntimeError("Missing required attribute `ref` for `reference_ref` argument `%s`" % (argKey))
+        
+        # @todo: check format {record_key}.{field_key}
+        
+        return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
+
+
 class FunctionRefArgumentReader(SingleArgumentReader):
     
     def __init__(self, *args, **kwargs):
@@ -230,6 +255,27 @@ class RangeProviderArgumentReader(SingleArgumentReader):
         ArgumentReader.readArguments(argXMLNode, rangeProviderNode)
         
         return rangeProviderNode
+
+
+class ReferenceProviderArgumentReader(SingleArgumentReader):
+    
+    def __init__(self, *args, **kwargs):
+        super(ReferenceProviderArgumentReader, self).__init__(*args, **kwargs)
+    
+    def parse(self, argXMLNode, argsContainerNode):
+        argType = argXMLNode.prop("type")
+        argKey = argXMLNode.prop("key")
+        
+        referenceProviderNode = None
+        if argType == 'clustered_reference_provider':
+            referenceProviderNode = ClusteredReferenceProviderNode(key=argKey)
+        else:
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(clustered)_reference_provider`)" % (argType, argKey))
+        
+        # recursively read range provider arguments
+        ArgumentReader.readArguments(argXMLNode, referenceProviderNode)
+        
+        return referenceProviderNode
 
 
 class XMLReader(object):
@@ -625,6 +671,11 @@ class XMLReader(object):
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractRangeProviderNode)
         for node in nodeFilter.getAll(setterChainNode):
             node.setAttribute("type_alias", "RangeProvider%02dType" % (i))
+            i = i+1
+        # ReferenceProvider nodes
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractReferenceProviderNode)
+        for node in nodeFilter.getAll(setterChainNode):
+            node.setAttribute("type_alias", "ReferenceProvider%02dType" % (i))
             i = i+1
             
         # set component variable names for all runtime components in this chain

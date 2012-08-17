@@ -1062,6 +1062,9 @@ class SetterChainNode(AbstractNode):
     def getAll(self):
         return sorted(self.__setters.itervalues(), key=lambda s: s.orderkey)
     
+    def getFieldSetters(self):
+        return sorted(filter(lambda s: isinstance(s, FieldSetterNode), self.__setters.itervalues()), key=lambda s: s.orderkey)
+    
     def settersCount(self):
         return len(self.__setters)
     
@@ -1308,7 +1311,6 @@ class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
     
     def __init__(self, *args, **kwargs):
         super(ResolvedRecordReferenceRefArgumentNode, self).__init__(*args, **kwargs)
-        self.__fieldRef = None
         self.__recordReferenceRef = None
         self.__recordTypeRef = None
 
@@ -1323,6 +1325,12 @@ class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
 
     def getRecordReferenceRef(self):
         return self.__recordReferenceRef
+    
+    def getFieldID(self):
+        referenceKey = self.getAttribute('ref')
+        if referenceKey.find(":") > -1:
+            referenceKey = referenceKey[referenceKey.find(":")+1:]
+        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getRecordTypeRef().getAttribute("key")), referenceKey.upper())
 
 
 class ResolvedReferencedFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
@@ -1479,11 +1487,11 @@ class FieldSetterNode(AbstractSetterNode):
         return "runtime/setter/FieldSetter.h"
         
     def isInvertible(self):
-        return False # @todo: implement
+        return False # FIXME: implement
     
     def getConcreteType(self):
         # template<class RecordType, I16u fid, class ValueProviderType>
-        recordType = self.getParent().getCxtRecordType() 
+        recordType = self.getCxtRecordType() 
         fieldID = self.getArgument("field").getFieldID()
         valueProviderType = self.getArgument("value").getAttribute("type_alias")
         
@@ -1511,18 +1519,18 @@ class ReferenceSetterNode(AbstractSetterNode):
         return "runtime/setter/ReferenceSetter.h"
         
     def isInvertible(self):
-        return False # @todo: implement
+        return False # FIXME: implement
     
     def getConcreteType(self):
         # template<class RecordType, I16u fid, class ValueProviderType>
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldID = self.getArgument("field").getFieldRef().getAttribute("type")
-        referenceProviderType = "UNKNOWN" # @todo: grab this value
+        recordType = self.getCxtRecordType()
+        fieldID = self.getArgument("reference").getFieldID()
+        referenceProviderType = self.getArgument("value").getAttribute("type_alias")
         
-        return "ReferenceSetterNode< %s, %s, %s >" % (recordType, fieldID, referenceProviderType)
+        return "ReferenceSetter< %s, %s, %s >" % (recordType, fieldID, referenceProviderType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
+        return [ { 'key': 'reference', 'type': 'reference_ref' }, 
                  { 'key': 'value', 'type': 'reference_provider' }, 
                ]
         
@@ -1546,7 +1554,10 @@ class AbstractValueProviderNode(AbstractRuntimeComponentNode):
         raise RuntimeError("Calling abstract AbstractValueProviderNode::getValueType() method")
     
     def getCxtRecordType(self):
-        return self.getParent().getCxtRecordType()
+        if isinstance(self.getParent(), ClusteredReferenceProviderNode) and self.getAttribute("key") == "children_count":
+            return self.getParent().getRefRecordType()
+        else:
+            return self.getParent().getCxtRecordType()
 
 
 class ClusteredValueProviderNode(AbstractValueProviderNode):
@@ -1567,7 +1578,7 @@ class ClusteredValueProviderNode(AbstractValueProviderNode):
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class PrFunctionType, class RangeProviderType>
         valueType = self.getValueType()
-        cxtRecordType = self.getParent().getCxtRecordType()
+        cxtRecordType = self.getCxtRecordType()
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         rangeProviderType = self.getArgument("cardinality").getAttribute("type_alias")
         
@@ -1602,7 +1613,7 @@ class ConstValueProviderNode(AbstractValueProviderNode):
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType>
         valueType = self.getValueType()
-        cxtRecordType = self.getParent().getCxtRecordType()
+        cxtRecordType = self.getCxtRecordType()
         
         return "ConstValueProvider< %s, %s >" % (valueType, cxtRecordType)
         
@@ -1633,7 +1644,7 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, I16u fid>
         valueType = self.getValueType()
-        cxtRecordType = self.getParent().getCxtRecordType()
+        cxtRecordType = self.getCxtRecordType()
         fid = self.getArgument("field").getFieldID()
         
         return "ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, fid)
@@ -1664,14 +1675,15 @@ class RandomValueProviderNode(AbstractValueProviderNode):
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class PrFunctionType, I16u conditionFID>
         valueType = self.getValueType()
-        cxtRecordType = self.getParent().getCxtRecordType()
+        cxtRecordType = self.getCxtRecordType()
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        
         if self.hasArgument("condition_field"):
-            return "RandomValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, self.getArgument("condition_field").getFieldID())
+            condFieldID = self.getArgument("condition_field").getFieldID()
         else:
-            return "RandomValueProvider< %s, %s, %s, 0 >" % (valueType, cxtRecordType, probabilityType)
+            condFieldID = '0'
         
+        return "RandomValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, condFieldID)
+    
     def getXMLArguments(self):
         return [ { 'key': 'probability'    , 'type': 'function_ref' }, 
                  { 'key': 'condition_field', 'type': 'field_ref', 'optional': True }, 
@@ -1719,7 +1731,7 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType>
         rangeType = self.getRangeType()
-        cxtRecordType = self.getParent().getCxtRecordType()
+        cxtRecordType = self.getCxtRecordType()
         
         return "ConstRangeProvider< %s, %s >" % (rangeType, cxtRecordType)
         
@@ -1752,8 +1764,8 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
         rangeType = self.getRangeType()
-        cxtRecordType = 'CxtRecordType' # @todo: read value
-        fieldSetterType = 'UNKNOWN' # @todo: read value
+        cxtRecordType = 'CxtRecordType' # FIXME: read value
+        fieldSetterType = 'UNKNOWN' # FIXME: read value
         
         return "ContextFieldRangeProvider< %s, %s, %s >" % (rangeType, cxtRecordType, fieldSetterType)
         
@@ -1763,6 +1775,65 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
         
     def getConstructorArguments(self):
         return [ 'SetterRef(field)'
+               ]
+
+
+#
+# Runtime Components: Reference Providers 
+# 
+
+class AbstractReferenceProviderNode(AbstractRuntimeComponentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(AbstractReferenceProviderNode, self).__init__(*args, **kwargs)
+    
+    def getRefRecordType(self):
+        raise RuntimeError("Calling abstract AbstractReferenceProviderNode::getRefRecordType() method")
+    
+    def getCxtRecordType(self):
+        return self.getParent().getCxtRecordType()
+
+
+class ClusteredReferenceProviderNode(AbstractReferenceProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ClusteredReferenceProvider")
+        super(ClusteredReferenceProviderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/reference/ClusteredReferenceProvider.h"
+    
+    def getRefRecordType(self):
+        return StringTransformer.us2ccAll(self.getParent().getArgument("reference").getAttribute("type"))
+    
+    def getConcreteType(self):
+        # template<typename RefRecordType, class CxtRecordType, class ChildrenCountValueProviderType, I16u posFieldID = 0>
+        refRecordType = self.getRefRecordType()
+        cxtRecordType = self.getCxtRecordType()
+        childrenCountType = self.getArgument("children_count").getAttribute("type_alias")
+        if self.hasArgument("position_field"):
+            posFieldID = self.getArgument("position_field").getFieldID()
+        else:
+            posFieldID = '0'
+        
+        return "ClusteredReferenceProvider< %s, %s, %s, %s >" % (refRecordType, cxtRecordType, childrenCountType, posFieldID)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'children_count', 'type': 'value_provider' }, 
+                 { 'key': 'children_count_max', 'type': 'value_provider' },
+                 { 'key': 'position_field', 'type': 'field_ref', 'optional': True }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'RuntimeComponentRef(children_count_max)', 
+                 'RuntimeComponentRef(children_count)', 
+                 'SequenceInspector(%s)' % (self.getRefRecordType()), 
                ]
 
 
