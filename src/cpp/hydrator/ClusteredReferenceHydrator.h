@@ -30,42 +30,42 @@ template<class RecordType, class RefRecordType> class ClusteredReferenceHydrator
 {
 public:
 
-	typedef void (RecordType::*RefRecordSetter)(const AutoPtr<RefRecordType>&);
+    typedef void (RecordType::*RefRecordSetter)(const AutoPtr<RefRecordType>&);
     typedef void (RecordType::*PositionSetter)(const I32u&);
 
-	ClusteredReferenceHydrator(RefRecordSetter parentSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
-	    RecordHydrator<RecordType>(0),
-		_parentSetter(parentSetter),
-		_positionSetter(NULL),
-		_countGetter(countGetter),
-		_parentSet(parentSet),
-		_referenceSetCardinality(parentSet.cardinality()),
+    ClusteredReferenceHydrator(RefRecordSetter parentSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
+        RecordHydrator<RecordType>(0),
+        _parentSetter(parentSetter),
+        _positionSetter(NULL),
+        _countGetter(countGetter),
+        _parentSet(parentSet),
+        _referenceSetCardinality(parentSet.cardinality()),
         _nestedSetCardinality(nestedSetCardinality),
         _maxNestedPerParent(_nestedSetCardinality/_referenceSetCardinality),
         _parent(NULL)
-	{
-	}
+    {
+    }
 
-	ClusteredReferenceHydrator(RefRecordSetter parentSetter, PositionSetter positionSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
-	    RecordHydrator<RecordType>(0),
-		_parentSetter(parentSetter),
-		_positionSetter(positionSetter),
-		_countGetter(countGetter),
-		_parentSet(parentSet),
-		_referenceSetCardinality(parentSet.cardinality()),
+    ClusteredReferenceHydrator(RefRecordSetter parentSetter, PositionSetter positionSetter, ValueGetter<RefRecordType, I32u>* countGetter, RandomSetInspector<RefRecordType> parentSet, I64u nestedSetCardinality) :
+        RecordHydrator<RecordType>(0),
+        _parentSetter(parentSetter),
+        _positionSetter(positionSetter),
+        _countGetter(countGetter),
+        _parentSet(parentSet),
+        _referenceSetCardinality(parentSet.cardinality()),
         _nestedSetCardinality(nestedSetCardinality),
         _maxNestedPerParent(_nestedSetCardinality/_referenceSetCardinality),
         _parent(NULL)
-	{
-	}
+    {
+    }
 
-	virtual ~ClusteredReferenceHydrator()
-	{
-		delete _countGetter;
-	}
+    virtual ~ClusteredReferenceHydrator()
+    {
+        delete _countGetter;
+    }
 
-	void operator()(AutoPtr<RecordType> recordPtr) const
-	{
+    void operator()(AutoPtr<RecordType> recordPtr) const
+    {
         I64u nestedRecordGenID = recordPtr->genID();
         I64u parentRecordGenID = nestedRecordGenID/_maxNestedPerParent;
 
@@ -89,7 +89,7 @@ public:
         {
             throw InvalidRecordException(nestedRecordGenID, _maxNestedPerParent, nestedCount);
         }
-	}
+    }
 
     inline I16u randomStreamArity() const
     {
@@ -98,17 +98,17 @@ public:
 
 private:
 
-	RefRecordSetter _parentSetter;
+    RefRecordSetter _parentSetter;
 
-	PositionSetter _positionSetter;
+    PositionSetter _positionSetter;
 
-	ValueGetter<RefRecordType, I32u>* _countGetter;
+    ValueGetter<RefRecordType, I32u>* _countGetter;
 
-	RandomSetInspector<RefRecordType> _parentSet;
+    RandomSetInspector<RefRecordType> _parentSet;
 
-//	I64u _referenceSetCardinality;
+    I64u _referenceSetCardinality;
 
-//    I64u _nestedSetCardinality;
+    I64u _nestedSetCardinality;
 
     I32u _maxNestedPerParent;
 
