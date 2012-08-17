@@ -26,16 +26,51 @@ using namespace Poco;
 namespace Myriad {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// value provider for random values
+// value provider for random values (conditioned variant)
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<typename ValueType, class CxtRecordType, class PrFunctionType>
+template<typename ValueType, class CxtRecordType, class PrFunctionType, I16u conditionFID>
 class RandomValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
+    typedef typename RecordFieldTraits<conditionFID, CxtRecordType>::FieldType CxtRecordFieldType;
+    typedef typename RecordFieldTraits<conditionFID, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
+
     RandomValueProvider(const PrFunctionType& prFunction) :
     	AbstractValueProvider<ValueType, CxtRecordType>(1, false),
+        _prFunction(prFunction),
+        _fieldGetter(RecordFieldTraits<conditionFID, CxtRecordType>::getter())
+    {
+    }
+
+    virtual ~RandomValueProvider()
+    {
+    }
+
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    {
+        return static_cast<ValueType>(_prFunction.sample(random(), (cxtRecordPtr->*_fieldGetter)()));
+    }
+
+private:
+
+    const PrFunctionType& _prFunction;
+
+    const CxtRecordFieldGetterType _fieldGetter;
+};
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// value provider for random values (unconditioned specialization)
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename ValueType, class CxtRecordType, class PrFunctionType>
+class RandomValueProvider<ValueType, CxtRecordType, PrFunctionType, 0> : public AbstractValueProvider<ValueType, CxtRecordType>
+{
+public:
+
+    RandomValueProvider(const PrFunctionType& prFunction) :
+        AbstractValueProvider<ValueType, CxtRecordType>(1, false),
         _prFunction(prFunction)
     {
     }
