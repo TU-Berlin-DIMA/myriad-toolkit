@@ -32,7 +32,7 @@ public:
 
     typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 
-    EqualityPredicate(RecordFactoryType& recordFactory) :
+    EqualityPredicate(const RecordFactoryType& recordFactory) :
         _valueHolder(recordFactory()),
         _boundValues(0) // FIXME: this restricts the max number of fields per record type to 64
     {

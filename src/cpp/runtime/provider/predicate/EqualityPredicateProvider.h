@@ -34,7 +34,7 @@ public:
     typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
     typedef EqualityPredicate<RecordType> EqualityPredicateType;
 
-    EqualityPredicateProvider(RecordFactoryType& recordFactory, AbstractBinderType& b1) :
+    EqualityPredicateProvider(const RecordFactoryType& recordFactory, AbstractBinderType& b1) :
         _predicate(recordFactory),
         _bindersSize(1),
         _binders(new AbstractBinderType*[_bindersSize])
@@ -42,7 +42,7 @@ public:
         _binders[0] = &b1;
     }
 
-    EqualityPredicateProvider(RecordFactoryType& recordFactory, AbstractBinderType& b1, AbstractBinderType& b2) :
+    EqualityPredicateProvider(const RecordFactoryType& recordFactory, AbstractBinderType& b1, AbstractBinderType& b2) :
         _predicate(recordFactory),
         _bindersSize(2),
         _binders(new AbstractBinderType*[_bindersSize])
@@ -51,7 +51,7 @@ public:
         _binders[1] = &b2;
     }
 
-    EqualityPredicateProvider(RecordFactoryType& recordFactory, AbstractBinderType& b1, AbstractBinderType& b2, AbstractBinderType& b3) :
+    EqualityPredicateProvider(const RecordFactoryType& recordFactory, AbstractBinderType& b1, AbstractBinderType& b2, AbstractBinderType& b3) :
         _predicate(recordFactory),
         _bindersSize(3),
         _binders(new AbstractBinderType*[_bindersSize])
@@ -61,7 +61,7 @@ public:
         _binders[2] = &b3;
     }
 
-    EqualityPredicateProvider(RecordFactoryType& recordFactory, AbstractBinderType& b1, AbstractBinderType& b2, AbstractBinderType& b3, AbstractBinderType& b4) :
+    EqualityPredicateProvider(const RecordFactoryType& recordFactory, AbstractBinderType& b1, AbstractBinderType& b2, AbstractBinderType& b3, AbstractBinderType& b4) :
         _predicate(recordFactory),
         _bindersSize(4),
         _binders(new AbstractBinderType*[_bindersSize])
