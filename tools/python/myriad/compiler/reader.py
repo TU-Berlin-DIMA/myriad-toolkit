@@ -220,7 +220,7 @@ class FieldRefArgumentReader(SingleArgumentReader):
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `field_ref` argument `%s`" % (argKey))
         
-        # @todo: check format {record_key}.{field_key}
+        # TODO: check format {record_key}.{field_key}
         
         return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
 
@@ -241,7 +241,7 @@ class ReferenceRefArgumentReader(SingleArgumentReader):
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `reference_ref` argument `%s`" % (argKey))
         
-        # @todo: check format {record_key}.{field_key}
+        # TODO: check format {record_key}.{field_key}
         
         return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
 
@@ -692,7 +692,7 @@ class XMLReader(object):
         i = 0
         for setter in xPathContext.xpathEval("./m:setter"):
             setterNode = self.__setterFactory(setter)
-            setterNode.setOrderKey(i) # @todo: derive order from dependency graph
+            setterNode.setOrderKey(i) # TODO: derive order from dependency graph
 
             setterChainNode.setSetter(setterNode)
             i = i+1
@@ -767,7 +767,7 @@ class XMLReader(object):
         
     def __functionFactory(self, functionXMLNode):
         
-        # @todo: second and third component should be mandatory 
+        # TODO: second and third component should be mandatory 
         functionMatch = re.match(r"([a-z\_]+)(\[([a-zA-Z0-9\_]+)(;([a-zA-Z0-9\_,]+))?\])?", functionXMLNode.prop("type"))
         # check if type is syntactically correct
         if (functionMatch is None):
