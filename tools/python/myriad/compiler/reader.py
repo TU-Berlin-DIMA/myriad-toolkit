@@ -671,18 +671,19 @@ class XMLReader(object):
         
         # enumerate type alias values for all runtime components in this chain
         # ValueProvider nodes 
-        i = 0
+        i = 1
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractValueProviderNode)
         for node in nodeFilter.getAll(setterChainNode):
             node.setAttribute("type_alias", "ValueProvider%02dType" % (i))
             i = i+1
-        i = 0
+        i = 1
         # RangeProvider nodes
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractRangeProviderNode)
         for node in nodeFilter.getAll(setterChainNode):
             node.setAttribute("type_alias", "RangeProvider%02dType" % (i))
             i = i+1
         # ReferenceProvider nodes
+        i = 1
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractReferenceProviderNode)
         for node in nodeFilter.getAll(setterChainNode):
             node.setAttribute("type_alias", "ReferenceProvider%02dType" % (i))
