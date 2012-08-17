@@ -1064,7 +1064,11 @@ class SetterChainNode(AbstractNode):
     
     def settersCount(self):
         return len(self.__setters)
-
+    
+    def getComponentIncludePaths(self):
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+        comopnentPaths = [ node.getIncludePath() for node in nodeFilter.getAll(self) ]
+        return sorted(set(comopnentPaths))
 
 #
 # Cardinality Estimators
@@ -1289,6 +1293,9 @@ class ResolvedDirectFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
 
     def getFieldRef(self):
         return self.__fieldRef
+    
+    def getFieldID(self):
+        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getRecordTypeRef().getAttribute("key")), self.getFieldRef().getAttribute("name").upper())
 
 
 class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
@@ -1408,6 +1415,9 @@ class AbstractRuntimeComponentNode(ArgumentNode):
             self.__arguments[argKey].accept(visitor)
         visitor.postVisit(self)
     
+    def getIncludePath(self):
+        raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getIncludePath() method")
+    
     def getCxtRecordType(self):
         raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getCxtRecordType() method")
     
@@ -1426,6 +1436,9 @@ class AbstractRuntimeComponentNode(ArgumentNode):
     
     def getArgument(self, key):
         return self.__arguments.get(key)
+    
+    def hasArgument(self, key):
+        return self.__arguments.has_key(key)
     
 
 #
@@ -1461,6 +1474,9 @@ class FieldSetterNode(AbstractSetterNode):
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="FieldSetter")
         super(FieldSetterNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/setter/FieldSetter.h"
         
     def isInvertible(self):
         return False # @todo: implement
@@ -1468,10 +1484,10 @@ class FieldSetterNode(AbstractSetterNode):
     def getConcreteType(self):
         # template<class RecordType, I16u fid, class ValueProviderType>
         recordType = self.getParent().getCxtRecordType() 
-        fieldID = self.getArgument("field").getFieldRef().getAttribute("type")
+        fieldID = self.getArgument("field").getFieldID()
         valueProviderType = self.getArgument("value").getAttribute("type_alias")
         
-        return "FieldSetterNode< %s, %s, %s >" % (recordType, fieldID, valueProviderType)
+        return "FieldSetter< %s, %s, %s >" % (recordType, fieldID, valueProviderType)
         
     def getXMLArguments(self):
         return [ { 'key': 'field', 'type': 'field_ref' }, 
@@ -1479,7 +1495,7 @@ class FieldSetterNode(AbstractSetterNode):
                ]
         
     def getConstructorArguments(self):
-        return [ 'RuntimeComponentRef(value_provider)' ]
+        return [ 'RuntimeComponentRef(value)' ]
 
 
 class ReferenceSetterNode(AbstractSetterNode):
@@ -1490,6 +1506,9 @@ class ReferenceSetterNode(AbstractSetterNode):
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ReferenceSetter")
         super(ReferenceSetterNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/setter/ReferenceSetter.h"
         
     def isInvertible(self):
         return False # @todo: implement
@@ -1508,7 +1527,7 @@ class ReferenceSetterNode(AbstractSetterNode):
                ]
         
     def getConstructorArguments(self):
-        return [ 'RuntimeComponentRef(reference_provider)' ]
+        return [ 'RuntimeComponentRef(value)' ]
 
 
 #
@@ -1538,6 +1557,9 @@ class ClusteredValueProviderNode(AbstractValueProviderNode):
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ClusteredValueProvider")
         super(ClusteredValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/value/ClusteredValueProvider.h"
     
     def getValueType(self):
         return self.getArgument("probability").getFunctionRef().getDomainType()
@@ -1571,6 +1593,9 @@ class ConstValueProviderNode(AbstractValueProviderNode):
         kwargs.update(template_type="ConstValueProvider")
         super(ConstValueProviderNode, self).__init__(*args, **kwargs)
     
+    def getIncludePath(self):
+        return "runtime/provider/value/ConstValueProvider.h"
+    
     def getValueType(self):
         return self.getArgument("value").getAttribute("type")
     
@@ -1599,6 +1624,9 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
         kwargs.update(template_type="ContextFieldValueProvider")
         super(ContextFieldValueProviderNode, self).__init__(*args, **kwargs)
     
+    def getIncludePath(self):
+        return "runtime/provider/value/ContextFieldValueProvider.h"
+    
     def getValueType(self):
         return self.getArgument("field").getFieldRef().getAttribute("type")
     
@@ -1606,7 +1634,7 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
         # template<typename ValueType, class CxtRecordType, I16u fid>
         valueType = self.getValueType()
         cxtRecordType = self.getParent().getCxtRecordType()
-        fid = 'RecordFieldTraits<%s>::%s' % (cxtRecordType, self.getArgument("field").getFieldRef().getAttribute("key").upper())
+        fid = self.getArgument("field").getFieldID()
         
         return "ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, fid)
         
@@ -1627,17 +1655,22 @@ class RandomValueProviderNode(AbstractValueProviderNode):
         kwargs.update(template_type="RandomValueProvider")
         super(RandomValueProviderNode, self).__init__(*args, **kwargs)
     
+    def getIncludePath(self):
+        return "runtime/provider/value/RandomValueProvider.h"
+    
     def getValueType(self):
         return self.getArgument("probability").getFunctionRef().getDomainType()
     
     def getConcreteType(self):
-        # template<typename ValueType, class CxtRecordType, class PrFunctionType>
+        # template<typename ValueType, class CxtRecordType, class PrFunctionType, I16u conditionFID>
         valueType = self.getValueType()
         cxtRecordType = self.getParent().getCxtRecordType()
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         
-        # @todo: handle 3 or 4 parameter template depending on the optional XML argument 'condition'
-        return "RandomValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, probabilityType)
+        if self.hasArgument("condition_field"):
+            return "RandomValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, self.getArgument("condition_field").getFieldID())
+        else:
+            return "RandomValueProvider< %s, %s, %s, 0 >" % (valueType, cxtRecordType, probabilityType)
         
     def getXMLArguments(self):
         return [ { 'key': 'probability'    , 'type': 'function_ref' }, 
@@ -1677,6 +1710,9 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
         kwargs.update(template_type="ConstRangeProvider")
         super(ConstRangeProviderNode, self).__init__(*args, **kwargs)
     
+    def getIncludePath(self):
+        return "runtime/provider/range/ConstRangeProvider.h"
+    
     def getRangeType(self):
         return self.getArgument('min').getAttribute('type')
     
@@ -1706,6 +1742,9 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ContextFieldRangeProvider")
         super(ContextFieldRangeProviderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/range/ContextFieldRangeProvider.h"
     
     def getRangeType(self): 
         self.getArgument('field').getAttribute('type')

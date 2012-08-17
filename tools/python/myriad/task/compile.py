@@ -67,19 +67,19 @@ class CompileModelTask(AbstractTask):
 
         # compile output collector
         frontendCompiler = FrontendCompiler(args=args)
-        frontendCompiler.compile(ast)
+        frontendCompiler.compileCode(ast)
         # compile generator config
         generatorSubsystemCompiler = GeneratorSubsystemCompiler(args=args)
-        generatorSubsystemCompiler.compile(ast)
+        generatorSubsystemCompiler.compileCode(ast)
         # compile generator config
         configCompiler = ConfigCompiler(args=args)
-        configCompiler.compile(ast)
+        configCompiler.compileCode(ast)
         # compile output collector
         outputCollectorCompiler = OutputCollectorCompiler(args=args)
-        outputCollectorCompiler.compile(ast)
+        outputCollectorCompiler.compileCode(ast)
         # compile record types
         recordCompiler = RecordTypeCompiler(args=args)
-        recordCompiler.compile(ast.getSpecification().getRecordSequences())
+        recordCompiler.compileCode(ast.getSpecification().getRecordSequences())
         # compile record generators
         generatorCompiler = RecordGeneratorCompiler(args=args)
-        generatorCompiler.compile(ast.getSpecification().getRecordSequences())
+        generatorCompiler.compileCode(ast.getSpecification().getRecordSequences())

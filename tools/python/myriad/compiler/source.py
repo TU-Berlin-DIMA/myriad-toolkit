@@ -59,6 +59,8 @@ class ArgumentTransformer(object):
                 argTransformer = RandomSetInspectorTransfomer()
             elif (transformerType == "FunctionRef"):
                 argTransformer = FunctionRefTransfomer()
+            elif (transformerType == "RuntimeComponentRef"):
+                argTransformer = RuntimeComponentRefTransformer()
             elif (transformerType == "EnvVariable"):
                 argTransformer = EnvVariableTransfomer(varName=argKey)
                 argKey = None
@@ -242,6 +244,20 @@ class FunctionRefTransfomer(object):
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
 
+class RuntimeComponentRefTransformer(object):
+
+    def __init__(self, *args, **kwargs):
+        super(RuntimeComponentRefTransformer, self).__init__()
+    
+    def transform(self, argumentNode = None, configVarName = "config", optional = False):
+        if optional is True and argumentNode is None:
+            return None
+            
+        if isinstance(argumentNode, AbstractRuntimeComponentNode):
+            return '%s' % (argumentNode.getAttribute("var_name"))
+        else:
+            raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
+
 class EnvVariableTransfomer(object):
     
     __varName = None
@@ -290,7 +306,7 @@ class FrontendCompiler(SourceCompiler):
         '''
         super(FrontendCompiler, self).__init__(*args, **kwargs)
         
-    def compile(self, astRoot):
+    def compileCode(self, astRoot):
         self._log.warning("compiling frontend C++ sources")
         self.compileMainMethod(astRoot)
             
@@ -339,7 +355,7 @@ class GeneratorSubsystemCompiler(SourceCompiler):
         '''
         super(GeneratorSubsystemCompiler, self).__init__(*args, **kwargs)
         
-    def compile(self, astRoot):
+    def compileCode(self, astRoot):
         self._log.warning("compiling generator subsystem C++ sources")
         self.compileBaseGeneratorSubsystem(astRoot)
         self.compileGeneratorSubsystem(astRoot)
@@ -510,7 +526,7 @@ class ConfigCompiler(SourceCompiler):
         '''
         super(ConfigCompiler, self).__init__(*args, **kwargs)
         
-    def compile(self, astRoot):
+    def compileCode(self, astRoot):
         self._log.warning("compiling generator config C++ sources")
         self.compileParameters(astRoot)
         self.compileBaseConfig(astRoot)
@@ -700,7 +716,7 @@ class OutputCollectorCompiler(SourceCompiler):
         '''
         super(OutputCollectorCompiler, self).__init__(*args, **kwargs)
         
-    def compile(self, astRoot):
+    def compileCode(self, astRoot):
         self._log.warning("compiling output collector C++ sources")
         self.compileOutputCollector(astRoot)
             
@@ -736,7 +752,7 @@ class RecordTypeCompiler(SourceCompiler):
         '''
         super(RecordTypeCompiler, self).__init__(*args, **kwargs)
         
-    def compile(self, recordSequences):
+    def compileCode(self, recordSequences):
         for recordSequence in recordSequences.getRecordSequences():
             self._log.warning("compiling record C++ sources for `%s`" % (recordSequence.getAttribute("key")))
             self.compileBaseRecordMeta(recordSequence.getRecordType())
@@ -892,6 +908,11 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    Base%(t)s(const %(t)sMeta& meta) : ' % { 't': typeNameCC }
         print >> wfile, '        _meta(meta)'
         print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    const %(t)sMeta& meta() const' % { 't': typeNameCC }
+        print >> wfile, '    {'
+        print >> wfile, '        return _meta;'
         print >> wfile, '    }'
         print >> wfile, ''
         
@@ -1372,7 +1393,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         '''
         super(RecordGeneratorCompiler, self).__init__(*args, **kwargs)
         
-    def compile(self, recordSequences):
+    def compileCode(self, recordSequences):
         for recordSequence in recordSequences.getRecordSequences():
             self._log.warning("compiling generator C++ sources for `%s`" % (recordSequence.getAttribute("key")))
             self.compileBaseGenerator(recordSequence)
@@ -1413,6 +1434,9 @@ class RecordGeneratorCompiler(SourceCompiler):
         
         for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
             print >> wfile, '#include "hydrator/%s.h"' % (hydrator.getAttribute("template_type"))
+
+        for componentPath in recordSequence.getSetterChain().getComponentIncludePaths():
+            print >> wfile, '#include "%s"' % (componentPath)
         
         print >> wfile, ''
         print >> wfile, 'using namespace Myriad;'
@@ -1468,8 +1492,8 @@ class RecordGeneratorCompiler(SourceCompiler):
                 print >> wfile, '    // runtime components for setter `%s`' % (setter.getAttribute('key'))
                 nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
                 for node in nodeFilter.getAll(setter):
-                    print >> wfile, '    typedef %s %s' % (node.getConcreteType(), node.getAttribute("type_alias")) #, node.getAttribute("var_name")
-        else:
+                    print >> wfile, '    typedef %s %s;' % (node.getConcreteType(), node.getAttribute("type_alias"))
+        else: # @todo: remove this case
             print >> wfile, '    // hydrator typedefs'
             for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
                 print >> wfile, '    typedef %s %s;' % (hydrator.getConcreteType(), hydrator.getAttribute("type_alias"))
@@ -1478,9 +1502,17 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    Base%sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
         print >> wfile, '        HydratorChain<%s>(opMode, random),' % (typeNameCC)
         
-        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            argsCode = ArgumentTransformer.compileConstructorArguments(self, hydrator, {'config': 'config'})
-            print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
+        
+        if recordSequence.getSetterChain().settersCount() > 0: # @todo: remove this case
+            print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
+            nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+            for node in nodeFilter.getAll(recordSequence.getSetterChain()):
+                argsCode = ArgumentTransformer.compileConstructorArguments(self, node, {'config': 'config'})
+                print >> wfile, '        %s(%s),' % (node.getAttribute("var_name"), ', '.join(argsCode))
+        else: # @todo: remove this case
+            for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+                argsCode = ArgumentTransformer.compileConstructorArguments(self, hydrator, {'config': 'config'})
+                print >> wfile, '        _%s(%s),' % (StringTransformer.us2cc(hydrator.getAttribute("key")), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)
             
@@ -1499,31 +1531,64 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '        ensurePosition(recordPtr->genID());'
         print >> wfile, ''
         
-        for hydrator in recordSequence.getHydrationPlan().getAll():
-            print >> wfile, '        apply(_%s, recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
+        if recordSequence.getSetterChain().settersCount() > 0:
+            print >> wfile, '        Base%(t)sHydratorChain* me = const_cast<Base%(t)sHydratorChain*>(this);' % {'t': typeNameCC}
+            print >> wfile, ''
+            print >> wfile, '        // apply setter chain'
+            for setter in recordSequence.getSetterChain().getAll():
+                print >> wfile, '        me->%s(recordPtr, me->_random);' % (setter.getAttribute("var_name"))
+        else: # @todo: remove this case
+            for hydrator in recordSequence.getHydrationPlan().getAll():
+                print >> wfile, '        apply(_%s, recordPtr);' % (StringTransformer.us2cc(hydrator.getAttribute("key")))
         
         print >> wfile, '    }'
         print >> wfile, ''
-        print >> wfile, '    /**'
-        print >> wfile, '     * Invertible hydrator getter.'
-        print >> wfile, '     */'
-        print >> wfile, '    template<typename T>' 
-        print >> wfile, '    const InvertibleHydrator<%(t)s, T>& invertableHydrator(typename MethodTraits<%(t)s, T>::Setter setter)' % {'t': typeNameCC}
-        print >> wfile, '    {'
-        print >> wfile, '        return HydratorChain<%s>::invertableHydrator<T>(setter);' % (typeNameCC)
-        print >> wfile, '    }'
-        print >> wfile, ''
+        
+        if recordSequence.getSetterChain().settersCount() > 0:
+            print >> wfile, '    /**'
+            print >> wfile, '     * Predicate filter function.'
+            print >> wfile, '     */'
+            print >> wfile, '    virtual Interval<I64u> filter(const EqualityPredicate<%(t)s>& predicate)' % {'t': typeNameCC}
+            print >> wfile, '    {'
+            print >> wfile, '        Interval<I64u> result(0, _sequenceCardinality);'
+            print >> wfile, ''
+            print >> wfile, '        // apply inverse setter chain'
+            for setter in recordSequence.getSetterChain().getAll():
+                print >> wfile, '        %s.filterRange(predicate, result);' % (setter.getAttribute("var_name"))
+            print >> wfile, ''
+            print >> wfile, '        return result;'
+            print >> wfile, '    }'
+            print >> wfile, ''
+        else: # @todo: remove this case
+            print >> wfile, '    /**'
+            print >> wfile, '     * Invertible hydrator getter.'
+            print >> wfile, '     */'
+            print >> wfile, '    template<typename T>' 
+            print >> wfile, '    const InvertibleHydrator<%(t)s, T>& invertableHydrator(typename MethodTraits<%(t)s, T>::Setter setter)' % {'t': typeNameCC}
+            print >> wfile, '    {'
+            print >> wfile, '        return HydratorChain<%s>::invertableHydrator<T>(setter);' % (typeNameCC)
+            print >> wfile, '    }'
+            print >> wfile, ''
+            
         print >> wfile, 'protected:'
         print >> wfile, ''
         
-        print >> wfile, '    // hydrator members'
-        for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
-            print >> wfile, '    %s _%s;' % (hydrator.getAttribute("type_alias"), StringTransformer.us2cc(hydrator.getAttribute("key")))
+        if recordSequence.getSetterChain().settersCount() > 0:
+            print >> wfile, '    // cardinality'
+            print >> wfile, '    I64u _sequenceCardinality;'
+            print >> wfile, ''
+            for setter in recordSequence.getSetterChain().getAll():
+                print >> wfile, '    // runtime components for setter `%s`' % (setter.getAttribute('key'))
+                nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
+                for node in nodeFilter.getAll(setter):
+                    print >> wfile, '    %s %s;' % (node.getAttribute("type_alias"), node.getAttribute("var_name"))
+                print >> wfile, ''
+        else: # @todo: remove this case
+            print >> wfile, '    // hydrator members'
+            for hydrator in sorted(recordSequence.getHydrators().getAll(), key=lambda h: h.orderkey):
+                print >> wfile, '    %s _%s;' % (hydrator.getAttribute("type_alias"), StringTransformer.us2cc(hydrator.getAttribute("key")))
         
-        print >> wfile, ''
-        print >> wfile, '    /**'
-        print >> wfile, '     * Logger instance.'
-        print >> wfile, '     */'
+        print >> wfile, '    // Logger instance.'
         print >> wfile, '    Logger& _logger;'
         print >> wfile, '};'
         print >> wfile, ''
