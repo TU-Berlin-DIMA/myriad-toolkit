@@ -460,26 +460,18 @@ class RandomSequenceNode(RecordSequenceNode):
     
     __cardinalityEstimator = None
     __setterChain = None
-    __hydrators = None
-    __hydrationPlan = None
     __sequenceIterator = None
     
     def __init__(self, *args, **kwargs):
         super(RandomSequenceNode, self).__init__(*args, **kwargs)
         self.__cardinalityEstimator = None
         self.__setterChain = None
-        self.__hydrators = None
-        self.__hydrationPlan = None
         self.__sequenceIterator = None
     
     def accept(self, visitor):
         visitor.preVisit(self)
         self._recordType.accept(visitor)
-        if self.__setterChain is not None:
-            self.__setterChain.accept(visitor)
-        if self.__hydrators is not None:
-            self.__hydrators.accept(visitor)
-            self.__hydrationPlan.accept(visitor)
+        self.__setterChain.accept(visitor)
         self.__cardinalityEstimator.accept(visitor)
         if self.__sequenceIterator is not None:
             self.__sequenceIterator.accept(visitor)
@@ -491,18 +483,6 @@ class RandomSequenceNode(RecordSequenceNode):
         
     def getSetterChain(self):
         return self.__setterChain
-        
-    def setHydrators(self, node):
-        self.__hydrators = node
-        
-    def getHydrators(self):
-        return self.__hydrators
-        
-    def setHydrationPlan(self, node):
-        self.__hydrationPlan = node
-        
-    def getHydrationPlan(self):
-        return self.__hydrationPlan
         
     def setCardinalityEstimator(self, node):
         self.__cardinalityEstimator = node
@@ -705,325 +685,6 @@ class ResolvedRecordReferenceNode(RecordReferenceNode):
 
     def getRecordTypeRef(self):
         return self.__recordTypeRef
-
-
-class HydratorsNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    __hydrators = {}
-    
-    def __init__(self, *args, **kwargs):
-        super(HydratorsNode, self).__init__(*args, **kwargs)
-        self.__hydrators = {}
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        for node in self.__hydrators.itervalues():
-            node.accept(visitor)
-        visitor.postVisit(self)
-        
-    def setHydrator(self, node):
-        self.__hydrators[node.getAttribute('key')] = node
-    
-    def getHydrator(self, key):
-        return self.__hydrators.get(key)
-    
-    def hasHydrator(self, key):
-        return self.__hydrators.has_key(key)
-    
-    def getAll(self):
-        return self.__hydrators.itervalues()
-
-
-class HydrationPlanNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    _hydrators = []
-    
-    def __init__(self, *args, **kwargs):
-        super(HydrationPlanNode, self).__init__(*args, **kwargs)
-        self._hydrators = []
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        for node in self._hydrators:
-            node.accept(visitor)
-        visitor.postVisit(self)
-        
-    def addHydrator(self, node):
-        self._hydrators.append(node)
-        
-    def getAll(self):
-        return self._hydrators
-    
-
-#
-# Hydrators
-# 
- 
-class HydratorNode(AbstractNode):
-    '''
-    classdocs
-    '''
-    
-    __arguments = {}
-    
-    orderkey = None
-    
-    def __init__(self, *args, **kwargs):
-        super(HydratorNode, self).__init__(*args, **kwargs)
-        self.__arguments = {}
-        self.orderkey = None
-    
-    def accept(self, visitor):
-        visitor.preVisit(self)
-        for node in self.__arguments.itervalues():
-            node.accept(visitor)
-        visitor.postVisit(self)
-        
-    def setArgument(self, node):
-        self.__arguments[node.getAttribute('key')] = node
-        node.setParent(self)
-    
-    def getArgument(self, key):
-        return self.__arguments.get(key)
-        
-    def setOrderKey(self, key):
-        self.orderkey = key
-        
-    def getConcreteType(self):
-        return "RecordHydrator"
-        
-    def isInvertible(self):
-        return False
-    
-    def getXMLArguments(self):
-        return {}
-    
-    def getConstructorArguments(self):
-        return []
-
-
-class ClusteredReferenceHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ClusteredReferenceHydrator")
-        super(ClusteredReferenceHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-        
-        return "ClusteredReferenceHydrator< %s, %s >" % (recordType, refRecordType)
-        
-    def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
-                 { 'key': 'position_field', 'type': 'field_ref', 'optional': True }, 
-                 { 'key': 'count_field', 'type': 'field_ref' }, 
-                 { 'key': 'nested_cardinality', 'type': 'literal' } 
-               ]
-        
-    def getConstructorArguments(self):
-        return [ 'FieldSetter(field)',
-                 'FieldSetter(position_field)*',
-                 'FieldGetter(count_field)',
-                 'RandomSetInspector(count_field)',
-                 'Literal(nested_cardinality)' 
-               ]
-
-
-class ConditionalRandomizedHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ConditionalRandomizedHydrator")
-        super(ConditionalRandomizedHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        conditionFieldType = self.getArgument("condition_field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        
-        return "ConditionalRandomizedHydrator< %s, %s, %s, %s >" % (recordType, fieldType, conditionFieldType, probabilityType)
-        
-    def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
-                 { 'key': 'condition_field', 'type': 'field_ref' }, 
-                 { 'key': 'probability', 'type': 'function_ref' } 
-               ]
-        
-    def getConstructorArguments(self):
-        return [ 'EnvVariable(random)',
-                 'FieldSetter(field)',
-                 'FieldGetter(condition_field)',
-                 'FunctionRef(probability)' 
-               ]
-
-
-class ConstValueHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ConstValueHydrator")
-        super(ConstValueHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        
-        return "ConstValueHydrator< %s, %s >" % (recordType, fieldType)
-        
-    def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
-                 { 'key': 'const_value', 'type': 'literal' }
-               ]
-        
-    def getConstructorArguments(self):
-        return [ 'FieldSetter(field)',
-                 'Literal(const_value)'
-               ]
-        
-    def getConstructorArgumentsOrder(self):
-        return ['field', 'const_value']
-
-
-class ReferencedRecordHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ReferencedRecordHydrator")
-        super(ReferencedRecordHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("type")
-        
-        return "ReferencedRecordHydrator< %s, %s, %s, %s >" % (recordType, refRecordType, fieldType, probabilityType)
-        
-    def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
-                 { 'key': 'pivot_field', 'type': 'field_ref' }, 
-                 { 'key': 'probability', 'type': 'function_ref' } 
-               ]
-        
-    def getConstructorArguments(self):
-        return [ 'EnvVariable(random)',
-                 'FieldSetter(field)',
-                 'FieldSetter(pivot_field)',
-                 'RandomSetInspector(pivot_field)',
-                 'FunctionRef(probability)' 
-               ]
-
-
-class ReferenceHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="ReferenceHydrator")
-        super(ReferenceHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        refRecordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-        # TODO: this is a quick and dirty hack, a better solution is needed here
-        if isinstance(self.getArgument("pivot_field"), ResolvedDirectFieldRefArgumentNode):
-            fieldType = self.getArgument("pivot_field").getFieldRef().getAttribute("type")
-        elif isinstance(self.getArgument("pivot_field"), ResolvedRecordReferenceRefArgumentNode):
-            fieldType = 'I64u'
-        
-        return "ReferenceHydrator< %s, %s, %s >" % (recordType, refRecordType, fieldType)
-        
-    def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
-                 { 'key': 'pivot_field', 'type': 'field_ref' }, 
-                 { 'key': 'pivot_value', 'type': 'field_ref' } 
-               ]
-        
-    def getConstructorArguments(self):
-        return [ 'EnvVariable(random)',
-                 'FieldSetter(field)',
-                 'FieldSetter(pivot_field)',
-                 'RandomSetInspector(pivot_field)',
-                 'FieldGetter(pivot_value)' 
-               ]
-
-
-class SimpleClusteredHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="SimpleClusteredHydrator")
-        super(SimpleClusteredHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        
-        return "SimpleClusteredHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
-        
-    def isInvertible(self):
-        return True
-        
-    def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
-                 { 'key': 'probability', 'type': 'function_ref' }, 
-                 { 'key': 'sequence_cardinality', 'type': 'literal' } 
-               ]
-        
-    def getConstructorArguments(self):
-        return [ 'FieldSetter(field)',
-                 'FunctionRef(probability)',
-                 'Literal(sequence_cardinality)' 
-               ]
-
-
-class SimpleRandomizedHydratorNode(HydratorNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="SimpleRandomizedHydrator")
-        super(SimpleRandomizedHydratorNode, self).__init__(*args, **kwargs)
-    
-    def getConcreteType(self):
-        recordType = StringTransformer.us2ccAll(self.getArgument("field").getRecordTypeRef().getAttribute("key"))
-        fieldType = self.getArgument("field").getFieldRef().getAttribute("type")
-        probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
-        
-        return "SimpleRandomizedHydrator< %s, %s, %s >" % (recordType, fieldType, probabilityType)
-        
-    def getXMLArguments(self):
-        return [ { 'key': 'field', 'type': 'field_ref' }, 
-                 { 'key': 'probability', 'type': 'function_ref' }
-               ]
-        
-    def getConstructorArguments(self):
-        return [ 'EnvVariable(random)',
-                 'FieldSetter(field)',
-                 'FunctionRef(probability)'
-               ]
 
 
 #
@@ -1281,15 +942,6 @@ class UnresolvedFunctionRefArgumentNode(ArgumentNode):
         super(UnresolvedFunctionRefArgumentNode, self).__init__(*args, **kwargs)
 
 
-class UnresolvedHydratorRefArgumentNode(ArgumentNode):
-    '''
-    classdocs
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        super(UnresolvedHydratorRefArgumentNode, self).__init__(*args, **kwargs)
-
-
 class StringSetRefArgumentNode(ArgumentNode):
     '''
     classdocs
@@ -1418,23 +1070,6 @@ class ResolvedFunctionRefArgumentNode(ArgumentNode):
 
     def getFunctionRef(self):
         return self.__functionRef
-
-
-class ResolvedHydratorRefArgumentNode(ArgumentNode):
-    '''
-    classdocs
-    '''
-    
-    __hydratorRef = None
-    
-    def __init__(self, *args, **kwargs):
-        super(ResolvedHydratorRefArgumentNode, self).__init__(*args, **kwargs)
-
-    def setHydratorRef(self, hydratorRef):
-        self.__hydratorRef = hydratorRef
-
-    def getHydratorRef(self):
-        return self.__hydratorRef
 
 
 #

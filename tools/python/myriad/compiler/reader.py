@@ -419,7 +419,6 @@ class XMLReader(object):
         self.__resolveRecordReferenceNodes()
         self.__resolveFieldRefArguments()
         self.__resolveFunctionRefArguments()
-        self.__resolveHydratorRefArguments()
         
         # set setter references
         self.__setFieldSetterReferences()
@@ -555,35 +554,6 @@ class XMLReader(object):
             resolvedFunctionRefArgumentNode.setFunctionRef(functionNode)
             parent.setArgument(resolvedFunctionRefArgumentNode)
     
-    def __resolveHydratorRefArguments(self):
-        nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedHydratorRefArgumentNode)
-        for unresolvedHydratorRefArgumentNode in nodeFilter.getAll(self.__astRoot):
-            parent = unresolvedHydratorRefArgumentNode.getParent()
-            fqName = unresolvedHydratorRefArgumentNode.getAttribute("ref")
-
-            if fqName.find(":") > -1:
-                sequenceKey = fqName[:fqName.find(":")]
-                hydratorKey = fqName[fqName.find(":")+1:]
-            else:
-                message = "Cannot resolve hydrator reference for hydrator `%s`" % (fqName)
-                self.__log.error(message)
-                raise RuntimeError(message)
-
-            hydratorContainer = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(sequenceKey).getHydrators()
-            if not hydratorContainer.hasHydrator(hydratorKey):
-                message = "Cannot resolve hydrator reference for hydrator `%s`" % (fqName)
-                self.__log.error(message)
-                raise RuntimeError(message)
-
-            hydratorNode = hydratorContainer.getHydrator(hydratorKey)
-            
-            resolvedHydratorRefArgumentNode = ResolvedHydratorRefArgumentNode()
-            resolvedHydratorRefArgumentNode.setAttribute('key', unresolvedHydratorRefArgumentNode.getAttribute("key"))
-            resolvedHydratorRefArgumentNode.setAttribute('ref', fqName)
-            resolvedHydratorRefArgumentNode.setAttribute('type', hydratorNode.getAttribute("type_alias"))
-            resolvedHydratorRefArgumentNode.setHydratorRef(hydratorNode)
-            parent.setArgument(resolvedHydratorRefArgumentNode)
-    
     def __setFieldSetterReferences(self):
         # set reverse references from the record fields to their corresponding setters
         nodeFilter = DepthFirstNodeFilter(filterType=FieldSetterNode)
@@ -651,12 +621,6 @@ class XMLReader(object):
         # read record type (mandatory)
         recordTypeXMLNode = xPathContext.xpathEval("./m:record_type")
         self.__readRecordType(recordSequenceNode, recordTypeXMLNode.pop())
-        # read hydrators (optional)
-        hydratorsXMLNode = xPathContext.xpathEval("./m:hydrators")
-        self.__readHydrators(recordSequenceNode, hydratorsXMLNode.pop() if len(hydratorsXMLNode) > 0 else None)
-        # read hydration plan (optional)
-        hydrationPlanXMLNode = xPathContext.xpathEval("./m:hydration_plan")
-        self.__readHydrationPlan(recordSequenceNode, hydrationPlanXMLNode.pop() if len(hydrationPlanXMLNode) > 0 else None)
         # read setter chain (optional)
         setterChainXMLNode = xPathContext.xpathEval("./m:setter_chain")
         self.__readSetterChain(recordSequenceNode, setterChainXMLNode.pop() if len(setterChainXMLNode) > 0 else None)
@@ -712,46 +676,6 @@ class XMLReader(object):
         cardinalityEstimatorNode = self.__cardinalityEstimatorFactory(xmlContext)
         ArgumentReader.readArguments(xmlContext, cardinalityEstimatorNode)
         astContext.setCardinalityEstimator(cardinalityEstimatorNode)
-        
-    def __readHydrators(self, astContext, xmlContext):
-        # create and attach the AST node
-        hydratorsNode = HydratorsNode()
-        astContext.setHydrators(hydratorsNode)
-        
-        # sanity check (XML element is not mandatory)
-        if (xmlContext == None):
-            return
-        
-        # derive xPath context from the given xmlContext node
-        xPathContext = AbstractReader._createXPathContext(xmlContext)
-        
-        i = 0
-        for hydrator in xPathContext.xpathEval("./m:hydrator"):
-            hydratorNode = self.__hydratorFactory(hydrator, i)
-            hydratorNode.setOrderKey(i)
-
-            hydratorsNode.setHydrator(hydratorNode)
-            i = i+1
-            
-    def __readHydrationPlan(self, astContext, xmlContext):
-        # create and attach the AST node
-        hydrationPlanNode = HydrationPlanNode()
-        astContext.setHydrationPlan(hydrationPlanNode)
-        
-        # sanity check (XML element is not mandatory)
-        if (xmlContext == None):
-            return
-        
-        # derive xPath context from the given xmlContext node
-        xPathContext = AbstractReader._createXPathContext(xmlContext)
-        
-        for hydratorRef in xPathContext.xpathEval("./m:hydrator_ref"):
-            if not astContext.getHydrators().hasHydrator(hydratorRef.prop("ref")):
-                message = "Cannot resolve hydrator reference for hydrator `%s`" % (hydratorRef.prop("ref"))
-                self.__log.error(message)
-                raise RuntimeError(message)
-                
-            hydrationPlanNode.addHydrator(astContext.getHydrators().getHydrator(hydratorRef.prop("ref")))
                     
     def __readSetterChain(self, astContext, xmlContext):
         # create and attach the AST node
@@ -870,33 +794,6 @@ class XMLReader(object):
         ArgumentReader.readArguments(functionXMLNode, functionNode)
         
         return functionNode
-    
-    def __hydratorFactory(self, hydratorXMLNode, i):
-        t = hydratorXMLNode.prop("type")
-        
-        # factory logic
-        hydratorNode = None
-        if t == "clustered_reference_hydrator":
-            hydratorNode = ClusteredReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "conditional_randomized_hydrator":
-            hydratorNode = ConditionalRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "const_hydrator":
-            hydratorNode = ConstValueHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "referenced_record_hydrator":
-            hydratorNode = ReferencedRecordHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "reference_hydrator":
-            hydratorNode = ReferenceHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "simple_clustered_hydrator":
-            hydratorNode = SimpleClusteredHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        elif t == "simple_randomized_hydrator":
-            hydratorNode = SimpleRandomizedHydratorNode(key=hydratorXMLNode.prop("key"), type=hydratorXMLNode.prop("type"), type_alias="H%02d" % (i))
-        else:
-            raise RuntimeError('Unsupported hydrator type `%s`' % (t))
-        
-        # append arguments
-        ArgumentReader.readArguments(hydratorXMLNode, hydratorNode)
-        
-        return hydratorNode
         
     def __setterFactory(self, setterXMLNode):
         t = setterXMLNode.prop("type")
