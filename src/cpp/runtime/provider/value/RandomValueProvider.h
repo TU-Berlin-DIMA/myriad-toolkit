@@ -29,18 +29,18 @@ namespace Myriad {
 // value provider for random values (conditioned variant)
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<typename ValueType, class CxtRecordType, class PrFunctionType, I16u conditionFID>
+template<typename ValueType, class CxtRecordType, class PrFunctionType, I16u condFieldID>
 class RandomValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 
-    typedef typename RecordFieldTraits<conditionFID, CxtRecordType>::FieldType CxtRecordFieldType;
-    typedef typename RecordFieldTraits<conditionFID, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
+    typedef typename RecordFieldTraits<condFieldID, CxtRecordType>::FieldType CxtRecordFieldType;
+    typedef typename RecordFieldTraits<condFieldID, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
 
     RandomValueProvider(const PrFunctionType& prFunction) :
     	AbstractValueProvider<ValueType, CxtRecordType>(1, false),
         _prFunction(prFunction),
-        _fieldGetter(RecordFieldTraits<conditionFID, CxtRecordType>::getter())
+        _fieldGetter(RecordFieldTraits<condFieldID, CxtRecordType>::getter())
     {
     }
 
