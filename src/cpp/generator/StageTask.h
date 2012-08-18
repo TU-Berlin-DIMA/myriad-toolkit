@@ -16,7 +16,7 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef STAGEEXECUTOR_H_
+#ifndef STAGETASK_H_
 #define STAGETASK_H_
 
 #include "core/types.h"

@@ -19,7 +19,7 @@
 #ifndef GENERATORPOOL_H_
 #define GENERATORPOOL_H_
 
-#include "generator/RecordGenerator.h"
+#include "generator/AbstractSequenceGenerator.h"
 
 #include <list>
 #include <Poco/AutoReleasePool.h>
@@ -41,12 +41,12 @@ public:
 
 	template<class C> C& get() const;
 
-	list<RecordGenerator*>& getAll();
+	list<AbstractSequenceGenerator*>& getAll();
 
 private:
 
-	AutoReleasePool<RecordGenerator> autoReleasePool;
-	list<RecordGenerator*> generators;
+	AutoReleasePool<AbstractSequenceGenerator> autoReleasePool;
+	list<AbstractSequenceGenerator*> generators;
 };
 
 template<class C> void GeneratorPool::set(C* generator)
@@ -57,9 +57,9 @@ template<class C> void GeneratorPool::set(C* generator)
 
 template<class C> C& GeneratorPool::get() const
 {
-	for (list<RecordGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
+	for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
 	{
-		const RecordGenerator* pSS(*it);
+		const AbstractSequenceGenerator* pSS(*it);
 		const C* pC = dynamic_cast<const C*>(pSS);
 		if (pC) return *const_cast<C*>(pC);
 	}
@@ -67,7 +67,7 @@ template<class C> C& GeneratorPool::get() const
 	throw LogicException("Trying to access unsupported generator type");
 }
 
-inline list<RecordGenerator*>& GeneratorPool::getAll()
+inline list<AbstractSequenceGenerator*>& GeneratorPool::getAll()
 {
 	return generators;
 }

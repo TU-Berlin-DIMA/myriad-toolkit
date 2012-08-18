@@ -19,7 +19,7 @@
 #ifndef RANDOMREFERENCEPROVIDER_H_
 #define RANDOMREFERENCEPROVIDER_H_
 
-#include "generator/RandomSetGenerator.h"
+#include "generator/RandomSequenceGenerator.h"
 #include "runtime/provider/reference/AbstractReferenceProvider.h"
 
 using namespace Poco;

@@ -21,7 +21,7 @@
 #include "communication/CommunicationSubsystem.h"
 #include "communication/Notifications.h"
 #include "generator/GeneratorSubsystem.h"
-#include "generator/RecordGenerator.h"
+#include "generator/AbstractSequenceGenerator.h"
 
 #include <string>
 #include <iostream>
@@ -41,7 +41,7 @@ using Poco::Util::OptionSet;
 namespace Myriad {
 
 Frontend::Frontend() :
-	_executeStages(RecordGenerator::STAGES.size(), false),
+	_executeStages(AbstractSequenceGenerator::STAGES.size(), false),
 	_metaInfoRequested(false),
 	_excCaught(false),
 	_ui(Logger::get("ui"))
@@ -187,7 +187,7 @@ void Frontend::defineOptions(OptionSet& options)
 
 void Frontend::handleExecuteStage(const string& name, const string& stage)
 {
-	for (RecordGenerator::StageList::const_iterator it = RecordGenerator::STAGES.begin(); it != RecordGenerator::STAGES.end(); ++it)
+	for (AbstractSequenceGenerator::StageList::const_iterator it = AbstractSequenceGenerator::STAGES.begin(); it != AbstractSequenceGenerator::STAGES.end(); ++it)
 	{
 		if (stage == it->name())
 		{

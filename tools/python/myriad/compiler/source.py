@@ -484,22 +484,22 @@ class GeneratorSubsystemCompiler(SourceCompiler):
         print >> wfile, 'namespace Myriad {'
         print >> wfile, ''
         print >> wfile, '// the initial stage ID should always be zero'
-        print >> wfile, 'I32u RecordGenerator::Stage::NEXT_STAGE_ID = 0;'
+        print >> wfile, 'I32u AbstractSequenceGenerator::Stage::NEXT_STAGE_ID = 0;'
         print >> wfile, ''
         print >> wfile, '// register the valid stages for the Myriad generator extension'
-        print >> wfile, 'RecordGenerator::StageList initList()'
+        print >> wfile, 'AbstractSequenceGenerator::StageList initList()'
         print >> wfile, '{'
-        print >> wfile, '    RecordGenerator::StageList tmp;'
+        print >> wfile, '    AbstractSequenceGenerator::StageList tmp;'
         print >> wfile, ''
         
         for recordSequence in astRoot.getSpecification().getRecordSequences().getRecordSequences():
-            print >> wfile, '    tmp.push_back(RecordGenerator::Stage("%s"));' % (recordSequence.getAttribute("key"))
+            print >> wfile, '    tmp.push_back(AbstractSequenceGenerator::Stage("%s"));' % (recordSequence.getAttribute("key"))
         
         print >> wfile, ''
         print >> wfile, '    return tmp;'
         print >> wfile, '}'
         print >> wfile, ''
-        print >> wfile, 'const RecordGenerator::StageList RecordGenerator::STAGES(initList());'
+        print >> wfile, 'const AbstractSequenceGenerator::StageList AbstractSequenceGenerator::STAGES(initList());'
         print >> wfile, ''
         print >> wfile, '// register the record sequence generators'
         print >> wfile, 'void BaseGeneratorSubsystem::registerGenerators()'
@@ -1541,7 +1541,7 @@ class SetterChainCompiler(SourceCompiler):
         wfile.close()
 
 
-class RecordGeneratorCompiler(SourceCompiler):
+class AbstractSequenceGeneratorCompiler(SourceCompiler):
     '''
     classdocs
     '''
@@ -1550,7 +1550,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         '''
         Constructor
         '''
-        super(RecordGeneratorCompiler, self).__init__(*args, **kwargs)
+        super(AbstractSequenceGeneratorCompiler, self).__init__(*args, **kwargs)
         
     def compileCode(self, recordSequences):
         for recordSequence in recordSequences.getRecordSequences():
@@ -1583,7 +1583,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '#ifndef BASE%sGENERATOR_H_' % (typeNameUC)
         print >> wfile, '#define BASE%sGENERATOR_H_' % (typeNameUC)
         print >> wfile, ''
-        print >> wfile, '#include "generator/RandomSetGenerator.h"'
+        print >> wfile, '#include "generator/RandomSequenceGenerator.h"'
         print >> wfile, '#include "runtime/setter/%sSetterChain.h"' % (typeNameCC)
         print >> wfile, ''
         print >> wfile, 'using namespace Myriad;'
@@ -1591,22 +1591,22 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// RecordGenerator specialization (base class)'
+        print >> wfile, '// AbstractSequenceGenerator specialization (base class)'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
-        print >> wfile, 'class Base%(t)sGenerator: public RandomSetGenerator<%(t)s>' % {'t': typeNameCC}
+        print >> wfile, 'class Base%(t)sGenerator: public RandomSequenceGenerator<%(t)s>' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
         print >> wfile, '    Base%sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
-        print >> wfile, '        RandomSetGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
+        print >> wfile, '        RandomSequenceGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, '    void prepare(Stage stage, const GeneratorPool& pool)'
         print >> wfile, '    {'
         print >> wfile, '        // call generator implementation'
-        print >> wfile, '        RandomSetGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
+        print >> wfile, '        RandomSequenceGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
         
         if recordSequence.hasSequenceIterator():
             sequenceIterator = recordSequence.getSequenceIterator()
@@ -1665,7 +1665,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// RecordGenerator specialization'
+        print >> wfile, '// AbstractSequenceGenerator specialization'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'class %(t)sGenerator: public Base%(t)sGenerator' % {'t': typeNameCC}

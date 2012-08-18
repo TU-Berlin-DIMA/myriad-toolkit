@@ -19,7 +19,7 @@
 #ifndef CLUSTEREDREFERENCEPROVIDER_H_
 #define CLUSTEREDREFERENCEPROVIDER_H_
 
-#include "generator/RandomSetGenerator.h"
+#include "generator/RandomSequenceGenerator.h"
 #include "generator/InvalidRecordException.h"
 #include "runtime/provider/reference/AbstractReferenceProvider.h"
 #include "runtime/provider/value/ContextFieldValueProvider.h"

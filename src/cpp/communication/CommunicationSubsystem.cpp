@@ -17,7 +17,7 @@
  */
 
 #include "communication/CommunicationSubsystem.h"
-#include "generator/RecordGenerator.h"
+#include "generator/AbstractSequenceGenerator.h"
 
 #include <Poco/Runnable.h>
 #include <Poco/Net/HTTPRequest.h>
@@ -109,7 +109,7 @@ void CommunicationSubsystem::initialize(Application& app)
 	{
 		// set config and reset node status state
 		_config = &(app.config());
-		_state.reset(_config->getInt("common.partitioning.chunks-id"), RecordGenerator::STAGES.size());
+		_state.reset(_config->getInt("common.partitioning.chunks-id"), AbstractSequenceGenerator::STAGES.size());
 
 		// attach observers
 		_notificationCenter.addObserver(Observer<CommunicationSubsystem, StartStage> (*this, &CommunicationSubsystem::onStageStart));

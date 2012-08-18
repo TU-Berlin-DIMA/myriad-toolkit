@@ -34,9 +34,9 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 /**
- * Function object handling RecordGenerator thread creation for ready generators.
+ * Function object handling AbstractSequenceGenerator thread creation for ready generators.
  */
-class ThreadExecutor: public unary_function<void, RecordGenerator*>
+class ThreadExecutor: public unary_function<void, AbstractSequenceGenerator*>
 {
 public:
 	ThreadExecutor(AbstractGeneratorSubsystem& caller) :
@@ -44,9 +44,9 @@ public:
 	{
 	}
 
-	void operator()(RecordGenerator* generator)
+	void operator()(AbstractSequenceGenerator* generator)
 	{
-		RecordGenerator::TaskPtrList::const_iterator it;
+		AbstractSequenceGenerator::TaskPtrList::const_iterator it;
 		for (it = generator->executors().begin(); it != generator->executors().end(); ++it)
 		{
 			AbstractStageTask* task = (*it);
@@ -129,15 +129,21 @@ void AbstractGeneratorSubsystem::initialize(Application& app)
 		// initialize the GeneratorConfig instance
 		_config.initialize(app.config());
 
+		// scaling factor should always be greater or equal than 1.0
+		if (_config.scalingFactor() < 1.0)
+		{
+			throw LogicException("Scaling factor can not be less than 1.0");
+		}
+
 		_ui.information(format("Scaling factor is %s", toString(_config.scalingFactor())));
 		_ui.information(format("Job output will be written in %s", _config.getString("application.job-dir")));
 
 		// register all generators in the generator pool
 		registerGenerators();
-		list<RecordGenerator*>& generators = _generatorPool.getAll();
+		list<AbstractSequenceGenerator*>& generators = _generatorPool.getAll();
 
 		// initialize all registered generators
-		for(list<RecordGenerator*>::iterator it = generators.begin(); it != generators.end(); ++it)
+		for(list<AbstractSequenceGenerator*>::iterator it = generators.begin(); it != generators.end(); ++it)
 		{
 			(*it)->initialize();
 		}
@@ -175,9 +181,9 @@ void AbstractGeneratorSubsystem::uninitialize()
 	_initialized = false;
 }
 
-unsigned short AbstractGeneratorSubsystem::prepareStage(RecordGenerator::Stage stage)
+unsigned short AbstractGeneratorSubsystem::prepareStage(AbstractSequenceGenerator::Stage stage)
 {
-	list<RecordGenerator*>& generators = _generatorPool.getAll();
+	list<AbstractSequenceGenerator*>& generators = _generatorPool.getAll();
 
 	if (_logger.debug())
 	{
@@ -185,7 +191,7 @@ unsigned short AbstractGeneratorSubsystem::prepareStage(RecordGenerator::Stage s
 	}
 
 	unsigned short runnableCount = 0;
-	for (RecordGenerator::PtrList::iterator it = generators.begin(); it != generators.end(); ++it)
+	for (AbstractSequenceGenerator::PtrList::iterator it = generators.begin(); it != generators.end(); ++it)
 	{
 		(*it)->prepare(stage, _generatorPool);
 		runnableCount += (*it)->runnableTasksCount();
@@ -200,10 +206,10 @@ unsigned short AbstractGeneratorSubsystem::prepareStage(RecordGenerator::Stage s
 	return runnableCount;
 }
 
-void AbstractGeneratorSubsystem::cleanupStage(RecordGenerator::Stage stage)
+void AbstractGeneratorSubsystem::cleanupStage(AbstractSequenceGenerator::Stage stage)
 {
-	list<RecordGenerator*>& generators = _generatorPool.getAll();
-	for (RecordGenerator::PtrList::iterator it = generators.begin(); it != generators.end(); ++it)
+	list<AbstractSequenceGenerator*>& generators = _generatorPool.getAll();
+	for (AbstractSequenceGenerator::PtrList::iterator it = generators.begin(); it != generators.end(); ++it)
 	{
 		(*it)->cleanup(stage);
 	}
@@ -227,8 +233,8 @@ void AbstractGeneratorSubsystem::start()
 		// start total timer
 		totalTimer.start();
 
-		list<RecordGenerator*>& generators = _generatorPool.getAll();
-		for (RecordGenerator::StageList::const_iterator it = RecordGenerator::STAGES.begin(); it != RecordGenerator::STAGES.end(); ++it)
+		list<AbstractSequenceGenerator*>& generators = _generatorPool.getAll();
+		for (AbstractSequenceGenerator::StageList::const_iterator it = AbstractSequenceGenerator::STAGES.begin(); it != AbstractSequenceGenerator::STAGES.end(); ++it)
 		{
 			if (!_executeStages[it->id()])
 			{

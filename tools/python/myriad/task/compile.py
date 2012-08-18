@@ -83,5 +83,5 @@ class CompileModelTask(AbstractTask):
         setterChainCompiler = SetterChainCompiler(args=args)
         setterChainCompiler.compileCode(ast.getSpecification().getRecordSequences())
         # compile record generators
-        generatorCompiler = RecordGeneratorCompiler(args=args)
+        generatorCompiler = AbstractSequenceGeneratorCompiler(args=args)
         generatorCompiler.compileCode(ast.getSpecification().getRecordSequences())

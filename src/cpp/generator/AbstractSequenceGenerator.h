@@ -16,8 +16,8 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef RECORDGENERATOR_H_
-#define RECORDGENERATOR_H_
+#ifndef ABSTRACTSEQUENCEGENERATOR_H_
+#define ABSTRACTSEQUENCEGENERATOR_H_
 
 #include "communication/Notifications.h"
 #include "config/GeneratorConfig.h"
@@ -74,19 +74,19 @@ private:
 	const string _name;
 };
 
-class RecordGenerator
+class AbstractSequenceGenerator
 {
 public:
 
 	typedef GeneratorStage Stage;
-	typedef list<RecordGenerator*> PtrList;
+	typedef list<AbstractSequenceGenerator*> PtrList;
 	typedef list<Stage> StageList;
 	typedef list<AbstractStageTask*> TaskPtrList;
 	typedef AutoReleasePool<AbstractStageTask> ExecutorPool;
 
 	static const StageList STAGES;
 
-	RecordGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :
+	AbstractSequenceGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :
 		_name(name),
 		_config(config),
 		_notificationCenter(notificationCenter),
@@ -166,7 +166,7 @@ protected:
 	/**
 	 * Virtual destructor for abstract base class.
 	 */
-	virtual ~RecordGenerator()
+	virtual ~AbstractSequenceGenerator()
 	{
 	}
 
@@ -245,10 +245,10 @@ protected:
 
 private:
 
-	RecordGenerator(const RecordGenerator&);
-	RecordGenerator& operator =(const RecordGenerator&);
+	AbstractSequenceGenerator(const AbstractSequenceGenerator&);
+	AbstractSequenceGenerator& operator =(const AbstractSequenceGenerator&);
 };
 
 } // namespace Myriad
 
-#endif /* RECORDGENERATOR_H_ */
+#endif /* ABSTRACTSEQUENCEGENERATOR_H_ */

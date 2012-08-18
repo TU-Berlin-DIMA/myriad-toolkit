@@ -19,7 +19,7 @@
 #ifndef ABSTRACTGENERATORSUBSYSTEM_H_
 #define ABSTRACTGENERATORSUBSYSTEM_H_
 
-#include "generator/RecordGenerator.h"
+#include "generator/AbstractSequenceGenerator.h"
 #include "generator/GeneratorPool.h"
 
 #include <string>
@@ -94,14 +94,14 @@ private:
 	 * @param stage
 	 * @return the number of runnable tasks for this stage
 	 */
-	unsigned short prepareStage(RecordGenerator::Stage stage);
+	unsigned short prepareStage(AbstractSequenceGenerator::Stage stage);
 
 	/**
 	 * Cleans up all generators upon execution of the current stage.
 	 *
 	 * @param stage
 	 */
-	void cleanupStage(RecordGenerator::Stage stage);
+	void cleanupStage(AbstractSequenceGenerator::Stage stage);
 
 	/**
 	 * A reference to the application wide notification center.

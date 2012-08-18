@@ -37,7 +37,7 @@ namespace Myriad {
 // forward declarations
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-class RecordGenerator;
+class AbstractSequenceGenerator;
 template<class RecordType>
 class SetterChain;
 template<class RecordType>
@@ -55,7 +55,7 @@ template<class RecordType>
 struct RecordTraits
 {
 	typedef RecordMeta<RecordType> MetaType;
-	typedef RecordGenerator GeneratorType;
+	typedef AbstractSequenceGenerator GeneratorType;
 	typedef SetterChain<RecordType> SetterChainType;
 	typedef RecordFactory<RecordType> FactoryType;
 	typedef RecordRangePredicate<RecordType> RangePredicateType;
