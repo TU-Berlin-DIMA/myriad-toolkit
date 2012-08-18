@@ -79,6 +79,9 @@ class CompileModelTask(AbstractTask):
         # compile record types
         recordCompiler = RecordTypeCompiler(args=args)
         recordCompiler.compileCode(ast.getSpecification().getRecordSequences())
+        # compile record setter chains
+        setterChainCompiler = SetterChainCompiler(args=args)
+        setterChainCompiler.compileCode(ast.getSpecification().getRecordSequences())
         # compile record generators
         generatorCompiler = RecordGeneratorCompiler(args=args)
         generatorCompiler.compileCode(ast.getSpecification().getRecordSequences())

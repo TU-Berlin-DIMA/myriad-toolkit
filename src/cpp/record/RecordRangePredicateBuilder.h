@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * Object hydrating function (external PRNG).
+     * Applies the setter chain to the given record instance (external PRNG).
      */
     void operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RecordRangePredicateType& predicate, RandomStream& random)
     {

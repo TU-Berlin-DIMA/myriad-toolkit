@@ -79,7 +79,7 @@ public:
 	}
 
 	/**
-	 * Object hydrating function.
+	 * Applies the setter chain to the given record instance.
 	 */
 	virtual void operator()(AutoPtr<RecordType> recordPtr) const = 0;
 

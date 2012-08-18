@@ -579,8 +579,8 @@ class GeneratorSubsystemCompiler(SourceCompiler):
             print >> wfile, ''
             print >> wfile, '} // namespace Myriad'
     
-            wfile.close()
-        
+            wfile.close()    
+
 
 class ConfigCompiler(SourceCompiler):
     '''
@@ -1312,51 +1312,49 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#endif /* %sUTIL_H_ */' % (typeNameUC)
 
 
-class RecordGeneratorCompiler(SourceCompiler):
+class SetterChainCompiler(SourceCompiler):
     '''
     classdocs
     '''
-    
-    _getter_pattern = re.compile('getter\(([a-zA-Z_]+)\)')
     
     def __init__(self, *args, **kwargs):
         '''
         Constructor
         '''
-        super(RecordGeneratorCompiler, self).__init__(*args, **kwargs)
+        super(SetterChainCompiler, self).__init__(*args, **kwargs)
         
     def compileCode(self, recordSequences):
         for recordSequence in recordSequences.getRecordSequences():
-            self._log.info("Compiling generator C++ sources for `%s`." % (recordSequence.getAttribute("key")))
-            self.compileBaseGenerator(recordSequence)
-            self.compileGenerator(recordSequence)
+            self._log.info("Compiling setter chain C++ sources for `%s`." % (recordSequence.getAttribute("key")))
+            self.compileBaseSetterChain(recordSequence)
+            self.compileSetterChain(recordSequence)
             
-    def compileBaseGenerator(self, recordSequence):
+    def compileBaseSetterChain(self, recordSequence):
         try:
-            os.makedirs("%s/cpp/generator/base" % (self._srcPath))
+            os.makedirs("%s/cpp/runtime/setter/base" % (self._srcPath))
         except OSError:
             pass
         
         if isinstance(recordSequence, RandomSequenceNode):
-            self.__compileBaseRandomGenerator(recordSequence)
+            self.__compileBaseRandomSequenceSetterChain(recordSequence)
         else:
             self._log.warning("unsupported generator type for sequence `%s`" % (recordSequence.getAttribute("key")))
 
-    def __compileBaseRandomGenerator(self, recordSequence):
+    def __compileBaseRandomSequenceSetterChain(self, recordSequence):
         typeNameUS = recordSequence.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
         typeNameUC = StringTransformer.uc(typeNameCC)
         
-        sourcePath = "%s/cpp/generator/base/Base%sGenerator.h" % (self._srcPath, typeNameCC)
+        sourcePath = "%s/cpp/runtime/setter/base/Base%sSetterChain.h" % (self._srcPath, typeNameCC)
         
         wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
         
-        print >> wfile, '// auto-generatad C++ generator for `%s`' % (typeNameUS)
+        print >> wfile, '// auto-generatad C++ setter chain for `%s`' % (typeNameUS)
         print >> wfile, ''
-        print >> wfile, '#ifndef BASE%sGENERATOR_H_' % (typeNameUC)
-        print >> wfile, '#define BASE%sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, '#ifndef BASE%sSETTERCHAIN_H_' % (typeNameUC)
+        print >> wfile, '#define BASE%sSETTERCHAIN_H_' % (typeNameUC)
         print >> wfile, ''
-        print >> wfile, '#include "generator/RandomSetGenerator.h"'
+        print >> wfile, '#include "runtime/setter/SetterChain.h"'
         
         for referenceType in sorted(recordSequence.getRecordType().getReferenceTypes()):
             print >> wfile, '#include "generator/%sGenerator.h"' % (StringTransformer.sourceType(referenceType))
@@ -1371,37 +1369,6 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, 'using namespace Myriad;'
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
-        print >> wfile, ''
-        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// RecordGenerator specialization (base class)'
-        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, ''
-        print >> wfile, 'class Base%(t)sGenerator: public RandomSetGenerator<%(t)s>' % {'t': typeNameCC}
-        print >> wfile, '{'
-        print >> wfile, 'public:'
-        print >> wfile, ''
-        print >> wfile, '    Base%sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
-        print >> wfile, '        RandomSetGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
-        print >> wfile, '    {'
-        print >> wfile, '    }'
-        print >> wfile, ''
-        print >> wfile, '    void prepare(Stage stage, const GeneratorPool& pool)'
-        print >> wfile, '    {'
-        print >> wfile, '        // call generator implementation'
-        print >> wfile, '        RandomSetGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
-        
-        if recordSequence.hasSequenceIterator():
-            sequenceIterator = recordSequence.getSequenceIterator()
-            sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
-            
-            print >> wfile, ''
-            print >> wfile, '        if (stage.name() == name())'
-            print >> wfile, '        {'
-            print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(sequenceIteratorArgsCode))
-            print >> wfile, '        }'
-            
-        print >> wfile, '    }'
-        print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, '// SetterChain specialization (base class)'
@@ -1443,7 +1410,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    }'
         print >> wfile, ''
         print >> wfile, '    /**'
-        print >> wfile, '     * Object hydrating function.'
+        print >> wfile, '     * Applies the setter chain to the given record instance.'
         print >> wfile, '     */'
         print >> wfile, '    void operator()(AutoPtr<%s> recordPtr) const' % (typeNameCC)
         print >> wfile, '    {'
@@ -1499,22 +1466,184 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
-        print >> wfile, '#endif /* BASE%sGENERATOR_H_ */' % (typeNameUC)
+        print >> wfile, '#endif /* BASE%sSETTERCHAIN_H_ */' % (typeNameUC)
 
         wfile.close()
             
-    def compileGenerator(self, recordSequence):
+    def compileSetterChain(self, recordSequence):
         try:
             os.makedirs("%s/cpp/generator" % (self._srcPath))
         except OSError:
             pass
         
         if isinstance(recordSequence, RandomSequenceNode):
-            self.__compileRandomGenerator(recordSequence)
+            self.__compileRandomSequenceSetterChain(recordSequence)
         else:
             self._log.warning("unsupported generator type for sequence `%s`" % (recordSequence.getAttribute("key")))
 
-    def __compileRandomGenerator(self, recordSequence):
+    def __compileRandomSequenceSetterChain(self, recordSequence):
+        typeNameUS = recordSequence.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        sourcePath = "%s/cpp/runtime/setter/%sSetterChain.h" % (self._srcPath, typeNameCC)
+        
+        if (os.path.isfile(sourcePath)):
+            return
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '#ifndef %sSETTERCHAIN_H_' % (typeNameUC)
+        print >> wfile, '#define %sSETTERCHAIN_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "runtime/setter/base/Base%sSetterChain.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// SetterChain specialization'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
+        print >> wfile, 'class %(t)sSetterChain : public Base%(t)sSetterChain' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    %sSetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
+        print >> wfile, '        Base%sSetterChain(opMode, random, config)' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    virtual ~%sSetterChain()' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        
+        if recordSequence.getSetterChain().settersCount() > 0:
+            nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
+            for node in nodeFilter.getAll(recordSequence.getSetterChain()):
+                print >> wfile, ''
+                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random)' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
+                print >> wfile, '    {'
+                if (node.getArgument('type').getAttribute('value').lower() == 'string'):
+                    print >> wfile, '        return "";'
+                else:
+                    print >> wfile, '        return nullValue<%s>();' % (node.getArgument('type').getAttribute('value'))
+                print >> wfile, '    }'
+        
+        
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sGENERATOR_H_ */' % (typeNameUC)
+
+        wfile.close()
+
+
+class RecordGeneratorCompiler(SourceCompiler):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        super(RecordGeneratorCompiler, self).__init__(*args, **kwargs)
+        
+    def compileCode(self, recordSequences):
+        for recordSequence in recordSequences.getRecordSequences():
+            self._log.info("Compiling generator C++ sources for `%s`." % (recordSequence.getAttribute("key")))
+            self.compileBaseSetterChain(recordSequence)
+            self.compileSetterChain(recordSequence)
+            
+    def compileBaseSetterChain(self, recordSequence):
+        try:
+            os.makedirs("%s/cpp/generator/base" % (self._srcPath))
+        except OSError:
+            pass
+        
+        if isinstance(recordSequence, RandomSequenceNode):
+            self.__compileBaseRandomSequenceGenerator(recordSequence)
+        else:
+            self._log.warning("unsupported generator type for sequence `%s`" % (recordSequence.getAttribute("key")))
+
+    def __compileBaseRandomSequenceGenerator(self, recordSequence):
+        typeNameUS = recordSequence.getAttribute("key")
+        typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
+        typeNameUC = StringTransformer.uc(typeNameCC)
+        
+        sourcePath = "%s/cpp/generator/base/Base%sGenerator.h" % (self._srcPath, typeNameCC)
+        
+        wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
+        
+        print >> wfile, '// auto-generatad C++ generator for `%s`' % (typeNameUS)
+        print >> wfile, ''
+        print >> wfile, '#ifndef BASE%sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, '#define BASE%sGENERATOR_H_' % (typeNameUC)
+        print >> wfile, ''
+        print >> wfile, '#include "generator/RandomSetGenerator.h"'
+        print >> wfile, '#include "runtime/setter/%sSetterChain.h"' % (typeNameCC)
+        print >> wfile, ''
+        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, ''
+        print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, '// RecordGenerator specialization (base class)'
+        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
+        print >> wfile, ''
+        print >> wfile, 'class Base%(t)sGenerator: public RandomSetGenerator<%(t)s>' % {'t': typeNameCC}
+        print >> wfile, '{'
+        print >> wfile, 'public:'
+        print >> wfile, ''
+        print >> wfile, '    Base%sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
+        print >> wfile, '        RandomSetGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
+        print >> wfile, '    {'
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    void prepare(Stage stage, const GeneratorPool& pool)'
+        print >> wfile, '    {'
+        print >> wfile, '        // call generator implementation'
+        print >> wfile, '        RandomSetGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
+        
+        if recordSequence.hasSequenceIterator():
+            sequenceIterator = recordSequence.getSequenceIterator()
+            sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
+            
+            print >> wfile, ''
+            print >> wfile, '        if (stage.name() == name())'
+            print >> wfile, '        {'
+            print >> wfile, '            registerTask(new %s (%s));' % (sequenceIterator.getConcreteType(), ', '.join(sequenceIteratorArgsCode))
+            print >> wfile, '        }'
+            
+        print >> wfile, '    }'
+        print >> wfile, ''
+        print >> wfile, '    %(t)sSetterChain setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random)' % {'t': typeNameCC}
+        print >> wfile, '    {'
+        print >> wfile, '        return %sSetterChain(opMode, random, _config);' % (typeNameCC)
+        print >> wfile, '    }'
+        print >> wfile, '};'
+        print >> wfile, ''
+        print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
+        print >> wfile, ''
+        print >> wfile, '#endif /* BASE%sGENERATOR_H_ */' % (typeNameUC)
+
+        wfile.close()
+            
+    def compileSetterChain(self, recordSequence):
+        try:
+            os.makedirs("%s/cpp/generator" % (self._srcPath))
+        except OSError:
+            pass
+        
+        if isinstance(recordSequence, RandomSequenceNode):
+            self.__compileRandomSequenceGenerator(recordSequence)
+        else:
+            self._log.warning("unsupported generator type for sequence `%s`" % (recordSequence.getAttribute("key")))
+
+    def __compileRandomSequenceGenerator(self, recordSequence):
         typeNameUS = recordSequence.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
         typeNameUC = StringTransformer.uc(typeNameCC)
@@ -1549,51 +1678,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '        Base%sGenerator(name, config, notificationCenter)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
-        print >> wfile, ''
-        print >> wfile, '    SetterChainType setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random);'
         print >> wfile, '};'
-        print >> wfile, ''
-        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// SetterChain specialization'
-        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, ''
-        print >> wfile, 'class %(t)sSetterChain : public Base%(t)sSetterChain' % {'t': typeNameCC}
-        print >> wfile, '{'
-        print >> wfile, 'public:'
-        print >> wfile, ''
-        print >> wfile, '    %sSetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
-        print >> wfile, '        Base%sSetterChain(opMode, random, config)' % (typeNameCC)
-        print >> wfile, '    {'
-        print >> wfile, '    }'
-        print >> wfile, ''
-        print >> wfile, '    virtual ~%sSetterChain()' % (typeNameCC)
-        print >> wfile, '    {'
-        print >> wfile, '    }'
-        
-        if recordSequence.getSetterChain().settersCount() > 0:
-            print >> wfile, ''
-            nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
-            for node in nodeFilter.getAll(recordSequence.getSetterChain()):
-                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random)' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
-                print >> wfile, '    {'
-                if (node.getArgument('type').getAttribute('value').lower() == 'string'):
-                    print >> wfile, '        return "";'
-                else:
-                    print >> wfile, '        return nullValue<%s>();' % (node.getArgument('type').getAttribute('value'))
-                print >> wfile, '    }'
-                print >> wfile, ''
-        
-        
-        print >> wfile, '};'
-        print >> wfile, ''
-        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// base method definitions (don\'t modify)'
-        print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, ''
-        print >> wfile, 'inline %(t)sSetterChain %(t)sGenerator::setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random)' % {'t': typeNameCC}
-        print >> wfile, '{'
-        print >> wfile, '    return %sSetterChain(opMode, random, _config);' % (typeNameCC)
-        print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
         print >> wfile, ''
