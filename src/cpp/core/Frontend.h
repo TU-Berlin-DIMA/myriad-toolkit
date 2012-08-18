@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
+
 
 #ifndef FRONTEND_H_
 #define FRONTEND_H_
@@ -28,25 +28,76 @@ using namespace Poco;
 using namespace Poco::Util;
 
 namespace Myriad {
+/**
+ * @addtogroup core
+ * @{*/
 
+/**
+ * A command line interface (CLI) frontend for the generated data generators.
+ *
+ * The Frontend object is instantiated and executed in the main function of
+ * all Myriad based data generators.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class Frontend: public Application
 {
 public:
 
+	/**
+	 * Default constructor.
+	 */
 	Frontend();
 
+	/**
+	 * Handles the occurence of a '--help' CLI parameter.
+	 *
+	 * @param name The name of the processed parameter (always `help`).
+	 */
 	void handleHelp(const std::string& name, const std::string& value);
 
+	/**
+	 * Handles the occurence of a '--version' CLI parameter.
+	 *
+	 * @param name The name of the processed parameter (always `version`).
+	 */
 	void handleVersion(const std::string& name, const std::string& value);
 
+	/**
+	 * Handles the occurence of a '-x<value>' CLI parameter, i.e. marks the
+	 * generator stage provided by value to be executed. Per default, if
+	 * no '-x' parameters are supplied to the Frontend, all generator
+	 * stages will be executed.
+	 *
+	 * @param name The name of the processed parameter (always
+	 *             `execute-stages`).
+	 * @param value The name of the stage to be executed.
+	 */
 	void handleExecuteStage(const std::string& name, const std::string& value);
 
 protected:
 
+	/**
+	 * Initializes the application environment.
+	 *
+	 * Bootstraps the two main subsystems comprising the application - the
+	 * GeneratorSubsystem and the CommunicationSubsystem.
+	 */
 	void initialize(Application& self);
 
+	/**
+	 * Registers the set of opptions supported by the CLI Frontend.
+	 *
+	 * @param options A reference to the OptionSet used by the application.
+	 */
 	void defineOptions(OptionSet& options);
 
+	/**
+	 * Runs the data generator.
+	 *
+	 * Starts the registered GeneratorSubsystem and CommunicationSubsystem
+	 * subsystem instances.
+	 */
 	int main(const std::vector<std::string>& args);
 
 private:
@@ -60,6 +111,7 @@ private:
 	Logger& _ui;
 };
 
+/** @}*/
 } // Myriad namespace
 
 #endif /* FRONTEND_H_ */

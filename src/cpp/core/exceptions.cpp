@@ -28,13 +28,11 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 POCO_IMPLEMENT_EXCEPTION(ConfigException, Poco::Exception, "Error in configuration")
-POCO_IMPLEMENT_EXCEPTION(FeatureConfigurationException, Poco::Exception, "Error while configuring feature")
 POCO_IMPLEMENT_EXCEPTION(IntegerOverflowException, Poco::LogicException, "Integer overflow")
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // type constants
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
 
 const I16  NullValue::SHORT = std::numeric_limits<I16>::max();
 const I32  NullValue::INTEGER = std::numeric_limits<I32>::max();

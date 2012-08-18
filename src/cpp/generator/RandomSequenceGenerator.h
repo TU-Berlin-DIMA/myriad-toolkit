@@ -141,16 +141,6 @@ public:
 	}
 
 	/**
-	 * Object generating function.
-	 */
-	inline AutoPtr<RecordType> operator()() const
-	{
-		AutoPtr<RecordType> recordPtr(new RecordType());
-
-		return recordPtr;
-	}
-
-	/**
 	 * Returns a reference to the underlying RandomStream. If the configure()
 	 * method of the generator has been called, this method is guaranteed to
 	 * return a configured RandomStream instance.

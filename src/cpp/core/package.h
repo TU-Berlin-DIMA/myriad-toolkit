@@ -16,28 +16,12 @@
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#ifndef EXCEPTIONS_H_
-#define EXCEPTIONS_H_
-
-#include <Poco/Exception.h>
-
-namespace Myriad {
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// Module Documentation
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 /**
- * An exception thrown when an error in the application configuraiton is
- * detected.
+ * @defgroup core Package 'core'
  *
- * @ingroup core
+ * The 'core' package conatins all core runtime and type components.
  */
-POCO_DECLARE_EXCEPTION(, ConfigException, Poco::Exception)
-
-/**
- * An exception thrown when an integer overflow is detected by the application.
- *
- * @ingroup core
- */
-POCO_DECLARE_EXCEPTION(, IntegerOverflowException, Poco::LogicException)
-
-}  // namespace Myriad
-
-#endif /* EXCEPTIONS_H_ */
