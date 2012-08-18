@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef CONFIG_H_
@@ -22,14 +21,31 @@
 #include "core/types.h"
 
 namespace Myriad {
+/**
+ * @addtogroup core
+ * @{*/
 
+/**
+ * A holder for application specific constants.
+ *
+ * All constants are declared as static members and are defined in the
+ * generator extension C++ sources (typically in core/main.cpp file).
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 struct Constant
 {
+	/**
+	 * The name of the data generator application.
+	 */
 	static const String APP_NAME;
+	/**
+	 * The version of the data generator application.
+	 */
 	static const String APP_VERSION;
 };
 
+/** @}*/// add to core group
 }  // namespace Myriad
-
 
 #endif /* CONFIG_H_ */

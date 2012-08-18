@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef TYPES_H_
@@ -69,9 +68,10 @@ template<typename T> class Interval;
 /**
  * A traits object for reflective inspection of Record methods.
  *
- * TODO: rename to MethodTypeTraits
- * TODO: move to Record.h
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
+// TODO: rename to MethodTypeTraits
+// TODO: move to Record.h
 template<class RecordType, class T> struct MethodTraits
 {
     // getter / setter signatures in record types
@@ -86,12 +86,14 @@ template<class RecordType, class T> struct MethodTraits
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @name Type Metainformation
+/// @name NULL Values
 ////////////////////////////////////////////////////////////////////////////////
 //@{
 
 /**
  * A structure containing explicit null type constants.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 struct NullValue
 {
@@ -201,6 +203,8 @@ template<> inline const String& nullValue<String>()
  *
  * The default implementation returns the std::numeric_limits min() and
  * max() values for T.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template<typename T> class numericLimits
 {
@@ -218,6 +222,8 @@ public:
 
 /**
  * Template specialization for the Myriad-specicif Date type.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template<> class numericLimits<Date>
 {
@@ -241,7 +247,7 @@ public:
 //@{
 
 /**
- * Transforms a T value to as a string using a \ref std::stringstream instance.
+ * Transforms a T value to as a string using a std::stringstream instance.
  */
 template<class T> inline std::string toString(const T& t)
 {
@@ -251,7 +257,7 @@ template<class T> inline std::string toString(const T& t)
 }
 
 /**
- * Reads a T value from a given string using a \ref std::stringstream instance.
+ * Reads a T value from a given string using a std::stringstream instance.
  */
 template<class T> inline T fromString(const std::string& s)
 {
@@ -293,7 +299,7 @@ static inline std::string& trim(std::string& s)
 //@{
 
 /**
- * Write out to the given \ref stream either the value of t or, if t is NULL,
+ * Write out to the given std::ostream either the value of t or, if t is NULL,
  * the literal 'NULL'.
  */
 template<class T> inline void write(std::ostream& stream, const T& t, bool quoted = true)
@@ -329,7 +335,7 @@ template<> inline void write<String>(std::ostream& stream, const String& t, bool
 
 //@}
 
-/** @}*/
+/** @}*/// add to core group
 } // namespace Myriad
 
 #endif /* TYPES_H_ */

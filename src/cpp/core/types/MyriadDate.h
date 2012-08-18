@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef MYRIADDATE_H_
@@ -29,9 +28,20 @@
 using namespace Poco;
 using namespace std;
 
-namespace Myriad
-{
+namespace Myriad {
+/**
+ * @addtogroup core
+ * @{*/
 
+/**
+ * A lightweight implementation of a Date type.
+ *
+ * The class implements all value semantics in order to be used as a
+ * first-class Myriad data type. The implementation is basically a wrapper
+ * around the Poco::DateTime class.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class MyriadDate
 {
 public:
@@ -157,12 +167,23 @@ private:
 	DateTime _dateTime;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+/// @name MyriadDate Serialization Operators
+////////////////////////////////////////////////////////////////////////////////
+//@{
+
+/**
+ * Writes a MyriadDate formatted as YYYY-MM-DD to a std::ostream.
+ */
 inline std::ostream& operator<<(std::ostream& stream, const MyriadDate& ob)
 {
 	stream << Poco::DateTimeFormatter::format(ob._dateTime, "%Y-%m-%d");
 	return stream;
 }
 
+/**
+ * Reads a MyriadDate formatted as YYYY-MM-DD from a std::ostream.
+ */
 inline std::istream& operator>>(std::istream& stream, MyriadDate& ob)
 {
 	int tzd;
@@ -173,6 +194,9 @@ inline std::istream& operator>>(std::istream& stream, MyriadDate& ob)
 	return stream;
 }
 
+//@}
+
+/** @}*/// add to core group
 } // namespace Myriad
 
 #endif /* MYRIADDATE_H_ */

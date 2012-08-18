@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef EXCEPTIONS_H_
@@ -22,22 +21,26 @@
 #include <Poco/Exception.h>
 
 namespace Myriad {
+/**
+ * @addtogroup core
+ * @{*/
 
 /**
  * An exception thrown when an error in the application configuraiton is
  * detected.
  *
- * @ingroup core
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 POCO_DECLARE_EXCEPTION(, ConfigException, Poco::Exception)
 
 /**
  * An exception thrown when an integer overflow is detected by the application.
  *
- * @ingroup core
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 POCO_DECLARE_EXCEPTION(, IntegerOverflowException, Poco::LogicException)
 
+/** @}*/// add to core group
 }  // namespace Myriad
 
 #endif /* EXCEPTIONS_H_ */

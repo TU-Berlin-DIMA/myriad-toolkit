@@ -15,7 +15,6 @@
  * 
  */
 
-
 #ifndef FRONTEND_H_
 #define FRONTEND_H_
 
@@ -111,7 +110,7 @@ private:
 	Logger& _ui;
 };
 
-/** @}*/
+/** @}*/// add to core group
 } // Myriad namespace
 
 #endif /* FRONTEND_H_ */
