@@ -27,13 +27,13 @@ using namespace Poco;
 
 namespace ${{dgen_ns}} {
 
-class ${{record_name}}HydratorChain;
+class ${{record_name}}SetterChain;
 
 class ${{record_name}}Generator: public RandomSetGenerator<${{record_name}}>
 {
 public:
 
-	typedef RecordTraits<${{record_name}}>::HydratorChainType HydratorChainType;
+	typedef RecordTraits<${{record_name}}>::SetterChainType SetterChainType;
 
 	${{record_name}}Generator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :
 		RandomSetGenerator<${{record_name}}>(name, config, notificationCenter)
@@ -51,25 +51,25 @@ public:
 		}
 	}
 
-	HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random);
+	SetterChainType setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random);
 };
 
 /**
- * Hydrator specialization for ${{record_name}}.
+ * SetterChain specialization for ${{record_name}}.
  */
-class ${{record_name}}HydratorChain : public HydratorChain<${{record_name}}>
+class ${{record_name}}SetterChain : public SetterChain<${{record_name}}>
 {
 public:
 
-	// hydrator type aliases
+	// runtime components type aliases
 
-	${{record_name}}HydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :
-		HydratorChain<${{record_name}}>(opMode, random),
-		_logger(Logger::get("hydrator.${cc2us{record_name}}"))
+	${{record_name}}SetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :
+		SetterChain<${{record_name}}>(opMode, random),
+		_logger(Logger::get("${cc2us{record_name}}.setter.chain"))
 	{
 	}
 
-	virtual ~${{record_name}}HydratorChain()
+	virtual ~${{record_name}}SetterChain()
 	{
 	}
 
@@ -80,12 +80,12 @@ public:
 	{
 		ensurePosition(recordPtr->genID());
 
-		// apply hydrators
+		// apply setter chain
 	}
 
 protected:
 
-	// hydrator instances
+	// runtime components
 
 	/**
 	 * Logger instance.
@@ -97,9 +97,9 @@ protected:
 // base method definitions (don't modify)
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-inline ${{record_name}}HydratorChain ${{record_name}}Generator::hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random)
+inline ${{record_name}}SetterChain ${{record_name}}Generator::setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random)
 {
-	return ${{record_name}}HydratorChain(opMode, random, _config);
+	return ${{record_name}}SetterChain(opMode, random, _config);
 }
 
 } // namespace ${{dgen_ns}}

@@ -21,10 +21,7 @@
 
 #include "generator/InvalidRecordException.h"
 #include "generator/RecordGenerator.h"
-#include "hydrator/HydratorChain.h"
-#include "reflection/getter/FieldGetter.h"
-#include "reflection/getter/ReferencedRecordFieldGetter.h"
-#include "reflection/getter/ReferencedRecordGetter.h"
+#include "runtime/setter/SetterChain.h"
 
 #include <Poco/AutoPtr.h>
 #include <Poco/BasicEvent.h>
@@ -47,7 +44,7 @@ public:
 
 	typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
 	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
+	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
 
 	/**
 	 * Constructor.
@@ -82,10 +79,10 @@ public:
 	virtual void cleanup(Stage stage);
 
 	/**
-	 * Creates a new hydrator chain which works on the provided RandomStream
+	 * Creates a new setter chain which works on the provided RandomStream
 	 * reference.
 	 */
-	virtual RecordHydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random) = 0;
+	virtual RecordSetterChainType setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random) = 0;
 
 	/**
 	 * Record factory method.
@@ -155,14 +152,14 @@ template<class RecordType> class RandomSetInspector
 public:
 
 	typedef typename RecordTraits<RecordType>::GeneratorType RecordGeneratorType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
+	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
 	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 
 	RandomSetInspector(RandomSetGenerator<RecordType>& generator) :
 		_generator(generator),
 		_recordFactory(_generator.recordFactory()),
 		_random(_generator.random()),
-		_hydrate(_generator.hydratorChain(BaseHydratorChain::RANDOM, _random)),
+		_setterChain(_generator.setterChain(BaseSetterChain::RANDOM, _random)),
 		_logger(Logger::get("inspector."+generator.name()))
 	{
 	}
@@ -171,7 +168,7 @@ public:
 		_generator(other._generator),
 		_recordFactory(_generator.recordFactory()),
 		_random(_generator.random()),
-		_hydrate(_generator.hydratorChain(BaseHydratorChain::RANDOM, _random)),
+		_setterChain(_generator.setterChain(BaseSetterChain::RANDOM, _random)),
 		_logger(other._logger)
 	{
 	}
@@ -183,14 +180,6 @@ public:
 	const I64u cardinality() const
 	{
 	    return _generator.cardinality();
-	}
-
-	/**
-	 * Invertible hydrator getter.
-	 */
-	template<typename T> const InvertibleHydrator<RecordType, T>& invertableHydrator(typename MethodTraits<RecordType, T>::Setter setter)
-	{
-		return _hydrate.invertableHydrator<T>(setter);
 	}
 
 private:
@@ -211,9 +200,9 @@ private:
 	RandomStream _random;
 
 	/**
-	 * Hydrator for the generated records.
+	 * The SetterChain for this record type.
 	 */
-	RecordHydratorChainType _hydrate;
+	RecordSetterChainType _setterChain;
 
 	/**
 	 * Logger instance.
@@ -234,7 +223,7 @@ public:
 
 	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 	typedef typename RecordTraits<RecordType>::GeneratorType RecordGeneratorType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
+	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
 
 	RandomSetDefaultGeneratingTask(RandomSetGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
 		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
@@ -284,7 +273,7 @@ public:
 
 	typedef typename RecordTraits<RecordType>::RecordFactoryType RecordFactoryType;
 	typedef typename RecordTraits<RecordType>::GeneratorType RecordGeneratorType;
-	typedef typename RecordTraits<RecordType>::HydratorChainType RecordHydratorChainType;
+	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
 
 	typedef void (RecordType::*DateTimeSetter)(const DateTime&);
 
@@ -445,7 +434,7 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 		        throw RuntimeException(format("Subsequent child sequences of effective length zero detected at position %Lu", recordPtr->genID()));
 		    }
 
-			_hydrate(recordPtr);
+			_setterChain(recordPtr);
 			return recordPtr;
 		}
 		catch(const InvalidRecordException& e)
@@ -459,7 +448,7 @@ template<class RecordType> inline const AutoPtr<RecordType> RandomSetInspector<R
 
 template<class RecordType> inline Interval<I64u> RandomSetInspector<RecordType>::filter(const EqualityPredicate<RecordType>& predicate)
 {
-	return _hydrate.filter(predicate);
+	return _setterChain.filter(predicate);
 }
 
 template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run()
@@ -480,7 +469,7 @@ template<class RecordType> void RandomSetDefaultGeneratingTask<RecordType>::run(
 
 	_random.atChunk(current);
 
-	RecordHydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
+	RecordSetterChainType hydrate = _generator.setterChain(BaseSetterChain::SEQUENTIAL, _random);
 	while (current < last)
 	{
 		AutoPtr<RecordType> recordPtr = _recordFactory();
@@ -601,7 +590,7 @@ template<class RecordType, class ProbabilityType> void RandomSetTimeSpanGenerati
 
 	_random.atChunk(current);
 
-	RecordHydratorChainType hydrate = _generator.hydratorChain(BaseHydratorChain::SEQUENTIAL, _random);
+	RecordSetterChainType hydrate = _generator.setterChain(BaseSetterChain::SEQUENTIAL, _random);
 	while (current < last)
 	{
 		if (current >= currentPeriodLast)

@@ -39,7 +39,7 @@ namespace Myriad {
 
 class RecordGenerator;
 template<class RecordType>
-class HydratorChain;
+class SetterChain;
 template<class RecordType>
 class RecordFactory;
 template<class RecordType>
@@ -56,7 +56,7 @@ struct RecordTraits
 {
 	typedef RecordMeta<RecordType> MetaType;
 	typedef RecordGenerator GeneratorType;
-	typedef HydratorChain<RecordType> HydratorChainType;
+	typedef SetterChain<RecordType> SetterChainType;
 	typedef RecordFactory<RecordType> FactoryType;
 	typedef RecordRangePredicate<RecordType> RangePredicateType;
 

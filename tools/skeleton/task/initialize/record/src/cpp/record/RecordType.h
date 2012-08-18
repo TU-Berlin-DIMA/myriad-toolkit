@@ -27,7 +27,7 @@ namespace ${{dgen_ns}} {
 
 // forward declarations
 class ${{record_name}}Generator;
-class ${{record_name}}HydratorChain;
+class ${{record_name}}SetterChain;
 
 // ${{record_name}} class
 class ${{record_name}}: public Record
@@ -51,7 +51,7 @@ namespace Myriad {
 template<> struct RecordTraits<${{dgen_ns}}::${{record_name}}>
 {
 	typedef ${{dgen_ns}}::${{record_name}}Generator GeneratorType;
-	typedef ${{dgen_ns}}::${{record_name}}HydratorChain HydratorChainType;
+	typedef ${{dgen_ns}}::${{record_name}}SetterChain SetterChainType;
 };
 
 // forward declaration of the collector method specialization

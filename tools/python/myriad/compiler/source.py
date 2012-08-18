@@ -961,7 +961,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'class %s;' % (typeNameCC)
         print >> wfile, 'class %sConfig;' % (typeNameCC)
         print >> wfile, 'class %sGenerator;' % (typeNameCC)
-        print >> wfile, 'class %sHydratorChain;' % (typeNameCC)
+        print >> wfile, 'class %sSetterChain;' % (typeNameCC)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, '// base record type'
@@ -1101,7 +1101,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, '    typedef %s::%sMeta MetaType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef %s::%sGenerator GeneratorType;' % (self._args.dgen_ns, typeNameCC)
-        print >> wfile, '    typedef %s::%sHydratorChain HydratorChainType;' % (self._args.dgen_ns, typeNameCC)
+        print >> wfile, '    typedef %s::%sSetterChain SetterChainType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef RecordFactory<%s::%s> FactoryType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, ''
         print >> wfile, '    enum Field { UNKNOWN, GEN_ID, %s };' % ', '.join(fieldConstants)
@@ -1404,13 +1404,13 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// HydratorChain specialization (base class)'
+        print >> wfile, '// SetterChain specialization (base class)'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, '/**'
-        print >> wfile, ' * Hydrator specialization for User.'
+        print >> wfile, ' * SetterChain specialization for User.'
         print >> wfile, ' */'
-        print >> wfile, 'class Base%(t)sHydratorChain : public HydratorChain<%(t)s>' % {'t': typeNameCC}
+        print >> wfile, 'class Base%(t)sSetterChain : public SetterChain<%(t)s>' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
@@ -1423,8 +1423,8 @@ class RecordGeneratorCompiler(SourceCompiler):
                 print >> wfile, '    typedef %s %s;' % (node.getConcreteType(), node.getAttribute("type_alias"))
             
         print >> wfile, ''
-        print >> wfile, '    Base%sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
-        print >> wfile, '        HydratorChain<%s>(opMode, random),' % (typeNameCC)
+        print >> wfile, '    Base%sSetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
+        print >> wfile, '        SetterChain<%s>(opMode, random),' % (typeNameCC)
         
         
         print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
@@ -1433,12 +1433,12 @@ class RecordGeneratorCompiler(SourceCompiler):
             argsCode = ArgumentTransformer.compileConstructorArguments(self, node, {'config': 'config'})
             print >> wfile, '        %s(%s),' % (node.getAttribute("var_name"), ', '.join(argsCode))
         
-        print >> wfile, '        _logger(Logger::get("%s.hydrator"))' % (typeNameUS)
+        print >> wfile, '        _logger(Logger::get("%s.setter.chain"))' % (typeNameUS)
             
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
-        print >> wfile, '    virtual ~Base%sHydratorChain()' % (typeNameCC)
+        print >> wfile, '    virtual ~Base%sSetterChain()' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
@@ -1449,7 +1449,7 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '        ensurePosition(recordPtr->genID());'
         print >> wfile, ''
-        print >> wfile, '        Base%(t)sHydratorChain* me = const_cast<Base%(t)sHydratorChain*>(this);' % {'t': typeNameCC}
+        print >> wfile, '        Base%(t)sSetterChain* me = const_cast<Base%(t)sSetterChain*>(this);' % {'t': typeNameCC}
         print >> wfile, ''
         print >> wfile, '        // apply setter chain'
 
@@ -1543,30 +1543,30 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    typedef RecordTraits<%s>::HydratorChainType HydratorChainType;' % (typeNameCC)
+        print >> wfile, '    typedef RecordTraits<%s>::SetterChainType SetterChainType;' % (typeNameCC)
         print >> wfile, ''
         print >> wfile, '    %sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
         print >> wfile, '        Base%sGenerator(name, config, notificationCenter)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
-        print >> wfile, '    HydratorChainType hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random);'
+        print >> wfile, '    SetterChainType setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random);'
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
-        print >> wfile, '// HydratorChain specialization'
+        print >> wfile, '// SetterChain specialization'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
-        print >> wfile, 'class %(t)sHydratorChain : public Base%(t)sHydratorChain' % {'t': typeNameCC}
+        print >> wfile, 'class %(t)sSetterChain : public Base%(t)sSetterChain' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    %sHydratorChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
-        print >> wfile, '        Base%sHydratorChain(opMode, random, config)' % (typeNameCC)
+        print >> wfile, '    %sSetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
+        print >> wfile, '        Base%sSetterChain(opMode, random, config)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
-        print >> wfile, '    virtual ~%sHydratorChain()' % (typeNameCC)
+        print >> wfile, '    virtual ~%sSetterChain()' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         
@@ -1590,9 +1590,9 @@ class RecordGeneratorCompiler(SourceCompiler):
         print >> wfile, '// base method definitions (don\'t modify)'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
-        print >> wfile, 'inline %(t)sHydratorChain %(t)sGenerator::hydratorChain(BaseHydratorChain::OperationMode opMode, RandomStream& random)' % {'t': typeNameCC}
+        print >> wfile, 'inline %(t)sSetterChain %(t)sGenerator::setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random)' % {'t': typeNameCC}
         print >> wfile, '{'
-        print >> wfile, '    return %sHydratorChain(opMode, random, _config);' % (typeNameCC)
+        print >> wfile, '    return %sSetterChain(opMode, random, _config);' % (typeNameCC)
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)

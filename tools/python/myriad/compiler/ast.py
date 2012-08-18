@@ -1250,7 +1250,7 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
         # template<typename ValueType, class CxtRecordType, class CallbackType>
         valueType = self.getValueType()
         cxtRecordType = self.getCxtRecordType()
-        callbackType = "Base%sHydratorChain" % (cxtRecordType)
+        callbackType = "Base%sSetterChain" % (cxtRecordType)
         
         return "CallbackValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, callbackType)
         
@@ -1262,7 +1262,7 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
         
     def getConstructorArguments(self):
         return [ 'Verbatim(*this)',
-                 'Verbatim(&Base%sHydratorChain::%s)' % (self.getCxtRecordType(), self.getArgument("name").getAttribute("value")),
+                 'Verbatim(&Base%sSetterChain::%s)' % (self.getCxtRecordType(), self.getArgument("name").getAttribute("value")),
                  'Literal(arity)'
                ]
 
