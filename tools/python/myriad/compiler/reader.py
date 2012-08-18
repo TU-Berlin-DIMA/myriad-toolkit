@@ -398,7 +398,7 @@ class XMLReader(object):
         '''
         super(XMLReader, self).__init__()
         self.__args = args
-        self.__log = logging.getLogger("ast.reader")
+        self.__log = logging.getLogger("prototype.reader")
     
     def read(self):
         # assemble the initial AST 
@@ -408,7 +408,7 @@ class XMLReader(object):
         self.__astRoot.getSpecification().setAttribute("path", self.__args.prototype_path)
         
         # load the XML
-        self.__log.info("Reading XML specification from: `%s`." % (self.__args.prototype_path))
+        self.__log.info("Reading prototype specification from: `%s`." % (self.__args.prototype_path))
     
         # open the model specification XML
         xmlDoc = libxml2.parseFile(self.__astRoot.getSpecification().getAttribute("path"))

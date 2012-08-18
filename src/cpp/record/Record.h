@@ -103,50 +103,6 @@ inline const I64u& Record::genIDRef() const
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// record range predicate
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-template<class RecordType>
-class RecordRangePredicate
-{
-public:
-
-    RecordRangePredicate()
-    {
-    }
-
-    virtual ~RecordRangePredicate()
-    {
-    }
-
-    void genID(I64u min, I64u max);
-    void genID(I64u v);
-    const Interval<I64u>& genID() const;
-
-private:
-
-    Interval<I64u> _gen_id_range;
-};
-
-template<class RecordType>
-inline void RecordRangePredicate<RecordType>::genID(I64u min, I64u max)
-{
-    _gen_id_range.set(min, max);
-}
-
-template<class RecordType>
-inline void RecordRangePredicate<RecordType>::genID(I64u v)
-{
-    _gen_id_range.set(v++, v);
-}
-
-template<class RecordType>
-inline const Interval<I64u>& RecordRangePredicate<RecordType>::genID() const
-{
-    return _gen_id_range;
-}
-
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // record factory
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
@@ -231,14 +187,8 @@ template <I16u fid, class RecordType>
 struct RecordFieldTraits
 {
 	typedef I64u FieldType;
-	// record field getter / setter types
 	typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType;
 	typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType;
-	// range predicate getter / setter types
-	typedef typename RecordTraits<RecordType>::RangePredicateType RecordRangePredicateType;
-    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterShort RangeSetterShortType;
-    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterLong RangeSetterLongType;
-    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeGetter RangeGetterType;
 
 	static FieldSetterType setter()
 	{
@@ -249,21 +199,6 @@ struct RecordFieldTraits
 	{
 		throw RuntimeException("Trying to access record field getter for unknown field");
 	}
-
-    static RangeSetterShortType rangeSetterShort()
-    {
-        throw RuntimeException("Trying to access record range predicate setter for unknown field");
-    }
-
-    static RangeSetterLongType rangeSetterLong()
-    {
-        throw RuntimeException("Trying to access record range predicate setter for unknown field");
-    }
-
-    static RangeGetterType rangeGetter()
-    {
-        throw RuntimeException("Trying to access record range predicate getter for unknown field");
-    }
 };
 
 /**
@@ -273,14 +208,8 @@ template <class RecordType>
 struct RecordFieldTraits<1, RecordType>
 {
 	typedef I64u FieldType;
-    // record field getter / setter types
 	typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType;
 	typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType;
-    // range predicate getter / setter types
-    typedef typename RecordTraits<RecordType>::RangePredicateType RecordRangePredicateType;
-    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterShort RangeSetterShortType;
-    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeSetterLong RangeSetterLongType;
-    typedef typename MethodTraits<RecordRangePredicateType, FieldType>::RangeGetter RangeGetterType;
 
 	static FieldSetterType setter()
 	{
@@ -291,21 +220,6 @@ struct RecordFieldTraits<1, RecordType>
 	{
 		return static_cast<FieldGetterType>(&Record::genIDRef);
 	}
-
-    static RangeSetterShortType rangeSetterShort()
-    {
-        return static_cast<RangeSetterShortType>(&RecordRangePredicateType::genID);
-    }
-
-    static RangeSetterLongType rangeSetterLong()
-    {
-        return static_cast<RangeSetterLongType>(&RecordRangePredicateType::genID);
-    }
-
-    static RangeGetterType rangeGetter()
-    {
-        return static_cast<RangeGetterType>(&RecordRangePredicateType::genID);
-    }
 };
 
 } // namespace Myriad
