@@ -226,55 +226,6 @@ void AbstractGeneratorConfig::computeLinearScalePartitioning(const string& key)
 	setString("generator." + key + ".partition.end", toString(genIDEnd));
 }
 
-void AbstractGeneratorConfig::computeMirroredPartitioning(const string& key)
-{
-	string masterKey = getString("partitioning." + key + ".master");
-
-	I64u cardinality = fromString<I64u> (getString("generator." + masterKey + ".sequence.cardinality"));
-	I64u genIDBegin = fromString<I64u> (getString("generator." + masterKey + ".partition.begin"));
-	I64u genIDEnd = fromString<I64u> (getString("generator." + masterKey + ".partition.end"));
-
-	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
-	setString("generator." + key + ".partition.begin", toString(genIDBegin));
-	setString("generator." + key + ".partition.end", toString(genIDEnd));
-}
-
-void AbstractGeneratorConfig::computePeriodBoundPartitioning(const string& key)
-{
-	// start and end date
-	int minDateTimeTzd, maxDateTimeTzd;
-	DateTime minDateTime, maxDateTime;
-	DateTimeParser::parse("%Y-%m-%d %H:%M:%S", getString("partitioning." + key + ".period-min"), minDateTime, minDateTimeTzd);
-	DateTimeParser::parse("%Y-%m-%d %H:%M:%S", getString("partitioning." + key + ".period-max"), maxDateTime, maxDateTimeTzd);
-	I64u itemsPerSecond = fromString<I64u>(getString("partitioning." + key + ".items-per-second"));
-
-	Timespan span = maxDateTime - minDateTime;
-
-	I64u cardinality = static_cast<I64u>(scalingFactor() * itemsPerSecond * span.totalSeconds());
-	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
-
-	I64u genIDBegin = static_cast<ID> ((chunkSize * chunkID()) + 0.5);
-	I64u genIDEnd = static_cast<ID> ((chunkSize * (chunkID() + 1) + 0.5));
-
-	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
-	setString("generator." + key + ".partition.begin", toString(genIDBegin));
-	setString("generator." + key + ".partition.end", toString(genIDEnd));
-}
-
-void AbstractGeneratorConfig::computeNestedPartitioning(const string& key)
-{
-	string parentKey = getString("partitioning." + key + ".parent");
-	I32u itemsPerParent = getInt("partitioning." + key + ".items-per-parent");
-
-	I64u cardinality = fromString<I64u> (getString("generator." + parentKey + ".sequence.cardinality"));
-	I64u genIDBegin = fromString<I64u> (getString("generator." + parentKey + ".partition.begin"));
-	I64u genIDEnd = fromString<I64u> (getString("generator." + parentKey + ".partition.end"));
-
-	setString("generator." + key + ".sequence.cardinality", toString(cardinality * itemsPerParent));
-	setString("generator." + key + ".partition.begin", toString(genIDBegin * itemsPerParent));
-	setString("generator." + key + ".partition.end", toString(genIDEnd * itemsPerParent));
-}
-
 const string AbstractGeneratorConfig::resolveValue(const string& value)
 {
 	RegularExpression::MatchVec posVec;

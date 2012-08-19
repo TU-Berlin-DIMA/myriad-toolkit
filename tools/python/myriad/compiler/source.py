@@ -288,7 +288,7 @@ class FunctionRefTransfomer(object):
         if isinstance(argumentNode, ResolvedFunctionRefArgumentNode):
             functionType = argumentNode.getAttribute("concrete_type")
             functionName = argumentNode.getAttribute("ref")
-            return [ '%sfunc< %s >("%s")' % (configPrefix, functionType, functionName) ]
+            return [ '%sfunction< %s >("%s")' % (configPrefix, functionType, functionName) ]
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
@@ -694,7 +694,7 @@ class ConfigCompiler(SourceCompiler):
         nodeFilter = DepthFirstNodeFilter(filterType=FunctionNode)
         for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
             argsCode = ArgumentTransformer.compileConstructorArguments(self, function, {'config': None})
-            print >> wfile, '        addFunction(new %(t)s(%(a)s));' % {'t': function.getConcreteType(), 'a': ', '.join(argsCode)}
+            print >> wfile, '        function(new %(t)s(%(a)s));' % {'t': function.getConcreteType(), 'a': ', '.join(argsCode)}
 
         print >> wfile, '    }'
         print >> wfile, ''

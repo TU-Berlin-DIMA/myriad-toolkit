@@ -24,3 +24,10 @@
  *
  * The 'core' package conatins all core runtime and type components.
  */
+
+/**
+ * @defgroup config Package 'config'
+ *
+ * The 'config' package conatins components for reading and accessing the
+ * data generator application configuration.
+ */

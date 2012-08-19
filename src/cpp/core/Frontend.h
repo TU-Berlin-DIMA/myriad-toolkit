@@ -63,9 +63,10 @@ public:
 	void handleVersion(const std::string& name, const std::string& value);
 
 	/**
-	 * Handles the occurence of a '-x<value>' CLI parameter, i.e. marks the
-	 * generator stage provided by value to be executed. Per default, if
-	 * no '-x' parameters are supplied to the Frontend, all generator
+	 * Handles the occurence of a '-x<value>' CLI parameter.
+	 *
+	 * Marks the generator stage provided by value to be executed. Per default,
+	 * if no '-x' parameters are supplied to the Frontend, all generator
 	 * stages will be executed.
 	 *
 	 * @param name The name of the processed parameter (always

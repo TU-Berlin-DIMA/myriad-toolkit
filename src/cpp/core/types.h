@@ -48,12 +48,12 @@ typedef Poco::Int64 I64;    //!< Unsigned 64-bit integer
 typedef Poco::UInt16 I16u;  //!< Signed 16-bit integer
 typedef Poco::UInt32 I32u;  //!< Signed 32-bit integer
 typedef Poco::UInt64 I64u;  //!< Signed 64-bit integer
-typedef std::size_t Enum;   //!< A enumerated sequence type (alias of std::size_t)
-typedef double Decimal;     //!< Decimal number, alias of double
-typedef MyriadDate Date;    //!< Date, alias of MyriadDate
+typedef std::size_t Enum;   //!< A enumerated sequence type (alias of \c std::size_t)
+typedef double Decimal;     //!< Decimal number, alias of \c double
+typedef MyriadDate Date;    //!< Date, alias of \c MyriadDate
 //TODO: remove this type, use I64u instead
-typedef Poco::UInt64 ID;    //!< Generic ID type, alias of I64u
-typedef std::string String; //!< String type, alias of std::string
+typedef Poco::UInt64 ID;    //!< Generic ID type, alias of \c I64u
+typedef std::string String; //!< String type, alias of \c std::string
 
 // forward declarations of auxiliary complex types
 template<typename T> class Interval;
@@ -109,9 +109,9 @@ struct NullValue
 };
 
 /**
- * A function template for retrieveing type-specific NULL values.
+ * A function template for retrieveing type-specific \c NULL values.
  *
- * The default implementation throws a Poco::RuntimeException.
+ * The default implementation throws a \c Poco::RuntimeException.
  */
 template<typename T> inline const T& nullValue()
 {
@@ -119,7 +119,7 @@ template<typename T> inline const T& nullValue()
 }
 
 /**
- * Returns the NULL value representation of the I16 type.
+ * Returns the \c NULL value representation of the \c I16 type.
  */
 template<> inline const I16& nullValue<I16>()
 {
@@ -127,7 +127,7 @@ template<> inline const I16& nullValue<I16>()
 }
 
 /**
- * Returns the NULL value representation of the I32 type.
+ * Returns the \c NULL value representation of the \c I32 type.
  */
 template<> inline const I32& nullValue<I32>()
 {
@@ -135,7 +135,7 @@ template<> inline const I32& nullValue<I32>()
 }
 
 /**
- * Returns the NULL value representation of the I64 type.
+ * Returns the \c NULL value representation of the \c I64 type.
  */
 template<> inline const I64& nullValue<I64>()
 {
@@ -143,7 +143,7 @@ template<> inline const I64& nullValue<I64>()
 }
 
 /**
- * Returns the NULL value representation of the I16u type.
+ * Returns the \c NULL value representation of the \c I16u type.
  */
 template<> inline const I16u& nullValue<I16u>()
 {
@@ -151,7 +151,7 @@ template<> inline const I16u& nullValue<I16u>()
 }
 
 /**
- * Returns the NULL value representation of the I32u type.
+ * Returns the \c NULL value representation of the \c I32u type.
  */
 template<> inline const I32u& nullValue<I32u>()
 {
@@ -159,7 +159,7 @@ template<> inline const I32u& nullValue<I32u>()
 }
 
 /**
- * Returns the NULL value representation of the I64u type.
+ * Returns the \c NULL value representation of the \c I64u type.
  */
 template<> inline const I64u& nullValue<I64u>()
 {
@@ -167,7 +167,7 @@ template<> inline const I64u& nullValue<I64u>()
 }
 
 /**
- * Returns the NULL value representation of the Decimal type.
+ * Returns the \c NULL value representation of the \c Decimal type.
  */
 template<> inline const Decimal& nullValue<Decimal>()
 {
@@ -175,7 +175,7 @@ template<> inline const Decimal& nullValue<Decimal>()
 }
 
 /**
- * Returns the NULL value representation of the Date type.
+ * Returns the \c NULL value representation of the \c Date type.
  */
 template<> inline const Date& nullValue<Date>()
 {
@@ -183,7 +183,7 @@ template<> inline const Date& nullValue<Date>()
 }
 
 /**
- * Returns the NULL value representation of the I16u type.
+ * Returns the \c NULL value representation of the \c I16u type.
  */
 template<> inline const String& nullValue<String>()
 {
@@ -198,11 +198,11 @@ template<> inline const String& nullValue<String>()
 //@{
 
 /**
- * A template class with two static methods min() and max() for retrieving
+ * A template class with two static methods \c min() and \c max() for retrieving
  * type-specific numeric limits.
  *
- * The default implementation returns the std::numeric_limits min() and
- * max() values for T.
+ * The default implementation returns the <tt>std::numeric_limits</tt> \c min()
+ * and \c max() values for \p T.
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
@@ -247,7 +247,7 @@ public:
 //@{
 
 /**
- * Transforms a T value to as a string using a std::stringstream instance.
+ * Transforms a \p T value to as a string using a std::stringstream instance.
  */
 template<class T> inline std::string toString(const T& t)
 {
@@ -257,7 +257,7 @@ template<class T> inline std::string toString(const T& t)
 }
 
 /**
- * Reads a T value from a given string using a std::stringstream instance.
+ * Reads a \p T value from a given string using a \c std::stringstream instance.
  */
 template<class T> inline T fromString(const std::string& s)
 {
@@ -299,8 +299,8 @@ static inline std::string& trim(std::string& s)
 //@{
 
 /**
- * Write out to the given std::ostream either the value of t or, if t is NULL,
- * the literal 'NULL'.
+ * Write out to the given \c std::ostream either the value of \p t or, if \p t
+ * is \c NULL, the string literal 'NULL'. The \p quoted parameter is ignored.
  */
 template<class T> inline void write(std::ostream& stream, const T& t, bool quoted = true)
 {
@@ -314,6 +314,10 @@ template<class T> inline void write(std::ostream& stream, const T& t, bool quote
     }
 }
 
+/**
+ * A specialization of the \p write function that also respects the \p quoted
+ * parameter.
+ */
 template<> inline void write<String>(std::ostream& stream, const String& t, bool quoted)
 {
     if (t != nullValue<String>())

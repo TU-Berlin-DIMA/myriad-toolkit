@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef FUNCTIONPOOL_H_
@@ -37,14 +36,79 @@ using namespace Poco;
 using namespace Poco::Util;
 
 namespace Myriad {
+/**
+ * @addtogroup config
+ * @{*/
 
+/**
+ * A container for dynamically allocated AbstractFunction objects.
+ *
+ * All functions are registered with an autorelease pool that takes care of
+ * reseource cleanup when the FunctionPool object expires.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class FunctionPool
 {
 public:
 
-	void addFunction(AbstractFunction* functionPtr);
-	AbstractFunction* function(const string& name);
-	template<class C> C& func(const string& name) const;
+	/**
+	 * Default constructor.
+	 */
+	FunctionPool()
+	{
+	}
+
+	/**
+	 * Add a new function pointer to the pool.
+	 *
+	 * @param functionPtr a pointer to the function to be added.
+	 * @throw ConfigException if the function is already registered
+	 */
+	void add(AbstractFunction* functionPtr)
+	{
+		map<string, AbstractFunction*>::const_iterator it = functions.find(functionPtr->name());
+
+		if (it != functions.end())
+		{
+			throw ConfigException("Trying to add an already undefined function " + functionPtr->name());
+		}
+
+		autoreleasePool.add(functionPtr);
+		functions[functionPtr->name()] = functionPtr;
+	}
+
+	/**
+	 * Get a type-safe version of an already registered function identified by
+	 * the given \p name.
+	 *
+	 * @return a reference to a \p FunctionType function identified by the
+	 *         given \p name
+	 * @throw ConfigException if the function is already registered or if the
+	 *                        function exists but cannot be cast to the
+	 *                        provided type \p C
+	 */
+	template<class FunctionType> FunctionType& get(const string& name) const
+	{
+		map<string, AbstractFunction*>::const_iterator it = functions.find(name);
+
+		if (it == functions.end())
+		{
+			throw ConfigException("Trying to access undefined function " + name);
+		}
+
+		const AbstractFunction* abstractFunction(it->second);
+		const FunctionType* castFunction = dynamic_cast<const FunctionType*>(abstractFunction);
+
+		if (castFunction)
+		{
+			return *const_cast<FunctionType*>(castFunction);
+		}
+		else
+		{
+			throw ConfigException("Cannot cast function "  + name + " to the supplied template type ");
+		}
+	}
 
 private:
 
@@ -59,20 +123,7 @@ private:
 	AutoReleasePool<AbstractFunction> autoreleasePool;
 };
 
-template<class C> C& FunctionPool::func(const string& name) const
-{
-
-	map<string, AbstractFunction*>::const_iterator it = functions.find(name);
-	if (it != functions.end())
-	{
-		const AbstractFunction* pSS(it->second);
-		const C* pC = dynamic_cast<const C*>(pSS);
-		if (pC) return *const_cast<C*>(pC);
-	}
-
-	throw ConfigException("Trying to access undefined function " + name);
-}
-
+/** @}*/// add to core group
 }  // namespace Myriad
 
 #endif /* FUNCTIONPOOL_H_ */
