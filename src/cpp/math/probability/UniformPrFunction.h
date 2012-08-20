@@ -33,72 +33,120 @@ using namespace Poco;
 
 namespace Myriad {
 
-class UniformPrFunction: public UnivariatePrFunction<Decimal>
+template<typename T>
+class UniformPrFunction: public UnivariatePrFunction<T>
 {
 public:
 
-	UniformPrFunction(Decimal xMin = 0, Decimal xMax = 1) :
-		UnivariatePrFunction<Decimal> (""), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
+	UniformPrFunction(T xMin = 0, T xMax = 1) :
+		UnivariatePrFunction<T> (""),
+		_xMin(xMin),
+		_xMax(xMax),
+		_size(_xMax - _xMin),
+		_xPDF(1.0 / _size)
 	{
 	}
 
-	UniformPrFunction(const string& name, Decimal xMin = 0, Decimal xMax = 1) :
-		UnivariatePrFunction<Decimal> (name), _xMin(xMin), _xMax(xMax), _size(_xMax - _xMin), _xPDF(1.0 / _size)
+	UniformPrFunction(const string& name, T xMin = 0, T xMax = 1) :
+		UnivariatePrFunction<T> (name),
+		_xMin(xMin),
+		_xMax(xMax),
+		_size(_xMax - _xMin),
+		_xPDF(1.0 / _size)
 	{
 	}
 
 	UniformPrFunction(map<string, Any>& params) :
-		UnivariatePrFunction<Decimal> ("")
+		UnivariatePrFunction<T> ("")
 	{
-		_xMin = AnyCast<Decimal>(params["xMin"]);
-		_xMax = AnyCast<Decimal>(params["xMax"]);
+		_xMin = AnyCast<T>(params["xMin"]);
+		_xMax = AnyCast<T>(params["xMax"]);
 		_size = _xMax - _xMin;
 		_xPDF = 1.0 / _size;
 	}
 
 	UniformPrFunction(const string& name, map<string, Any>& params) :
-		UnivariatePrFunction<Decimal> (name)
+		UnivariatePrFunction<T> (name)
 	{
-		_xMin = AnyCast<Decimal>(params["xMin"]);
-		_xMax = AnyCast<Decimal>(params["xMax"]);
+		_xMin = AnyCast<T>(params["xMin"]);
+		_xMax = AnyCast<T>(params["xMax"]);
 		_size = _xMax - _xMin;
 		_xPDF = 1.0 / _size;
 	}
 
-	Decimal operator()(const Decimal x) const;
+	Decimal operator()(const T x) const;
 
-	Decimal pdf(Decimal x) const;
+	Decimal pdf(T x) const;
 
-	Decimal cdf(Decimal x) const;
+	Decimal cdf(T x) const;
 
-	Decimal invcdf(Decimal x) const;
+	T invcdf(Decimal x) const;
 
-	Decimal sample(Decimal random) const;
+	T sample(Decimal random) const;
 
-	Interval<Decimal> threshold(Decimal yMin) const;
+	Interval<T> threshold(Decimal yMin) const;
 
 private:
 
 	// parameters
-	Decimal _xMin;
-	Decimal _xMax;
+	T _xMin;
+	T _xMax;
 
 	// common used terms
 	Decimal _size;
 	Decimal _xPDF;
 };
 
-inline Decimal UniformPrFunction::operator()(const Decimal x) const
+template<typename T>
+inline Decimal UniformPrFunction<T>::operator()(const T x) const
 {
 	return cdf(x);
 }
 
-inline Decimal UniformPrFunction::sample(Decimal random) const
+template<typename T>
+Decimal UniformPrFunction<T>::pdf(T x) const
+{
+    if (x < _xMin || x >= _xMax)
+    {
+        return 0;
+    }
+    else
+    {
+        return _xPDF;
+    }
+}
+
+template<typename T>
+Decimal UniformPrFunction<T>::cdf(T x) const
+{
+    if (x < _xMin)
+    {
+        return 0;
+    }
+    else if (x >= _xMax)
+    {
+        return 1;
+    }
+    else
+    {
+        return (x - _xMin) * _xPDF;
+    }
+}
+
+template<typename T>
+T UniformPrFunction<T>::invcdf(Decimal y) const
+{
+    return _xMin + y * _size;
+}
+
+template<typename T>
+inline T UniformPrFunction<T>::sample(Decimal random) const
 {
 	return invcdf(random);
 }
 
-inline Interval<Decimal> UniformPrFunction::threshold(Decimal yMin) const
+template<typename T>
+inline Interval<T> UniformPrFunction<T>::threshold(Decimal yMin) const
 {
 	return Interval<Decimal>(_xMin, _xMax);
 }

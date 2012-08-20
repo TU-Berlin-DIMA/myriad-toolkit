@@ -36,7 +36,8 @@ using namespace Poco;
 namespace Myriad
 {
 
-template<typename T> class CombinedPrFunction: public UnivariatePrFunction<T>
+template<typename T>
+class CombinedPrFunction: public UnivariatePrFunction<T>
 {
 public:
 

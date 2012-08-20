@@ -21,7 +21,6 @@
 #include "math/probability/CombinedPrFunction.h"
 #include "math/probability/NormalPrFunction.h"
 #include "math/probability/ParetoPrFunction.h"
-#include "math/probability/UniformPrFunction.h"
 
 #include <algorithm>
 
@@ -176,43 +175,6 @@ Decimal ParetoPrFunction::invpdf(Decimal y) const
 Decimal ParetoPrFunction::invcdf(Decimal y) const
 {
 	return xMin / pow((1 - y), (1 / alpha));
-}
-
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// Uniform probability
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-Decimal UniformPrFunction::pdf(Decimal x) const
-{
-	if (x < _xMin || x >= _xMax)
-	{
-		return 0;
-	}
-	else
-	{
-		return _xPDF;
-	}
-}
-
-Decimal UniformPrFunction::cdf(Decimal x) const
-{
-	if (x < _xMin)
-	{
-		return 0;
-	}
-	else if (x >= _xMax)
-	{
-		return 1;
-	}
-	else
-	{
-		return (x - _xMin) * _xPDF;
-	}
-}
-
-Decimal UniformPrFunction::invcdf(Decimal y) const
-{
-	return _xMin + y * _size;
 }
 
 } // namespace Myriad

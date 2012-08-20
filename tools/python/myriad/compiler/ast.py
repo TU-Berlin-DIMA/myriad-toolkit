@@ -262,10 +262,11 @@ class UniformProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="UniformPrFunction")
+        kwargs.update(concrete_type="UniformPrFunction<%s>" % kwargs["domain_type"])
         super(UniformProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
-        return self.getArgument('x_min').getAttribute('type')
+        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
         return [ { 'key': 'x_min', 'type': 'literal' }, 

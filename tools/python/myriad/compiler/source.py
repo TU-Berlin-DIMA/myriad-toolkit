@@ -146,6 +146,8 @@ class LiteralTransfomer(object):
             else:
                 if attributeType == "String":
                     return [ '"%s"' % (attributeValue) ]
+                if attributeType == "Date":
+                    return [ 'Date("%s")' % (attributeValue) ]
                 else:
                     return [ '%s' % (attributeValue) ]
         else:
