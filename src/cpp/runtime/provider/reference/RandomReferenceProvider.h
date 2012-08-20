@@ -37,9 +37,9 @@ public:
 
     typedef EqualityPredicate<RefRecordType> EqualityPredicateType;
     typedef EqualityPredicateProvider<RefRecordType, CxtRecordType> EqualityPredicateProviderType;
-    typedef RandomSetInspector<RefRecordType> RefRecordSetType;
+    typedef RandomSequenceInspector<RefRecordType> RefRecordSetType;
 
-    RandomReferenceProvider(EqualityPredicateProvider<RefRecordType, CxtRecordType>& equalityPredicateProvider, RandomSetInspector<RefRecordType> referenceSequence) :
+    RandomReferenceProvider(EqualityPredicateProvider<RefRecordType, CxtRecordType>& equalityPredicateProvider, RandomSequenceInspector<RefRecordType> referenceSequence) :
         AbstractReferenceProvider<RefRecordType, CxtRecordType>(1, false),
         _equalityPredicateProvider(equalityPredicateProvider),
         _referenceSequence(referenceSequence)

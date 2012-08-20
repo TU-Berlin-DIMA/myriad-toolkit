@@ -40,9 +40,9 @@ public:
 
     typedef typename RecordFieldTraits<posFieldID, CxtRecordType>::FieldSetterType PosFieldSetterType;
     typedef ConstValueProvider<I32u, CxtRecordType> MaxChildrenValueProviderType;
-    typedef RandomSetInspector<RefRecordType> RefRecordSetType;
+    typedef RandomSequenceInspector<RefRecordType> RefRecordSetType;
 
-    ClusteredReferenceProvider(MaxChildrenValueProviderType& maxChildrenProvider, ChildrenCountValueProviderType& childrenCountProvider, RandomSetInspector<RefRecordType> parentSet) :
+    ClusteredReferenceProvider(MaxChildrenValueProviderType& maxChildrenProvider, ChildrenCountValueProviderType& childrenCountProvider, RandomSequenceInspector<RefRecordType> parentSet) :
         AbstractReferenceProvider<RefRecordType, CxtRecordType>(0, true),
         _maxChildrenValue(nullValue<I32u>()),
         _maxChildrenProvider(maxChildrenProvider),

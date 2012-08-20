@@ -59,8 +59,8 @@ class ArgumentTransformer(object):
                 argTransformer = FieldGetterTransfomer()
             elif (transformerType == "FieldSetterRef"):
                 argTransformer = FieldSetterRefTransfomer()
-            elif (transformerType == "RandomSetInspector"):
-                argTransformer = RandomSetInspectorTransfomer()
+            elif (transformerType == "RandomSequenceInspector"):
+                argTransformer = RandomSequenceInspectorTransfomer()
             elif (transformerType == "SequenceInspector"):
                 argTransformer = SequenceInspectorTransfomer(recordTypeName=argKey)
                 argKey = None
@@ -227,10 +227,10 @@ class FieldSetterRefTransfomer(object):
             return [ argumentNode.getFieldRef().getSetter().getAttribute("var_name") ]
 
 
-class RandomSetInspectorTransfomer(object):
+class RandomSequenceInspectorTransfomer(object):
     
     def __init__(self, *args, **kwargs):
-        super(RandomSetInspectorTransfomer, self).__init__()
+        super(RandomSequenceInspectorTransfomer, self).__init__()
     
     def transform(self, argumentNode = None, configVarName = "config", optional = False):
         if optional is True and argumentNode is None:

@@ -36,7 +36,7 @@ namespace Myriad {
 
 // forward declarations
 template<class RecordType>
-class RandomSetInspector;
+class RandomSequenceInspector;
 template<class RecordType>
 class RandomSetDefaultGeneratingTask;
 
@@ -166,9 +166,9 @@ public:
 	/**
 	 * Creates a new inspector.
 	 */
-	RandomSetInspector<RecordType> inspector()
+	RandomSequenceInspector<RecordType> inspector()
 	{
-		return RandomSetInspector<RecordType> (*this);
+		return RandomSequenceInspector<RecordType> (*this);
 	}
 
 protected:
@@ -188,7 +188,7 @@ protected:
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<class RecordType>
-class RandomSetInspector
+class RandomSequenceInspector
 {
 public:
 
@@ -196,7 +196,7 @@ public:
 	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
 	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 
-	RandomSetInspector(RandomSequenceGenerator<RecordType>& generator) :
+	RandomSequenceInspector(RandomSequenceGenerator<RecordType>& generator) :
 		_generator(generator),
 		_recordFactory(_generator.recordFactory()),
 		_random(_generator.random()),
@@ -205,7 +205,7 @@ public:
 	{
 	}
 
-	RandomSetInspector(const RandomSetInspector& other) :
+	RandomSequenceInspector(const RandomSequenceInspector& other) :
 		_generator(other._generator),
 		_recordFactory(_generator.recordFactory()),
 		_random(_generator.random()),
@@ -231,6 +231,7 @@ public:
 			    }
 
 				_setterChain(recordPtr);
+				break;
 			}
 			catch(const InvalidRecordException& e)
 			{

@@ -22,7 +22,7 @@ import time, datetime
 import libxml2
 import util.properties
 
-NAMESPACE = "http://www.dima.tu-berlin.de/myriad"
+NAMESPACE = "http://www.dima.tu-berlin.de/myriad/frontend"
 
 class Exception:
     pass
