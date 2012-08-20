@@ -43,8 +43,8 @@ template<class RecordType>
 class PartitionedSequenceIteratorTask;
 
 /**
- * A common template class for all record generators that produce pseudo-
- * random record sequences.
+ * A common template class for all record generators that produce pseudo-random
+ * record sequences.
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
