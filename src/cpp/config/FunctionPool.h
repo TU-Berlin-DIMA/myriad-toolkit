@@ -84,9 +84,9 @@ public:
 	 *
 	 * @return a reference to a \p FunctionType function identified by the
 	 *         given \p name
-	 * @throw ConfigException if the function is already registered or if the
-	 *                        function exists but cannot be cast to the
-	 *                        provided type \p C
+	 * @throw ConfigException if the function identified by the given \name is
+	 *                        not registered or if it cannot be cast to the
+	 *                        provided \p FunctionType
 	 */
 	template<class FunctionType> FunctionType& get(const string& name) const
 	{

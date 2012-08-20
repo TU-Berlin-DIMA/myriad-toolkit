@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef GENERATORPOOL_H_
@@ -28,50 +27,93 @@ using namespace std;
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup generator
+ * @{*/
 
+/**
+ * A container for dynamically allocated AbstractSequenceGenerator objects.
+ *
+ * AbstractSequenceGenerator instances registered with a GeneratorPool are
+ * managed by this pool and are deleted when the pool itsel is deleted. Exactly
+ * one \p generator is allowed to be added for each concrete \p GeneratorType.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class GeneratorPool
 {
 public:
 
+	/**
+	 * Constructor.
+	 */
 	GeneratorPool()
 	{
 	}
 
-	template<class C> void set(C* generator);
+	/**
+	 * Add a new generator pointer to the pool.
+	 *
+	 * @param a pointer to the generator to be added.
+	 * @throw ConfigException if a generator of the provided \p FunctionType is
+	 *                        already registered with this pool
+	 */
+	template<class GeneratorType> void set(GeneratorType* generator)
+	{
+		for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
+		{
+			const AbstractSequenceGenerator* pSS(*it);
+			const GeneratorType* pC = dynamic_cast<const GeneratorType*>(pSS);
+			if (pC) throw LogicException("A generator of the given concrete type is already registered with this GeneratorPool.");
+		}
 
-	template<class C> C& get() const;
+		generators.push_back(generator);
+		autoReleasePool.add(generator);
+	}
 
-	list<AbstractSequenceGenerator*>& getAll();
+	/**
+	 * Get a type-safe version of an already registered generator identified by
+	 * the given name.
+	 *
+	 * @return a reference of the \p generator of the given \p GeneratorType
+	 * @throw ConfigException if the function identified by the given
+	 *                        \GeneratorType is not registered
+	 */
+	template<class GeneratorType> GeneratorType& get() const
+	{
+		for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
+		{
+			const AbstractSequenceGenerator* pSS(*it);
+			const GeneratorType* pC = dynamic_cast<const GeneratorType*>(pSS);
+			if (pC) return *const_cast<GeneratorType*>(pC);
+		}
+
+		throw LogicException("Trying to access unsupported generator type");
+	}
+
+
+	/**
+	 * Returns a reference to a list containing all generators.
+	 */
+	list<AbstractSequenceGenerator*>& getAll()
+	{
+		return generators;
+	}
 
 private:
 
+	/**
+	 * An autorelease pool for all registered generators.
+	 */
 	AutoReleasePool<AbstractSequenceGenerator> autoReleasePool;
+
+	/**
+	 * A list of registered generators.
+	 */
 	list<AbstractSequenceGenerator*> generators;
 };
 
-template<class C> void GeneratorPool::set(C* generator)
-{
-	generators.push_back(generator);
-	autoReleasePool.add(generator);
-}
-
-template<class C> C& GeneratorPool::get() const
-{
-	for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
-	{
-		const AbstractSequenceGenerator* pSS(*it);
-		const C* pC = dynamic_cast<const C*>(pSS);
-		if (pC) return *const_cast<C*>(pC);
-	}
-
-	throw LogicException("Trying to access unsupported generator type");
-}
-
-inline list<AbstractSequenceGenerator*>& GeneratorPool::getAll()
-{
-	return generators;
-}
-
+/** @}*/// add to generator group
 } // namespace Myriad
 
 #endif /* GENERATORPOOL_H_ */

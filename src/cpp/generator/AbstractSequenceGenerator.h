@@ -117,11 +117,11 @@ class AbstractSequenceGenerator
 {
 public:
 
-	typedef GeneratorStage Stage; //<! Alias of GeneratorStage
-	typedef list<AbstractSequenceGenerator*> PtrList; //<! A list of AbstractSequenceGenerator pointers
-	typedef list<Stage> StageList; //<!- A list of GeneratorStage objects
-	typedef list<AbstractStageTask*> TaskPtrList; //<!-- A list of AbstractStageTask pointers
-	typedef AutoReleasePool<AbstractStageTask> AbstractStageTaskPool; //<!-- An autorelease pool for AbstractStageTask objects
+	typedef GeneratorStage Stage; //!< Alias of GeneratorStage
+	typedef list<AbstractSequenceGenerator*> PtrList; //!< A list of AbstractSequenceGenerator pointers
+	typedef list<Stage> StageList; //!< A list of GeneratorStage objects
+	typedef list<AbstractStageTask*> TaskPtrList; //!< A list of AbstractStageTask pointers
+	typedef AutoReleasePool<AbstractStageTask> AbstractStageTaskPool; //!<-- An autorelease pool for AbstractStageTask objects
 
 	/**
 	 * A static list of GeneratorStage objects relevant to the data generator
