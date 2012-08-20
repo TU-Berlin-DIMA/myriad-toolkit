@@ -44,7 +44,7 @@ public:
 
 		if (stage.name() == name())
 		{
-			registerTask(new RandomSetDefaultGeneratingTask<${{record_name}}> (*this, _config));
+			registerTask(new PartitionedSequenceIteratorTask<${{record_name}}> (*this, _config));
 		}
 	}
 

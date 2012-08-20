@@ -38,7 +38,7 @@ namespace Myriad {
 template<class RecordType>
 class RandomSequenceInspector;
 template<class RecordType>
-class RandomSetDefaultGeneratingTask;
+class PartitionedSequenceIteratorTask;
 
 template<class RecordType>
 class RandomSequenceGenerator: public AbstractSequenceGenerator
@@ -290,7 +290,7 @@ private:
  * Default random set task implementation.
  */
 template<class RecordType>
-class RandomSetDefaultGeneratingTask: public StageTask<RecordType>
+class PartitionedSequenceIteratorTask: public StageTask<RecordType>
 {
 public:
 
@@ -298,7 +298,7 @@ public:
 	typedef typename RecordTraits<RecordType>::GeneratorType AbstractSequenceGeneratorType;
 	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
 
-	RandomSetDefaultGeneratingTask(RandomSequenceGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
+	PartitionedSequenceIteratorTask(RandomSequenceGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
 		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
 		_generator(generator),
 		_recordFactory(_generator.recordFactory()),

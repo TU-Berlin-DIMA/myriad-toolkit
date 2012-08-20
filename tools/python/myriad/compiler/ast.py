@@ -858,13 +858,13 @@ class PartitionedSequenceIteratorNode(SequenceIteratorNode):
     '''
     
     def __init__(self, *args, **kwargs):
-        kwargs.update(template_type="RandomSetDefaultGeneratingTask")
+        kwargs.update(template_type="PartitionedSequenceIteratorTask")
         super(PartitionedSequenceIteratorNode, self).__init__(*args, **kwargs)
         
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
 
-        return "RandomSetDefaultGeneratingTask< %s >" % (recordType)
+        return "PartitionedSequenceIteratorTask< %s >" % (recordType)
 
 
 #
