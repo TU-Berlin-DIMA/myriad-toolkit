@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef UTIL_H_
@@ -33,13 +32,17 @@ using namespace Poco;
 using namespace std;
 
 namespace Myriad {
+/**
+ * @addtogroup math
+ * @{*/
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// function declarations
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+////////////////////////////////////////////////////////////////////////////////
+/// @name Utility Function Declarations
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 /**
- * Calculate x * y % N
+ * Calculate x * y % N.
  *
  * @param x
  * @param y
@@ -52,6 +55,8 @@ I64 modmult(const I64 x, const I64 y, const I64 N, const Decimal InvN);
 /**
  * Calculate (x ^ e % n) fast.
  *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ *
  * @param x
  * @param e
  * @param N
@@ -62,6 +67,8 @@ I64u modexp(I64u x, I64u e, I64u N);
 /**
  * Run a Miller-Rabin primality with loop length k on the input n.
  *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ *
  * @param n
  * @param k
  * @return
@@ -71,6 +78,8 @@ bool isPrime(I64u N, const I16u k);
 /**
  * Return the smallest prime greater or equal to the lower bound l.
  *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ *
  * @param l
  * @return
  */
@@ -78,6 +87,8 @@ I64u nextPrime(const I64u l);
 
 /**
  * Compute the integer power x^e.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  *
  * @param x
  * @param e
@@ -88,6 +99,8 @@ I64u power(I32u x, I16u e);
 /**
  * Compute the nearest power of 2 of x.
  *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ *
  * @param x
  * @return
  */
@@ -96,14 +109,19 @@ I64u nearestPow2(I64u x);
 /**
  * Compute the log2 of an exact power of 2.
  *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ *
  * @param x
  * @return
  */
 I16u log2exact(I64u x);
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// inline function definitions
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+//@}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @name Utility Function Definitions
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 inline I64 modmult(const I64 x, const I64 y, const I64 N, const Decimal InvN)
 {
@@ -298,6 +316,9 @@ inline I16u log2exact(I64u x)
 	throw exception();
 }
 
+//@}
+
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* UTIL_H_ */

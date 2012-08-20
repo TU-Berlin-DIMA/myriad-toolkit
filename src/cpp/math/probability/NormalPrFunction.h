@@ -21,8 +21,6 @@
 
 #include "core/types.h"
 #include "math/Function.h"
-#include "math/DiscreteMap.h"
-#include "math/IntervalMap.h"
 
 #include <Poco/Any.h>
 

@@ -32,24 +32,44 @@
 using std::string;
 
 namespace Myriad {
+/**
+ * @addtogroup math
+ * @{*/
 
+/**
+ * A an abstract base class for all functions.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class AbstractFunction : public Poco::RefCountedObject
 {
 public:
 
+    /**
+     * Named constructor.
+     *
+     * @param name The name of this function.
+     */
 	AbstractFunction(const string& name) :
 		_name(name)
 	{
 	}
 
 	/**
-	 * Returns the name of the function
-	 * @return
+	 * Return the name of the function.
+	 *
+	 * @return The name of the function.
 	 */
-	const string& name() const;
+	const string& name() const
+	{
+	    return _name;
+	}
 
 protected:
 
+	/**
+	 * Protected destructor (prohibit static allocation).
+	 */
 	virtual ~AbstractFunction()
 	{
 	}
@@ -57,17 +77,21 @@ protected:
 	const string _name;
 };
 
-inline const string& AbstractFunction::name() const
-{
-	return _name;
-}
-
 /**
- * A base template for all unary functions.
+ * A an abstract template base for all unary functions.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
-template<class Domain, class Range> class UnaryFunction: public std::unary_function<Domain, Range>, public AbstractFunction
+template<class Domain, class Range>
+class UnaryFunction: public std::unary_function<Domain, Range>, public AbstractFunction
 {
 public:
+
+    /**
+     * Named constructor.
+     *
+     * @param name The name of this function.
+     */
 	UnaryFunction(const string& name) :
 		AbstractFunction(name)
 	{
@@ -76,24 +100,36 @@ public:
 	/**
 	 * Function evaluation operator.
 	 *
-	 * @param x
-	 * @return
+	 * @param x The function argument.
+	 * @return The <tt>f(x)</tt> value.
 	 */
 	virtual Range operator()(const Domain x) const = 0;
 
 protected:
 
+    /**
+     * Protected destructor (prohibit static allocation).
+     */
 	virtual ~UnaryFunction()
 	{
 	}
 };
 
 /**
- * A base template for all binary functions.
+ * A an abstract template base for all binary functions.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
-template<class Domain1, class Domain2, class Range> class BinaryFunction: public std::binary_function<Domain1, Domain2, Range>, public AbstractFunction
+template<class Domain1, class Domain2, class Range>
+class BinaryFunction: public std::binary_function<Domain1, Domain2, Range>, public AbstractFunction
 {
 public:
+
+    /**
+     * Named constructor.
+     *
+     * @param name The name of this function.
+     */
 	BinaryFunction(const string& name) :
 		AbstractFunction(name)
 	{
@@ -101,15 +137,18 @@ public:
 
 	/**
 	 * Function evaluation operator.
-	 *
-	 * @param x1
-	 * @param x2
-	 * @return
+     *
+     * @param x1 The first function argument.
+     * @param x1 The second function argument.
+     * @return The <tt>f(x1, x2)</tt> value.
 	 */
 	virtual Range operator()(const Domain1 x1, const Domain2 x2) const = 0;
 
 protected:
 
+    /**
+     * Protected destructor (prohibit static allocation).
+     */
 	virtual ~BinaryFunction()
 	{
 	}
@@ -117,75 +156,145 @@ protected:
 
 /**
  * A base template for all univariate probability functions.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
-template<class Domain> class UnivariatePrFunction: public UnaryFunction<Domain, Decimal>
+template<class Domain> class
+UnivariatePrFunction: public UnaryFunction<Domain, Decimal>
 {
 public:
+
+    /**
+     * Named constructor.
+     *
+     * @param name The name of this function.
+     */
 	UnivariatePrFunction(const string& name) :
 		UnaryFunction<Domain, Decimal>(name)
 	{
 	}
 
+    /**
+     * Alias for the UnivariatePrFunction::pdf() method.
+     *
+     * @return P(X = x)
+     */
 	virtual Decimal operator()(const Domain x) const = 0;
 
 	/**
-	 * Returns the probability distribution function (pdf) for this
-	 * distribution, i.e. Pr[X = x].
+	 * Returns the probability distribution function (PDF) for this
+	 * distribution.
+	 *
+	 * @return P(X = x)
 	 */
 	virtual Decimal pdf(Domain x) const = 0;
 
 	/**
-	 * Returns the cumulative distribution function (pdf) for this
-	 * distribution, i.e. Pr[X \leq x].
+	 * Returns the cumulative distribution function (CDF) for this distribution.
+     *
+     * @return P(X <= x)
 	 */
 	virtual Decimal cdf(Domain x) const = 0;
 
 	/**
 	 * Returns the inverse cumulative distribution function (pdf) for this
-	 * distribution, i.e. x such that Pr[X \leq x] = y.
+	 * distribution.
+	 *
+	 * @return A value for x, such that y is equal to P(X <= x).
 	 */
 	virtual Domain invcdf(Decimal y) const = 0;
 
 	/**
-	 * Transforms a uniform sample r sample from the underlying distribution
+	 * Performs an inverse transform sampling.
+	 *
+	 * If the \p r values are uniformly distributed, subsequent invocations of
+	 * this method will yield a population \p Domain samples distributed
+	 * according to this distribution function.
+	 *
+	 * @param r A uniformly drawn random value in the [0,1) interval.
+	 * @param A \Domain sample that corresponds to the given input \p r.
 	 */
 	virtual Domain sample(Decimal r) const = 0;
 
 protected:
 
+    /**
+     * Protected destructor (prohibit static allocation).
+     */
 	virtual ~UnivariatePrFunction()
 	{
 	}
 };
 
 /**
- * A base template for all bivariate probability functions.
+ * A base template for all conditional bivariate probability functions.
  */
-template<class Domain1, class Domain2> class BivariatePrFunction: public BinaryFunction<Domain1, Domain2, Decimal>
+template<class Domain1, class Domain2>
+class BivariatePrFunction: public BinaryFunction<Domain1, Domain2, Decimal>
 {
 public:
+
+    /**
+     * Named constructor.
+     *
+     * @param name The name of this function.
+     */
 	BivariatePrFunction(const string& name) :
 		BinaryFunction<Domain1, Domain2, Decimal>(name)
 	{
 	}
 
+    /**
+     * Alias for the UnivariatePrFunction::pdf() method.
+     *
+     * @return P(X1 = x1 | X2 = x2)
+     */
 	virtual Decimal operator()(const Domain1 x1, const Domain2 x2) const = 0;
 
+    /**
+     * Returns the probability distribution function (pdf) for this
+     * distribution.
+     *
+     * @return P(X1 = x1 | X2 = x2)
+     */
 	virtual Decimal pdf(Domain1 x1, Domain2 x2) const = 0;
 
+    /**
+     * Returns the cumulative distribution function (cdf) for this
+     * distribution.
+     *
+     * @return P(X1 <= x1 | X2 = x2)
+     */
 	virtual Decimal cdf(Domain1 x1, Domain2 x2) const = 0;
 
+	/**
+     * @return A value for x1, such that y is equal to P(X1 <= x1 | X2 = x2).
+	 */
 	virtual Domain1 invcdf(Decimal y, Domain2 x2) const = 0;
 
+    /**
+     * Performs a conditional inverse transform sampling.
+     *
+     * If the \p r values are uniformly distributed, subsequent invocations of
+     * this method will yield a population \p Domain1 samples distributed
+     * according to this distribution function.
+     *
+     * @param r A uniformly drawn random value in the [0,1) interval.
+     * @param A \Domain1 sample that corresponds to the given input \p r.
+     */
 	virtual Domain1 sample(Decimal r, Domain2 x2) const = 0;
 
 protected:
 
+    /**
+     * Protected destructor (prohibit static allocation).
+     */
 	virtual ~BivariatePrFunction()
 	{
 	}
 };
 
+/** @}*/// add to math group
 } // namespace Myriad
 
 

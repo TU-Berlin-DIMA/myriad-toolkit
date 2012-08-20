@@ -51,3 +51,26 @@
  *
  * The 'io' package contains components required to output the generated data.
  */
+
+/**
+ * @defgroup math Package 'math'
+ *
+ * The 'math' package contains general purpose math computation functionality.
+ */
+
+/**
+ * @defgroup math_probability Package 'math.probability'
+ * @ingroup  math
+ *
+ * The 'math_probability' package contains all components required for working
+ * with various probability distributions.
+ */
+
+/**
+ * @defgroup math_random Package 'math.random'
+ * @ingroup  math
+ *
+ * The 'math.random' package contains a definition of an abstract
+ * parallelizeable pseudo-random number generator and several exchangeable
+ * implementations with different performance footpring and cycle length.
+ */
