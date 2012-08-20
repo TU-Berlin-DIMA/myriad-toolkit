@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef RANDOMSEQUENCEGENERATOR_H_
@@ -33,6 +32,9 @@
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup generator
+ * @{*/
 
 // forward declarations
 template<class RecordType>
@@ -40,13 +42,28 @@ class RandomSequenceInspector;
 template<class RecordType>
 class PartitionedSequenceIteratorTask;
 
+/**
+ * A common base class template for all record generators that produce pseudo-
+ * random record sequences.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<class RecordType>
 class RandomSequenceGenerator: public AbstractSequenceGenerator
 {
 public:
 
+	/**
+	 * The RecordMeta type associated with the given \p RecordType.
+	 */
 	typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
+	/**
+	 * The RecordFactory type associated with the given \p RecordType.
+	 */
 	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
+	/**
+	 * The SetterChain type associated with the given \p RecordType.
+	 */
 	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
 
 	/**
@@ -59,6 +76,12 @@ public:
 
 	/**
 	 * Basic initialization logic for all random set generators.
+	 *
+	 * This method initializes a generator specific RandomStream substream as a
+	 * copy of the current GeneratorConfig::masterPRNG() and then advances the
+	 * position of the master PRNG.
+	 *
+	 * @see AbstractSequenceGenerator::initialize()
 	 */
 	virtual void initialize()
 	{
@@ -94,10 +117,10 @@ public:
 	}
 
 	/**
-	 * Execute stage preparation logic common for all RandomSequenceGenerators.
+	 * Execute common preparation logic common to all generator stages.
 	 *
-	 * @param stage
-	 * @param pool
+	 * @param stage The current GgeneratorStage.
+	 * @param pool A reference to the applicaiton GeneratorPool.
 	 */
 	virtual void prepare(Stage stage, const GeneratorPool& pool)
 	{
@@ -108,10 +131,9 @@ public:
 	}
 
 	/**
-	 * Execute stage cleanup logic common for all RandomSequenceGenerators. This
-	 * includes clearing all registered tasks.
+	 * Execute stage cleanup logic common to all generator stages.
 	 *
-	 * @param stage
+	 * @param stage The current GeneratorStage.
 	 */
 	virtual void cleanup(Stage stage)
 	{
@@ -127,36 +149,22 @@ public:
 	}
 
 	/**
-	 * Creates a new setter chain which works on the provided RandomStream
-	 * reference.
-	 */
-	virtual RecordSetterChainType setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random) = 0;
-
-	/**
-	 * Record factory method.
-	 */
-	virtual const RecordFactoryType recordFactory()
-	{
-		return RecordFactoryType(RecordMetaType(_config.enumSets()));
-	}
-
-	/**
 	 * Returns a reference to the underlying RandomStream. If the configure()
-	 * method of the generator has been called, this method is guaranteed to
-	 * return a configured RandomStream instance.
+	 * method of the RandomSequenceGenerator has been called, this method is
+	 * guaranteed to return a RandomStream instance that points to the first
+	 * position of the associated PRNG substream.
 	 *
-	 * @return a reference to the local random stream instance
+	 * @return A reference to the local RandomStream instance.
 	 */
-	RandomStream& random()
+	const RandomStream& random() const
 	{
 		return _random;
 	}
 
 	/**
-	 * Returns the cardinality of the record sequence produced by this
-	 * generator.
+	 * Returns the cardinality of the record sequence produced by this generator.
 	 *
-	 * @return the sequence cardinality for this generator
+	 * @return The sequence cardinality for this generator.
 	 */
     const I64u cardinality() const
     {
@@ -164,15 +172,35 @@ public:
     }
 
 	/**
-	 * Creates a new inspector.
+	 * Constructs and returns a new record factory for the given \p RecordType.
+	 */
+	virtual const RecordFactoryType recordFactory()
+	{
+		return RecordFactoryType(RecordMetaType(_config.enumSets()));
+	}
+
+	/**
+	 * Creates and returns an random access inspector for this record sequence.
 	 */
 	RandomSequenceInspector<RecordType> inspector()
 	{
 		return RandomSequenceInspector<RecordType> (*this);
 	}
 
+	/**
+	 * Creates a new setter chain which consumes records from the provided
+	 * RandomStream reference.
+	 *
+	 * @param opMode OperationMode for the SetterChain (sequential or random).
+	 * @param random A reference to the RandomStream consumed by the chain.
+	 */
+	virtual RecordSetterChainType setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random) = 0;
+
 protected:
 
+	/**
+	 * Private destructor (no static allocation).
+	 */
 	virtual ~RandomSequenceGenerator()
 	{
 	}
@@ -183,19 +211,35 @@ protected:
 	RandomStream _random;
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// sequence inspector
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+/**
+ * A random-access wraper for a random record sequence.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<class RecordType>
 class RandomSequenceInspector
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::GeneratorType AbstractSequenceGeneratorType;
+	/**
+	 * The RandomSequenceGenerator type associated with the given \p RecordType.
+	 */
+	typedef typename RecordTraits<RecordType>::GeneratorType SequenceGeneratorType;
+	/**
+	 * The SetterChain type associated with the given \p RecordType.
+	 */
 	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
+	/**
+	 * The RecordFactory type associated with the given \p RecordType.
+	 */
 	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param generator A reference to the enclosing RecordSetterChainType.
+	 */
 	RandomSequenceInspector(RandomSequenceGenerator<RecordType>& generator) :
 		_generator(generator),
 		_recordFactory(_generator.recordFactory()),
@@ -205,6 +249,9 @@ public:
 	{
 	}
 
+	/**
+	 * Copy constructor.
+	 */
 	RandomSequenceInspector(const RandomSequenceInspector& other) :
 		_generator(other._generator),
 		_recordFactory(_generator.recordFactory()),
@@ -214,6 +261,10 @@ public:
 	{
 	}
 
+	/**
+	 * Instantiates and returns the \p RecordType at the given \p genID
+	 * position in the random sequence.
+	 */
 	const AutoPtr<RecordType> at(const I64u genID) const
 	{
 		AutoPtr<RecordType> recordPtr = _recordFactory();
@@ -244,11 +295,17 @@ public:
 		return recordPtr;
 	}
 
+	/**
+	 * Filter the range of valid \p genID values from an equality predicate.
+	 */
 	Interval<I64u> filter(const EqualityPredicate<RecordType>& predicate)
 	{
 		return _setterChain.filter(predicate);
 	}
 
+	/**
+	 * Get the cardinality of the accessed record sequence.
+	 */
 	const I64u cardinality() const
 	{
 	    return _generator.cardinality();
@@ -282,22 +339,36 @@ private:
 	Logger& _logger;
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// associated stage tasks
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 /**
- * Default random set task implementation.
+ * Partitioned iterator task.
+ *
+ * Iterates over a subsequence of records allocated to a particular partition.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template<class RecordType>
 class PartitionedSequenceIteratorTask: public StageTask<RecordType>
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
-	typedef typename RecordTraits<RecordType>::GeneratorType AbstractSequenceGeneratorType;
+	/**
+	 * The RandomSequenceGenerator type associated with the given \p RecordType.
+	 */
+	typedef typename RecordTraits<RecordType>::GeneratorType SequenceGeneratorType;
+	/**
+	 * The SetterChain type associated with the given \p RecordType.
+	 */
 	typedef typename RecordTraits<RecordType>::SetterChainType RecordSetterChainType;
+	/**
+	 * The RecordFactory type associated with the given \p RecordType.
+	 */
+	typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 
+
+	/**
+	 * Constructor.
+	 */
 	PartitionedSequenceIteratorTask(RandomSequenceGenerator<RecordType>& generator, const GeneratorConfig& config, bool dryRun = false) :
 		StageTask<RecordType> (generator.name() + "::generate_records", generator.name(), config, dryRun),
 		_generator(generator),
@@ -307,11 +378,22 @@ public:
 	{
 	}
 
+	/**
+	 * Indicates that this StageTask is runnable.
+	 *
+	 * @return Always \t true.
+	 */
 	bool runnable()
 	{
 		return true;
 	}
 
+	/**
+	 * The run() of this runnable task.
+	 *
+	 * This method simply iterates over the allocated genID subsequence and
+	 * instantiates and writes out the \t RecordType instance at each position.
+	 */
 	void run()
 	{
 		if (_logger.debug())
@@ -400,6 +482,7 @@ protected:
 	Logger& _logger;
 };
 
+/** @}*/// add to generator group
 } // namespace Myriad
 
 #endif /* RANDOMSEQUENCEGENERATOR_H_ */
