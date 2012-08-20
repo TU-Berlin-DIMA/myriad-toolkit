@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef OUTPUTCOLLECTOR_H_
@@ -21,15 +20,29 @@
 
 #include "io/LocalFileOutputCollector.h"
 
-namespace Myriad
-{
+namespace Myriad {
+/**
+ * @addtogroup io
+ * @{*/
 
-template<class RecordType> struct OutputCollector
+/**
+ * A generic traits structure for I/O related type information.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
+template<class RecordType> struct OutputTraits
 {
+    /**
+     * An alias to the output collector implementation to be used.
+     */
 	typedef LocalFileOutputCollector<RecordType> CollectorType;
+    /**
+     * An alias of the stream type associated with the specified CollectorType.
+     */
 	typedef typename CollectorType::StreamType StreamType;
 };
 
+/** @}*/// add to io group
 } // namespace Myriad
 
 #endif /* OUTPUTCOLLECTOR_H_ */

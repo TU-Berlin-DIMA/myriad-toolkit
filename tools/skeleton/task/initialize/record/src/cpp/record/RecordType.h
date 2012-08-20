@@ -55,7 +55,7 @@ template<> struct RecordTraits<${{dgen_ns}}::${{record_name}}>
 };
 
 // forward declaration of the collector method specialization
-template<> void OutputCollector<${{dgen_ns}}::${{record_name}}>::CollectorType::collect(const ${{dgen_ns}}::${{record_name}}& record);
+template<> void OutputTraits<${{dgen_ns}}::${{record_name}}>::CollectorType::collect(const ${{dgen_ns}}::${{record_name}}& record);
 
 } // namespace Myriad
 

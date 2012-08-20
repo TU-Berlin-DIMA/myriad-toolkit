@@ -127,7 +127,7 @@ public:
 	/**
 	 * The OutputCollector type associated with the given \p RecordType.
 	 */
-	typedef typename OutputCollector<RecordType>::CollectorType CollectorType;
+	typedef typename OutputTraits<RecordType>::CollectorType CollectorType;
 
 	/**
 	 * Constructor.

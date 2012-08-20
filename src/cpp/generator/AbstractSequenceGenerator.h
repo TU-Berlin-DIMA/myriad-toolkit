@@ -50,7 +50,7 @@ namespace Myriad {
 class GeneratorPool;
 
 /**
- * A class to representing a generic generator stage.
+ * A class representing a generic generator stage.
  *
  * A stage is represented by a unique ID used by the system and a name. Each
  * data generator application registers a set of relevant GeneratorStages by

@@ -49,6 +49,8 @@ namespace Myriad {
 class GeneratorPool;
 
 /**
+ * An abstract base for all application specific configurations.
+ *
  * A layered configuration used by the RandomSequenceGenerator objects to access
  * application wide configuration parameters, probability distribution
  * functions, enumerated sets as well as all other registered generators.

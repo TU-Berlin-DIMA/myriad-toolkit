@@ -1112,7 +1112,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'template<>' 
-        print >> wfile, 'inline void OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'inline void OutputTraits<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputTraits<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         
         for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
@@ -1187,9 +1187,9 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'template<>'
-        print >> wfile, 'inline void OutputCollector<%(ns)s::%(t)s>::CollectorType::serialize(OutputCollector<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'inline void OutputTraits<%(ns)s::%(t)s>::CollectorType::serialize(OutputTraits<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
-        print >> wfile, '    OutputCollector<%(ns)s::Base%(t)s>::CollectorType::serialize(out, record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, '    OutputTraits<%(ns)s::Base%(t)s>::CollectorType::serialize(out, record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'

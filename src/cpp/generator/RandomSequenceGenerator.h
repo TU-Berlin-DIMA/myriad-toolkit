@@ -39,8 +39,6 @@ namespace Myriad {
 // forward declarations
 template<class RecordType>
 class RandomSequenceInspector;
-template<class RecordType>
-class PartitionedSequenceIteratorTask;
 
 /**
  * A common template class for all record generators that produce pseudo-random

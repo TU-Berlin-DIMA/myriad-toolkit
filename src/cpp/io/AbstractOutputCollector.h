@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef ABSTRACTOUTPUTCOLLECTOR_H_
@@ -24,53 +23,74 @@
 
 using namespace Poco;
 
-namespace Myriad
-{
+namespace Myriad {
+/**
+ * @addtogroup io
+ * @{*/
 
-template<typename RecordType> class AbstractOutputCollector
+/**
+ * An abstract output collector template.
+ *
+ * This is an abstract base for all output collectors. The
+ * AbstractOutputCollector interface provides means to open and close an
+ * output stream and write (collect) records into it. Concrete output collectors
+ * are typically used by the GeneratorTask implementations to write out the
+ * generated data.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
+template<typename RecordType>
+class AbstractOutputCollector
 {
 public:
 
+    /**
+     * Constructor.
+     */
 	AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config) :
 		_config(config)
 	{
 	}
 
-	AbstractOutputCollector(const AbstractOutputCollector& o)
+	/**
+	 * Copy constructor.
+	 */
+	AbstractOutputCollector(const AbstractOutputCollector& o) :
+        _config(o._config)
 	{
 	}
 
+    /**
+     * Copy constructor.
+     */
 	virtual ~AbstractOutputCollector()
 	{
 	}
 
 	/**
-	 * Open the underlying stream.
+	 * Open the underlying output stream.
 	 */
 	virtual void open() = 0;
 
 	/**
-	 * Close the underlying stream.
+	 * Flush and close the underlying output stream.
 	 */
 	virtual void close() = 0;
 
 	/**
-	 * Output header method.
+	 * Write an output header.
 	 */
 	virtual void writeHeader() = 0;
 
 	/**
-	 * Output footer method.
+     * Write an output footer.
 	 */
 	virtual void writeFooter() = 0;
 
 	/**
-	 * Output collection method.
+	 * Collect and write out a single \p RecordType instance.
 	 */
-	void collect(const RecordType& record)
-	{
-		throw new NotImplementedException("");
-	}
+	virtual void collect(const RecordType& record) = 0;
 
 protected:
 
@@ -80,6 +100,7 @@ protected:
 	const GeneratorConfig& _config;
 };
 
+/** @}*/// add to io group
 } // namespace Myriad
 
 #endif /* ABSTRACTOUTPUTCOLLECTOR_H_ */
