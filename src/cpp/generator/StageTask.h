@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef STAGETASK_H_
@@ -35,36 +34,45 @@ using namespace Poco;
 using namespace std;
 
 namespace Myriad {
+/**
+ * @addtogroup generator
+ * @{*/
 
 /**
- * Abstract base for all stage task implementations. A stage task is an object
- * spanning over a sequence of single record generation calls.
+ * Abstract base for all stage tasks.
  *
- * TODO: add doc
+ * An stage task is an object that spans a sequence of generation calls for a
+ * particular \p RecordType. Stage tasks can be runnable (i.e. they can run
+ * in a separate thread) or not (in which case most probably they will be
+ * attached to a runnable stage task for another \p RecordType, for instance in
+ * order to implement nested record generation patterns.
  *
- *   * setup internal state prior to generation begin
- *   * register notification handlers to other generators specific for the next stage
- *   * register events to other generators specific to the next stage
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 class AbstractStageTask: public Runnable, public RefCountedObject
 {
 public:
 
+	/**
+	 * Constructor.
+	 */
 	AbstractStageTask(const string& name) :
 		_taskName(name), _progress(0)
 	{
 	}
 
+	/**
+	 * The name of this AbstractStageTask.
+	 */
 	const string& name() const
 	{
 		return _taskName;
 	}
 
 	/**
-	 * Indicates whether the task is runnable. Runnable tasks must
-	 * provide a valid implementation of the virtual runnable method.
+	 * Indicates whether the task is runnable.
 	 *
-	 * @return
+	 * Runnable tasks must provide a valid implementation of the run() method.
 	 */
 	virtual bool runnable()
 	{
@@ -72,16 +80,15 @@ public:
 	}
 
 	/**
-	 * A virtual method to be implemented by all tasks which want to be executed
-	 * in a separate thread.
-	 *
-	 * @return
+	 * A virtual method to be implemented by all runnable tasks.
 	 */
 	virtual void run()
 	{
 	}
 
-
+	/**
+	 * Updates the task progress in the given UpdateProgress \p notification.
+	 */
 	void reportProgress(UpdateProgress* notification)
 	{
 		notification->state.taskCount++;
@@ -102,15 +109,42 @@ protected:
 	Decimal _progress;
 };
 
-template<class RecordType> class StageTask: public AbstractStageTask
+/**
+ * A common template class for all record generators that produce pseudo-random
+ * record sequences.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
+template<class RecordType>
+class StageTask: public AbstractStageTask
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::GeneratorType GeneratorType;
+	/**
+	 * The RandomSequenceGenerator type associated with the given \p RecordType.
+	 */
+	typedef typename RecordTraits<RecordType>::GeneratorType SequenceGeneratorType;
+	/**
+	 * The OutputCollector type associated with the given \p RecordType.
+	 */
 	typedef typename OutputCollector<RecordType>::CollectorType CollectorType;
 
+	/**
+	 * Constructor.
+	 *
+	 * Opens the internal output collector.
+	 *
+	 * @param name The name of this StageTask.
+	 * @param generatorName The name of the enclosing generator.
+	 * @param config A reference to the global generator configuration.
+	 * @param dryRun A boolean flag indicating whether the output collector
+	 *               should be used or not (i.e. whether it is a dry run).
+	 */
 	StageTask(const string& name, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
-		AbstractStageTask(name), _out(generatorName, config), _dryRun(dryRun), _logger(Logger::get("task."+name))
+		AbstractStageTask(name),
+		_out(generatorName, config),
+		_dryRun(dryRun),
+		_logger(Logger::get("task."+name))
 	{
 		if (!_dryRun)
 		{
@@ -118,6 +152,11 @@ public:
 		}
 	}
 
+	/**
+	 * Destructor.
+	 *
+	 * Closes the internal output collector.
+	 */
 	~StageTask()
 	{
 		if (!_dryRun)
@@ -144,6 +183,7 @@ protected:
 	Logger& _logger;
 };
 
+/** @}*/// add to generator group
 } // namespace Myriad
 
 #endif /* STAGETASK_H_ */
