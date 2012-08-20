@@ -213,7 +213,7 @@ public:
 	 *
 	 * @return the number of chunks
 	 */
-	I16u chunkID()
+	I16u nodeID()
 	{
 		return getInt("common.partitioning.chunks-id");
 	}

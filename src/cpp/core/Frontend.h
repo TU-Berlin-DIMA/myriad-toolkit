@@ -80,8 +80,10 @@ protected:
 	/**
 	 * Initializes the application environment.
 	 *
-	 * Bootstraps the two main subsystems comprising the application - the
-	 * GeneratorSubsystem and the CommunicationSubsystem.
+	 * Initializes the two subsystems comprising the application - the
+	 * GeneratorSubsystem and the CommunicationSubsystem. If an exception is
+	 * caught during the initialization lifecycle of the Application, a
+	 * new  <tt>ChangeStatus(NodeState::ABORTED)</tt> notification is issued.
 	 */
 	void initialize(Application& self);
 

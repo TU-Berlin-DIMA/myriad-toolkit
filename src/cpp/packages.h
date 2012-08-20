@@ -31,3 +31,17 @@
  * The 'config' package conatins components for reading and accessing the
  * data generator application configuration.
  */
+
+/**
+ * @defgroup communication Package 'communication'
+ *
+ * The 'communication' package conatins all components required to implement
+ * the CommunicationSubsystem.
+ */
+
+/**
+ * @defgroup generator Package 'generator'
+ *
+ * The 'generator' package conatins all components required to implement
+ * the GeneratorSubsystem.
+ */

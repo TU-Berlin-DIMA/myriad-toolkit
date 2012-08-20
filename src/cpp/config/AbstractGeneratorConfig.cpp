@@ -196,7 +196,7 @@ void AbstractGeneratorConfig::computeFixedPartitioning(const string& key)
 	ID genIDBegin, genIDEnd;
 
 	// chunk 0 is responsible for dumping all data
-	if (chunkID() == 0)
+	if (nodeID() == 0)
 	{
 		genIDBegin = 0;
 		genIDEnd = cardinality;
@@ -217,8 +217,8 @@ void AbstractGeneratorConfig::computeLinearScalePartitioning(const string& key)
 	I64u cardinality = static_cast<I64u>(scalingFactor() * getInt("partitioning." + key + ".base-cardinality"));
 	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
 
-	I64u genIDBegin = static_cast<ID> ((chunkSize * chunkID()) + 0.5);
-	I64u genIDEnd = static_cast<ID> ((chunkSize * (chunkID() + 1) + 0.5));
+	I64u genIDBegin = static_cast<ID> ((chunkSize * nodeID()) + 0.5);
+	I64u genIDEnd = static_cast<ID> ((chunkSize * (nodeID() + 1) + 0.5));
 
 	setString("generator." + key + ".sequence.base_cardinality", getString("partitioning." + key + ".base-cardinality"));
 	setString("generator." + key + ".sequence.cardinality", toString(cardinality));

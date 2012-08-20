@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #include "communication/CommunicationSubsystem.h"
@@ -28,25 +27,48 @@ using namespace std;
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup communication
+ * @{*/
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// helper classes
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+////////////////////////////////////////////////////////////////////////////////
+/// @name Helper Classes
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
+/**
+ * Implements a thread for progress monitoring.
+ *
+ * The thread periodically posts UpdateProgress notifications to the
+ * NotificationCenter to poll all running StageTask instances for their
+ * progress. After each update, the thread also shares a new Heartbeat via a
+ * shared NotificationQueue.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class ProgressMonitor: public Runnable
 {
 public:
 
+	/**
+	 * Constructor.
+	 */
 	ProgressMonitor(NotificationCenter& notificationCenter, NotificationQueue& notificationQueue, NodeState& state, I32u interval) :
 		_notificationCenter(notificationCenter), _notificationQueue(notificationQueue), _state(state), _interval(interval), _logger(Logger::get("progress.monitor")), _ui(Logger::get("ui"))
 	{
 	}
 
+	/**
+	 * Destructor.
+	 */
 	virtual ~ProgressMonitor()
 	{
 		_ui.information("Stopping progress monitor");
 	}
 
+	/**
+	 * Implements the thread loop.
+	 */
 	void run();
 
 private:
@@ -61,20 +83,45 @@ private:
 	Logger& _ui;
 };
 
+/**
+ * An heartbeat client thread.
+ *
+ * The thread consumes heartbeat notifications and forwards them via HTTP to a
+ * central coordination service.
+ */
 class HeartbeatClient: public Runnable
 {
 public:
 
+	/**
+	 * Constructor.
+	 *
+	 * The \p notificationCenter and \p notificationQueue parameters are used
+	 * for shared communication, and the \p host and \p port for connection
+	 * with the coordination service.
+	 */
 	HeartbeatClient(NotificationCenter& notificationCenter, NotificationQueue& notificationQueue, const String& host, I16u port) :
-		_notificationCenter(notificationCenter), _notificationQueue(notificationQueue), _serverHost(host), _serverPort(port), _logger(Logger::get("heartbeat.client")), _hb(Logger::get("heartbeat.logger")), _ui(Logger::get("ui"))
+		_notificationCenter(notificationCenter),
+		_notificationQueue(notificationQueue),
+		_serverHost(host),
+		_serverPort(port),
+		_logger(Logger::get("heartbeat.client")),
+		_hb(Logger::get("heartbeat.logger")),
+		_ui(Logger::get("ui"))
 	{
 	}
 
+	/**
+	 * Constructor.
+	 */
 	virtual ~HeartbeatClient()
 	{
 		_ui.information("Stopping heartbeat client");
 	}
 
+	/**
+	 * Implements the thread loop.
+	 */
 	void run();
 
 private:
@@ -90,13 +137,20 @@ private:
 	Logger& _ui;
 };
 
+/**
+ * A specific notification subtype used by the CommunicationSubsystem to stop
+ * the heartbeat client when the subsystem on shutdown.
+ */
 class StopHeartbeatClient : public Notification
 {
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// method implementations
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+//@}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @name Method Implementations
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 void CommunicationSubsystem::initialize(Application& app)
 {
@@ -113,7 +167,7 @@ void CommunicationSubsystem::initialize(Application& app)
 
 		// attach observers
 		_notificationCenter.addObserver(Observer<CommunicationSubsystem, StartStage> (*this, &CommunicationSubsystem::onStageStart));
-		_notificationCenter.addObserver(Observer<CommunicationSubsystem, ChangeStatus> (*this, &CommunicationSubsystem::onSatusChange));
+		_notificationCenter.addObserver(Observer<CommunicationSubsystem, ChangeNodeState> (*this, &CommunicationSubsystem::onSatusChange));
 	}
 	catch (const Exception& exc)
 	{
@@ -141,10 +195,10 @@ void CommunicationSubsystem::uninitialize()
 		return;
 	}
 
-	if (_state.status < NodeState::ABORTED)
+	if (_state.currentState < NodeState::ABORTED)
 	{
 		// if no error status was set until now, assume evertything went fine
-		_state.status = NodeState::READY;
+		_state.currentState = NodeState::READY;
 	}
 
 	// close update thread and unset config
@@ -154,7 +208,7 @@ void CommunicationSubsystem::uninitialize()
 
 	// remove attached observers
 	_notificationCenter.removeObserver(Observer<CommunicationSubsystem, StartStage> (*this, &CommunicationSubsystem::onStageStart));
-	_notificationCenter.removeObserver(Observer<CommunicationSubsystem, ChangeStatus> (*this, &CommunicationSubsystem::onSatusChange));
+	_notificationCenter.removeObserver(Observer<CommunicationSubsystem, ChangeNodeState> (*this, &CommunicationSubsystem::onSatusChange));
 
 	_initialized = false;
 }
@@ -188,19 +242,19 @@ void CommunicationSubsystem::start()
 
 void CommunicationSubsystem::onStageStart(StartStage* notification)
 {
-	_state.stage = notification->m_stage_id;
+	_state.currentGeneratorStageID = notification->stageID;
 }
 
-void CommunicationSubsystem::onSatusChange(ChangeStatus* notification)
+void CommunicationSubsystem::onSatusChange(ChangeNodeState* notification)
 {
-	if (_state.status < notification->status)
+	if (_state.currentState < notification->newNodeState)
 	{
-		_ui.information(format("Changing node status %u -> %u", static_cast<unsigned int>(_state.status), static_cast<unsigned int>(notification->status)));
-		_state.status = notification->status;
+		_ui.information(format("Changing node status %u -> %u", static_cast<unsigned int>(_state.currentState), static_cast<unsigned int>(notification->newNodeState)));
+		_state.currentState = notification->newNodeState;
 
 		_notificationQueue.enqueueNotification(new Heartbeat(_state));
 
-		if (_state.status >= NodeState::READY)
+		if (_state.currentState >= NodeState::READY)
 		{
 			_notificationQueue.enqueueNotification(new StopHeartbeatClient());
 		}
@@ -209,9 +263,9 @@ void CommunicationSubsystem::onSatusChange(ChangeStatus* notification)
 
 void ProgressMonitor::run()
 {
-	while (_state.status < NodeState::READY)
+	while (_state.currentState < NodeState::READY)
 	{
-		if (_state.status == NodeState::ALIVE)
+		if (_state.currentState == NodeState::ALIVE)
 		{
 			_notificationCenter.postNotification(new UpdateProgress(_state));
 			_notificationQueue.enqueueNotification(new Heartbeat(_state));
@@ -225,7 +279,7 @@ void ProgressMonitor::run()
 
 void HeartbeatClient::run()
 {
-	// session
+	// FIXME: maintain client session as a private member
 	HTTPClientSession session(_serverHost, _serverPort);
 	// bad request counter
 	I16u badRequestCounter = 0;
@@ -247,8 +301,8 @@ void HeartbeatClient::run()
 		Heartbeat* heartbeat = dynamic_cast<Heartbeat*> (notification.get());
 		if (NULL != heartbeat)
 		{
-			string uri = format("/heartbeat?id=%u&status=%u&stage=%u&progress=%f", heartbeat->state.chunkID, static_cast<unsigned int> (heartbeat->state.status), static_cast<unsigned int> (heartbeat->state.stage), heartbeat->state.progress());
-			string msg = format("heartbeat: { id: %u, status: %u, stage: %u, progress: %f }", heartbeat->state.chunkID, static_cast<unsigned int> (heartbeat->state.status), static_cast<unsigned int> (heartbeat->state.stage), heartbeat->state.progress());
+			string uri = format("/heartbeat?id=%u&status=%u&stage=%u&progress=%f", heartbeat->state.nodeID, static_cast<unsigned int> (heartbeat->state.currentState), static_cast<unsigned int> (heartbeat->state.currentGeneratorStageID), heartbeat->state.progress());
+			string msg = format("heartbeat: { id: %u, status: %u, stage: %u, progress: %f }", heartbeat->state.nodeID, static_cast<unsigned int> (heartbeat->state.currentState), static_cast<unsigned int> (heartbeat->state.currentGeneratorStageID), heartbeat->state.progress());
 
 			_hb.information(format("task count    %f", heartbeat->state.taskCount));
 			_hb.information(format("task progress %f", heartbeat->state.taskProgress));
@@ -269,7 +323,7 @@ void HeartbeatClient::run()
 
 					if (badRequestCounter == 20)
 					{
-						_logger.warning(format("Discontinuing communication with coordinator server `%s:%hu`", session.getHost(), session.getPort()));
+						_logger.warning(format("Discontinuing communication with coordination service at `%s:%hu`", session.getHost(), session.getPort()));
 					}
 				}
 			}
@@ -281,4 +335,7 @@ void HeartbeatClient::run()
 	delete this;
 }
 
+//@}
+
+/** @}*/// add to communication group
 } // namespace Myriad

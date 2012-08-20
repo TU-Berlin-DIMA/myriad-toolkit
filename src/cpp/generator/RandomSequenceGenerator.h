@@ -76,7 +76,7 @@ public:
 
 		string s1 = format("substream cardinality is %Lu", _config.cardinality(name()));
 		string s2 = format("generating segment [%Lu, %Lu) of %Lu", _config.genIDBegin(name()), _config.genIDEnd(name()), _config.cardinality(name()));
-		_logger.information(format("Configured sizing for generator `%s` # %05hu of %05hu: %s, %s", name(), _config.chunkID(), _config.numberOfChunks(), s1, s2));
+		_logger.information(format("Configured sizing for generator `%s` # %05hu of %05hu: %s, %s", name(), _config.nodeID(), _config.numberOfChunks(), s1, s2));
 		_logger.information(format("Substream seed for the generator `%s` set to [%s]", name(), _random.seed().toString()));
 	}
 

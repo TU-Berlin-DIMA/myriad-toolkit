@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #include "communication/Notifications.h"
@@ -28,69 +27,118 @@ using namespace std;
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup generator
+ * @{*/
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// helper function objects
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+////////////////////////////////////////////////////////////////////////////////
+/// @name Helper Function Objects
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 /**
  * Function object handling AbstractSequenceGenerator thread creation for ready generators.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 class ThreadExecutor: public unary_function<void, AbstractSequenceGenerator*>
 {
 public:
+
+	/**
+	 * Constructor.
+	 */
 	ThreadExecutor(AbstractGeneratorSubsystem& caller) :
-		caller(caller)
+		_caller(caller)
 	{
 	}
 
+	/**
+	 * Functor operator.
+	 *
+	 * Iterates through all runnable AbstractStageTask objects currently
+	 * registered with the \p generator and executes them using one of the
+	 * threads of a fix-sized thread pool.
+	 */
 	void operator()(AbstractSequenceGenerator* generator)
 	{
 		AbstractSequenceGenerator::TaskPtrList::const_iterator it;
-		for (it = generator->executors().begin(); it != generator->executors().end(); ++it)
+		for (it = generator->stageTasks().begin(); it != generator->stageTasks().end(); ++it)
 		{
 			AbstractStageTask* task = (*it);
 			if (task->runnable())
 			{
-				caller._threadPool.start(*task, task->name());
+				_caller._threadPool.start(*task, task->name());
 			}
 		}
 	}
 
 private:
-	AbstractGeneratorSubsystem& caller;
+
+	/**
+	 * A reference to the enclosing AbstractGeneratorSubsystem.
+	 */
+	AbstractGeneratorSubsystem& _caller;
 };
 
 /**
- * An error handler to be registered with all generator threads spawned in the
- * main loop.
+ * An error handler for the runnable AbstractStageTask instances.
+ *
+ * This error handler implements a shutdown logic for the GeneratorSubsystem
+ * and is registered with all AbstractStageTask threads spawned in the main
+ * loop of the GeneratorSubsystem. All exception handlers merely mark the
+ * handler as invoked, which triggers an execution of the checkSanity() method
+ * invoked by the GeneratorSubsystem at the end of each GeneratorStage cycle.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 class GeneratorErrorHandler: public ErrorHandler
 {
 public:
+
+	/**
+	 * Constructor.
+	 */
 	GeneratorErrorHandler(AbstractGeneratorSubsystem& caller) :
-		_caller(caller), _invoked(false)
+		_invoked(false),
+		_caller(caller)
 	{
 	}
 
+	/**
+	 * Exception handler for platform specific exceptions.
+	 */
 	void exception(const Exception& exc)
 	{
 		_invoked = true;
 		_caller._logger.error(format("Exception caught in generator thread: %s", exc.displayText()));
 	}
 
+	/**
+	 * Exception handler for STL exceptions.
+	 */
 	void exception(const std::exception& exc)
 	{
 		_invoked = true;
 		_caller._logger.error(format("Exception caught in generator thread: %s", exc.what()));
 	}
 
+	/**
+	 * Exception handler for all STL exceptions.
+	 */
 	void exception()
 	{
 		_invoked = true;
 		_caller._logger.error("Exception caught in generator thread");
 	}
 
+	/**
+	 * A sanity check procedure invoked by the GeneratorSubsystem at the end of
+	 * each GeneratorStage cycle.
+	 *
+	 * Can be used to implement coordinated cleanup logic to be executed when
+	 * the generation process fails at the subsystem level.
+	 */
 	void checkSanity()
 	{
 		if (!_invoked)
@@ -103,19 +151,30 @@ public:
 			_caller._logger.debug("Cleaning up resources...");
 		}
 
-		// TODO: put basic resource cleaning of the generator subsystem here...
+		// basic resource cleaning of the generator subsystem can be done here
 
 		throw Poco::RuntimeException("Exception caught in generator thread");
 	}
 
 private:
-	AbstractGeneratorSubsystem& _caller;
+
+	/**
+	 * A flag indicating that the error handler has been invoked.
+	 */
 	bool _invoked;
+
+	/**
+	 * A reference to the enclosing AbstractGeneratorSubsystem.
+	 */
+	AbstractGeneratorSubsystem& _caller;
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// method implementations
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+//@}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @name Method Implementations
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 void AbstractGeneratorSubsystem::initialize(Application& app)
 {
@@ -148,7 +207,7 @@ void AbstractGeneratorSubsystem::initialize(Application& app)
 			(*it)->initialize();
 		}
 
-		_ui.information(format("Starting generation for node %hu from %hu", _config.chunkID(), _config.numberOfChunks()));
+		_ui.information(format("Starting generation for node %hu from %hu", _config.nodeID(), _config.numberOfChunks()));
 	}
 	catch(const Exception& e)
 	{
@@ -228,7 +287,7 @@ void AbstractGeneratorSubsystem::start()
 	try
 	{
 		// mark node as alive
-		_notificationCenter.postNotification(new ChangeStatus(NodeState::ALIVE));
+		_notificationCenter.postNotification(new ChangeNodeState(NodeState::ALIVE));
 
 		// start total timer
 		totalTimer.start();
@@ -284,7 +343,7 @@ void AbstractGeneratorSubsystem::start()
 		ErrorHandler::set(oldHandler);
 
 		// mark node as ready
-		_notificationCenter.postNotification(new ChangeStatus(NodeState::READY));
+		_notificationCenter.postNotification(new ChangeNodeState(NodeState::READY));
 	}
 	catch(const Exception& exc)
 	{
@@ -308,4 +367,7 @@ void AbstractGeneratorSubsystem::start()
 	_logger.information(format("Generation process completed in %d seconds", totalTimer.elapsedSeconds()));
 }
 
+//@}
+
+/** @}*/// add to generator group
 } // namespace Myriad

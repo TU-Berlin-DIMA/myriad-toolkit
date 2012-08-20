@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef ABSTRACTSEQUENCEGENERATOR_H_
@@ -43,24 +42,45 @@ using namespace Poco;
 using namespace Poco::Util;
 
 namespace Myriad {
+/**
+ * @addtogroup generator
+ * @{*/
 
+// forward declarations
 class GeneratorPool;
 
+/**
+ * A class to representing a generic generator stage.
+ *
+ * A stage is represented by a unique ID used by the system and a name. Each
+ * data generator application registers a set of relevant GeneratorStages by
+ * assigning a value to the static AbstractSequenceGenerator::STAGES vector.
+ *
+ */
 class GeneratorStage
 {
 public:
 
+	/**
+	 * Constructs a stage with the next available \p ID and the given \p name.
+	 */
 	GeneratorStage(const String& name) :
 		_id(NEXT_STAGE_ID++),
 		_name(name)
 	{
 	}
 
+	/**
+	 * Stage ID getter.
+	 */
 	const I32u& id() const
 	{
 		return _id;
 	}
 
+	/**
+	 * Stage name getter.
+	 */
 	const String& name() const
 	{
 		return _name;
@@ -68,24 +88,54 @@ public:
 
 private:
 
+	/**
+	 * A static constant holding the next available STAGE_ID.
+	 *
+	 * Initially always 0.
+	 */
 	static I32u NEXT_STAGE_ID;
 
+	/**
+	 * The stage ID.
+	 */
 	const I32u _id;
+
+	/**
+	 * The stage name.
+	 */
 	const string _name;
 };
 
+/**
+ * An implementation of an abstract PRDG sequence generator.
+ *
+ * This is used as a common base for all record specific sequence generators.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class AbstractSequenceGenerator
 {
 public:
 
-	typedef GeneratorStage Stage;
-	typedef list<AbstractSequenceGenerator*> PtrList;
-	typedef list<Stage> StageList;
-	typedef list<AbstractStageTask*> TaskPtrList;
-	typedef AutoReleasePool<AbstractStageTask> ExecutorPool;
+	typedef GeneratorStage Stage; //<! Alias of GeneratorStage
+	typedef list<AbstractSequenceGenerator*> PtrList; //<! A list of AbstractSequenceGenerator pointers
+	typedef list<Stage> StageList; //<!- A list of GeneratorStage objects
+	typedef list<AbstractStageTask*> TaskPtrList; //<!-- A list of AbstractStageTask pointers
+	typedef AutoReleasePool<AbstractStageTask> AbstractStageTaskPool; //<!-- An autorelease pool for AbstractStageTask objects
 
+	/**
+	 * A static list of GeneratorStage objects relevant to the data generator
+	 * application.
+	 *
+	 * The value of this list is application dependent, and is typically
+	 * supplied by in the \c generator/base/BaseGeneratorSubsystem.cpp by the
+	 * application C++ sources.
+	 */
 	static const StageList STAGES;
 
+	/**
+	 * Constructor.
+	 */
 	AbstractSequenceGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :
 		_name(name),
 		_config(config),
@@ -104,12 +154,13 @@ public:
 
 	/**
 	 * The prepare method is called once prior to the execution of each
-	 * generation phase. Its functions will typically include
+	 * GeneratorStage. Its functions will typically include
 	 *
-	 *   * register stage executors
+	 *  - Reset the subsequence state
+	 *  - Add AbstractStageTask instances to be executed in the next \p stage
 	 *
-	 * @param stage
-	 * @param pool
+	 * @param stage the current GeneratorStage
+	 * @param pool the pool of generators registered with the application
 	 */
 	virtual void prepare(Stage stage, const GeneratorPool& pool) = 0;
 
@@ -117,21 +168,20 @@ public:
 	 * The cleanup method is called once after the execution of each
 	 * generation phase. Its functions will typically include
 	 *
-	 *   * clear all delegates from the generator's own event objects
-	 *   * uninitialize all registered stage executors
-	 *   * cleanup other stage related dependencies
+	 *  - Uninitialize all registered AbstractStageTask instances
+	 *  - Cleanup other stage related dependencies
 	 *
-	 * @param stage
+	 * @param stage the current GeneratorStage
 	 */
 	virtual void cleanup(Stage stage) = 0;
 
 	/**
-	 * Release method (invoked on delete)
+	 * Release method (invoked on delete).
 	 */
-	virtual void release() = 0;
+	virtual void release() = 0; //TODO: this can probably be implemented directly in the object destructors
 
 	/**
-	 * The name of the Generator.
+	 * The name of the sequence generator.
 	 */
 	const string& name() const
 	{
@@ -139,7 +189,7 @@ public:
 	}
 
 	/**
-	 * Global configuration reference getter.
+	 * A reference to the global application configuration object.
 	 */
 	GeneratorConfig& config()
 	{
@@ -147,15 +197,15 @@ public:
 	}
 
 	/**
-	 * The name of the Generator.
+	 * A list of stage tasks registered for the current GeneratorStage.
 	 */
-	const TaskPtrList& executors()
+	const TaskPtrList& stageTasks()
 	{
 		return _stageTasks;
 	}
 
 	/**
-	 * Returns the current number of runnable executors present in the taskPool.
+	 * Returns the current number of runnable registered GeneratorStage tasks.
 	 */
 	const unsigned short runnableTasksCount()
 	{
@@ -163,6 +213,7 @@ public:
 	}
 
 protected:
+
 	/**
 	 * Virtual destructor for abstract base class.
 	 */
@@ -231,7 +282,7 @@ protected:
 	 * the end of each stage (which means that the life of an executors spans
 	 * only one stage).
 	 */
-	ExecutorPool _taskPool;
+	AbstractStageTaskPool _taskPool;
 
 	/**
 	 * A counter for the number of runnable executors currently present in the executor pool.
@@ -245,10 +296,18 @@ protected:
 
 private:
 
+	/**
+	 * Private copy constructor (abstract base class).
+	 */
 	AbstractSequenceGenerator(const AbstractSequenceGenerator&);
+
+	/**
+	 * Private assignment operator (abstract base class).
+	 */
 	AbstractSequenceGenerator& operator =(const AbstractSequenceGenerator&);
 };
 
+/** @}*/// add to generator group
 } // namespace Myriad
 
 #endif /* ABSTRACTSEQUENCEGENERATOR_H_ */

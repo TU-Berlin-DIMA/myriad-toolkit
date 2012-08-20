@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef COMMUNICATIONSUBSYSTEM_H_
@@ -35,35 +34,81 @@ using namespace Poco::Net;
 using namespace Poco::Util;
 
 namespace Myriad {
+/**
+ * @addtogroup communication
+ * @{*/
 
+/**
+ * The CommunicationSubsystem implements an application sybsystem which
+ * coordinates and executes the lifecycle of all data generation components.
+ * This is the core of all controller-related data generation-related logic.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class CommunicationSubsystem: public Util::Subsystem
 {
 public:
 
+	/**
+	 * Constructor.
+	 */
 	CommunicationSubsystem(NotificationCenter& notificationCenter) :
 		_notificationCenter(notificationCenter), _state(), _progressMonitor("progress_monitor"), _heartbeatClient("heartbeat_client"), _initialized(false), _logger(Logger::get("communication.driver")), _ui(Logger::get("ui"))
 	{
 	}
 
+	/**
+	 * Destructor.
+	 */
 	~CommunicationSubsystem()
 	{
 	}
 
+	/**
+	 * Starts the CommunicationSubsystem instance.
+	 */
 	void start();
 
+	/**
+	 * StartStage listener.
+	 *
+	 * Updates the \p current_stage_id of the internal \p NodeState instance
+	 * with new stage_id provided by the StartStage notification.
+	 *
+	 */
 	void onStageStart(StartStage* notification);
 
-	void onSatusChange(ChangeStatus* status);
+
+	/**
+	 * ChangeStatus listener.
+	 *
+	 * Handles a ChangeNodeState notification, which is issued by the
+	 * GeneratorSubsystem between each pair of stages.
+	 * If the notification \p stage status is different than the \p_state.status member
+	 * the \p _state.status is updated and a new Heartbeat notification is sent.
+	 */
+	void onSatusChange(ChangeNodeState* status);
 
 protected:
 
+	/**
+	 * Returns a constant subsystem name "Communication Subsystem".
+	 */
 	const char* name() const
 	{
 		return "Communication Subsystem";
 	}
 
+	/**
+	 * Initializes the subsystem.
+	 *
+	 * Resets the internal NodeState and attaches the Notification listeners.
+	 */
 	void initialize(Application&);
 
+	/**
+	 * Sets the node status of the internal _state
+	 */
 	void uninitialize();
 
 private:
@@ -84,6 +129,7 @@ private:
 	Logger& _ui;
 };
 
+/** @}*/// add to communication group
 } // namespace Myriad
 
 #endif /* COMMUNICATIONSUBSYSTEM_H_ */

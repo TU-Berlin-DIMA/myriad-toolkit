@@ -1,3 +1,4 @@
 # ignore compiled python files
 *.pyc
-
+# ignore the API doc folder (auto-generated)
+doc

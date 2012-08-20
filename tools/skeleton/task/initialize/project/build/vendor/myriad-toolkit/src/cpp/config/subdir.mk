@@ -4,16 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../vendor/myriad-toolkit/src/cpp/config/AbstractGeneratorConfig.cpp \
-../vendor/myriad-toolkit/src/cpp/config/FunctionPool.cpp 
+../vendor/myriad-toolkit/src/cpp/config/AbstractGeneratorConfig.cpp 
 
 OBJS += \
-./vendor/myriad-toolkit/src/cpp/config/AbstractGeneratorConfig.o \
-./vendor/myriad-toolkit/src/cpp/config/FunctionPool.o 
+./vendor/myriad-toolkit/src/cpp/config/AbstractGeneratorConfig.o 
 
 CPP_DEPS += \
-./vendor/myriad-toolkit/src/cpp/config/AbstractGeneratorConfig.d \
-./vendor/myriad-toolkit/src/cpp/config/FunctionPool.d 
+./vendor/myriad-toolkit/src/cpp/config/AbstractGeneratorConfig.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

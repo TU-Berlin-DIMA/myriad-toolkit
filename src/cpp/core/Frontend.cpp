@@ -92,19 +92,19 @@ void Frontend::initialize(Application& self)
 	}
 	catch (const Exception& exc)
 	{
-		notificationCenter.postNotification(new ChangeStatus(NodeState::ABORTED));
+		notificationCenter.postNotification(new ChangeNodeState(NodeState::ABORTED));
 		_ui.fatal(format("Exception caught while initializing application: %s", exc.displayText()));
 		_excCaught = true;
 	}
 	catch (const exception& exc)
 	{
-		notificationCenter.postNotification(new ChangeStatus(NodeState::ABORTED));
+		notificationCenter.postNotification(new ChangeNodeState(NodeState::ABORTED));
 		_ui.fatal(format("Exception caught while initializing application: %s", string(exc.what())));
 		_excCaught = true;
 	}
 	catch (...)
 	{
-		notificationCenter.postNotification(new ChangeStatus(NodeState::ABORTED));
+		notificationCenter.postNotification(new ChangeNodeState(NodeState::ABORTED));
 		_ui.fatal("Exception caught in while generating data");
 		_excCaught = true;
 	}
@@ -245,19 +245,19 @@ int Frontend::main(const std::vector<std::string>& args)
 	}
 	catch (const Exception& exc)
 	{
-		notificationCenter.postNotification(new ChangeStatus(NodeState::ABORTED));
+		notificationCenter.postNotification(new ChangeNodeState(NodeState::ABORTED));
 		_ui.fatal(format("Exception caught while generating data: %s", exc.displayText()));
 		return Application::EXIT_SOFTWARE;
 	}
 	catch (const exception& exc)
 	{
-		notificationCenter.postNotification(new ChangeStatus(NodeState::ABORTED));
+		notificationCenter.postNotification(new ChangeNodeState(NodeState::ABORTED));
 		_ui.fatal(format("Exception caught while generating data: %s", string(exc.what())));
 		return Application::EXIT_SOFTWARE;
 	}
 	catch (...)
 	{
-		notificationCenter.postNotification(new ChangeStatus(NodeState::ABORTED));
+		notificationCenter.postNotification(new ChangeNodeState(NodeState::ABORTED));
 		_ui.fatal("Exception caught in while generating data");
 		return Application::EXIT_SOFTWARE;
 	}
