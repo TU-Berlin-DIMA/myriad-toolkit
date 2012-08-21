@@ -155,7 +155,7 @@ public:
      *
      * Two intervals are equall iff their \p min and \p max values are equal.
      */
-	inline bool operator == (const Interval<Domain>& r)
+	inline bool operator == (const Interval<Domain>& r) const
 	{
 	    return _min == r._min && _max == r._max;
 	}
@@ -166,7 +166,7 @@ public:
      * Two intervals are not equall iff their \p min or \p max values are not
      * equal.
      */
-	inline bool operator != (const Interval<Domain>& r)
+	inline bool operator != (const Interval<Domain>& r) const
 	{
 	    return _min != r._min || _max != r._max;
 	}
