@@ -22,35 +22,64 @@
 #include "core/types.h"
 #include "math/Function.h"
 
-#include <Poco/DynamicAny.h>
-
-#include <string>
-#include <map>
 #include <cmath>
 
 using namespace std;
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup math_probability
+ * @{*/
 
-class BoundedParetoPrFunction: public UnaryFunction<ID, Decimal>
+/**
+ * A bounded normal probability function variant (experimental).
+ *
+ * TODO: this code needs to be revised.
+ *
+ * \b ATTENTION: Using this variant of the normal pr. function is not suitable,
+ * if you the data generator program to produce outliers!!!
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
+class BoundedParetoPrFunction: public UnivariatePrFunction<I64u>
 {
 public:
 
+	/**
+	 * Explicit anonymous parameter constructor.
+	 *
+	 * @param alpha The \p alpha parameter of the Pareto distribution.
+	 * @param xMin The left bound of the function range.
+	 * @param xMax The right bound of the function range.
+	 */
 	BoundedParetoPrFunction(Decimal xMin = 1, Decimal xMax = 100, Decimal alpha = 1) :
-		UnaryFunction<ID, Decimal> (""), xMin(xMin), xMax(xMax), alpha(alpha)
+		UnivariatePrFunction<I64u> (""), xMin(xMin), xMax(xMax), alpha(alpha)
 	{
 		initialize();
 	}
 
+	/**
+	 * Explicit named parameter constructor.
+	 *
+	 * @param name The name of this probability function instance.
+	 * @param alpha The \p alpha parameter of the Pareto distribution.
+	 * @param xMin The left bound of the function range.
+	 * @param xMax The right bound of the function range.
+	 */
 	BoundedParetoPrFunction(const string& name, Decimal xMin = 1, Decimal xMax = 100, Decimal alpha = 1) :
-		UnaryFunction<ID, Decimal> (name), xMin(xMin), xMax(xMax), alpha(alpha)
+		UnivariatePrFunction<I64u> (name), xMin(xMin), xMax(xMax), alpha(alpha)
 	{
 		initialize();
 	}
 
+	/**
+	 * Anonymous ObjectBuilder constructor.
+	 *
+	 * @param params An array containing the required function parameters.
+	 */
 	BoundedParetoPrFunction(map<string, DynamicAny> params) :
-		UnaryFunction<ID, Decimal> ("")
+		UnivariatePrFunction<I64u> ("")
 	{
 		xMin = params["xMin"].convert<Decimal> ();
 		xMax = params["xMax"].convert<Decimal> ();
@@ -59,8 +88,14 @@ public:
 		initialize();
 	}
 
+	/**
+	 * Named ObjectBuilder Constructor.
+	 *
+	 * @param name The name of this probability function instance.
+	 * @param params An array containing the required function parameters.
+	 */
 	BoundedParetoPrFunction(const string& name, map<string, DynamicAny> params) :
-		UnaryFunction<ID, Decimal> (name)
+		UnivariatePrFunction<I64u> (name)
 	{
 		xMin = params["xMin"].convert<Decimal> ();
 		xMax = params["xMax"].convert<Decimal> ();
@@ -69,17 +104,26 @@ public:
 		initialize();
 	}
 
-	Decimal operator()(const ID x) const;
 
-	Decimal pdf(Decimal x) const;
+	/**
+	 * \see UnivariatePrFunction::sample()
+	 */
+	virtual Decimal pdf(I64u x) const;
 
-	Decimal cdf(Decimal x) const;
+	/**
+	 * \see UnivariatePrFunction::cdf()
+	 */
+	virtual Decimal cdf(I64u x) const;
 
-	Decimal invpdf(Decimal x) const;
+	/**
+	 * \see UnivariatePrFunction::invpdf()
+	 */
+	I64u invpdf(Decimal x) const;
 
-	Decimal invcdf(Decimal x) const;
-
-	Decimal sample(Decimal random) const;
+	/**
+	 * TODO: document
+	 */
+	I64u invcdf(Decimal y) const;
 
 private:
 
@@ -101,16 +145,7 @@ private:
 	Decimal B;
 };
 
-inline Decimal BoundedParetoPrFunction::operator()(const ID x) const
-{
-	return cdf(x);
-}
-
-inline Decimal BoundedParetoPrFunction::sample(Decimal random) const
-{
-	return invcdf(random);
-}
-
+/** @}*/// add to math group
 } // namespace Myriad
 
 

@@ -32,23 +32,51 @@ using namespace std;
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup math_probability
+ * @{*/
 
+/**
+ * A normal probability function implementation.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class NormalPrFunction: public UnivariatePrFunction<Decimal>
 {
 public:
 
+	/**
+	 * Explicit anonymous parameter constructor.
+	 *
+	 * @param alpha The \p alpha parameter of the Pareto distribution.
+	 * @param xMin The left bound of the function range.
+	 * @param xMax The right bound of the function range.
+	 */
 	NormalPrFunction(Decimal mean = 0, Decimal stddev = 1) :
 		UnivariatePrFunction<Decimal> (""), _mean(mean), _stddev(stddev)
 	{
 		initialize();
 	}
 
+	/**
+	 * Explicit named parameter constructor.
+	 *
+	 * @param name The name of this probability function instance.
+	 * @param alpha The \p alpha parameter of the Pareto distribution.
+	 * @param xMin The left bound of the function range.
+	 * @param xMax The right bound of the function range.
+	 */
 	NormalPrFunction(const string& name, Decimal mean = 0, Decimal stddev = 1) :
 		UnivariatePrFunction<Decimal> (name), _mean(mean), _stddev(stddev)
 	{
 		initialize();
 	}
 
+	/**
+	 * Anonymous ObjectBuilder constructor.
+	 *
+	 * @param params An array containing the required function parameters.
+	 */
 	NormalPrFunction(map<string, Any>& params) :
 		UnivariatePrFunction<Decimal> ("")
 	{
@@ -58,6 +86,12 @@ public:
 		initialize();
 	}
 
+	/**
+	 * Named ObjectBuilder Constructor.
+	 *
+	 * @param name The name of this probability function instance.
+	 * @param params An array containing the required function parameters.
+	 */
 	NormalPrFunction(const string& name, map<string, Any>& params) :
 		UnivariatePrFunction<Decimal> (name)
 	{
@@ -67,22 +101,55 @@ public:
 		initialize();
 	}
 
-	Decimal operator()(const Decimal x) const;
+	/**
+	 * @see UnivariatePrFunction::operator()
+	 */
+	Decimal operator()(const Decimal x) const
+	{
+		return cdf(x);
+	}
 
+	/**
+	 * @see UnivariatePrFunction::sample()
+	 */
+	Decimal sample(Decimal random) const
+	{
+		return invcdf(random);
+	}
+
+	/**
+	 * @see UnivariatePrFunction::pdf()
+	 */
 	Decimal pdf(Decimal x) const;
 
+	/**
+	 * @see UnivariatePrFunction::cdf()
+	 */
 	Decimal cdf(Decimal x) const;
 
+	/**
+	 * @see UnivariatePrFunction::invpdf()
+	 */
 	Decimal invpdf(Decimal y) const;
 
+	/**
+	 * @see UnivariatePrFunction::invcdf()
+	 */
 	Decimal invcdf(Decimal y) const;
 
-	Decimal sample(Decimal random) const;
-
+	/**
+	 * FIXME: this is suspicious.
+	 */
 	Interval<Decimal> threshold(Decimal yMin) const;
 
+	/**
+	 * Returns the normal probability function \p mean parameter.
+	 */
 	Decimal mean() const;
 
+	/**
+	 * Returns the normal probability function \p stddev parameter.
+	 */
 	Decimal stddev() const;
 
 private:
@@ -112,16 +179,7 @@ private:
 	Decimal _a;
 };
 
-inline Decimal NormalPrFunction::operator()(const Decimal x) const
-{
-	return cdf(x);
-}
-
-inline Decimal NormalPrFunction::sample(Decimal random) const
-{
-	return invcdf(random);
-}
-
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* NORMALPRFUNCTION_H_ */

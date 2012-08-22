@@ -37,7 +37,7 @@ namespace Myriad {
  * @{*/
 
 /**
- * A an abstract base class for all functions.
+ * An abstract base class for all functions.
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
@@ -175,9 +175,9 @@ public:
 	}
 
     /**
-     * Alias for the UnivariatePrFunction::pdf() method.
+     * Alias for the UnivariatePrFunction::cdf() method.
      *
-     * @return P(X = x)
+     * @return P(X <= x)
      */
 	virtual Decimal operator()(const Domain x) const = 0;
 

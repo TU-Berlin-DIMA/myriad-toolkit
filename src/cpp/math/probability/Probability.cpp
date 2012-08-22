@@ -30,7 +30,7 @@ namespace Myriad {
 // Bounded Pareto probability
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-Decimal BoundedParetoPrFunction::pdf(Decimal x) const
+Decimal BoundedParetoPrFunction::pdf(I64u x) const
 {
 	if (x < xMin || x > xMax)
 	{
@@ -42,7 +42,7 @@ Decimal BoundedParetoPrFunction::pdf(Decimal x) const
 	}
 }
 
-Decimal BoundedParetoPrFunction::cdf(Decimal x) const
+Decimal BoundedParetoPrFunction::cdf(I64u x) const
 {
 	if (x < xMin)
 	{
@@ -58,12 +58,12 @@ Decimal BoundedParetoPrFunction::cdf(Decimal x) const
 	}
 }
 
-Decimal BoundedParetoPrFunction::invpdf(Decimal y) const
+I64u BoundedParetoPrFunction::invpdf(Decimal y) const
 {
 	return pow((y * B) / (alpha * xMinAlpha), 1 / (-alpha - 1));
 }
 
-Decimal BoundedParetoPrFunction::invcdf(Decimal y) const
+I64u BoundedParetoPrFunction::invcdf(Decimal y) const
 {
 	return pow(-(y*xMaxAlpha - y*xMinAlpha - xMaxAlpha)/(xMinAlpha*xMaxAlpha), -1/alpha);
 }
