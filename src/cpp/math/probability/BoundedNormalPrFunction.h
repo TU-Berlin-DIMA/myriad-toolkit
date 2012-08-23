@@ -37,6 +37,7 @@ namespace Myriad {
  * \b ATTENTION: Using this variant of the normal pr. function is not suitable,
  * if you the data generator program to produce outliers!!!
  *
+ * @deprecated
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 class BoundedNormalPrFunction: public NormalPrFunction

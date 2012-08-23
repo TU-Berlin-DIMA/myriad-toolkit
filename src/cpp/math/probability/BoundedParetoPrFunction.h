@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef BOUNDEDPARETOPRFUNCTION_H_
@@ -35,11 +34,11 @@ namespace Myriad {
 /**
  * A bounded normal probability function variant (experimental).
  *
- * TODO: this code needs to be revised.
- *
  * \b ATTENTION: Using this variant of the normal pr. function is not suitable,
  * if you the data generator program to produce outliers!!!
  *
+ * @deprecated
+ * @todo: This code needs to be revised.
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 class BoundedParetoPrFunction: public UnivariatePrFunction<I64u>
