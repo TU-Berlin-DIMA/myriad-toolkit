@@ -69,9 +69,9 @@ I64u modexp(I64u x, I64u e, I64u N);
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  *
- * @param n
+ * @param N
  * @param k
- * @return
+ * @return True, if N is found to be prime after k Miller-Rabin tests.
  */
 bool isPrime(I64u N, const I16u k);
 
@@ -81,7 +81,7 @@ bool isPrime(I64u N, const I16u k);
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  *
  * @param l
- * @return
+ * @return The first prime greter or equal to \p l.
  */
 I64u nextPrime(const I64u l);
 
@@ -119,9 +119,8 @@ I16u log2exact(I64u x);
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @name Utility Function Definitions
+/// Utility Function Definitions
 ////////////////////////////////////////////////////////////////////////////////
-//@{
 
 inline I64 modmult(const I64 x, const I64 y, const I64 N, const Decimal InvN)
 {
@@ -315,8 +314,6 @@ inline I16u log2exact(I64u x)
 
 	throw exception();
 }
-
-//@}
 
 /** @}*/// add to math group
 } // namespace Myriad

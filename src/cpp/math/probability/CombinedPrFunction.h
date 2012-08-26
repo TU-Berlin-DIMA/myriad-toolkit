@@ -50,6 +50,12 @@ class CombinedPrFunction: public UnivariatePrFunction<T>
 {
 public:
 
+    /**
+     * Default constructor.
+     *
+     * Merely creates a new function object, and does not execute any
+     * initialization routines.
+     */
 	CombinedPrFunction() :
 		UnivariatePrFunction<T>(""),
 		_numberOfValues(0),
@@ -58,68 +64,196 @@ public:
 	{
 	}
 
+    /**
+     * Anonymous file path initialization constructor.
+     *
+     * Loads the configuration for this probability function from the file
+     * given by the \p path parameter.
+     *
+     * @param path The location of the function configuration file.
+     */
 	CombinedPrFunction(const string& path) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""),
+		_numberOfValues(0),
+		_numberOfBuckets(0),
+		_EPSILON(0.000001)
 	{
 		initialize(path);
 	}
 
+	/**
+	 * Anonymous stream initialization parameter.
+     *
+     * Loads the configuration for this probability function from the input
+     * stream given by the \p in parameter.
+	 *
+	 * @param in Input stream containing the function configuration.
+	 */
 	CombinedPrFunction(istream& in) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""),
+		_numberOfValues(0),
+		_numberOfBuckets(0),
+		_EPSILON(0.000001)
 	{
 		initialize(in);
 	}
 
+    /**
+     * Named file path initialization constructor.
+     *
+     * Loads the configuration for this probability function from the file
+     * given by the \p path parameter.
+     *
+     * @param name The name of this probability function instance.
+     * @param path The location of the function configuration file.
+     */
 	CombinedPrFunction(const string& name, const string& path) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(name),
+		_numberOfValues(0),
+		_numberOfBuckets(0),
+		_EPSILON(0.000001)
 	{
 		initialize(path);
 	}
 
+    /**
+     * Named stream initialization parameter.
+     *
+     * Loads the configuration for this probability function from the input
+     * stream given by the \p in parameter.
+     *
+     * @param name The name of this probability function instance.
+     * @param in Input stream containing the function configuration.
+     */
 	CombinedPrFunction(const string& name, istream& in) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(name),
+		_numberOfValues(0),
+		_numberOfBuckets(0),
+		_EPSILON(0.000001)
 	{
 		initialize(in);
 	}
 
+    /**
+     * Anonymous ObjectBuilder constructor.
+     *
+     * Loads the configuration for this probability function from the input
+     * stream given by the <tt>params['path']</tt> in parameter.
+     *
+     * @param params An array containing the required function parameters.
+     */
 	CombinedPrFunction(map<string, Any>& params) :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""),
+		_numberOfValues(0),
+		_numberOfBuckets(0),
+		_EPSILON(0.000001)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
+    /**
+     * Named ObjectBuilder constructor.
+     *
+     * Loads the configuration for this probability function from the input
+     * stream given by the <tt>params['path']</tt> in parameter.
+     *
+     * @param name The name of this probability function instance.
+     * @param params An array containing the required function parameters.
+     */
 	CombinedPrFunction(const string& name, map<string, Any>& params) :
-		UnivariatePrFunction<T>(name), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(name),
+		_numberOfValues(0),
+		_numberOfBuckets(0),
+		_EPSILON(0.000001)
 	{
 		initialize(AnyCast<string>(params["path"]));
 	}
 
+	/**
+	 * Destructor.
+	 */
 	virtual ~CombinedPrFunction()
 	{
 		reset();
 	}
 
+	/**
+	 * Initialization routine.
+	 *
+	 * Initializes the function with the configuration stord in the file
+	 * located at the given \p path.
+	 *
+     * @param path The location of the function configuration file.
+	 */
 	void initialize(const string& path);
 
-	void initialize(istream& path);
+    /**
+     * Initialization routine.
+     *
+     * Initializes the function with the configuration from the input stream
+     * given by the \p in parameter.
+     *
+     * @param in Input stream containing the function configuration.
+     */
+	void initialize(istream& in);
 
+    /**
+     * Initialization routine.
+     *
+     * Initializes the function with the configuration from the input stream
+     * given by the \p in parameter. When reading from the \p in stream, uses
+     * the \p currentLineNumber parameter to track the current line number.
+     *
+     * @param currentLineNumber A reference to the current line number.
+     * @param in Input stream containing the function configuration.
+     */
 	void initialize(istream& in, I16u& currentLineNumber);
 
+	/**
+	 * Returns the number of buckets for this (configured) function.
+	 *
+	 * @return size_t The number of buckets configured for this function.
+	 */
 	size_t numberOfBuckets() const;
 
+    /**
+     * Returns the left bound (inclusive) of the function active domain.
+     *
+     * @return size_t The left bound (inclusive) of the function active domain.
+     */
 	T min() const;
 
+    /**
+     * Returns the right bound (exclusive) of the function active domain.
+     *
+     * @return size_t The right bound (exclusive) of the function active domain.
+     */
 	T max() const;
 
+    /**
+     * @see UnivariatePrFunction::operator()
+     */
 	Decimal operator()(const T x) const;
 
+    /**
+     * @see UnivariatePrFunction::sample()
+     */
+    T sample(Decimal random) const;
+
+    /**
+     * @see UnivariatePrFunction::pdf()
+     */
 	Decimal pdf(T x) const;
 
+    /**
+     * @see UnivariatePrFunction::cdf()
+     */
 	Decimal cdf(T x) const;
 
+    /**
+     * @see UnivariatePrFunction::invcdf()
+     */
 	T invcdf(Decimal x) const;
-
-	T sample(Decimal random) const;
 
 private:
 
@@ -141,9 +275,7 @@ private:
 
 	Decimal _notNullProbability;
 
-	// TODO: replace with an interval
-	T _min;
-	T _max;
+	Interval<T> _activeDomain;
 
 	size_t _numberOfValues;
 	T* _values;
@@ -160,21 +292,31 @@ private:
     Decimal _EPSILON;
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// static template members
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+////////////////////////////////////////////////////////////////////////////////
+/// @name Static Template Members
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
-template<typename T> RegularExpression CombinedPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
-template<typename T> RegularExpression CombinedPrFunction<T>::headerLine2Format("\\W*@numberofbins\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
-template<typename T> RegularExpression CombinedPrFunction<T>::headerLine3Format("\\W*@nullprobability\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W*(#(.+))?");
-template<typename T> RegularExpression CombinedPrFunction<T>::valueLineFormat( "\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*(.+)\\W*\\}\\W*(#(.+))?");
-template<typename T> RegularExpression CombinedPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*\\}\\W*(#(.+))?");
+template<typename T>
+RegularExpression CombinedPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T>
+RegularExpression CombinedPrFunction<T>::headerLine2Format("\\W*@numberofbins\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T>
+RegularExpression CombinedPrFunction<T>::headerLine3Format("\\W*@nullprobability\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W*(#(.+))?");
+template<typename T>
+RegularExpression CombinedPrFunction<T>::valueLineFormat( "\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*(.+)\\W*\\}\\W*(#(.+))?");
+template<typename T>
+RegularExpression CombinedPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*\\}\\W*(#(.+))?");
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// private member function templates
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+//@}
 
-template<typename T> void CombinedPrFunction<T>::reset()
+////////////////////////////////////////////////////////////////////////////////
+/// @name Private Member Function Templates
+////////////////////////////////////////////////////////////////////////////////
+//@{
+
+template<typename T>
+void CombinedPrFunction<T>::reset()
 {
 	_notNullProbability = 0.0;
 	_valueProbability = 0.0;
@@ -200,7 +342,8 @@ template<typename T> void CombinedPrFunction<T>::reset()
 	}
 }
 
-template<typename T> void CombinedPrFunction<T>::normalize()
+template<typename T>
+void CombinedPrFunction<T>::normalize()
 {
 	Decimal normalizationFactor = 1.0 / static_cast<Decimal>(_valueProbability + _bucketProbability + (1.0 - _notNullProbability));
 
@@ -228,9 +371,10 @@ template<typename T> void CombinedPrFunction<T>::normalize()
 	_notNullProbability = _valueProbability + _bucketProbability;
 }
 
-template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decimal y) const
+template<typename T>
+inline size_t CombinedPrFunction<T>::findIndex(const Decimal y) const
 {
-	// we assert that the value x is in the [_min, _max] range
+	// we assert that the value x is in the active domain
 	int min = 0;
 	int max = _numberOfValues + _numberOfBuckets - 1;
 	int mid = 0;
@@ -277,9 +421,10 @@ template<typename T> inline size_t CombinedPrFunction<T>::findIndex(const Decima
 	}
 }
 
-template<typename T> inline size_t CombinedPrFunction<T>::findValue(const T x, bool exact) const
+template<typename T>
+inline size_t CombinedPrFunction<T>::findValue(const T x, bool exact) const
 {
-	// we assert that the value x is in the [_min, _max] range
+	// we assert that the value x is in the active domain
 	int min = 0;
 	int max = _numberOfValues - 1;
 	int mid = 0;
@@ -331,9 +476,10 @@ template<typename T> inline size_t CombinedPrFunction<T>::findValue(const T x, b
 	}
 }
 
-template<typename T> inline size_t CombinedPrFunction<T>::findBucket(const T x, bool exact) const
+template<typename T>
+inline size_t CombinedPrFunction<T>::findBucket(const T x, bool exact) const
 {
-	// we assert that the value x is in the [_min, _max] range
+	// we assert that the value x is in the active domain
 	int min = 0;
 	int max = _numberOfBuckets - 1;
 	int mid = 0;
@@ -385,28 +531,20 @@ template<typename T> inline size_t CombinedPrFunction<T>::findBucket(const T x, 
 	}
 }
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// inline member function templates
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-template<typename T> inline Decimal CombinedPrFunction<T>::operator()(const T x) const
+template<typename T>
+inline Decimal CombinedPrFunction<T>::operator()(const T x) const
 {
 	return cdf(x);
 }
 
-template<typename T> inline T CombinedPrFunction<T>::sample(Decimal random) const
+template<typename T>
+inline T CombinedPrFunction<T>::sample(Decimal random) const
 {
 	return invcdf(random);
 }
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// member function templates
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-/**
- * Load a Q-histogram from the given path.
- */
-template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
+template<typename T>
+void CombinedPrFunction<T>::initialize(const string& path)
 {
 	ifstream in(path.c_str());
 
@@ -438,17 +576,15 @@ template<typename T> void CombinedPrFunction<T>::initialize(const string& path)
     }
 }
 
-template<typename T> void CombinedPrFunction<T>::initialize(istream& in)
+template<typename T>
+void CombinedPrFunction<T>::initialize(istream& in)
 {
 	I16u currentLineNumber = 1;
 	initialize(in, currentLineNumber);
 }
 
-/**
- * Load the distribution data from the given input stream. For each entry add a
- * [min, max) interval of domain values to a lookup table.
- */
-template<typename T> void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
+template<typename T>
+void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 {
 	enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
 
@@ -468,8 +604,10 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in, I16u& c
 		// and does not a currentLine
 		if (currentState == FIN)
 		{
-			_min = std::min(_buckets[0].min(), _values[0]);
-			_max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
+			T min = std::min(_buckets[0].min(), _values[0]);
+			T max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
+
+			_activeDomain.set(min, max);
 
 			currentState = END;
 			continue;
@@ -606,28 +744,32 @@ template<typename T> void CombinedPrFunction<T>::initialize(istream& in, I16u& c
 	}
 }
 
-template<typename T> inline size_t CombinedPrFunction<T>::numberOfBuckets() const
+template<typename T>
+inline size_t CombinedPrFunction<T>::numberOfBuckets() const
 {
     return _numberOfBuckets;
 }
 
-template<typename T> inline T CombinedPrFunction<T>::min()const
+template<typename T>
+inline T CombinedPrFunction<T>::min()const
 {
-    return _min;
+    return _activeDomain.min();
 }
 
-template<typename T> inline T CombinedPrFunction<T>::max() const
+template<typename T>
+inline T CombinedPrFunction<T>::max() const
 {
-    return _max;
+    return _activeDomain.max();
 }
 
-template<typename T> Decimal CombinedPrFunction<T>::pdf(T x) const
+template<typename T>
+Decimal CombinedPrFunction<T>::pdf(T x) const
 {
 	if (x == nullValue<T>())
 	{
 		return 1.0-_notNullProbability;
 	}
-	else if (x < _min || x >= _max)
+	else if (!_activeDomain.contains(x))
 	{
 		return 0.0;
 	}
@@ -649,13 +791,14 @@ template<typename T> Decimal CombinedPrFunction<T>::pdf(T x) const
 	}
 }
 
-template<typename T> Decimal CombinedPrFunction<T>::cdf(T x) const
+template<typename T>
+Decimal CombinedPrFunction<T>::cdf(T x) const
 {
-	if (x < _min)
+	if (x < _activeDomain.min())
 	{
 		return 0.0;
 	}
-	else if (x >= _max)
+	else if (x >= _activeDomain.max())
 	{
 		return _notNullProbability;
 	}
@@ -693,7 +836,8 @@ template<typename T> Decimal CombinedPrFunction<T>::cdf(T x) const
 	}
 }
 
-template<typename T> T CombinedPrFunction<T>::invcdf(Decimal y) const
+template<typename T>
+T CombinedPrFunction<T>::invcdf(Decimal y) const
 {
 	if (y < _notNullProbability)
 	{
@@ -731,6 +875,8 @@ template<typename T> T CombinedPrFunction<T>::invcdf(Decimal y) const
 		return nullValue<T>();
 	}
 }
+
+//@}
 
 /** @}*/// add to math group
 } // namespace Myriad
