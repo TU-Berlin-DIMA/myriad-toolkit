@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef COMBINEDPRFUNCTION_H_
@@ -35,14 +34,27 @@ using namespace Poco;
 
 namespace Myriad
 {
+/**
+ * @addtogroup math_probability
+ * @{*/
 
+/**
+ * A custom probability function consisting of a set of probabilities for
+ * distinct values, a set of bucket probabilities, and a special probability for
+ * the \p T domain NULL value.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<typename T>
 class CombinedPrFunction: public UnivariatePrFunction<T>
 {
 public:
 
 	CombinedPrFunction() :
-		UnivariatePrFunction<T>(""), _numberOfValues(0), _numberOfBuckets(0), _EPSILON(0.000001)
+		UnivariatePrFunction<T>(""),
+		_numberOfValues(0),
+		_numberOfBuckets(0),
+		_EPSILON(0.000001)
 	{
 	}
 
@@ -720,6 +732,7 @@ template<typename T> T CombinedPrFunction<T>::invcdf(Decimal y) const
 	}
 }
 
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* COMBINEDPRFUNCTION_H_ */
