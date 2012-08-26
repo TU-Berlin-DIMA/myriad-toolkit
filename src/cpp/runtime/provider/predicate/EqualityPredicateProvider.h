@@ -73,14 +73,14 @@ public:
     }
 
     EqualityPredicateProvider(const EqualityPredicateProvider& other) :
-		_predicate(other._predicate),
-		_bindersSize(other._bindersSize),
-		_binders(new AbstractBinderType*[_bindersSize])
+        _predicate(other._predicate),
+        _bindersSize(other._bindersSize),
+        _binders(new AbstractBinderType*[_bindersSize])
     {
-    	for (size_t i = 0; i < _bindersSize; i++)
-    	{
-    		_binders[i] = other._binders[i];
-    	}
+        for (size_t i = 0; i < _bindersSize; i++)
+        {
+            _binders[i] = other._binders[i];
+        }
     }
 
     ~EqualityPredicateProvider()
@@ -92,20 +92,20 @@ public:
 
     EqualityPredicateProvider& operator=(const EqualityPredicateProvider& rhs)
     {
-    	delete[] _binders;
+        delete[] _binders;
 
-		_predicate(rhs._predicate);
-		_bindersSize(rhs._bindersSize);
-		_binders(new AbstractBinderType*[_bindersSize]);
+        _predicate(rhs._predicate);
+        _bindersSize(rhs._bindersSize);
+        _binders(new AbstractBinderType*[_bindersSize]);
 
-    	for (size_t i = 0; i < _bindersSize; i++)
-    	{
-    		_binders[i] = rhs._binders[i];
-    	}
+        for (size_t i = 0; i < _bindersSize; i++)
+        {
+            _binders[i] = rhs._binders[i];
+        }
 
-    	_predicate.reset();
+        _predicate.reset();
 
-		return *this;
+        return *this;
     }
 
     const EqualityPredicateType& operator()(AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)

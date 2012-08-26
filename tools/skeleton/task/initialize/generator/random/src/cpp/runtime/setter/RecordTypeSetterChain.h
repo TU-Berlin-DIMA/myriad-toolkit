@@ -38,28 +38,28 @@ class ${{record_name}}SetterChain : public SetterChain<${{record_name}}>
 {
 public:
 
-	// runtime components type aliases
+    // runtime components type aliases
 
-	${{record_name}}SetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :
-		SetterChain<${{record_name}}>(opMode, random),
+    ${{record_name}}SetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :
+        SetterChain<${{record_name}}>(opMode, random),
         _sequenceCardinality(config.cardinality("${cc2us{record_name}}")),
-		_logger(Logger::get("${cc2us{record_name}}.setter.chain"))
-	{
-	}
+        _logger(Logger::get("${cc2us{record_name}}.setter.chain"))
+    {
+    }
 
-	virtual ~${{record_name}}SetterChain()
-	{
-	}
+    virtual ~${{record_name}}SetterChain()
+    {
+    }
 
-	/**
-	 * Applies the setter chain to the given record instance.
-	 */
-	void operator()(AutoPtr<${{record_name}}> recordPtr) const
-	{
-		ensurePosition(recordPtr->genID());
+    /**
+     * Applies the setter chain to the given record instance.
+     */
+    void operator()(AutoPtr<${{record_name}}> recordPtr) const
+    {
+        ensurePosition(recordPtr->genID());
 
-		// apply setter chain
-	}
+        // apply setter chain
+    }
 
     /**
      * Predicate filter function.
@@ -78,10 +78,10 @@ protected:
     // cardinality
     I64u _sequenceCardinality;
 
-	// runtime components
+    // runtime components
 
     // Logger instance
-	Logger& _logger;
+    Logger& _logger;
 };
 
 } // namespace ${{dgen_ns}}

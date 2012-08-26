@@ -91,8 +91,8 @@ private:
 
     size_t findBucket(const T2 x) const;
 
-	static RegularExpression headerLine1Format;
-	static RegularExpression headerLine2Format;
+    static RegularExpression headerLine1Format;
+    static RegularExpression headerLine2Format;
 
     size_t _numberOfx2Buckets;
     Interval<T2>* _x2Buckets;
@@ -213,85 +213,85 @@ template<typename T1, typename T2>  void ConditionalCombinedPrFunction<T1, T2>::
  */
 template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
 {
-	enum READ_STATE { NOC, CON, END };
+    enum READ_STATE { NOC, CON, END };
 
     // reset old state
     reset();
 
-	// reader variables
-	READ_STATE currentState = NOC; // current reader machine state
+    // reader variables
+    READ_STATE currentState = NOC; // current reader machine state
     string currentLine; // the current line
-	I16u currentX2BucketIndex = 0; // current item index
-	I16u currentLineNumber = 1; // current line number
-	RegularExpression::MatchVec posVec; // a posVec for all regex matches
+    I16u currentX2BucketIndex = 0; // current item index
+    I16u currentLineNumber = 1; // current line number
+    RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
-	// reader finite state machine
-	while (currentState != END)
-	{
-		// read next line
-		getline(in, currentLine);
+    // reader finite state machine
+    while (currentState != END)
+    {
+        // read next line
+        getline(in, currentLine);
 
-		// trim whitespace
-		trimInPlace(currentLine);
+        // trim whitespace
+        trimInPlace(currentLine);
 
-		// check if this line is empty or contains a single comment
-		if (currentLine.empty() || currentLine.at(0) == '#')
-		{
-			currentLineNumber++;
-			continue; // skip this line
-		}
+        // check if this line is empty or contains a single comment
+        if (currentLine.empty() || currentLine.at(0) == '#')
+        {
+	        currentLineNumber++;
+	        continue; // skip this line
+        }
 
-		if (currentState == NOC)
-		{
-			if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
-			{
-				throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofconditions = [' + x", currentLineNumber, currentLine));
-			}
+        if (currentState == NOC)
+        {
+	        if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
+	        {
+		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofconditions = [' + x", currentLineNumber, currentLine));
+	        }
 
-			I32 numberOfx2Buckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+	        I32 numberOfx2Buckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
-		    if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
-		    {
-		        throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
-		    }
+	        if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
+	        {
+	            throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
+	        }
 
-		    _numberOfx2Buckets = numberOfx2Buckets;
-		    _x2Buckets = new Interval<T2>[numberOfx2Buckets];
-		    _x1Pr = new CombinedPrFunction<T1>[numberOfx2Buckets];
+	        _numberOfx2Buckets = numberOfx2Buckets;
+	        _x2Buckets = new Interval<T2>[numberOfx2Buckets];
+	        _x1Pr = new CombinedPrFunction<T1>[numberOfx2Buckets];
 
-			currentX2BucketIndex = 0;
-			currentState = (numberOfx2Buckets > 0) ? CON : END;
-		}
-		else if (currentState == CON)
-		{
-			if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
-			{
-				throw DataException(format("line %hu: Bad header line `%s`, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber, currentLine));
-			}
+	        currentX2BucketIndex = 0;
+	        currentState = (numberOfx2Buckets > 0) ? CON : END;
+        }
+        else if (currentState == CON)
+        {
+	        if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
+	        {
+		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber, currentLine));
+	        }
 
-	        T2 min = fromString<T2>(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
-	        T2 max = fromString<T2>(currentLine.substr(posVec[2].offset, posVec[2].length).c_str());
+            T2 min = fromString<T2>(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+            T2 max = fromString<T2>(currentLine.substr(posVec[2].offset, posVec[2].length).c_str());
 
-	        _x2Buckets[currentX2BucketIndex].set(min, max);
-	        _x1Pr[currentX2BucketIndex].initialize(in, currentLineNumber);
+            _x2Buckets[currentX2BucketIndex].set(min, max);
+            _x1Pr[currentX2BucketIndex].initialize(in, currentLineNumber);
 
-			currentX2BucketIndex++;
+	        currentX2BucketIndex++;
 
-			if (currentX2BucketIndex >= _numberOfx2Buckets)
-			{
-				currentState = END;
-				currentX2BucketIndex = 0;
-			}
-		}
+	        if (currentX2BucketIndex >= _numberOfx2Buckets)
+	        {
+		        currentState = END;
+		        currentX2BucketIndex = 0;
+	        }
+        }
 
-		currentLineNumber++;
-	}
+        currentLineNumber++;
+    }
 
-	// protect against unexpected reader state
-	if (currentState != END)
-	{
-		throw RuntimeException("Unexpected state in ConditionalCombinedPrFunction reader at line " + currentLineNumber);
-	}
+    // protect against unexpected reader state
+    if (currentState != END)
+    {
+        throw RuntimeException("Unexpected state in ConditionalCombinedPrFunction reader at line " + currentLineNumber);
+    }
 }
 
 template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>::pdf(T1 x1, T2 x2) const

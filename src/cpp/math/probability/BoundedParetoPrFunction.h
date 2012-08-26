@@ -45,103 +45,103 @@ class BoundedParetoPrFunction: public UnivariatePrFunction<I64u>
 {
 public:
 
-	/**
-	 * Explicit anonymous parameter constructor.
-	 *
-	 * @param alpha The \p alpha parameter of the Pareto distribution.
-	 * @param xMin The left bound of the function range.
-	 * @param xMax The right bound of the function range.
-	 */
-	BoundedParetoPrFunction(Decimal xMin = 1, Decimal xMax = 100, Decimal alpha = 1) :
-		UnivariatePrFunction<I64u> (""), xMin(xMin), xMax(xMax), alpha(alpha)
-	{
-		initialize();
-	}
+    /**
+     * Explicit anonymous parameter constructor.
+     *
+     * @param alpha The \p alpha parameter of the Pareto distribution.
+     * @param xMin The left bound of the function range.
+     * @param xMax The right bound of the function range.
+     */
+    BoundedParetoPrFunction(Decimal xMin = 1, Decimal xMax = 100, Decimal alpha = 1) :
+        UnivariatePrFunction<I64u> (""), xMin(xMin), xMax(xMax), alpha(alpha)
+    {
+        initialize();
+    }
 
-	/**
-	 * Explicit named parameter constructor.
-	 *
-	 * @param name The name of this probability function instance.
-	 * @param alpha The \p alpha parameter of the Pareto distribution.
-	 * @param xMin The left bound of the function range.
-	 * @param xMax The right bound of the function range.
-	 */
-	BoundedParetoPrFunction(const string& name, Decimal xMin = 1, Decimal xMax = 100, Decimal alpha = 1) :
-		UnivariatePrFunction<I64u> (name), xMin(xMin), xMax(xMax), alpha(alpha)
-	{
-		initialize();
-	}
+    /**
+     * Explicit named parameter constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param alpha The \p alpha parameter of the Pareto distribution.
+     * @param xMin The left bound of the function range.
+     * @param xMax The right bound of the function range.
+     */
+    BoundedParetoPrFunction(const string& name, Decimal xMin = 1, Decimal xMax = 100, Decimal alpha = 1) :
+        UnivariatePrFunction<I64u> (name), xMin(xMin), xMax(xMax), alpha(alpha)
+    {
+        initialize();
+    }
 
-	/**
-	 * Anonymous ObjectBuilder constructor.
-	 *
-	 * @param params An array containing the required function parameters.
-	 */
-	BoundedParetoPrFunction(map<string, DynamicAny> params) :
-		UnivariatePrFunction<I64u> ("")
-	{
-		xMin = params["xMin"].convert<Decimal> ();
-		xMax = params["xMax"].convert<Decimal> ();
-		alpha = params["alpha"].convert<Decimal> ();
+    /**
+     * Anonymous ObjectBuilder constructor.
+     *
+     * @param params An array containing the required function parameters.
+     */
+    BoundedParetoPrFunction(map<string, DynamicAny> params) :
+        UnivariatePrFunction<I64u> ("")
+    {
+        xMin = params["xMin"].convert<Decimal> ();
+        xMax = params["xMax"].convert<Decimal> ();
+        alpha = params["alpha"].convert<Decimal> ();
 
-		initialize();
-	}
+        initialize();
+    }
 
-	/**
-	 * Named ObjectBuilder Constructor.
-	 *
-	 * @param name The name of this probability function instance.
-	 * @param params An array containing the required function parameters.
-	 */
-	BoundedParetoPrFunction(const string& name, map<string, DynamicAny> params) :
-		UnivariatePrFunction<I64u> (name)
-	{
-		xMin = params["xMin"].convert<Decimal> ();
-		xMax = params["xMax"].convert<Decimal> ();
-		alpha = params["alpha"].convert<Decimal> ();
+    /**
+     * Named ObjectBuilder Constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param params An array containing the required function parameters.
+     */
+    BoundedParetoPrFunction(const string& name, map<string, DynamicAny> params) :
+        UnivariatePrFunction<I64u> (name)
+    {
+        xMin = params["xMin"].convert<Decimal> ();
+        xMax = params["xMax"].convert<Decimal> ();
+        alpha = params["alpha"].convert<Decimal> ();
 
-		initialize();
-	}
+        initialize();
+    }
 
 
-	/**
-	 * \see UnivariatePrFunction::sample()
-	 */
-	virtual Decimal pdf(I64u x) const;
+    /**
+     * \see UnivariatePrFunction::sample()
+     */
+    virtual Decimal pdf(I64u x) const;
 
-	/**
-	 * \see UnivariatePrFunction::cdf()
-	 */
-	virtual Decimal cdf(I64u x) const;
+    /**
+     * \see UnivariatePrFunction::cdf()
+     */
+    virtual Decimal cdf(I64u x) const;
 
-	/**
-	 * \see UnivariatePrFunction::invpdf()
-	 */
-	I64u invpdf(Decimal x) const;
+    /**
+     * \see UnivariatePrFunction::invpdf()
+     */
+    I64u invpdf(Decimal x) const;
 
-	/**
-	 * TODO: document
-	 */
-	I64u invcdf(Decimal y) const;
+    /**
+     * TODO: document
+     */
+    I64u invcdf(Decimal y) const;
 
 private:
 
-	void initialize()
-	{
-		xMinAlpha = pow(xMin, alpha);
-		xMaxAlpha = pow(xMax, alpha);
-		B = 1 - xMinAlpha/xMaxAlpha;
-	}
+    void initialize()
+    {
+        xMinAlpha = pow(xMin, alpha);
+        xMaxAlpha = pow(xMax, alpha);
+        B = 1 - xMinAlpha/xMaxAlpha;
+    }
 
-	// parameters
-	Decimal xMin;
-	Decimal xMax;
-	Decimal alpha;
+    // parameters
+    Decimal xMin;
+    Decimal xMax;
+    Decimal alpha;
 
-	// common used terms
-	Decimal xMinAlpha;
-	Decimal xMaxAlpha;
-	Decimal B;
+    // common used terms
+    Decimal xMinAlpha;
+    Decimal xMaxAlpha;
+    Decimal B;
 };
 
 /** @}*/// add to math group

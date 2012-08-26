@@ -36,8 +36,8 @@ class AbstractValueProvider
 public:
 
     AbstractValueProvider(const I16u arity, bool invertible) :
-    	_arity(arity),
-    	_invertible(invertible)
+        _arity(arity),
+        _invertible(invertible)
     {
     }
 
@@ -47,25 +47,25 @@ public:
 
     I16u arity() const
     {
-    	return _arity;
+        return _arity;
     }
 
     bool invertible() const
     {
-    	return _invertible;
+        return _invertible;
     }
 
     virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr)
-	{
-    	if (_invertible)
-    	{
-    		throw RuntimeException("Trying to access missing valueRange method implementation in an invertible ValueProvider");
-    	}
-    	else
-    	{
-    		throw RuntimeException("Trying to access valueRange method of non-invertible FieldSetter");
-    	}
-	}
+    {
+        if (_invertible)
+        {
+            throw RuntimeException("Trying to access missing valueRange method implementation in an invertible ValueProvider");
+        }
+        else
+        {
+            throw RuntimeException("Trying to access valueRange method of non-invertible FieldSetter");
+        }
+    }
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random) = 0;
 

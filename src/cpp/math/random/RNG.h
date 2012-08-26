@@ -34,7 +34,7 @@ namespace Myriad {
  */
 template<class RNG> struct prng_traits
 {
-	typedef RandomSeed<Int64, 3> seed_type;
+    typedef RandomSeed<Int64, 3> seed_type;
 };
 
 /**
@@ -44,24 +44,24 @@ class RNG
 {
 public:
 
-	virtual ~RNG()
-	{
-	}
+    virtual ~RNG()
+    {
+    }
 
-	/**
-	 * Return the next random double from the RNG stream. This method must be
-	 * provided by all implementations.
-	 */
-	virtual double next() = 0;
+    /**
+     * Return the next random double from the RNG stream. This method must be
+     * provided by all implementations.
+     */
+    virtual double next() = 0;
 
-	/**
-	 * Compute the random unified double at the specified position. This method
-	 * is optional. For hierarchical RNGs, the position is relative to the
-	 * current RNG chunk. Throws Poco::RangeException if the provided index
-	 * position is out of the available range. If the RNG doesn't support
-	 * random skips, the method should throw a Poco::NotImplementedException.
-	 */
-	virtual double at(UInt64 i) = 0;
+    /**
+     * Compute the random unified double at the specified position. This method
+     * is optional. For hierarchical RNGs, the position is relative to the
+     * current RNG chunk. Throws Poco::RangeException if the provided index
+     * position is out of the available range. If the RNG doesn't support
+     * random skips, the method should throw a Poco::NotImplementedException.
+     */
+    virtual double at(UInt64 i) = 0;
 };
 
 /**
@@ -74,43 +74,43 @@ class HierarchicalRNG: public RNG
 {
 public:
 
-	/**
-	 * Move the RNG position to the beginning of the next substream and
-	 * return a reference to this RNG object with the adjusted position.
-	 * Throws a Poco::RangeException if all substreams of the RNG have already
-	 * been consumed.
-	 */
-	virtual HierarchicalRNG& nextSubstream() = 0;
+    /**
+     * Move the RNG position to the beginning of the next substream and
+     * return a reference to this RNG object with the adjusted position.
+     * Throws a Poco::RangeException if all substreams of the RNG have already
+     * been consumed.
+     */
+    virtual HierarchicalRNG& nextSubstream() = 0;
 
-	/**
-	 * Move the RNG position to the beginning of the current substream
-	 * and return a reference to this RNG object with the adjusted position.
-	 *
-	 * @return
-	 */
-	virtual HierarchicalRNG& resetSubstream() = 0;
+    /**
+     * Move the RNG position to the beginning of the current substream
+     * and return a reference to this RNG object with the adjusted position.
+     *
+     * @return
+     */
+    virtual HierarchicalRNG& resetSubstream() = 0;
 
-	/**
-	 * Move the current substream position to the beginning of the next chunk
-	 * and return a reference to this RNG object with the adjusted position.
-	 * Throws a Poco::RangeException if all chunks of the current substream
-	 * have already been consumed.
-	 */
-	virtual HierarchicalRNG& nextChunk() = 0;
+    /**
+     * Move the current substream position to the beginning of the next chunk
+     * and return a reference to this RNG object with the adjusted position.
+     * Throws a Poco::RangeException if all chunks of the current substream
+     * have already been consumed.
+     */
+    virtual HierarchicalRNG& nextChunk() = 0;
 
-	/**
-	 * Move the RNG position to the beginning of the current chunk and
-	 * return a reference to this RNG object with the adjusted position.
-	 */
-	virtual HierarchicalRNG& resetChunk() = 0;
+    /**
+     * Move the RNG position to the beginning of the current chunk and
+     * return a reference to this RNG object with the adjusted position.
+     */
+    virtual HierarchicalRNG& resetChunk() = 0;
 
-	/**
-	 * Move the current substream position to the specified index. This method
-	 * is optional. Throws Poco::RangeException if the provided index position
-	 * is out of the available range. If the hierarchical RNG doesn't support
-	 * random skips, the method should throw a Poco::NotImplementedException.
-	 */
-	virtual HierarchicalRNG& atChunk(UInt64 i) = 0;
+    /**
+     * Move the current substream position to the specified index. This method
+     * is optional. Throws Poco::RangeException if the provided index position
+     * is out of the available range. If the hierarchical RNG doesn't support
+     * random skips, the method should throw a Poco::NotImplementedException.
+     */
+    virtual HierarchicalRNG& atChunk(UInt64 i) = 0;
 };
 
 }  // namespace Myriad

@@ -35,7 +35,7 @@ class AbstractRangeProvider
 public:
 
     AbstractRangeProvider(const I16u arity) :
-    	_arity(arity)
+        _arity(arity)
     {
     }
 
@@ -45,7 +45,7 @@ public:
 
     I16u arity() const
     {
-    	return _arity;
+        return _arity;
     }
 
     virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr) = 0;

@@ -32,14 +32,14 @@ class FieldSetter: public AbstractSetter<RecordType, fid>
 {
 public:
 
-	typedef typename RecordFieldTraits<fid, RecordType>::FieldType RecordFieldType;
-	typedef typename RecordFieldTraits<fid, RecordType>::FieldSetterType RecordFieldSetterType;
-	typedef typename RecordFieldTraits<fid, RecordType>::FieldGetterType RecordFieldGetterType;
+    typedef typename RecordFieldTraits<fid, RecordType>::FieldType RecordFieldType;
+    typedef typename RecordFieldTraits<fid, RecordType>::FieldSetterType RecordFieldSetterType;
+    typedef typename RecordFieldTraits<fid, RecordType>::FieldGetterType RecordFieldGetterType;
 
     FieldSetter(ValueProviderType& valueProvider) :
-    	AbstractSetter<RecordType, fid>(0, valueProvider.invertible()),
-    	_fieldSetter(RecordFieldTraits<fid, RecordType>::setter()),
-    	_fieldGetter(RecordFieldTraits<fid, RecordType>::getter()),
+        AbstractSetter<RecordType, fid>(0, valueProvider.invertible()),
+        _fieldSetter(RecordFieldTraits<fid, RecordType>::setter()),
+        _fieldGetter(RecordFieldTraits<fid, RecordType>::getter()),
         _valueProvider(valueProvider)
     {
     }
@@ -49,13 +49,13 @@ public:
     }
 
     virtual Interval<I64u> valueRange(const AutoPtr<RecordType>& cxtRecordPtr)
-	{
-    	return _valueProvider.valueRange((cxtRecordPtr->*_fieldGetter)(), cxtRecordPtr);
-	}
+    {
+        return _valueProvider.valueRange((cxtRecordPtr->*_fieldGetter)(), cxtRecordPtr);
+    }
 
     virtual const void operator()(AutoPtr<RecordType>& cxtRecordPtr, RandomStream& random)
     {
-    	(cxtRecordPtr->*_fieldSetter)(static_cast<RecordFieldType>(_valueProvider(cxtRecordPtr, random)));
+        (cxtRecordPtr->*_fieldSetter)(static_cast<RecordFieldType>(_valueProvider(cxtRecordPtr, random)));
     }
 
 private:

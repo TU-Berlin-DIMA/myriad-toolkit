@@ -32,40 +32,40 @@ namespace Myriad {
 
 Decimal BoundedParetoPrFunction::pdf(I64u x) const
 {
-	if (x < xMin || x > xMax)
-	{
-		return 0;
-	}
-	else
-	{
-		return (alpha * xMinAlpha * pow(x, -alpha - 1)) / B;
-	}
+    if (x < xMin || x > xMax)
+    {
+        return 0;
+    }
+    else
+    {
+        return (alpha * xMinAlpha * pow(x, -alpha - 1)) / B;
+    }
 }
 
 Decimal BoundedParetoPrFunction::cdf(I64u x) const
 {
-	if (x < xMin)
-	{
-		return 0;
-	}
-	else if (x > xMax)
-	{
-		return 1;
-	}
-	else
-	{
-		return (1 - xMinAlpha * pow(x, -alpha)) / B;
-	}
+    if (x < xMin)
+    {
+        return 0;
+    }
+    else if (x > xMax)
+    {
+        return 1;
+    }
+    else
+    {
+        return (1 - xMinAlpha * pow(x, -alpha)) / B;
+    }
 }
 
 I64u BoundedParetoPrFunction::invpdf(Decimal y) const
 {
-	return pow((y * B) / (alpha * xMinAlpha), 1 / (-alpha - 1));
+    return pow((y * B) / (alpha * xMinAlpha), 1 / (-alpha - 1));
 }
 
 I64u BoundedParetoPrFunction::invcdf(Decimal y) const
 {
-	return pow(-(y*xMaxAlpha - y*xMinAlpha - xMaxAlpha)/(xMinAlpha*xMaxAlpha), -1/alpha);
+    return pow(-(y*xMaxAlpha - y*xMinAlpha - xMaxAlpha)/(xMinAlpha*xMaxAlpha), -1/alpha);
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -74,69 +74,69 @@ I64u BoundedParetoPrFunction::invcdf(Decimal y) const
 
 Decimal NormalPrFunction::pdf(Decimal x) const
 {
-	return _A * exp(-(x - _mean) * (x - _mean) / (2 * _var));
+    return _A * exp(-(x - _mean) * (x - _mean) / (2 * _var));
 }
 
 Decimal NormalPrFunction::cdf(Decimal x) const
 {
-	return 0.5 * (1 + erf((x - _mean) / sqrt(2 * _var)));
+    return 0.5 * (1 + erf((x - _mean) / sqrt(2 * _var)));
 }
 
 Decimal NormalPrFunction::invpdf(Decimal y) const
 {
-	return sqrt(-log(y * (1 / _A) * 2 * _var)) + y; //TODO: this code is not tested
+    return sqrt(-log(y * (1 / _A) * 2 * _var)) + y; //TODO: this code is not tested
 }
 
 Decimal NormalPrFunction::invcdf(Decimal y) const
 {
-	return sqrt(2) * _stddev * inverf(2 * y - 1) + _mean;
+    return sqrt(2) * _stddev * inverf(2 * y - 1) + _mean;
 }
 
 Interval<Decimal> NormalPrFunction::threshold(Decimal yMin) const
 {
-	Decimal x = invpdf(yMin);
-	return Interval<Decimal> (2*_mean - x, x);
+    Decimal x = invpdf(yMin);
+    return Interval<Decimal> (2*_mean - x, x);
 }
 
 Decimal NormalPrFunction::mean() const
 {
-	return _mean;
+    return _mean;
 }
 
 Decimal NormalPrFunction::stddev() const
 {
-	return _stddev;
+    return _stddev;
 }
 
 Decimal NormalPrFunction::erf(const Decimal x) const
 {
-	Decimal P, Q, xx, axx, y;
+    Decimal P, Q, xx, axx, y;
 
-	xx = x * x;
-	axx = _a * xx;
+    xx = x * x;
+    axx = _a * xx;
 
-	P = 4 / M_PI + axx;
-	Q = 1 + axx;
+    P = 4 / M_PI + axx;
+    Q = 1 + axx;
 
-	y = sqrt(1 - exp(-xx * (P / Q)));
+    y = sqrt(1 - exp(-xx * (P / Q)));
 
-	return (x < 0) ? -y : +y;
+    return (x < 0) ? -y : +y;
 }
 
 Decimal NormalPrFunction::inverf(const Decimal y) const
 {
-	Decimal ln, twopia, x;
+    Decimal ln, twopia, x;
 
-	ln = log(1 - y * y);
-	twopia = 2 / (M_PI * _a);
-	x = 0;
+    ln = log(1 - y * y);
+    twopia = 2 / (M_PI * _a);
+    x = 0;
 
-	x -= twopia;
-	x -= ln / 2;
-	x += sqrt((twopia + ln / 2) * (twopia + ln / 2) - (1 / _a) * ln);
-	x = sqrt(x);
+    x -= twopia;
+    x -= ln / 2;
+    x += sqrt((twopia + ln / 2) * (twopia + ln / 2) - (1 / _a) * ln);
+    x = sqrt(x);
 
-	return (y < 0) ? -x : +x;
+    return (y < 0) ? -x : +x;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -145,36 +145,36 @@ Decimal NormalPrFunction::inverf(const Decimal y) const
 
 Decimal ParetoPrFunction::pdf(Decimal x) const
 {
-	if (x < xMin)
-	{
-		return 0;
-	}
-	else
-	{
-		return (alpha * xMinAlpha) / pow(x, alpha + 1);
-	}
+    if (x < xMin)
+    {
+        return 0;
+    }
+    else
+    {
+        return (alpha * xMinAlpha) / pow(x, alpha + 1);
+    }
 }
 
 Decimal ParetoPrFunction::cdf(Decimal x) const
 {
-	if (x < xMin)
-	{
-		return 0;
-	}
-	else
-	{
-		return 1 - pow(xMin / x, alpha);
-	}
+    if (x < xMin)
+    {
+        return 0;
+    }
+    else
+    {
+        return 1 - pow(xMin / x, alpha);
+    }
 }
 
 Decimal ParetoPrFunction::invpdf(Decimal y) const
 {
-	return pow((alpha * xMinAlpha) / y, 1 / (alpha + 1));
+    return pow((alpha * xMinAlpha) / y, 1 / (alpha + 1));
 }
 
 Decimal ParetoPrFunction::invcdf(Decimal y) const
 {
-	return xMin / pow((1 - y), (1 / alpha));
+    return xMin / pow((1 - y), (1 / alpha));
 }
 
 } // namespace Myriad

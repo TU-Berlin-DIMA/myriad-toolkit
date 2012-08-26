@@ -47,145 +47,145 @@ namespace Myriad {
  */
 class AbstractGeneratorSubsystem: public Subsystem
 {
-	friend class GeneratorErrorHandler;
-	friend class ThreadExecutor;
+    friend class GeneratorErrorHandler;
+    friend class ThreadExecutor;
 
 public:
 
-	/**
-	 * Constructor.
-	 */
-	AbstractGeneratorSubsystem(NotificationCenter& notificationCenter, const vector<bool>& executeStages) :
-		_notificationCenter(notificationCenter),
-		_executeStages(executeStages),
-		_config(_generatorPool),
-		_threadPool("StageTaskPool", 4, 32),
-		_initialized(false),
-		_logger(Logger::get("generator.driver")),
-		_ui(Logger::get("ui"))
-	{
-	}
+    /**
+     * Constructor.
+     */
+    AbstractGeneratorSubsystem(NotificationCenter& notificationCenter, const vector<bool>& executeStages) :
+        _notificationCenter(notificationCenter),
+        _executeStages(executeStages),
+        _config(_generatorPool),
+        _threadPool("StageTaskPool", 4, 32),
+        _initialized(false),
+        _logger(Logger::get("generator.driver")),
+        _ui(Logger::get("ui"))
+    {
+    }
 
-	/**
-	 * Destructor.
-	 */
-	virtual ~AbstractGeneratorSubsystem()
-	{
-	}
+    /**
+     * Destructor.
+     */
+    virtual ~AbstractGeneratorSubsystem()
+    {
+    }
 
-	/**
-	 * Runs the GeneratorSubsystem. This method contains the main loop for the
-	 * data generator logic at the application level.
-	 *
-	 * The loop iterates through all GeneratorStage instances.
-	 * At each GeneratorStage, the AbstractSequenceGenerator::prepare() method
-	 * is used to poll all registered AbstractSequenceGenerator in order to
-	 * obtaion a set of runnable StageTask instances (currently only
-	 * PartitionedSequenceIterator tasks are supported).
-	 * ThreadExecutor instances from a shared pool are then used to concurrently
-	 * execute the collected runnable StageTasks.
-	 * At the end of each stage the AbstractSequenceGenerator::cleanup()
-	 * methods of all registered generators are invoked.
-	 *
-	 * Two ChangeStatus notifications with node values NodeState::ALIVE
-	 * and NodeState::Ready are issued correspondingly before and after the
-	 * main GeneratorStage iteration loop. In addition, a StartStage
-	 * notification is issued before entering the lifecycle of each stage.
-	 */
-	void start();
+    /**
+     * Runs the GeneratorSubsystem. This method contains the main loop for the
+     * data generator logic at the application level.
+     *
+     * The loop iterates through all GeneratorStage instances.
+     * At each GeneratorStage, the AbstractSequenceGenerator::prepare() method
+     * is used to poll all registered AbstractSequenceGenerator in order to
+     * obtaion a set of runnable StageTask instances (currently only
+     * PartitionedSequenceIterator tasks are supported).
+     * ThreadExecutor instances from a shared pool are then used to concurrently
+     * execute the collected runnable StageTasks.
+     * At the end of each stage the AbstractSequenceGenerator::cleanup()
+     * methods of all registered generators are invoked.
+     *
+     * Two ChangeStatus notifications with node values NodeState::ALIVE
+     * and NodeState::Ready are issued correspondingly before and after the
+     * main GeneratorStage iteration loop. In addition, a StartStage
+     * notification is issued before entering the lifecycle of each stage.
+     */
+    void start();
 
 protected:
 
-	/**
-	 * Returns a constant subsystem name "Generator Subsystem".
-	 */
-	const char* name() const
-	{
-		return "Generator Subsystem";
-	}
+    /**
+     * Returns a constant subsystem name "Generator Subsystem".
+     */
+    const char* name() const
+    {
+        return "Generator Subsystem";
+    }
 
-	/**
-	 * Common initialization logic.
-	 */
-	void initialize(Application&);
+    /**
+     * Common initialization logic.
+     */
+    void initialize(Application&);
 
-	/**
-	 * Common uninitialization logic.
-	 */
-	void uninitialize();
+    /**
+     * Common uninitialization logic.
+     */
+    void uninitialize();
 
-	/**
-	 * Virtual method for registering generators.
-	 */
-	virtual void registerGenerators() = 0;
+    /**
+     * Virtual method for registering generators.
+     */
+    virtual void registerGenerators() = 0;
 
-	/**
-	 * Adds a single generator of the given \p T type to the generator pool.
-	 *
-	 * @param name The name of the added generator.
-	 */
-	template<class T> void registerGenerator(const string& name)
-	{
-		_generatorPool.set(new T(name, _config, _notificationCenter));
-	}
+    /**
+     * Adds a single generator of the given \p T type to the generator pool.
+     *
+     * @param name The name of the added generator.
+     */
+    template<class T> void registerGenerator(const string& name)
+    {
+        _generatorPool.set(new T(name, _config, _notificationCenter));
+    }
 
 private:
-	/**
-	 * Prepares all generators for the next stage.
-	 *
-	 * @param stage
-	 * @return the number of runnable tasks for this stage
-	 */
-	unsigned short prepareStage(AbstractSequenceGenerator::Stage stage);
+    /**
+     * Prepares all generators for the next stage.
+     *
+     * @param stage
+     * @return the number of runnable tasks for this stage
+     */
+    unsigned short prepareStage(AbstractSequenceGenerator::Stage stage);
 
-	/**
-	 * Cleans up all generators upon execution of the current stage.
-	 *
-	 * @param stage
-	 */
-	void cleanupStage(AbstractSequenceGenerator::Stage stage);
+    /**
+     * Cleans up all generators upon execution of the current stage.
+     *
+     * @param stage
+     */
+    void cleanupStage(AbstractSequenceGenerator::Stage stage);
 
-	/**
-	 * A reference to the application wide notification center.
-	 */
-	NotificationCenter& _notificationCenter;
+    /**
+     * A reference to the application wide notification center.
+     */
+    NotificationCenter& _notificationCenter;
 
-	/**
-	 * A bitmap of stages that need to be executed.
-	 */
-	const vector<bool>& _executeStages;
+    /**
+     * A bitmap of stages that need to be executed.
+     */
+    const vector<bool>& _executeStages;
 
-	/**
-	 * A pool for the registered generators.
-	 */
-	GeneratorPool _generatorPool;
+    /**
+     * A pool for the registered generators.
+     */
+    GeneratorPool _generatorPool;
 
-	/**
-	 * An application wide generator config instance.
-	 */
-	GeneratorConfig _config;
+    /**
+     * An application wide generator config instance.
+     */
+    GeneratorConfig _config;
 
-	/**
-	 * A pool for the runnable generator task threads.
-	 */
-	ThreadPool _threadPool;
+    /**
+     * A pool for the runnable generator task threads.
+     */
+    ThreadPool _threadPool;
 
-	/**
-	 * A flag indicating that the initialize() method has already been invoked.
-	 */
-	bool _initialized;
+    /**
+     * A flag indicating that the initialize() method has already been invoked.
+     */
+    bool _initialized;
 
 protected:
 
-	/**
-	 * Generator subsystem logger.
-	 */
-	Logger& _logger;
+    /**
+     * Generator subsystem logger.
+     */
+    Logger& _logger;
 
-	/**
-	 * User interface (normally stdout) logger.
-	 */
-	Logger& _ui;
+    /**
+     * User interface (normally stdout) logger.
+     */
+    Logger& _ui;
 };
 
 /** @}*/// add to generator group

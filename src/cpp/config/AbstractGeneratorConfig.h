@@ -61,268 +61,268 @@ class AbstractGeneratorConfig: public LayeredConfiguration
 {
 public:
 
-	/**
-	 * Constructor.
-	 *
-	 * @param generatorPool a reference to the application's generator pool.
-	 */
-	AbstractGeneratorConfig(GeneratorPool& generatorPool) :
-		_pattern_param_ref("\\$\\{(.+)\\}"),
-		_masterPRNG("master_prng"),
-		_generatorPool(generatorPool),
-		_logger(Logger::get("generator.config"))
-	{
-	}
+    /**
+     * Constructor.
+     *
+     * @param generatorPool a reference to the application's generator pool.
+     */
+    AbstractGeneratorConfig(GeneratorPool& generatorPool) :
+        _pattern_param_ref("\\$\\{(.+)\\}"),
+        _masterPRNG("master_prng"),
+        _generatorPool(generatorPool),
+        _logger(Logger::get("generator.config"))
+    {
+    }
 
-	/**
-	 * Initializes a layer of application-wide parameters on top of the
-	 * provided underlying \c AbstractConfiguration object. At the end the
-	 * initialization routine invokes the following private functions
-	 *
-	 * - configurePartitioning()
-	 * - configureFunctions()
-	 * - configureSets()
-	 *
-	 * These are implemented by the application-specific GeneratorConfig
-	 * specializations in order to compute proper partitioning parameters for
-	 * all registered generators and to add the required functions and enum
-	 * sets to the GeneratorConfig instance.
-	 */
-	void initialize(AbstractConfiguration& appConfig);
+    /**
+     * Initializes a layer of application-wide parameters on top of the
+     * provided underlying \c AbstractConfiguration object. At the end the
+     * initialization routine invokes the following private functions
+     *
+     * - configurePartitioning()
+     * - configureFunctions()
+     * - configureSets()
+     *
+     * These are implemented by the application-specific GeneratorConfig
+     * specializations in order to compute proper partitioning parameters for
+     * all registered generators and to add the required functions and enum
+     * sets to the GeneratorConfig instance.
+     */
+    void initialize(AbstractConfiguration& appConfig);
 
-	/**
-	 * Wrapper around the FunctionPool::add() method of the private
-	 * FunctionPool member.
-	 *
-	 * @param functionPtr a pointer to the function to be added.
-	 */
-	void function(AbstractFunction* functionPtr)
-	{
-		_functionPool.add(functionPtr);
-	}
+    /**
+     * Wrapper around the FunctionPool::add() method of the private
+     * FunctionPool member.
+     *
+     * @param functionPtr a pointer to the function to be added.
+     */
+    void function(AbstractFunction* functionPtr)
+    {
+        _functionPool.add(functionPtr);
+    }
 
-	/**
-	 * Wrapper around the FunctionPool::get() method of the private
-	 * FunctionPool member.
-	 *
-	 * @return a reference to a \p FunctionType function identified by the
-	 *         given \p name
-	 */
-	template<class FunctionType> FunctionType& function(const string& name) const
-	{
-		return _functionPool.get<FunctionType>(name);
-	}
+    /**
+     * Wrapper around the FunctionPool::get() method of the private
+     * FunctionPool member.
+     *
+     * @return a reference to a \p FunctionType function identified by the
+     *         given \p name
+     */
+    template<class FunctionType> FunctionType& function(const string& name) const
+    {
+        return _functionPool.get<FunctionType>(name);
+    }
 
-	/**
-	 * Reads a parameter identified by the key 'generator.{\p key}' from tries
-	 * to convert it to a \p ParameterType instance using the fromString
-	 * conversion method.
-	 *
-	 * @return the \p ParameterType parameter identified by 'generator.{\p key}'
-	 */
-	template<class ParameterType> ParameterType parameter(string key) const
-	{
-		return fromString<ParameterType>(getString("generator." + key));
-	}
+    /**
+     * Reads a parameter identified by the key 'generator.{\p key}' from tries
+     * to convert it to a \p ParameterType instance using the fromString
+     * conversion method.
+     *
+     * @return the \p ParameterType parameter identified by 'generator.{\p key}'
+     */
+    template<class ParameterType> ParameterType parameter(string key) const
+    {
+        return fromString<ParameterType>(getString("generator." + key));
+    }
 
-	/**
-	 * Retrieves the enumerated set identified by the given \p key.
-	 *
-	 * @return a const reference to the enumerated set identified by \p key
-	 */
-	const vector<string>& enumSet(string key)
-	{
-		return _enumSets[key];
-	}
+    /**
+     * Retrieves the enumerated set identified by the given \p key.
+     *
+     * @return a const reference to the enumerated set identified by \p key
+     */
+    const vector<string>& enumSet(string key)
+    {
+        return _enumSets[key];
+    }
 
-	/**
-	 * Retrieves the map containing all enumerated sets.
-	 *
-	 * @return the map containing all enumerated sets.
-	 */
-	map<string, vector<string> >& enumSets()
-	{
-		return _enumSets;
-	}
+    /**
+     * Retrieves the map containing all enumerated sets.
+     *
+     * @return the map containing all enumerated sets.
+     */
+    map<string, vector<string> >& enumSets()
+    {
+        return _enumSets;
+    }
 
-	/**
-	 * Reads the 'generator.{\p name}.sequence.cardinality' config parameter.
-	 *
-	 * @return the 'generator.{\p name}.sequence.cardinality' config parameter.
-	 */
-	ID cardinality(const string name)
-	{
-		return fromString<I64u>(getString("generator." + name + ".sequence.cardinality"));
-	}
+    /**
+     * Reads the 'generator.{\p name}.sequence.cardinality' config parameter.
+     *
+     * @return the 'generator.{\p name}.sequence.cardinality' config parameter.
+     */
+    ID cardinality(const string name)
+    {
+        return fromString<I64u>(getString("generator." + name + ".sequence.cardinality"));
+    }
 
-	/**
-	 * Reads the 'generator.{\p name}.partition.begin' config parameter.
-	 *
-	 * This value of this parameter identifies the starting position (inclusive)
-	 * of the subsequence identified by \p name generated by the current node.
-	 *
-	 * @return the 'generator.{\p name}.partition.begin' config parameter.
-	 */
-	ID genIDBegin(const string name)
-	{
-		return fromString<I64u>(getString("generator." + name + ".partition.begin"));
-	}
+    /**
+     * Reads the 'generator.{\p name}.partition.begin' config parameter.
+     *
+     * This value of this parameter identifies the starting position (inclusive)
+     * of the subsequence identified by \p name generated by the current node.
+     *
+     * @return the 'generator.{\p name}.partition.begin' config parameter.
+     */
+    ID genIDBegin(const string name)
+    {
+        return fromString<I64u>(getString("generator." + name + ".partition.begin"));
+    }
 
-	/**
-	 * Reads the 'generator.{\p name}.partition.begin' config parameter.
-	 *
-	 * This value of this parameter identifies the end position (exclusive)
-	 * of the subsequence identified by \p name generated by the current node.
-	 *
-	 * @return the 'generator.{\p name}.partition.begin' config parameter.
-	 */
-	ID genIDEnd(const string name)
-	{
-		return fromString<I64u>(getString("generator." + name + ".partition.end"));
-	}
+    /**
+     * Reads the 'generator.{\p name}.partition.begin' config parameter.
+     *
+     * This value of this parameter identifies the end position (exclusive)
+     * of the subsequence identified by \p name generated by the current node.
+     *
+     * @return the 'generator.{\p name}.partition.begin' config parameter.
+     */
+    ID genIDEnd(const string name)
+    {
+        return fromString<I64u>(getString("generator." + name + ".partition.end"));
+    }
 
-	/**
-	 * Returns the scaling factor for the data generator application.
-	 *
-	 * The retrieved value is stored in the underlying configuration under the
-	 * 'application.scaling-factor' key.
-	 *
-	 * @return the application scaling factor
-	 */
-	Decimal scalingFactor()
-	{
-		return getDouble("application.scaling-factor");
-	}
+    /**
+     * Returns the scaling factor for the data generator application.
+     *
+     * The retrieved value is stored in the underlying configuration under the
+     * 'application.scaling-factor' key.
+     *
+     * @return the application scaling factor
+     */
+    Decimal scalingFactor()
+    {
+        return getDouble("application.scaling-factor");
+    }
 
-	/**
-	 * Returns the number of chunks (nodes) for the data generator application.
-	 *
-	 * The retrieved value is stored in the underlying configuration under the
-	 * 'common.partitioning.number-of-chunks' key.
-	 *
-	 * @return the number of chunks
-	 */
-	I16u numberOfChunks()
-	{
-		return getInt("common.partitioning.number-of-chunks");
-	}
+    /**
+     * Returns the number of chunks (nodes) for the data generator application.
+     *
+     * The retrieved value is stored in the underlying configuration under the
+     * 'common.partitioning.number-of-chunks' key.
+     *
+     * @return the number of chunks
+     */
+    I16u numberOfChunks()
+    {
+        return getInt("common.partitioning.number-of-chunks");
+    }
 
-	/**
-	 * Returns the index of the current chunk (node).
-	 *
-	 * The retrieved value is stored in the underlying configuration under the
-	 * 'common.partitioning.chunks-id' key.
-	 *
-	 * @return the number of chunks
-	 */
-	I16u nodeID()
-	{
-		return getInt("common.partitioning.chunks-id");
-	}
+    /**
+     * Returns the index of the current chunk (node).
+     *
+     * The retrieved value is stored in the underlying configuration under the
+     * 'common.partitioning.chunks-id' key.
+     *
+     * @return the number of chunks
+     */
+    I16u nodeID()
+    {
+        return getInt("common.partitioning.chunks-id");
+    }
 
-	/**
-	 * Returns a reference to the application generator pool.
-	 *
-	 * @return a reference to the application generator pool
-	 */
-	GeneratorPool& generatorPool() const
-	{
-		return _generatorPool;
-	}
+    /**
+     * Returns a reference to the application generator pool.
+     *
+     * @return a reference to the application generator pool
+     */
+    GeneratorPool& generatorPool() const
+    {
+        return _generatorPool;
+    }
 
-	/**
-	 * Returns a reference to the master PRNG stream for this application.
-	 *
-	 * @return a reference to the master PRNG
-	 */
-	RandomStream& masterPRNG()
-	{
-		return _masterPRNG;
-	}
+    /**
+     * Returns a reference to the master PRNG stream for this application.
+     *
+     * @return a reference to the master PRNG
+     */
+    RandomStream& masterPRNG()
+    {
+        return _masterPRNG;
+    }
 
 protected:
 
-	/**
-	 * Helper function - loads an enumerated set from a flat file to a vector.
-	 *
-	 * @param key
-	 * @param path
-	 *
-	 */
-	void bindEnumSet(const string& key, Path path);
+    /**
+     * Helper function - loads an enumerated set from a flat file to a vector.
+     *
+     * @param key
+     * @param path
+     *
+     */
+    void bindEnumSet(const string& key, Path path);
 
-	/**
-	 * Helper function - loads functions.
-	 */
-	virtual void configureFunctions()
-	{
-	}
+    /**
+     * Helper function - loads functions.
+     */
+    virtual void configureFunctions()
+    {
+    }
 
-	/**
-	 * Helper function - computes the PRDG subsequences assigned to the current
-	 * node for each data type.
-	 */
-	virtual void configurePartitioning()
-	{
-	}
+    /**
+     * Helper function - computes the PRDG subsequences assigned to the current
+     * node for each data type.
+     */
+    virtual void configurePartitioning()
+    {
+    }
 
-	/**
-	 * Helper function - binds record and string sets to local variables.
-	 */
-	virtual void configureSets()
-	{
-	}
+    /**
+     * Helper function - binds record and string sets to local variables.
+     */
+    virtual void configureSets()
+    {
+    }
 
-	/**
-	 * Helper partitioning function for fixed size subsequences.
-	 *
-	 * @param key
-	 */
-	void computeFixedPartitioning(const string& key);
+    /**
+     * Helper partitioning function for fixed size subsequences.
+     *
+     * @param key
+     */
+    void computeFixedPartitioning(const string& key);
 
-	/**
-	 * Helper partitioning function for equi-partitioned subsequences.
-	 *
-	 * @param key
-	 */
-	void computeLinearScalePartitioning(const string& key);
+    /**
+     * Helper partitioning function for equi-partitioned subsequences.
+     *
+     * @param key
+     */
+    void computeLinearScalePartitioning(const string& key);
 
-	/**
-	 * Resolves values of the form ${param_name} to the corresponding parameter name.
-	 *
-	 * @param value
-	 */
-	const string resolveValue(const string& value);
+    /**
+     * Resolves values of the form ${param_name} to the corresponding parameter name.
+     *
+     * @param value
+     */
+    const string resolveValue(const string& value);
 
-	/**
-	 * A regular expression that matches parameter references (i.e. "${...}" strings).
-	 */
-	RegularExpression _pattern_param_ref;
+    /**
+     * A regular expression that matches parameter references (i.e. "${...}" strings).
+     */
+    RegularExpression _pattern_param_ref;
 
-	/**
-	 * The master PRNG instance.
-	 */
-	RandomStream _masterPRNG;
+    /**
+     * The master PRNG instance.
+     */
+    RandomStream _masterPRNG;
 
-	/**
-	 * A pool for the registered generators.
-	 */
-	GeneratorPool& _generatorPool;
+    /**
+     * A pool for the registered generators.
+     */
+    GeneratorPool& _generatorPool;
 
-	/**
-	 * A global function pool.
-	 */
-	FunctionPool _functionPool;
+    /**
+     * A global function pool.
+     */
+    FunctionPool _functionPool;
 
-	/**
-	 * The string sets bound from the config.
-	 */
-	map<string, vector<string> > _enumSets;
+    /**
+     * The string sets bound from the config.
+     */
+    map<string, vector<string> > _enumSets;
 
-	/**
-	 * A 'generator.config' logger instance.
-	 */
-	Logger& _logger;
+    /**
+     * A 'generator.config' logger instance.
+     */
+    Logger& _logger;
 };
 
 } // namespace Myriad

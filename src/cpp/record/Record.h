@@ -54,13 +54,13 @@ class RecordRangePredicate;
 template<class RecordType>
 struct RecordTraits
 {
-	typedef RecordMeta<RecordType> MetaType;
-	typedef AbstractSequenceGenerator GeneratorType;
-	typedef SetterChain<RecordType> SetterChainType;
-	typedef RecordFactory<RecordType> FactoryType;
-	typedef RecordRangePredicate<RecordType> RangePredicateType;
+    typedef RecordMeta<RecordType> MetaType;
+    typedef AbstractSequenceGenerator GeneratorType;
+    typedef SetterChain<RecordType> SetterChainType;
+    typedef RecordFactory<RecordType> FactoryType;
+    typedef RecordRangePredicate<RecordType> RangePredicateType;
 
-	enum Field { UNKNOWN, GEN_ID };
+    enum Field { UNKNOWN, GEN_ID };
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -71,15 +71,15 @@ class Record: public Poco::RefCountedObject
 {
 public:
 
-	void genID(const I64u v);
-	I64u genID() const;
+    void genID(const I64u v);
+    I64u genID() const;
 
     void genIDRef(const I64u& v);
-	const I64u& genIDRef() const;
+    const I64u& genIDRef() const;
 
 private:
 
-	ID	_gen_id;
+    ID    _gen_id;
 };
 
 inline void Record::genID(const I64u v)
@@ -89,7 +89,7 @@ inline void Record::genID(const I64u v)
 
 inline I64u Record::genID() const
 {
-	return _gen_id;
+    return _gen_id;
 }
 
 inline void Record::genIDRef(const I64u& v)
@@ -99,7 +99,7 @@ inline void Record::genIDRef(const I64u& v)
 
 inline const I64u& Record::genIDRef() const
 {
-	return _gen_id;
+    return _gen_id;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -111,40 +111,40 @@ class RecordFactory
 {
 public:
 
-	typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
+    typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
 
-	RecordFactory(RecordMetaType meta)
-		: _meta(meta)
-	{
-	}
+    RecordFactory(RecordMetaType meta)
+        : _meta(meta)
+    {
+    }
 
-	/**
-	 * Object generating function.
-	 */
-	AutoPtr<RecordType> operator()() const;
+    /**
+     * Object generating function.
+     */
+    AutoPtr<RecordType> operator()() const;
 
-	/**
-	 * Object generating function.
-	 */
-	AutoPtr<RecordType> operator()(const I64u& genID) const;
+    /**
+     * Object generating function.
+     */
+    AutoPtr<RecordType> operator()(const I64u& genID) const;
 
 private:
 
-	const RecordMetaType _meta;
+    const RecordMetaType _meta;
 };
 
 template<class RecordType>
 inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()() const
 {
-	return new RecordType(_meta);
+    return new RecordType(_meta);
 }
 
 template<class RecordType>
 inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()(const I64u& genID) const
 {
-	AutoPtr<RecordType> record(new RecordType(_meta));
-	record->genID(genID);
-	return record;
+    AutoPtr<RecordType> record(new RecordType(_meta));
+    record->genID(genID);
+    return record;
 }
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -156,24 +156,24 @@ class RecordMeta
 {
 public:
 
-	RecordMeta(const I64u cardinality = 0) :
-		_cardinality(cardinality) // FIXME: mandatory cardinality
-	{
-	}
+    RecordMeta(const I64u cardinality = 0) :
+        _cardinality(cardinality) // FIXME: mandatory cardinality
+    {
+    }
 
-	RecordMeta(const map<string, vector<string> >& enumSets, const I64u cardinality = 0) :
-		_cardinality(cardinality) // FIXME: mandatory cardinality
-	{
-	}
+    RecordMeta(const map<string, vector<string> >& enumSets, const I64u cardinality = 0) :
+        _cardinality(cardinality) // FIXME: mandatory cardinality
+    {
+    }
 
-	const I64u& cardinality() const
-	{
-		return _cardinality;
-	}
+    const I64u& cardinality() const
+    {
+        return _cardinality;
+    }
 
 private:
 
-	const I64u _cardinality;
+    const I64u _cardinality;
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -186,19 +186,19 @@ private:
 template <I16u fid, class RecordType>
 struct RecordFieldTraits
 {
-	typedef I64u FieldType;
-	typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType;
-	typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType;
+    typedef I64u FieldType;
+    typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType;
+    typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType;
 
-	static FieldSetterType setter()
-	{
-		throw RuntimeException("Trying to access record field setter for unknown field");
-	}
+    static FieldSetterType setter()
+    {
+        throw RuntimeException("Trying to access record field setter for unknown field");
+    }
 
-	static FieldGetterType getter()
-	{
-		throw RuntimeException("Trying to access record field getter for unknown field");
-	}
+    static FieldGetterType getter()
+    {
+        throw RuntimeException("Trying to access record field getter for unknown field");
+    }
 };
 
 /**
@@ -207,19 +207,19 @@ struct RecordFieldTraits
 template <class RecordType>
 struct RecordFieldTraits<1, RecordType>
 {
-	typedef I64u FieldType;
-	typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType;
-	typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType;
+    typedef I64u FieldType;
+    typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType;
+    typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType;
 
-	static FieldSetterType setter()
-	{
-		return static_cast<FieldSetterType>(&Record::genIDRef);
-	}
+    static FieldSetterType setter()
+    {
+        return static_cast<FieldSetterType>(&Record::genIDRef);
+    }
 
-	static FieldGetterType getter()
-	{
-		return static_cast<FieldGetterType>(&Record::genIDRef);
-	}
+    static FieldGetterType getter()
+    {
+        return static_cast<FieldGetterType>(&Record::genIDRef);
+    }
 };
 
 } // namespace Myriad

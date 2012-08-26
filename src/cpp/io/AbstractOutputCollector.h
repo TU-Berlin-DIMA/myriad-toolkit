@@ -47,57 +47,57 @@ public:
     /**
      * Constructor.
      */
-	AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config) :
-		_config(config)
-	{
-	}
-
-	/**
-	 * Copy constructor.
-	 */
-	AbstractOutputCollector(const AbstractOutputCollector& o) :
-        _config(o._config)
-	{
-	}
+    AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config) :
+        _config(config)
+    {
+    }
 
     /**
      * Copy constructor.
      */
-	virtual ~AbstractOutputCollector()
-	{
-	}
+    AbstractOutputCollector(const AbstractOutputCollector& o) :
+        _config(o._config)
+    {
+    }
 
-	/**
-	 * Open the underlying output stream.
-	 */
-	virtual void open() = 0;
+    /**
+     * Copy constructor.
+     */
+    virtual ~AbstractOutputCollector()
+    {
+    }
 
-	/**
-	 * Flush and close the underlying output stream.
-	 */
-	virtual void close() = 0;
+    /**
+     * Open the underlying output stream.
+     */
+    virtual void open() = 0;
 
-	/**
-	 * Write an output header.
-	 */
-	virtual void writeHeader() = 0;
+    /**
+     * Flush and close the underlying output stream.
+     */
+    virtual void close() = 0;
 
-	/**
+    /**
+     * Write an output header.
+     */
+    virtual void writeHeader() = 0;
+
+    /**
      * Write an output footer.
-	 */
-	virtual void writeFooter() = 0;
+     */
+    virtual void writeFooter() = 0;
 
-	/**
-	 * Collect and write out a single \p RecordType instance.
-	 */
-	virtual void collect(const RecordType& record) = 0;
+    /**
+     * Collect and write out a single \p RecordType instance.
+     */
+    virtual void collect(const RecordType& record) = 0;
 
 protected:
 
-	/**
-	 * A reference to the generator config.
-	 */
-	const GeneratorConfig& _config;
+    /**
+     * A reference to the generator config.
+     */
+    const GeneratorConfig& _config;
 };
 
 /** @}*/// add to io group

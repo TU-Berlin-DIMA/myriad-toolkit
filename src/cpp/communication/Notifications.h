@@ -42,84 +42,84 @@ class NodeState
 {
 public:
 
-	/**
-	 * An enumerated type for the possible NodeState states.
-	 */
-	enum State
-	{
-		PREPARE, ALIVE, READY, ABORTED
-	};
+    /**
+     * An enumerated type for the possible NodeState states.
+     */
+    enum State
+    {
+        PREPARE, ALIVE, READY, ABORTED
+    };
 
-	/**
-	 * Resets the NodeState with default <tt>(nodeID, numberOfStages)</tt>
-	 * values of (0, 1).
-	 */
-	NodeState()
-	{
-		reset(0, 1);
-	}
+    /**
+     * Resets the NodeState with default <tt>(nodeID, numberOfStages)</tt>
+     * values of (0, 1).
+     */
+    NodeState()
+    {
+        reset(0, 1);
+    }
 
-	/**
-	 * Reset the NodeState as follows:
-	 *
-	 *  - \p currentState to \p NodeState::PREPARE;
-	 *  - \p currentGeneratorStageID to 0;
-	 *  - \p taskCound and taskProgress to 0;
-	 *  - \p progressPerStage to 1/\p numberOfStages;
-	 */
-	void reset(I32u nodeID, I16u numberOfStages)
-	{
-		this->currentState = PREPARE;
-		this->nodeID = nodeID;
-		this->currentGeneratorStageID = 0;
-		this->progressPerStage = 1 / static_cast<Decimal> (numberOfStages);
-		this->taskCount = 0;
-		this->taskProgress = 0;
-	}
+    /**
+     * Reset the NodeState as follows:
+     *
+     *  - \p currentState to \p NodeState::PREPARE;
+     *  - \p currentGeneratorStageID to 0;
+     *  - \p taskCound and taskProgress to 0;
+     *  - \p progressPerStage to 1/\p numberOfStages;
+     */
+    void reset(I32u nodeID, I16u numberOfStages)
+    {
+        this->currentState = PREPARE;
+        this->nodeID = nodeID;
+        this->currentGeneratorStageID = 0;
+        this->progressPerStage = 1 / static_cast<Decimal> (numberOfStages);
+        this->taskCount = 0;
+        this->taskProgress = 0;
+    }
 
-	/**
-	 * Return the overall progess of the generation process. The progress is
-	 * mass is evenly distributed across all generator stages and all concurrent
-	 * tasks at each stage.
-	 *
-	 * @see GeneratorStage
-	 */
-	Decimal progress() const
-	{
-		if (taskCount > 0)
-		{
-			return (currentGeneratorStageID + taskProgress / taskCount) * progressPerStage;
-		}
-		else
-		{
-			return currentGeneratorStageID * progressPerStage;
-		}
-	}
+    /**
+     * Return the overall progess of the generation process. The progress is
+     * mass is evenly distributed across all generator stages and all concurrent
+     * tasks at each stage.
+     *
+     * @see GeneratorStage
+     */
+    Decimal progress() const
+    {
+        if (taskCount > 0)
+        {
+	        return (currentGeneratorStageID + taskProgress / taskCount) * progressPerStage;
+        }
+        else
+        {
+	        return currentGeneratorStageID * progressPerStage;
+        }
+    }
 
-	/**
-	 * The current node state.
-	 */
-	State currentState;
-	/**
-	 * The ID of the currently processed node.
-	 */
-	I32u nodeID;
-	/**
-	 * The ID of the current GeneratorStage.
-	 */
-	I16u currentGeneratorStageID;
-	/**
-	 * The amount of total progress completed at each stage.
-	 */
-	Decimal progressPerStage;
-	/**
-	 * The total amout of GeneratorTasks associated in this application.
-	 */
-	Decimal taskCount;
-	/**
-	 * The progress of the currently running GeneratorTask.
-	 */
-	Decimal taskProgress;
+    /**
+     * The current node state.
+     */
+    State currentState;
+    /**
+     * The ID of the currently processed node.
+     */
+    I32u nodeID;
+    /**
+     * The ID of the current GeneratorStage.
+     */
+    I16u currentGeneratorStageID;
+    /**
+     * The amount of total progress completed at each stage.
+     */
+    Decimal progressPerStage;
+    /**
+     * The total amout of GeneratorTasks associated in this application.
+     */
+    Decimal taskCount;
+    /**
+     * The progress of the currently running GeneratorTask.
+     */
+    Decimal taskProgress;
 };
 
 
@@ -132,18 +132,18 @@ class ChangeNodeState: public Notification
 {
 public:
 
-	/**
-	 * Constructor.
-	 */
-	ChangeNodeState(const NodeState::State newNodeState) :
-		newNodeState(newNodeState)
-	{
-	}
+    /**
+     * Constructor.
+     */
+    ChangeNodeState(const NodeState::State newNodeState) :
+        newNodeState(newNodeState)
+    {
+    }
 
-	/**
-	 * The new node state.
-	 */
-	const NodeState::State newNodeState;
+    /**
+     * The new node state.
+     */
+    const NodeState::State newNodeState;
 };
 
 
@@ -156,18 +156,18 @@ class StartStage: public Notification
 {
 public:
 
-	/**
-	 * Constructor.
-	 */
-	StartStage(I16u stageID) :
-		stageID(stageID)
-	{
-	}
+    /**
+     * Constructor.
+     */
+    StartStage(I16u stageID) :
+        stageID(stageID)
+    {
+    }
 
-	/**
-	 * The ID of the GeneratorStage that was started.
-	 */
-	I16u stageID;
+    /**
+     * The ID of the GeneratorStage that was started.
+     */
+    I16u stageID;
 };
 
 
@@ -188,17 +188,17 @@ public:
     /**
      * Constructor.
      */
-	UpdateProgress(NodeState& state) :
-		state(state)
-	{
-		state.taskCount = 0;
-		state.taskProgress = 0;
-	}
+    UpdateProgress(NodeState& state) :
+        state(state)
+    {
+        state.taskCount = 0;
+        state.taskProgress = 0;
+    }
 
-	/**
-	 * The NodeState which progress is to be updated.
-	 */
-	NodeState& state;
+    /**
+     * The NodeState which progress is to be updated.
+     */
+    NodeState& state;
 };
 
 
@@ -212,18 +212,18 @@ class Heartbeat: public Notification
 {
 public:
 
-	/**
-	 * Constructor.
-	 */
-	Heartbeat(const NodeState& state) :
-		state(state)
-	{
-	}
+    /**
+     * Constructor.
+     */
+    Heartbeat(const NodeState& state) :
+        state(state)
+    {
+    }
 
-	/**
-	 * The current state of this node.
-	 */
-	const NodeState state;
+    /**
+     * The current state of this node.
+     */
+    const NodeState state;
 };
 
 /** @}*/// add to communication group

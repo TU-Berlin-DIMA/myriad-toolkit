@@ -44,73 +44,73 @@ class GeneratorPool
 {
 public:
 
-	/**
-	 * Constructor.
-	 */
-	GeneratorPool()
-	{
-	}
+    /**
+     * Constructor.
+     */
+    GeneratorPool()
+    {
+    }
 
-	/**
-	 * Add a new generator pointer to the pool.
-	 *
-	 * @param generator A pointer to the generator to be added.
-	 * @throw ConfigException if a generator of the provided \p FunctionType is
-	 *                        already registered with this pool
-	 */
-	template<class GeneratorType> void set(GeneratorType* generator)
-	{
-		for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
-		{
-			const AbstractSequenceGenerator* pSS(*it);
-			const GeneratorType* pC = dynamic_cast<const GeneratorType*>(pSS);
-			if (pC) throw LogicException("A generator of the given concrete type is already registered with this GeneratorPool.");
-		}
+    /**
+     * Add a new generator pointer to the pool.
+     *
+     * @param generator A pointer to the generator to be added.
+     * @throw ConfigException if a generator of the provided \p FunctionType is
+     *                        already registered with this pool
+     */
+    template<class GeneratorType> void set(GeneratorType* generator)
+    {
+        for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
+        {
+	        const AbstractSequenceGenerator* pSS(*it);
+	        const GeneratorType* pC = dynamic_cast<const GeneratorType*>(pSS);
+	        if (pC) throw LogicException("A generator of the given concrete type is already registered with this GeneratorPool.");
+        }
 
-		generators.push_back(generator);
-		autoReleasePool.add(generator);
-	}
+        generators.push_back(generator);
+        autoReleasePool.add(generator);
+    }
 
-	/**
-	 * Get a type-safe version of an already registered generator identified by
-	 * the given name.
-	 *
-	 * @return A reference of the \p generator of the given \p GeneratorType.
-	 * @throw ConfigException if the function identified by the given
-	 *                        \p GeneratorType is not registered
-	 */
-	template<class GeneratorType> GeneratorType& get() const
-	{
-		for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
-		{
-			const AbstractSequenceGenerator* pSS(*it);
-			const GeneratorType* pC = dynamic_cast<const GeneratorType*>(pSS);
-			if (pC) return *const_cast<GeneratorType*>(pC);
-		}
+    /**
+     * Get a type-safe version of an already registered generator identified by
+     * the given name.
+     *
+     * @return A reference of the \p generator of the given \p GeneratorType.
+     * @throw ConfigException if the function identified by the given
+     *                        \p GeneratorType is not registered
+     */
+    template<class GeneratorType> GeneratorType& get() const
+    {
+        for (list<AbstractSequenceGenerator*>::const_iterator it = generators.begin(); it != generators.end(); ++it)
+        {
+	        const AbstractSequenceGenerator* pSS(*it);
+	        const GeneratorType* pC = dynamic_cast<const GeneratorType*>(pSS);
+	        if (pC) return *const_cast<GeneratorType*>(pC);
+        }
 
-		throw LogicException("Trying to access unsupported generator type");
-	}
+        throw LogicException("Trying to access unsupported generator type");
+    }
 
 
-	/**
-	 * Returns a reference to a list containing all generators.
-	 */
-	list<AbstractSequenceGenerator*>& getAll()
-	{
-		return generators;
-	}
+    /**
+     * Returns a reference to a list containing all generators.
+     */
+    list<AbstractSequenceGenerator*>& getAll()
+    {
+        return generators;
+    }
 
 private:
 
-	/**
-	 * An autorelease pool for all registered generators.
-	 */
-	AutoReleasePool<AbstractSequenceGenerator> autoReleasePool;
+    /**
+     * An autorelease pool for all registered generators.
+     */
+    AutoReleasePool<AbstractSequenceGenerator> autoReleasePool;
 
-	/**
-	 * A list of registered generators.
-	 */
-	list<AbstractSequenceGenerator*> generators;
+    /**
+     * A list of registered generators.
+     */
+    list<AbstractSequenceGenerator*> generators;
 };
 
 /** @}*/// add to generator group

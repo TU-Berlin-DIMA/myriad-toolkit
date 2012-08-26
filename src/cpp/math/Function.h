@@ -50,34 +50,34 @@ public:
      *
      * @param name The name of this function.
      */
-	AbstractFunction(const string& name) :
-		_name(name)
-	{
-	}
+    AbstractFunction(const string& name) :
+        _name(name)
+    {
+    }
 
-	/**
-	 * Return the name of the function.
-	 *
-	 * @return The name of the function.
-	 */
-	const string& name() const
-	{
-	    return _name;
-	}
+    /**
+     * Return the name of the function.
+     *
+     * @return The name of the function.
+     */
+    const string& name() const
+    {
+        return _name;
+    }
 
 protected:
 
-	/**
-	 * Protected destructor (prohibit static allocation).
-	 */
-	virtual ~AbstractFunction()
-	{
-	}
+    /**
+     * Protected destructor (prohibit static allocation).
+     */
+    virtual ~AbstractFunction()
+    {
+    }
 
-	/**
-	 * The name of this function.
-	 */
-	const string _name;
+    /**
+     * The name of this function.
+     */
+    const string _name;
 };
 
 /**
@@ -95,27 +95,27 @@ public:
      *
      * @param name The name of this function.
      */
-	UnaryFunction(const string& name) :
-		AbstractFunction(name)
-	{
-	}
+    UnaryFunction(const string& name) :
+        AbstractFunction(name)
+    {
+    }
 
-	/**
-	 * Function evaluation operator.
-	 *
-	 * @param x The function argument.
-	 * @return The <tt>f(x)</tt> value.
-	 */
-	virtual Range operator()(const Domain x) const = 0;
+    /**
+     * Function evaluation operator.
+     *
+     * @param x The function argument.
+     * @return The <tt>f(x)</tt> value.
+     */
+    virtual Range operator()(const Domain x) const = 0;
 
 protected:
 
     /**
      * Protected destructor (prohibit static allocation).
      */
-	virtual ~UnaryFunction()
-	{
-	}
+    virtual ~UnaryFunction()
+    {
+    }
 };
 
 /**
@@ -133,28 +133,28 @@ public:
      *
      * @param name The name of this function.
      */
-	BinaryFunction(const string& name) :
-		AbstractFunction(name)
-	{
-	}
+    BinaryFunction(const string& name) :
+        AbstractFunction(name)
+    {
+    }
 
-	/**
-	 * Function evaluation operator.
+    /**
+     * Function evaluation operator.
      *
      * @param x1 The first function argument.
      * @param x2 The second function argument.
      * @return The <tt>f(x1, x2)</tt> value.
-	 */
-	virtual Range operator()(const Domain1 x1, const Domain2 x2) const = 0;
+     */
+    virtual Range operator()(const Domain1 x1, const Domain2 x2) const = 0;
 
 protected:
 
     /**
      * Protected destructor (prohibit static allocation).
      */
-	virtual ~BinaryFunction()
-	{
-	}
+    virtual ~BinaryFunction()
+    {
+    }
 };
 
 /**
@@ -172,61 +172,61 @@ public:
      *
      * @param name The name of this function.
      */
-	UnivariatePrFunction(const string& name) :
-		UnaryFunction<Domain, Decimal>(name)
-	{
-	}
+    UnivariatePrFunction(const string& name) :
+        UnaryFunction<Domain, Decimal>(name)
+    {
+    }
 
     /**
      * Alias for the UnivariatePrFunction::cdf() method.
      *
      * @return P(X <= x)
      */
-	virtual Decimal operator()(const Domain x) const = 0;
+    virtual Decimal operator()(const Domain x) const = 0;
 
-	/**
-	 * Returns the probability distribution function (PDF) for this
-	 * distribution.
-	 *
-	 * @return P(X = x)
-	 */
-	virtual Decimal pdf(Domain x) const = 0;
+    /**
+     * Returns the probability distribution function (PDF) for this
+     * distribution.
+     *
+     * @return P(X = x)
+     */
+    virtual Decimal pdf(Domain x) const = 0;
 
-	/**
-	 * Returns the cumulative distribution function (CDF) for this distribution.
+    /**
+     * Returns the cumulative distribution function (CDF) for this distribution.
      *
      * @return P(X <= x)
-	 */
-	virtual Decimal cdf(Domain x) const = 0;
+     */
+    virtual Decimal cdf(Domain x) const = 0;
 
-	/**
-	 * Returns the inverse cumulative distribution function (pdf) for this
-	 * distribution.
-	 *
-	 * @return A value for x, such that y is equal to P(X <= x).
-	 */
-	virtual Domain invcdf(Decimal y) const = 0;
+    /**
+     * Returns the inverse cumulative distribution function (pdf) for this
+     * distribution.
+     *
+     * @return A value for x, such that y is equal to P(X <= x).
+     */
+    virtual Domain invcdf(Decimal y) const = 0;
 
-	/**
-	 * Performs an inverse transform sampling.
-	 *
-	 * If the \p r values are uniformly distributed, subsequent invocations of
-	 * this method will yield a population \p Domain samples distributed
-	 * according to this distribution function.
-	 *
-	 * @param r A uniformly drawn random value in the [0,1) interval.
-	 * @return A \p Domain sample that corresponds to the given input \p r.
-	 */
-	virtual Domain sample(Decimal r) const = 0;
+    /**
+     * Performs an inverse transform sampling.
+     *
+     * If the \p r values are uniformly distributed, subsequent invocations of
+     * this method will yield a population \p Domain samples distributed
+     * according to this distribution function.
+     *
+     * @param r A uniformly drawn random value in the [0,1) interval.
+     * @return A \p Domain sample that corresponds to the given input \p r.
+     */
+    virtual Domain sample(Decimal r) const = 0;
 
 protected:
 
     /**
      * Protected destructor (prohibit static allocation).
      */
-	virtual ~UnivariatePrFunction()
-	{
-	}
+    virtual ~UnivariatePrFunction()
+    {
+    }
 };
 
 /**
@@ -242,17 +242,17 @@ public:
      *
      * @param name The name of this function.
      */
-	BivariatePrFunction(const string& name) :
-		BinaryFunction<Domain1, Domain2, Decimal>(name)
-	{
-	}
+    BivariatePrFunction(const string& name) :
+        BinaryFunction<Domain1, Domain2, Decimal>(name)
+    {
+    }
 
     /**
      * Alias for the UnivariatePrFunction::pdf() method.
      *
      * @return P(X1 = x1 | X2 = x2)
      */
-	virtual Decimal operator()(const Domain1 x1, const Domain2 x2) const = 0;
+    virtual Decimal operator()(const Domain1 x1, const Domain2 x2) const = 0;
 
     /**
      * Returns the probability distribution function (pdf) for this
@@ -260,7 +260,7 @@ public:
      *
      * @return P(X1 = x1 | X2 = x2)
      */
-	virtual Decimal pdf(Domain1 x1, Domain2 x2) const = 0;
+    virtual Decimal pdf(Domain1 x1, Domain2 x2) const = 0;
 
     /**
      * Returns the cumulative distribution function (cdf) for this
@@ -268,12 +268,12 @@ public:
      *
      * @return P(X1 <= x1 | X2 = x2)
      */
-	virtual Decimal cdf(Domain1 x1, Domain2 x2) const = 0;
+    virtual Decimal cdf(Domain1 x1, Domain2 x2) const = 0;
 
-	/**
+    /**
      * @return A value for x1, such that y is equal to P(X1 <= x1 | X2 = x2).
-	 */
-	virtual Domain1 invcdf(Decimal y, Domain2 x2) const = 0;
+     */
+    virtual Domain1 invcdf(Decimal y, Domain2 x2) const = 0;
 
     /**
      * Performs a conditional inverse transform sampling.
@@ -286,16 +286,16 @@ public:
      * @param x2 An evidence for this conditional distribution.
      * @return A \p Domain1 sample that corresponds to the given input \p r.
      */
-	virtual Domain1 sample(Decimal r, Domain2 x2) const = 0;
+    virtual Domain1 sample(Decimal r, Domain2 x2) const = 0;
 
 protected:
 
     /**
      * Protected destructor (prohibit static allocation).
      */
-	virtual ~BivariatePrFunction()
-	{
-	}
+    virtual ~BivariatePrFunction()
+    {
+    }
 };
 
 /** @}*/// add to math group

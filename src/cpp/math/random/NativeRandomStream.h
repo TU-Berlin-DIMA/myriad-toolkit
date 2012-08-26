@@ -34,143 +34,143 @@ class NativeRandomStream;
 
 template<> struct prng_traits<NativeRandomStream>
 {
-	typedef RandomSeed<UInt32, 1> seed_type;
+    typedef RandomSeed<UInt32, 1> seed_type;
 };
 
 class NativeRandomStream: public HierarchicalRNG
 {
 public:
 
-	typedef prng_traits<NativeRandomStream>::seed_type Seed;
+    typedef prng_traits<NativeRandomStream>::seed_type Seed;
 
-	/**
-	 * Computational constant.
-	 */
-	static const double D_2_POW_NEG_64;
+    /**
+     * Computational constant.
+     */
+    static const double D_2_POW_NEG_64;
 
-	NativeRandomStream(const string name = "anonymous") :
-		_name(name)
-	{
-		initialize();
-		srand(_masterS.v[0]);
-	}
+    NativeRandomStream(const string name = "anonymous") :
+        _name(name)
+    {
+        initialize();
+        srand(_masterS.v[0]);
+    }
 
-	NativeRandomStream(const NativeRandomStream& o, const string name = "anonymous") :
-		_name(name),
-		_masterS(o._masterS)
-	{
-		initialize();
-		srand(_masterS.v[0]);
-	}
+    NativeRandomStream(const NativeRandomStream& o, const string name = "anonymous") :
+        _name(name),
+        _masterS(o._masterS)
+    {
+        initialize();
+        srand(_masterS.v[0]);
+    }
 
-	~NativeRandomStream()
-	{
-	}
+    ~NativeRandomStream()
+    {
+    }
 
-	NativeRandomStream& operator =(const NativeRandomStream& o)
-	{
-		if (this != &o) // protect against invalid self-assignment
-		{
-			_masterS = o._masterS;
-		}
+    NativeRandomStream& operator =(const NativeRandomStream& o)
+    {
+        if (this != &o) // protect against invalid self-assignment
+        {
+	        _masterS = o._masterS;
+        }
 
-		srand(_masterS.v[0]);
+        srand(_masterS.v[0]);
 
-		return *this;
-	}
+        return *this;
+    }
 
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-	// RandomStream: TODO: add to NativeRandomStream interface
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // RandomStream: TODO: add to NativeRandomStream interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-	double operator()()
-	{
-		return next();
-	}
+    double operator()()
+    {
+        return next();
+    }
 
-	template<class T> T operator()(T min, T max)
-	{
-		return min + static_cast<T> ((max - min + 1.0) * next());
-	}
+    template<class T> T operator()(T min, T max)
+    {
+        return min + static_cast<T> ((max - min + 1.0) * next());
+    }
 
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-	// NativeRandomStream interface
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // NativeRandomStream interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-	void seed(Seed masterSeed)
-	{
-		_masterS = masterSeed;
-		srand(masterSeed.v[0]);
-	}
+    void seed(Seed masterSeed)
+    {
+        _masterS = masterSeed;
+        srand(masterSeed.v[0]);
+    }
 
-	const Seed& seed() const
-	{
-		return _masterS;
-	}
+    const Seed& seed() const
+    {
+        return _masterS;
+    }
 
-	double next()
-	{
-		return rand()/RAND_MAX;
-	}
+    double next()
+    {
+        return rand()/RAND_MAX;
+    }
 
-	double at(UInt64 pos)
-	{
-		throw Poco::NotImplementedException("at() is not supported by the NativeRandomStream");
-	}
+    double at(UInt64 pos)
+    {
+        throw Poco::NotImplementedException("at() is not supported by the NativeRandomStream");
+    }
 
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-	// HierarchicalRNG interface
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // HierarchicalRNG interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-	NativeRandomStream& nextSubstream()
-	{
-		// ignore method call
-		return *this;
-	}
+    NativeRandomStream& nextSubstream()
+    {
+        // ignore method call
+        return *this;
+    }
 
-	NativeRandomStream& resetSubstream()
-	{
-		// ignore method call
-		return *this;
-	}
+    NativeRandomStream& resetSubstream()
+    {
+        // ignore method call
+        return *this;
+    }
 
-	NativeRandomStream& nextChunk()
-	{
-		// ignore method call
-		return *this;
-	}
+    NativeRandomStream& nextChunk()
+    {
+        // ignore method call
+        return *this;
+    }
 
-	NativeRandomStream& resetChunk()
-	{
-		throw Poco::NotImplementedException("resetChunk() is not supported by the NativeRandomStream");
-	}
+    NativeRandomStream& resetChunk()
+    {
+        throw Poco::NotImplementedException("resetChunk() is not supported by the NativeRandomStream");
+    }
 
-	NativeRandomStream& atChunk(UInt64 pos)
-	{
-		// ignore method call
-		return *this;
-	}
+    NativeRandomStream& atChunk(UInt64 pos)
+    {
+        // ignore method call
+        return *this;
+    }
 
-	void dumpState()
-	{
-		std::cout << "master:     [ " << _masterS.v[0]    << " ]" << std::endl;
-	}
+    void dumpState()
+    {
+        std::cout << "master:     [ " << _masterS.v[0]    << " ]" << std::endl;
+    }
 
 private:
 
-	/**
-	 * The generator name
-	 */
-	const string _name;
-	/**
-	 * Seed representing the initial position on the RNG cycle.
-	 */
-	Seed _masterS;
+    /**
+     * The generator name
+     */
+    const string _name;
+    /**
+     * Seed representing the initial position on the RNG cycle.
+     */
+    Seed _masterS;
 
-	/**
-	 * Common object initialization logic called from all constructors.
-	 */
-	void initialize();
+    /**
+     * Common object initialization logic called from all constructors.
+     */
+    void initialize();
 };
 
 inline void NativeRandomStream::initialize()

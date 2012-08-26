@@ -34,32 +34,32 @@ class BaseSetterChain
 {
 public:
 
-	enum OperationMode
-	{
-		SEQUENTIAL, RANDOM
-	};
+    enum OperationMode
+    {
+        SEQUENTIAL, RANDOM
+    };
 
-	BaseSetterChain(OperationMode opMode, RandomStream& random) : _random(random), _opMode(opMode)
-	{
-	}
+    BaseSetterChain(OperationMode opMode, RandomStream& random) : _random(random), _opMode(opMode)
+    {
+    }
 
 protected:
 
-	void ensurePosition(I64u position) const;
+    void ensurePosition(I64u position) const;
 
-	RandomStream& _random;
+    RandomStream& _random;
 
 private:
 
-	const OperationMode _opMode;
+    const OperationMode _opMode;
 };
 
 inline void BaseSetterChain::ensurePosition(I64u position) const
 {
-	if (_opMode == RANDOM)
-	{
-		const_cast<BaseSetterChain*>(this)->_random.atChunk(position);
-	}
+    if (_opMode == RANDOM)
+    {
+        const_cast<BaseSetterChain*>(this)->_random.atChunk(position);
+    }
 }
 
 /**
@@ -70,23 +70,23 @@ class SetterChain : public BaseSetterChain
 {
 public:
 
-	SetterChain<RecordType>(OperationMode opMode, RandomStream& random) : BaseSetterChain(opMode, random)
-	{
-	}
+    SetterChain<RecordType>(OperationMode opMode, RandomStream& random) : BaseSetterChain(opMode, random)
+    {
+    }
 
-	virtual ~SetterChain<RecordType>()
-	{
-	}
+    virtual ~SetterChain<RecordType>()
+    {
+    }
 
-	/**
-	 * Applies the setter chain to the given record instance.
-	 */
-	virtual void operator()(AutoPtr<RecordType> recordPtr) const = 0;
+    /**
+     * Applies the setter chain to the given record instance.
+     */
+    virtual void operator()(AutoPtr<RecordType> recordPtr) const = 0;
 
-	/**
-	 * Predicate filter function.
-	 */
-	virtual Interval<I64u> filter(const EqualityPredicate<RecordType>& predicate) = 0;
+    /**
+     * Predicate filter function.
+     */
+    virtual Interval<I64u> filter(const EqualityPredicate<RecordType>& predicate) = 0;
 };
 
 } // namespace Myriad

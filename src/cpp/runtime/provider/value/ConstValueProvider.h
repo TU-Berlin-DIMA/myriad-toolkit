@@ -35,7 +35,7 @@ class ConstValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
 public:
 
     ConstValueProvider(const ValueType& constValue) :
-    	AbstractValueProvider<ValueType, CxtRecordType>(0, true),
+        AbstractValueProvider<ValueType, CxtRecordType>(0, true),
         _constValue(constValue)
     {
     }
@@ -45,18 +45,18 @@ public:
     }
 
     virtual Interval<I64u> valueRange(const ValueType& value, const AutoPtr<CxtRecordType>& cxtRecordPtr)
-	{
-    	if (_constValue == value)
-    	{
-			// value range is the whole cxtRecordPtr.genID() interval
-			return Interval<I64u>(0, cxtRecordPtr->meta().cardinality());
-    	}
-    	else
-    	{
-			// value range is zero
-			return Interval<I64u>(0, 0);
-    	}
-	}
+    {
+        if (_constValue == value)
+        {
+	        // value range is the whole cxtRecordPtr.genID() interval
+	        return Interval<I64u>(0, cxtRecordPtr->meta().cardinality());
+        }
+        else
+        {
+	        // value range is zero
+	        return Interval<I64u>(0, 0);
+        }
+    }
 
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {

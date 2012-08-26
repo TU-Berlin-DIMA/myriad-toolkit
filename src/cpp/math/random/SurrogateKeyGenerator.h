@@ -44,143 +44,143 @@ class SurrogateKeyGenerator
 {
 public:
 
-	class Entry;
-	typedef Entry iterator;
-	typedef map<I64u, I64u> GeneratorMap;
+    class Entry;
+    typedef Entry iterator;
+    typedef map<I64u, I64u> GeneratorMap;
 
-	SurrogateKeyGenerator(string name = "anonymoys") :
-		_name(name), _logger(Logger::get("skgen."+name))
-	{
-		N = 1;
-		g = 0;
-	}
+    SurrogateKeyGenerator(string name = "anonymoys") :
+        _name(name), _logger(Logger::get("skgen."+name))
+    {
+        N = 1;
+        g = 0;
+    }
 
-	SurrogateKeyGenerator(const SurrogateKeyGenerator& other) :
-		_logger(Logger::get("skgen."+other._name))
-	{
-		_name = other._name;
-		N = other.N;
-		g = other.g;
-	}
+    SurrogateKeyGenerator(const SurrogateKeyGenerator& other) :
+        _logger(Logger::get("skgen."+other._name))
+    {
+        _name = other._name;
+        N = other.N;
+        g = other.g;
+    }
 
-	SurrogateKeyGenerator(I64u cardinality, string name = "anonymoys") :
-		_name(name), _logger(Logger::get("skgen."+name))
-	{
-		configure(cardinality);
-	}
+    SurrogateKeyGenerator(I64u cardinality, string name = "anonymoys") :
+        _name(name), _logger(Logger::get("skgen."+name))
+    {
+        configure(cardinality);
+    }
 
-	operator string()
-	{
-		return format("< N = %Lu, g = %Lu >", N, g);
-	}
+    operator string()
+    {
+        return format("< N = %Lu, g = %Lu >", N, g);
+    }
 
-	const string& name()
-	{
-		return _name;
-	}
+    const string& name()
+    {
+        return _name;
+    }
 
-	void configure(I64u cardinality);
+    void configure(I64u cardinality);
 
-	I64u operator ()(const I64u m) const;
+    I64u operator ()(const I64u m) const;
 
-	Entry operator [](const I64u m);
+    Entry operator [](const I64u m);
 
-	class Entry
-	{
-	public:
+    class Entry
+    {
+    public:
 
-		Entry(I64u g = 1, I64u m = 1, I64u N = 1) :
-			x(modexp(g, m, N)), g(g), m(m), N(N)
-		{
-		}
+        Entry(I64u g = 1, I64u m = 1, I64u N = 1) :
+	        x(modexp(g, m, N)), g(g), m(m), N(N)
+        {
+        }
 
-		operator string()
-		{
-			return format("< x = %Lu, g = %Lu, m = %Lu, N = %Lu >", x, g, m, N);
-		}
+        operator string()
+        {
+	        return format("< x = %Lu, g = %Lu, m = %Lu, N = %Lu >", x, g, m, N);
+        }
 
-		operator I64u();
+        operator I64u();
 
-		Entry& operator ++();
+        Entry& operator ++();
 
-		Entry operator ++(int);
+        Entry operator ++(int);
 
-		bool operator ==(const Entry& other) const;
+        bool operator ==(const Entry& other) const;
 
-		bool operator ==(const I64u& other) const;
+        bool operator ==(const I64u& other) const;
 
-		bool operator !=(const Entry& other) const;
+        bool operator !=(const Entry& other) const;
 
-		bool operator !=(const I64u& other) const;
+        bool operator !=(const I64u& other) const;
 
-	private:
+    private:
 
-		I64u x;
-		I64u g;
-		I64u m;
-		I64u N;
-	};
+        I64u x;
+        I64u g;
+        I64u m;
+        I64u N;
+    };
 
 private:
 
-	static GeneratorMap GENERATORS;
+    static GeneratorMap GENERATORS;
 
-	string _name;
+    string _name;
 
-	I64u g;
-	I64u N;
+    I64u g;
+    I64u N;
 
-	Logger& _logger;
+    Logger& _logger;
 };
 
 inline I64u SurrogateKeyGenerator::operator ()(const I64u m) const
 {
-	return modexp(g, m, N);
+    return modexp(g, m, N);
 }
 
 inline SurrogateKeyGenerator::Entry SurrogateKeyGenerator::operator [](const I64u m)
 {
-	return Entry(g, m, N);
+    return Entry(g, m, N);
 }
 
 inline SurrogateKeyGenerator::Entry::operator I64u()
 {
-	return x;
+    return x;
 }
 
 inline SurrogateKeyGenerator::Entry& SurrogateKeyGenerator::Entry::operator ++()
 {
-	m++;
-	x = (x * g) % N;
+    m++;
+    x = (x * g) % N;
 
-	return *this;
+    return *this;
 }
 
 inline SurrogateKeyGenerator::Entry SurrogateKeyGenerator::Entry::operator ++(int)
 {
-	Entry temp = *this;
-	++*this;
-	return temp;
+    Entry temp = *this;
+    ++*this;
+    return temp;
 }
 
 inline bool SurrogateKeyGenerator::Entry::operator ==(const SurrogateKeyGenerator::Entry& o) const
 {
-	return x == o.x && g == o.g && m == o.m && N == o.N;
+    return x == o.x && g == o.g && m == o.m && N == o.N;
 }
 
 inline bool SurrogateKeyGenerator::Entry::operator ==(const I64u& o) const
 {
-	return x == o;
+    return x == o;
 }
 
 inline bool SurrogateKeyGenerator::Entry::operator !=(const SurrogateKeyGenerator::Entry& o) const
 {
-	return x != o.x || g != o.g || m != o.m || N != o.N;
+    return x != o.x || g != o.g || m != o.m || N != o.N;
 }
 
 inline bool SurrogateKeyGenerator::Entry::operator !=(const I64u& o) const
 {
-	return x != o;
+    return x != o;
 }
 
 // TODO: rename to MultiplicativeGroup (for now as typedef)

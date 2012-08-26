@@ -45,136 +45,136 @@ class NormalPrFunction: public UnivariatePrFunction<Decimal>
 {
 public:
 
-	/**
-	 * Explicit anonymous parameter constructor.
-	 *
-	 * @param mean The \p mean of this distribution.
-	 * @param stddev The <tt>standard deviation</tt> of this distribution.
-	 */
-	NormalPrFunction(Decimal mean = 0, Decimal stddev = 1) :
-		UnivariatePrFunction<Decimal> (""), _mean(mean), _stddev(stddev)
-	{
-		initialize();
-	}
-
-	/**
-	 * Explicit named parameter constructor.
-	 *
-	 * @param name The name of this probability function instance.
+    /**
+     * Explicit anonymous parameter constructor.
+     *
      * @param mean The \p mean of this distribution.
      * @param stddev The <tt>standard deviation</tt> of this distribution.
-	 */
-	NormalPrFunction(const string& name, Decimal mean = 0, Decimal stddev = 1) :
-		UnivariatePrFunction<Decimal> (name), _mean(mean), _stddev(stddev)
-	{
-		initialize();
-	}
+     */
+    NormalPrFunction(Decimal mean = 0, Decimal stddev = 1) :
+        UnivariatePrFunction<Decimal> (""), _mean(mean), _stddev(stddev)
+    {
+        initialize();
+    }
 
-	/**
-	 * Anonymous ObjectBuilder constructor.
-	 *
-	 * @param params An array containing the required function parameters.
-	 */
-	NormalPrFunction(map<string, Any>& params) :
-		UnivariatePrFunction<Decimal> ("")
-	{
-		_mean = AnyCast<Decimal>(params["mean"]);
-		_stddev = AnyCast<Decimal>(params["stddev"]);
+    /**
+     * Explicit named parameter constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param mean The \p mean of this distribution.
+     * @param stddev The <tt>standard deviation</tt> of this distribution.
+     */
+    NormalPrFunction(const string& name, Decimal mean = 0, Decimal stddev = 1) :
+        UnivariatePrFunction<Decimal> (name), _mean(mean), _stddev(stddev)
+    {
+        initialize();
+    }
 
-		initialize();
-	}
+    /**
+     * Anonymous ObjectBuilder constructor.
+     *
+     * @param params An array containing the required function parameters.
+     */
+    NormalPrFunction(map<string, Any>& params) :
+        UnivariatePrFunction<Decimal> ("")
+    {
+        _mean = AnyCast<Decimal>(params["mean"]);
+        _stddev = AnyCast<Decimal>(params["stddev"]);
 
-	/**
-	 * Named ObjectBuilder Constructor.
-	 *
-	 * @param name The name of this probability function instance.
-	 * @param params An array containing the required function parameters.
-	 */
-	NormalPrFunction(const string& name, map<string, Any>& params) :
-		UnivariatePrFunction<Decimal> (name)
-	{
-		_mean = AnyCast<Decimal>(params["mean"]);
-		_stddev = AnyCast<Decimal>(params["stddev"]);
+        initialize();
+    }
 
-		initialize();
-	}
+    /**
+     * Named ObjectBuilder Constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param params An array containing the required function parameters.
+     */
+    NormalPrFunction(const string& name, map<string, Any>& params) :
+        UnivariatePrFunction<Decimal> (name)
+    {
+        _mean = AnyCast<Decimal>(params["mean"]);
+        _stddev = AnyCast<Decimal>(params["stddev"]);
 
-	/**
-	 * @see UnivariatePrFunction::operator()
-	 */
-	Decimal operator()(const Decimal x) const
-	{
-		return cdf(x);
-	}
+        initialize();
+    }
 
-	/**
-	 * @see UnivariatePrFunction::sample()
-	 */
-	Decimal sample(Decimal random) const
-	{
-		return invcdf(random);
-	}
+    /**
+     * @see UnivariatePrFunction::operator()
+     */
+    Decimal operator()(const Decimal x) const
+    {
+        return cdf(x);
+    }
 
-	/**
-	 * @see UnivariatePrFunction::pdf()
-	 */
-	Decimal pdf(Decimal x) const;
+    /**
+     * @see UnivariatePrFunction::sample()
+     */
+    Decimal sample(Decimal random) const
+    {
+        return invcdf(random);
+    }
 
-	/**
-	 * @see UnivariatePrFunction::cdf()
-	 */
-	Decimal cdf(Decimal x) const;
+    /**
+     * @see UnivariatePrFunction::pdf()
+     */
+    Decimal pdf(Decimal x) const;
 
-	/**
-	 * @see UnivariatePrFunction::invpdf()
-	 */
-	Decimal invpdf(Decimal y) const;
+    /**
+     * @see UnivariatePrFunction::cdf()
+     */
+    Decimal cdf(Decimal x) const;
 
-	/**
-	 * @see UnivariatePrFunction::invcdf()
-	 */
-	Decimal invcdf(Decimal y) const;
+    /**
+     * @see UnivariatePrFunction::invpdf()
+     */
+    Decimal invpdf(Decimal y) const;
 
-	/**
-	 * FIXME: this is suspicious.
-	 */
-	Interval<Decimal> threshold(Decimal yMin) const;
+    /**
+     * @see UnivariatePrFunction::invcdf()
+     */
+    Decimal invcdf(Decimal y) const;
 
-	/**
-	 * Returns the normal probability function \p mean parameter.
-	 */
-	Decimal mean() const;
+    /**
+     * FIXME: this is suspicious.
+     */
+    Interval<Decimal> threshold(Decimal yMin) const;
 
-	/**
-	 * Returns the normal probability function \p stddev parameter.
-	 */
-	Decimal stddev() const;
+    /**
+     * Returns the normal probability function \p mean parameter.
+     */
+    Decimal mean() const;
+
+    /**
+     * Returns the normal probability function \p stddev parameter.
+     */
+    Decimal stddev() const;
 
 private:
 
-	/**
-	 * Common initialization logic.
-	 */
-	void initialize()
-	{
-		_var = _stddev * _stddev;
-		_A = 1 / sqrt(2 * M_PI * _var);
+    /**
+     * Common initialization logic.
+     */
+    void initialize()
+    {
+        _var = _stddev * _stddev;
+        _A = 1 / sqrt(2 * M_PI * _var);
 
-		_a = 0.14;
-	}
+        _a = 0.14;
+    }
 
-	Decimal erf(const Decimal x) const;
+    Decimal erf(const Decimal x) const;
 
-	Decimal inverf(const Decimal y) const;
+    Decimal inverf(const Decimal y) const;
 
-	// parameters
-	Decimal _mean;
-	Decimal _stddev;
+    // parameters
+    Decimal _mean;
+    Decimal _stddev;
 
-	// common used terms
-	Decimal _var;
-	Decimal _A;
-	Decimal _a;
+    // common used terms
+    Decimal _var;
+    Decimal _A;
+    Decimal _a;
 };
 
 /** @}*/// add to math group

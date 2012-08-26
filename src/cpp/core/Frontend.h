@@ -43,76 +43,76 @@ class Frontend: public Application
 {
 public:
 
-	/**
-	 * Default constructor.
-	 */
-	Frontend();
+    /**
+     * Default constructor.
+     */
+    Frontend();
 
-	/**
-	 * Handles the occurence of a '--help' CLI parameter.
-	 *
-	 * @param name The name of the processed parameter (always `help`).
-	 * @param value The value of the processed parameter (always empty).
-	 */
-	void handleHelp(const std::string& name, const std::string& value);
-
-	/**
-	 * Handles the occurence of a '--version' CLI parameter.
-	 *
-	 * @param name The name of the processed parameter (always `version`).
+    /**
+     * Handles the occurence of a '--help' CLI parameter.
+     *
+     * @param name The name of the processed parameter (always `help`).
      * @param value The value of the processed parameter (always empty).
-	 */
-	void handleVersion(const std::string& name, const std::string& value);
+     */
+    void handleHelp(const std::string& name, const std::string& value);
 
-	/**
-	 * Handles the occurence of a '-x<value>' CLI parameter.
-	 *
-	 * Marks the generator stage provided by value to be executed. Per default,
-	 * if no '-x' parameters are supplied to the Frontend, all generator
-	 * stages will be executed.
-	 *
-	 * @param name The name of the processed parameter (always
-	 *             `execute-stages`).
-	 * @param value The name of the stage to be executed.
-	 */
-	void handleExecuteStage(const std::string& name, const std::string& value);
+    /**
+     * Handles the occurence of a '--version' CLI parameter.
+     *
+     * @param name The name of the processed parameter (always `version`).
+     * @param value The value of the processed parameter (always empty).
+     */
+    void handleVersion(const std::string& name, const std::string& value);
+
+    /**
+     * Handles the occurence of a '-x<value>' CLI parameter.
+     *
+     * Marks the generator stage provided by value to be executed. Per default,
+     * if no '-x' parameters are supplied to the Frontend, all generator
+     * stages will be executed.
+     *
+     * @param name The name of the processed parameter (always
+     *             `execute-stages`).
+     * @param value The name of the stage to be executed.
+     */
+    void handleExecuteStage(const std::string& name, const std::string& value);
 
 protected:
 
-	/**
-	 * Initializes the application environment.
-	 *
-	 * Initializes the two subsystems comprising the application - the
-	 * GeneratorSubsystem and the CommunicationSubsystem. If an exception is
-	 * caught during the initialization lifecycle of the Application, a
-	 * new  <tt>ChangeStatus(NodeState::ABORTED)</tt> notification is issued.
-	 */
-	void initialize(Application& self);
+    /**
+     * Initializes the application environment.
+     *
+     * Initializes the two subsystems comprising the application - the
+     * GeneratorSubsystem and the CommunicationSubsystem. If an exception is
+     * caught during the initialization lifecycle of the Application, a
+     * new  <tt>ChangeStatus(NodeState::ABORTED)</tt> notification is issued.
+     */
+    void initialize(Application& self);
 
-	/**
-	 * Registers the set of opptions supported by the CLI Frontend.
-	 *
-	 * @param options A reference to the OptionSet used by the application.
-	 */
-	void defineOptions(OptionSet& options);
+    /**
+     * Registers the set of opptions supported by the CLI Frontend.
+     *
+     * @param options A reference to the OptionSet used by the application.
+     */
+    void defineOptions(OptionSet& options);
 
-	/**
-	 * Runs the data generator.
-	 *
-	 * Starts the registered GeneratorSubsystem and CommunicationSubsystem
-	 * subsystem instances.
-	 */
-	int main(const std::vector<std::string>& args);
+    /**
+     * Runs the data generator.
+     *
+     * Starts the registered GeneratorSubsystem and CommunicationSubsystem
+     * subsystem instances.
+     */
+    int main(const std::vector<std::string>& args);
 
 private:
 
-	vector<bool> _executeStages;
+    vector<bool> _executeStages;
 
-	bool _metaInfoRequested;
+    bool _metaInfoRequested;
 
-	bool _excCaught;
+    bool _excCaught;
 
-	Logger& _ui;
+    Logger& _ui;
 };
 
 /** @}*/// add to core group

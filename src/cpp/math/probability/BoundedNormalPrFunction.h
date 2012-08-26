@@ -44,91 +44,91 @@ class BoundedNormalPrFunction: public NormalPrFunction
 {
 public:
 
-	/**
-	 * Explicit anonymous parameter constructor.
-	 *
-	 * @param mean The \p mean of the normal distribution.
-	 * @param stddev The <tt>standard deviation</tt> of the mean distribution.
-	 * @param xMin The left bound of the function range.
-	 * @param xMax The right bound of the function range.
-	 */
-	BoundedNormalPrFunction(Decimal mean, Decimal stddev, Decimal xMin, Decimal xMax) :
-		NormalPrFunction(mean, stddev), _xMin(xMin), _xMax(xMax)
-	{
-		initialize();
-	}
+    /**
+     * Explicit anonymous parameter constructor.
+     *
+     * @param mean The \p mean of the normal distribution.
+     * @param stddev The <tt>standard deviation</tt> of the mean distribution.
+     * @param xMin The left bound of the function range.
+     * @param xMax The right bound of the function range.
+     */
+    BoundedNormalPrFunction(Decimal mean, Decimal stddev, Decimal xMin, Decimal xMax) :
+        NormalPrFunction(mean, stddev), _xMin(xMin), _xMax(xMax)
+    {
+        initialize();
+    }
 
-	/**
-	 * Explicit named parameter constructor.
-	 *
-	 * @param name The name of this probability function instance.
-	 * @param mean The \p mean of the normal distribution.
-	 * @param stddev The <tt>standard deviation</tt> of the mean distribution.
-	 * @param xMin The left bound of the function range.
-	 * @param xMax The right bound of the function range.
-	 */
-	BoundedNormalPrFunction(const string& name, Decimal mean, Decimal stddev, Decimal xMin, Decimal xMax) :
-		NormalPrFunction(name, mean, stddev), _xMin(xMin), _xMax(xMax)
-	{
-		initialize();
-	}
+    /**
+     * Explicit named parameter constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param mean The \p mean of the normal distribution.
+     * @param stddev The <tt>standard deviation</tt> of the mean distribution.
+     * @param xMin The left bound of the function range.
+     * @param xMax The right bound of the function range.
+     */
+    BoundedNormalPrFunction(const string& name, Decimal mean, Decimal stddev, Decimal xMin, Decimal xMax) :
+        NormalPrFunction(name, mean, stddev), _xMin(xMin), _xMax(xMax)
+    {
+        initialize();
+    }
 
-	/**
-	 * Anonymous ObjectBuilder constructor.
-	 *
-	 * @param params An array containing the required function parameters.
-	 */
-	BoundedNormalPrFunction(map<string, Any>& params) :
-		NormalPrFunction(params)
-	{
-		_xMin = AnyCast<Decimal>(params["xMin"]);
-		_xMax = AnyCast<Decimal>(params["xMax"]);
+    /**
+     * Anonymous ObjectBuilder constructor.
+     *
+     * @param params An array containing the required function parameters.
+     */
+    BoundedNormalPrFunction(map<string, Any>& params) :
+        NormalPrFunction(params)
+    {
+        _xMin = AnyCast<Decimal>(params["xMin"]);
+        _xMax = AnyCast<Decimal>(params["xMax"]);
 
-		initialize();
-	}
+        initialize();
+    }
 
-	/**
-	 * Named ObjectBuilder constructor.
-	 *
-	 * @param name The name of this probability function instance.
-	 * @param params An array containing the required function parameters.
-	 */
-	BoundedNormalPrFunction(const string& name, map<string, Any>& params) :
-		NormalPrFunction(name, params)
-	{
-		_xMin = AnyCast<Decimal>(params["xMin"]);
-		_xMax = AnyCast<Decimal>(params["xMax"]);
+    /**
+     * Named ObjectBuilder constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param params An array containing the required function parameters.
+     */
+    BoundedNormalPrFunction(const string& name, map<string, Any>& params) :
+        NormalPrFunction(name, params)
+    {
+        _xMin = AnyCast<Decimal>(params["xMin"]);
+        _xMax = AnyCast<Decimal>(params["xMax"]);
 
-		initialize();
-	}
+        initialize();
+    }
 
-	/**
-	 * \see UnivariatePrFunction::sample()
-	 */
-	Decimal sample(Decimal random) const;
+    /**
+     * \see UnivariatePrFunction::sample()
+     */
+    Decimal sample(Decimal random) const;
 
 private:
 
-	/**
-	 * Common initialization logic.
-	 */
-	void initialize()
-	{
-		_yMin = cdf(_xMin);
-		_yMax = cdf(_xMax);
-		_yFactor = _yMax - _yMin;
-	}
+    /**
+     * Common initialization logic.
+     */
+    void initialize()
+    {
+        _yMin = cdf(_xMin);
+        _yMax = cdf(_xMax);
+        _yFactor = _yMax - _yMin;
+    }
 
-	Decimal _xMin;
-	Decimal _xMax;
-	Decimal _yMin;
-	Decimal _yMax;
-	Decimal _yFactor;
+    Decimal _xMin;
+    Decimal _xMax;
+    Decimal _yMin;
+    Decimal _yMax;
+    Decimal _yFactor;
 };
 
 inline Decimal BoundedNormalPrFunction::sample(Decimal random) const
 {
-	return invcdf(_yMin + _yFactor * random);
+    return invcdf(_yMin + _yFactor * random);
 }
 
 /** @}*/// add to math group

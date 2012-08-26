@@ -37,7 +37,7 @@ public:
     typedef ValueType (CallbackType::*CallbackMethodType)(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random);
 
     CallbackValueProvider(CallbackType& callbackObject, CallbackMethodType callbackMethod, const I16u arity) :
-    	AbstractValueProvider<ValueType, CxtRecordType>(arity, false),
+        AbstractValueProvider<ValueType, CxtRecordType>(arity, false),
         _callbackObject(callbackObject),
         _callbackMethod(callbackMethod)
     {
