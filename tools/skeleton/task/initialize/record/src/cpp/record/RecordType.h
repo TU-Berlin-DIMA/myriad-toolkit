@@ -34,9 +34,9 @@ class ${{record_name}}: public Record
 {
 public:
 
-	${{record_name}}()
-	{
-	}
+    ${{record_name}}()
+    {
+    }
 
 private:
 
@@ -50,8 +50,8 @@ namespace Myriad {
 // record traits specialization
 template<> struct RecordTraits<${{dgen_ns}}::${{record_name}}>
 {
-	typedef ${{dgen_ns}}::${{record_name}}Generator GeneratorType;
-	typedef ${{dgen_ns}}::${{record_name}}SetterChain SetterChainType;
+    typedef ${{dgen_ns}}::${{record_name}}Generator GeneratorType;
+    typedef ${{dgen_ns}}::${{record_name}}SetterChain SetterChainType;
 };
 
 // forward declaration of the collector method specialization

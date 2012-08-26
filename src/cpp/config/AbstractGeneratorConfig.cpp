@@ -36,152 +36,152 @@ namespace Myriad {
 
 void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 {
-	// add the application config as a read-only layer
-	this->addWriteable(&appConfig, 0, true);
+    // add the application config as a read-only layer
+    this->addWriteable(&appConfig, 0, true);
 
-	// set partitioning and sizing parameters
-	if (!hasProperty("application.scaling-factor"))
-	{
-		setDouble("application.scaling-factor", getDouble("common.defaults.scaling-factor", 1.0));
-	}
+    // set partitioning and sizing parameters
+    if (!hasProperty("application.scaling-factor"))
+    {
+        setDouble("application.scaling-factor", getDouble("common.defaults.scaling-factor", 1.0));
+    }
 
-	setInt("common.partitioning.number-of-chunks", getInt("application.node-count", 1));
-	setInt("common.partitioning.chunks-id", getInt("application.node-id", 0));
+    setInt("common.partitioning.number-of-chunks", getInt("application.node-count", 1));
+    setInt("common.partitioning.chunks-id", getInt("application.node-id", 0));
 
-	// configure directory structure
-	setString("application.job-dir", format("%s/%s", getString("application.output-base"), getString("application.job-id")));
-	setString("application.output-dir", format("%s/node%03d", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
-	setString("application.log-path", format("%s/log/node%03d.log", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
+    // configure directory structure
+    setString("application.job-dir", format("%s/%s", getString("application.output-base"), getString("application.job-id")));
+    setString("application.output-dir", format("%s/node%03d", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
+    setString("application.log-path", format("%s/log/node%03d.log", getString("application.job-dir"), getInt("common.partitioning.chunks-id")));
 
-	// expose some application.* parameters unter generator.ENV.*
-	setString("generator.ENV.config-dir", getString("application.config-dir"));
-	setString("generator.ENV.output-dir", getString("application.output-dir"));
+    // expose some application.* parameters unter generator.ENV.*
+    setString("generator.ENV.config-dir", getString("application.config-dir"));
+    setString("generator.ENV.output-dir", getString("application.output-dir"));
 
-	// make sure that the job, log and output paths exist
+    // make sure that the job, log and output paths exist
 
-	// job-dir
-	File jobDir(getString("application.job-dir"));
-	jobDir.createDirectories();
+    // job-dir
+    File jobDir(getString("application.job-dir"));
+    jobDir.createDirectories();
 
-	// log-path
-	File logPath(getString("application.log-path"));
-	if (logPath.exists())
-	{
-		logPath.remove(true);
-	}
-	File logDir(Path(getString("application.log-path")).parent());
-	logDir.createDirectories();
+    // log-path
+    File logPath(getString("application.log-path"));
+    if (logPath.exists())
+    {
+        logPath.remove(true);
+    }
+    File logDir(Path(getString("application.log-path")).parent());
+    logDir.createDirectories();
 
-	// configure log channels
-	FormattingChannel* logChannel = new FormattingChannel(new PatternFormatter("%t"), new SimpleFileChannel());
-	logChannel->setProperty("path", getString("application.log-path"));
-	Logger::root().setChannel(logChannel);
-	_logger.setChannel(logChannel);
+    // configure log channels
+    FormattingChannel* logChannel = new FormattingChannel(new PatternFormatter("%t"), new SimpleFileChannel());
+    logChannel->setProperty("path", getString("application.log-path"));
+    Logger::root().setChannel(logChannel);
+    _logger.setChannel(logChannel);
 
     _logger.information("Loading generator configuration");
 
-	configurePartitioning();
-	configureFunctions();
-	configureSets();
+    configurePartitioning();
+    configureFunctions();
+    configureSets();
 
-	if (hasProperty("common.master.seed"))
-	{
-		// initialize the master random stream (otherwise use the default master seed)
-		_masterPRNG.seed(RandomStream::Seed(getString("common.master.seed")));
-	}
+    if (hasProperty("common.master.seed"))
+    {
+        // initialize the master random stream (otherwise use the default master seed)
+        _masterPRNG.seed(RandomStream::Seed(getString("common.master.seed")));
+    }
 }
 
 void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 {
-	// compute the output path
-	path.makeAbsolute(getString("application.config-dir"));
+    // compute the output path
+    path.makeAbsolute(getString("application.config-dir"));
 
-	if (_logger.debug())
-	{
-	    _logger.debug(format("Loading enum set from file `%s`", path.toString()));
-	}
+    if (_logger.debug())
+    {
+        _logger.debug(format("Loading enum set from file `%s`", path.toString()));
+    }
 
-	if (!path.isFile())
-	{
-		throw ConfigException(format("Cannot find file at `%s`", path.toString()));
-	}
+    if (!path.isFile())
+    {
+        throw ConfigException(format("Cannot find file at `%s`", path.toString()));
+    }
 
-	File file(path);
+    File file(path);
 
-	if (!file.canRead())
-	{
-		throw ConfigException(format("Cannot read from file at `%s`", path.toString()));
-	}
+    if (!file.canRead())
+    {
+        throw ConfigException(format("Cannot read from file at `%s`", path.toString()));
+    }
 
-	ifstream in(file.path().c_str());
+    ifstream in(file.path().c_str());
 
-	if (!in.is_open())
-	{
-		throw ConfigException(format("Cannot open file at `%s`", path.toString()));
-	}
+    if (!in.is_open())
+    {
+        throw ConfigException(format("Cannot open file at `%s`", path.toString()));
+    }
 
-	string line;
+    string line;
 
-	try
-	{
-		vector<String>& set = _enumSets[key];
+    try
+    {
+        vector<String>& set = _enumSets[key];
 
-		// read first line
-		getline(in, line);
+        // read first line
+        getline(in, line);
 
-		if (!in.good() || line.substr(0, 17) != "@numberofvalues =")
-		{
-			throw DataException("Unexpected file header");
-		}
+        if (!in.good() || line.substr(0, 17) != "@numberofvalues =")
+        {
+	        throw DataException("Unexpected file header");
+        }
 
-		I32 numberOfEntries = atoi(line.substr(17).c_str());
+        I32 numberOfEntries = atoi(line.substr(17).c_str());
 
-		set.resize(numberOfEntries);
+        set.resize(numberOfEntries);
 
-		for (I16u i = 0; i < numberOfEntries; i++)
-		{
-			if (!in.good())
-			{
-				throw DataException("Bad line for bin #" + toString(i));
-			}
+        for (I16u i = 0; i < numberOfEntries; i++)
+        {
+	        if (!in.good())
+	        {
+		        throw DataException("Bad line for bin #" + toString(i));
+	        }
 
-			getline(in, line);
+	        getline(in, line);
 
-			string::size_type t = line.find_first_of('\t');
-			string::size_type c = line.find_first_of('#');
-			string value;
+	        string::size_type t = line.find_first_of('\t');
+	        string::size_type c = line.find_first_of('#');
+	        string value;
 
-			if (t == string::npos)
-			{
+	        if (t == string::npos)
+	        {
                 throw DataException("Bad line for bin #" + toString(i) + ", expected format '{i}\t{value}[# {comment}]");
-			}
+	        }
 
-			if (c != string::npos)
-			{
-			    value = line.substr(t+1, c-t-1);
-			    trim(value);
-			}
-			else
-			{
-			    value = line.substr(t+1);
-			    trim(value);
-			}
+	        if (c != string::npos)
+	        {
+		        value = line.substr(t+1, c-t-1);
+		        trim(value);
+	        }
+	        else
+	        {
+		        value = line.substr(t+1);
+		        trim(value);
+	        }
 
             set[i] = value;
-		}
+        }
 
-		in.close();
-	}
+        in.close();
+    }
     catch(Exception& e)
     {
         in.close();
         throw e;
     }
-	catch(exception& e)
-	{
-		in.close();
-		throw e;
-	}
+    catch(exception& e)
+    {
+        in.close();
+        throw e;
+    }
     catch(...)
     {
         in.close();
@@ -191,53 +191,53 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 
 void AbstractGeneratorConfig::computeFixedPartitioning(const string& key)
 {
-	ID cardinality = fromString<ID> (getString("partitioning." + key + ".cardinality"));
+    ID cardinality = fromString<ID> (getString("partitioning." + key + ".cardinality"));
 
-	ID genIDBegin, genIDEnd;
+    ID genIDBegin, genIDEnd;
 
-	// chunk 0 is responsible for dumping all data
-	if (nodeID() == 0)
-	{
-		genIDBegin = 0;
-		genIDEnd = cardinality;
-	}
-	else
-	{
-		genIDBegin = cardinality;
-		genIDEnd = cardinality;
-	}
+    // chunk 0 is responsible for dumping all data
+    if (nodeID() == 0)
+    {
+        genIDBegin = 0;
+        genIDEnd = cardinality;
+    }
+    else
+    {
+        genIDBegin = cardinality;
+        genIDEnd = cardinality;
+    }
 
-	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
-	setString("generator." + key + ".partition.begin", toString(genIDBegin));
-	setString("generator." + key + ".partition.end", toString(genIDEnd));
+    setString("generator." + key + ".sequence.cardinality", toString(cardinality));
+    setString("generator." + key + ".partition.begin", toString(genIDBegin));
+    setString("generator." + key + ".partition.end", toString(genIDEnd));
 }
 
 void AbstractGeneratorConfig::computeLinearScalePartitioning(const string& key)
 {
-	I64u cardinality = static_cast<I64u>(scalingFactor() * getInt("partitioning." + key + ".base-cardinality"));
-	double chunkSize = cardinality / static_cast<double> (numberOfChunks());
+    I64u cardinality = static_cast<I64u>(scalingFactor() * getInt("partitioning." + key + ".base-cardinality"));
+    double chunkSize = cardinality / static_cast<double> (numberOfChunks());
 
-	I64u genIDBegin = static_cast<ID> ((chunkSize * nodeID()) + 0.5);
-	I64u genIDEnd = static_cast<ID> ((chunkSize * (nodeID() + 1) + 0.5));
+    I64u genIDBegin = static_cast<ID> ((chunkSize * nodeID()) + 0.5);
+    I64u genIDEnd = static_cast<ID> ((chunkSize * (nodeID() + 1) + 0.5));
 
-	setString("generator." + key + ".sequence.base_cardinality", getString("partitioning." + key + ".base-cardinality"));
-	setString("generator." + key + ".sequence.cardinality", toString(cardinality));
-	setString("generator." + key + ".partition.begin", toString(genIDBegin));
-	setString("generator." + key + ".partition.end", toString(genIDEnd));
+    setString("generator." + key + ".sequence.base_cardinality", getString("partitioning." + key + ".base-cardinality"));
+    setString("generator." + key + ".sequence.cardinality", toString(cardinality));
+    setString("generator." + key + ".partition.begin", toString(genIDBegin));
+    setString("generator." + key + ".partition.end", toString(genIDEnd));
 }
 
 const string AbstractGeneratorConfig::resolveValue(const string& value)
 {
-	RegularExpression::MatchVec posVec;
-	if (_pattern_param_ref.match(value, 0, posVec))
-	{
-		string key = value.substr(posVec[1].offset, posVec[1].length);
-		return getString("generator." + key);
-	}
-	else
-	{
-		return value;
-	}
+    RegularExpression::MatchVec posVec;
+    if (_pattern_param_ref.match(value, 0, posVec))
+    {
+        string key = value.substr(posVec[1].offset, posVec[1].length);
+        return getString("generator." + key);
+    }
+    else
+    {
+        return value;
+    }
 }
 
 } // namespace Myriad

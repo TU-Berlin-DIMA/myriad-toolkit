@@ -32,325 +32,325 @@ class CompoundEICG;
 
 template<> struct prng_traits<CompoundEICG>
 {
-	typedef RandomSeed<bool, 6> seed_bitmap_type;
-	typedef RandomSeed<UInt32, 6> seed_type;
+    typedef RandomSeed<bool, 6> seed_bitmap_type;
+    typedef RandomSeed<UInt32, 6> seed_type;
 };
 
 class CompoundEICG: public HierarchicalRNG
 {
 public:
 
-	typedef prng_traits<CompoundEICG>::seed_type Seed;
-//	typedef UInt64 SeedBitmap;
+    typedef prng_traits<CompoundEICG>::seed_type Seed;
+//    typedef UInt64 SeedBitmap;
 
-	/**
-	 * A vector of period lengths for each seed component.
-	 */
-	static const Seed PERIOD;
-	/**
-	 * Substream offset.
-	 */
-	static const Seed OFFSET_SUBSTREAM;
-	/**
-	 * Chunk offset.
-	 */
-	static const Seed OFFSET_CHUNK;
-	/**
-	 * Offset element.
-	 */
-	static const Seed OFFSET_ELEMENT;
+    /**
+     * A vector of period lengths for each seed component.
+     */
+    static const Seed PERIOD;
+    /**
+     * Substream offset.
+     */
+    static const Seed OFFSET_SUBSTREAM;
+    /**
+     * Chunk offset.
+     */
+    static const Seed OFFSET_CHUNK;
+    /**
+     * Offset element.
+     */
+    static const Seed OFFSET_ELEMENT;
 
-	CompoundEICG(const string name = "anonymous") : _name(name)
-	{
-		initialize();
-	}
+    CompoundEICG(const string name = "anonymous") : _name(name)
+    {
+        initialize();
+    }
 
-	CompoundEICG(const CompoundEICG& o, const string name = "anonymous") :
-		_name(name), _masterS(o._masterS), _substreamS(o._substreamS), _chunkS(o._chunkS), _elementS(o._elementS)
-	{
-		initialize();
-	}
+    CompoundEICG(const CompoundEICG& o, const string name = "anonymous") :
+        _name(name), _masterS(o._masterS), _substreamS(o._substreamS), _chunkS(o._chunkS), _elementS(o._elementS)
+    {
+        initialize();
+    }
 
-	// TODO: remove this constructor
-	CompoundEICG(Seed masterSeed, const string name = "anonymous") :
-		_name(name), _masterS(masterSeed), _substreamS(masterSeed), _chunkS(masterSeed), _elementS(masterSeed)
-	{
-		_masterS = _substreamS = _chunkS = _elementS = masterSeed;
-		initialize();
-	}
+    // TODO: remove this constructor
+    CompoundEICG(Seed masterSeed, const string name = "anonymous") :
+        _name(name), _masterS(masterSeed), _substreamS(masterSeed), _chunkS(masterSeed), _elementS(masterSeed)
+    {
+        _masterS = _substreamS = _chunkS = _elementS = masterSeed;
+        initialize();
+    }
 
-	~CompoundEICG()
-	{
-		for (unsigned int i = 0; i < 6; i++)
-		{
-			delete _eicg[i];
-		}
-	}
+    ~CompoundEICG()
+    {
+        for (unsigned int i = 0; i < 6; i++)
+        {
+	        delete _eicg[i];
+        }
+    }
 
-	CompoundEICG& operator =(const CompoundEICG& o)
-	{
-		if (this != &o) // protect against invalid self-assignment
-		{
-			_masterS = o._masterS;
-			_substreamS = o._substreamS;
-			_chunkS = o._chunkS;
-			_elementS = o._elementS;
-			_currentSum = updateResults();
-		}
+    CompoundEICG& operator =(const CompoundEICG& o)
+    {
+        if (this != &o) // protect against invalid self-assignment
+        {
+	        _masterS = o._masterS;
+	        _substreamS = o._substreamS;
+	        _chunkS = o._chunkS;
+	        _elementS = o._elementS;
+	        _currentSum = updateResults();
+        }
 
-		return *this;
-	}
+        return *this;
+    }
 
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-	// RandomStream: TODO: add to CompoundEICG interface
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // RandomStream: TODO: add to CompoundEICG interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-	double operator()()
-	{
-		return next();
-	}
+    double operator()()
+    {
+        return next();
+    }
 
-	template<class T> T operator()(T min, T max)
-	{
-		return min + static_cast<T> ((max - min + 1.0) * next());
-	}
+    template<class T> T operator()(T min, T max)
+    {
+        return min + static_cast<T> ((max - min + 1.0) * next());
+    }
 
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-	// CompoundEICG interface
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // CompoundEICG interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-	void seed(Seed masterSeed)
-	{
-		_masterS = _substreamS = _chunkS = _elementS = masterSeed;
-		_currentSum = updateResults();
-	}
+    void seed(Seed masterSeed)
+    {
+        _masterS = _substreamS = _chunkS = _elementS = masterSeed;
+        _currentSum = updateResults();
+    }
 
-	const Seed& seed() const
-	{
-		return _elementS;
-	}
+    const Seed& seed() const
+    {
+        return _elementS;
+    }
 
-	double next()
-	{
-		double fpart, ipart;
-		fpart = modf(_currentSum, &ipart);
+    double next()
+    {
+        double fpart, ipart;
+        fpart = modf(_currentSum, &ipart);
 
-		appendToSeed(_elementS, _elementS, OFFSET_ELEMENT);
-		_currentSum = updateResults();
+        appendToSeed(_elementS, _elementS, OFFSET_ELEMENT);
+        _currentSum = updateResults();
 
-		return fpart;
-	}
+        return fpart;
+    }
 
-	double at(UInt64 pos)
-	{
-		appendToSeed(_elementS, _chunkS, OFFSET_ELEMENT, pos);
-		_currentSum = updateResults();
+    double at(UInt64 pos)
+    {
+        appendToSeed(_elementS, _chunkS, OFFSET_ELEMENT, pos);
+        _currentSum = updateResults();
 
-		return next();
-	}
+        return next();
+    }
 
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-	// HierarchicalRNG interface
-	// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // HierarchicalRNG interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-	CompoundEICG& nextSubstream()
-	{
-		appendToSeed(_substreamS, _substreamS, OFFSET_SUBSTREAM);
-		_elementS = _chunkS = _substreamS;
-		_currentSum = updateResults();
+    CompoundEICG& nextSubstream()
+    {
+        appendToSeed(_substreamS, _substreamS, OFFSET_SUBSTREAM);
+        _elementS = _chunkS = _substreamS;
+        _currentSum = updateResults();
 
-		return *this;
-	}
+        return *this;
+    }
 
-	CompoundEICG& resetSubstream()
-	{
-		_elementS = _chunkS = _substreamS;
-		_currentSum = updateResults();
+    CompoundEICG& resetSubstream()
+    {
+        _elementS = _chunkS = _substreamS;
+        _currentSum = updateResults();
 
-		return *this;
-	}
+        return *this;
+    }
 
-	CompoundEICG& nextChunk()
-	{
-		appendToSeed(_chunkS, _chunkS, OFFSET_CHUNK);
-		_elementS = _chunkS;
-		_currentSum = updateResults();
+    CompoundEICG& nextChunk()
+    {
+        appendToSeed(_chunkS, _chunkS, OFFSET_CHUNK);
+        _elementS = _chunkS;
+        _currentSum = updateResults();
 
-		return *this;
-	}
+        return *this;
+    }
 
-	CompoundEICG& resetChunk()
-	{
-		_elementS = _chunkS;
-		_currentSum = updateResults();
+    CompoundEICG& resetChunk()
+    {
+        _elementS = _chunkS;
+        _currentSum = updateResults();
 
-		return *this;
-	}
+        return *this;
+    }
 
-	CompoundEICG& atChunk(UInt64 pos)
-	{
-		appendToSeed(_chunkS, _substreamS, OFFSET_CHUNK, pos);
-		_elementS = _chunkS;
-		_currentSum = updateResults();
+    CompoundEICG& atChunk(UInt64 pos)
+    {
+        appendToSeed(_chunkS, _substreamS, OFFSET_CHUNK, pos);
+        _elementS = _chunkS;
+        _currentSum = updateResults();
 
-		return *this;
-	}
+        return *this;
+    }
 
-	void dumpState()
-	{
-		std::cout << "element   : [ ";
-		for (unsigned int i = 0; i < 5; i++)
-		{
-			std::cout << _elementS.v[i] << ", ";
-		}
-		std::cout << _elementS.v[5] << " ]" << std::endl;
+    void dumpState()
+    {
+        std::cout << "element   : [ ";
+        for (unsigned int i = 0; i < 5; i++)
+        {
+	        std::cout << _elementS.v[i] << ", ";
+        }
+        std::cout << _elementS.v[5] << " ]" << std::endl;
 
-		std::cout << "chunk     : [ ";
-		for (unsigned int i = 0; i < 5; i++)
-		{
-			std::cout << _chunkS.v[i] << ", ";
-		}
-		std::cout << _chunkS.v[5] << " ]" << std::endl;
+        std::cout << "chunk     : [ ";
+        for (unsigned int i = 0; i < 5; i++)
+        {
+	        std::cout << _chunkS.v[i] << ", ";
+        }
+        std::cout << _chunkS.v[5] << " ]" << std::endl;
 
-		std::cout << "substream : [ ";
-		for (unsigned int i = 0; i < 5; i++)
-		{
-			std::cout << _substreamS.v[i] << ", ";
-		}
-		std::cout << _substreamS.v[5] << " ]" << std::endl;
+        std::cout << "substream : [ ";
+        for (unsigned int i = 0; i < 5; i++)
+        {
+	        std::cout << _substreamS.v[i] << ", ";
+        }
+        std::cout << _substreamS.v[5] << " ]" << std::endl;
 
-		std::cout << "master:     [ ";
-		for (unsigned int i = 0; i < 5; i++)
-		{
-			std::cout << _masterS.v[i] << ", ";
-		}
-		std::cout << _masterS.v[5] << " ]" << std::endl;
-	}
+        std::cout << "master:     [ ";
+        for (unsigned int i = 0; i < 5; i++)
+        {
+	        std::cout << _masterS.v[i] << ", ";
+        }
+        std::cout << _masterS.v[5] << " ]" << std::endl;
+    }
 
 private:
 
-	/**
-	 * The generator name
-	 */
-	const string _name;
+    /**
+     * The generator name
+     */
+    const string _name;
 
-	/**
-	 * Seed representing the initial position on the RNG cycle.
-	 */
-	Seed _masterS;
-	/**
-	 * Seed representing the first position of the current substream RNG.
-	 */
-	Seed _substreamS;
-	/**
-	 * Seed representing the first position of the current substream RNG.
-	 */
-	Seed _chunkS;
-	/**
-	 * Current seed for this RNG.
-	 */
-	Seed _elementS;
-	/**
-	 * A vector of EICG components.
-	 */
-	EICG* _eicg[6];
-	/**
-	 * A vector of current results.
-	 */
-	double _currentResults[6];
-	/**
-	 * Sum of the EICG components for the current seed values.
-	 */
-	double _currentSum;
+    /**
+     * Seed representing the initial position on the RNG cycle.
+     */
+    Seed _masterS;
+    /**
+     * Seed representing the first position of the current substream RNG.
+     */
+    Seed _substreamS;
+    /**
+     * Seed representing the first position of the current substream RNG.
+     */
+    Seed _chunkS;
+    /**
+     * Current seed for this RNG.
+     */
+    Seed _elementS;
+    /**
+     * A vector of EICG components.
+     */
+    EICG* _eicg[6];
+    /**
+     * A vector of current results.
+     */
+    double _currentResults[6];
+    /**
+     * Sum of the EICG components for the current seed values.
+     */
+    double _currentSum;
 
-	/**
-	 * Common object initialization logic called from all constructors.
-	 */
-	void initialize();
-	/**
-	 * Updates the current results vector and returns the results sum.
-	 */
-	double updateResults();
-	/**
-	 * Increments seed (+1 operation in the residue class product ring).
-	 */
-	void adjustSeed();
-	/**
-	 * Computes y = a + x in the residue class product ring.
-	 */
-	void appendToSeed(Seed& y, const Seed& o, const Seed& x);
-	/**
-	 * Computes y = o + f*x in the residue class product ring.
-	 */
-	void appendToSeed(Seed& y, const Seed& o, const Seed& x, const Int64 f);
-	/**
-	 * Private helper method for multiplying 64 bit integers modulo p.
-	 */
-	Int64 mult64(Int64 x, Int64 y, Int32 p) const;
+    /**
+     * Common object initialization logic called from all constructors.
+     */
+    void initialize();
+    /**
+     * Updates the current results vector and returns the results sum.
+     */
+    double updateResults();
+    /**
+     * Increments seed (+1 operation in the residue class product ring).
+     */
+    void adjustSeed();
+    /**
+     * Computes y = a + x in the residue class product ring.
+     */
+    void appendToSeed(Seed& y, const Seed& o, const Seed& x);
+    /**
+     * Computes y = o + f*x in the residue class product ring.
+     */
+    void appendToSeed(Seed& y, const Seed& o, const Seed& x, const Int64 f);
+    /**
+     * Private helper method for multiplying 64 bit integers modulo p.
+     */
+    Int64 mult64(Int64 x, Int64 y, Int32 p) const;
 };
 
 inline void CompoundEICG::initialize()
 {
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		_eicg[i] = new EICG(PERIOD.v[i], 32, 0, 0, _elementS.v[i]);
-		_currentResults[i] = 0.0;
-	}
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        _eicg[i] = new EICG(PERIOD.v[i], 32, 0, 0, _elementS.v[i]);
+        _currentResults[i] = 0.0;
+    }
 
-	_currentSum = updateResults();
+    _currentSum = updateResults();
 }
 
 inline double CompoundEICG::updateResults()
 {
-	double s = 0.0;
+    double s = 0.0;
 
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		_currentResults[i] = _eicg[i]->at(_elementS.v[i]);
-		s += _currentResults[i];
-	}
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        _currentResults[i] = _eicg[i]->at(_elementS.v[i]);
+        s += _currentResults[i];
+    }
 
-	return s;
+    return s;
 }
 
 inline void CompoundEICG::adjustSeed()
 {
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		_elementS.v[i] = (_elementS.v[i] + 1) % PERIOD.v[i];
-	}
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        _elementS.v[i] = (_elementS.v[i] + 1) % PERIOD.v[i];
+    }
 }
 
 inline void CompoundEICG::appendToSeed(Seed& y, const Seed& o, const Seed& x)
 {
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		y.v[i] = ((o.v[i] + x.v[i]) % PERIOD.v[i]);
-	}
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        y.v[i] = ((o.v[i] + x.v[i]) % PERIOD.v[i]);
+    }
 }
 
 inline void CompoundEICG::appendToSeed(Seed& y, const Seed& o, const Seed& x, const Int64 f)
 {
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		y.v[i] = ((o.v[i] + mult64(x.v[i], f, PERIOD.v[i])) % PERIOD.v[i]);
-	}
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        y.v[i] = ((o.v[i] + mult64(x.v[i], f, PERIOD.v[i])) % PERIOD.v[i]);
+    }
 }
 
 inline Int64 CompoundEICG::mult64(Int64 x, Int64 y, Int32 p) const
 {
-	Int64 q, r, z;
+    Int64 q, r, z;
 
-	q = p / x;
-	r = p % x;
+    q = p / x;
+    r = p % x;
 
-	z = x * (y % q) - r * (y / q);
-	while (z < 0)
-	{
-		z += p;
-	}
+    z = x * (y % q) - r * (y / q);
+    while (z < 0)
+    {
+        z += p;
+    }
 
-	return z;
+    return z;
 }
 
 } // namespace Myriad

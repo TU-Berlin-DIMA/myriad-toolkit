@@ -50,74 +50,74 @@ class ObjectBuilder
 {
 public:
 
-	/**
-	 * Default constructor.
-	 */
-	ObjectBuilder()
-	{
-	}
+    /**
+     * Default constructor.
+     */
+    ObjectBuilder()
+    {
+    }
 
-	/**
-	 * Add a parameter \p value identified by the given \p name to the current
-	 * collection.
-	 */
-	template<class T> ObjectBuilder& addParameter(String name, T value)
-	{
-		params[name] = Any(value);
-		return *this;
-	}
+    /**
+     * Add a parameter \p value identified by the given \p name to the current
+     * collection.
+     */
+    template<class T> ObjectBuilder& addParameter(String name, T value)
+    {
+        params[name] = Any(value);
+        return *this;
+    }
 
-	/**
-	 * Clear the current parameter collection.
-	 */
-	ObjectBuilder& clear()
-	{
-		params.clear();
-		return *this;
-	}
+    /**
+     * Clear the current parameter collection.
+     */
+    ObjectBuilder& clear()
+    {
+        params.clear();
+        return *this;
+    }
 
-	/**
-	 * Create a new named instante of the type \p T.
-	 *
-	 * This method assumes a \p name parameter is provided it the current
-	 * parameter map, removes it and invokes the
-	 * <tt>T(string& name, map<string, Any> params)</tt> constructor.
-	 */
-	template<class T> T* createObject()
-	{
-		map<String, Any>::const_iterator it = params.find("name");
-		if (it != params.end())
-		{
-			string name = AnyCast<string>(it->second);
-			params.erase("name");
-			return new T(name, params);
-		}
-		else
-		{
-			throw ConfigException("Missing required parameter `name`");
-		}
-	}
+    /**
+     * Create a new named instante of the type \p T.
+     *
+     * This method assumes a \p name parameter is provided it the current
+     * parameter map, removes it and invokes the
+     * <tt>T(string& name, map<string, Any> params)</tt> constructor.
+     */
+    template<class T> T* createObject()
+    {
+        map<String, Any>::const_iterator it = params.find("name");
+        if (it != params.end())
+        {
+	        string name = AnyCast<string>(it->second);
+	        params.erase("name");
+	        return new T(name, params);
+        }
+        else
+        {
+	        throw ConfigException("Missing required parameter `name`");
+        }
+    }
 
-	/**
-	 * Create a new instante of the type \p T with the given \p name used as
-	 * first parameter in a <tt>T(name, params)</tt> constructor.
-	 */
-	template<class T> T* create(const String& name)
-	{
-		return new T(name, params);
-	}
+    /**
+     * Create a new instante of the type \p T with the given \p name used as
+     * first parameter in a <tt>T(name, params)</tt> constructor.
+     */
+    template<class T> T* create(const String& name)
+    {
+        return new T(name, params);
+    }
 
-	/**
-	 * Create a new instante of the type \p T.
-	 */
-	template<class T> T* create()
-	{
-		return new T(params);
-	}
+    /**
+     * Create a new instante of the type \p T.
+     */
+    template<class T> T* create()
+    {
+        return new T(params);
+    }
 
 private:
 
-	map<String, Any> params;
+    map<String, Any> params;
 };
 
 /** @}*/// add to core group

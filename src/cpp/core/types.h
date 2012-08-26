@@ -75,12 +75,12 @@ template<typename T> class Interval;
 template<class RecordType, class T> struct MethodTraits
 {
     // getter / setter signatures in record types
-    typedef const T& (RecordType::*Getter)() const;
-    typedef void (RecordType::*Setter)(const T&);
+    typedef const T& (RecordType::*Getter)() const; //!< Getter signature.
+    typedef void (RecordType::*Setter)(const T&); //!< Setter signature.
     // getter / setter signatures in record range predicate types
-    typedef const Interval<T>& (RecordType::*RangeGetter)() const;
-    typedef void (RecordType::*RangeSetterLong)(T, T);
-    typedef void (RecordType::*RangeSetterShort)(T);
+    typedef const Interval<T>& (RecordType::*RangeGetter)() const; //!< Range getter signature.
+    typedef void (RecordType::*RangeSetterLong)(T, T); //!< Range setter signature (long version).
+    typedef void (RecordType::*RangeSetterShort)(T); //!< Range setter signature (short version).
 };
 
 //@}
@@ -97,15 +97,15 @@ template<class RecordType, class T> struct MethodTraits
  */
 struct NullValue
 {
-    static const I16  SHORT;
-    static const I32  INTEGER;
-    static const I64  BIGINTEGER;
-    static const I16u USHORT;
-    static const I32u UINTEGER;
-    static const I64u UBIGINTEGER;
-    static const Decimal DECIMAL;
-    static const Date DATE;
-    static const String STRING;
+    static const I16  SHORT; //!< NULL constant for the I16 type.
+    static const I32  INTEGER; //!< NULL constant for the I32 type.
+    static const I64  BIGINTEGER; //!< NULL constant for the I64 type.
+    static const I16u USHORT; //!< NULL constant for the I16u type.
+    static const I32u UINTEGER; //!< NULL constant for the I32u type.
+    static const I64u UBIGINTEGER; //!< NULL constant for the I64u type.
+    static const Decimal DECIMAL; //!< NULL constant for the Decimal type.
+    static const Date DATE; //!< NULL constant for the Date type.
+    static const String STRING; //!< NULL constant for the String type.
 };
 
 /**
@@ -209,11 +209,18 @@ template<> inline const String& nullValue<String>()
 template<typename T> class numericLimits
 {
 public:
+
+    /**
+     * The minimum possible value for the type \p T.
+     */
     static T min()
     {
         return std::numeric_limits<T>::min();
     }
 
+    /**
+     * The maximum possible value for the type \p T.
+     */
     static T max()
     {
         return std::numeric_limits<T>::max();
@@ -228,11 +235,18 @@ public:
 template<> class numericLimits<Date>
 {
 public:
+
+    /**
+     * The minimum possible value for a Date.
+     */
     static Date min()
     {
         return Date(DateTime(1, 1, 1));
     }
 
+    /**
+     * The maximum possible value for a Date.
+     */
     static Date max()
     {
         return Date(DateTime(9999, 12, 31));

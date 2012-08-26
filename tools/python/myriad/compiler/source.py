@@ -146,6 +146,8 @@ class LiteralTransfomer(object):
             else:
                 if attributeType == "String":
                     return [ '"%s"' % (attributeValue) ]
+                if attributeType == "Date":
+                    return [ 'Date("%s")' % (attributeValue) ]
                 else:
                     return [ '%s' % (attributeValue) ]
         else:
@@ -1234,8 +1236,8 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, 'struct RecordFieldTraits<RecordTraits<%(ns)s::%(t)s>::%(k)s, %(ns)s::%(t)s>' % parameters
             print >> wfile, '{'
             print >> wfile, '    typedef %s FieldType;' % (fieldType)
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Setter FieldSetterType;' % parameters
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, FieldType>::Getter FieldGetterType;' % parameters
+            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::Setter FieldSetterType;' % parameters
+            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::Getter FieldGetterType;' % parameters
             print >> wfile, ''
             print >> wfile, '    static inline FieldSetterType setter()'
             print >> wfile, '    {'
@@ -1260,8 +1262,8 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '{'
             print >> wfile, '    typedef %s::%s FieldType;' % (self._args.dgen_ns, fieldType)
             print >> wfile, '    // record field getter / setter types'
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Setter FieldSetterType;' % parameters
-            print >> wfile, '    typedef typename MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Getter FieldGetterType;' % parameters
+            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Setter FieldSetterType;' % parameters
+            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Getter FieldGetterType;' % parameters
             print >> wfile, ''
             print >> wfile, '    static inline FieldSetterType setter()'
             print >> wfile, '    {'

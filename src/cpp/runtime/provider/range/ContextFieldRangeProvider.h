@@ -35,13 +35,13 @@ class ContextFieldRangeProvider: public AbstractRangeProvider<RangeType, CxtReco
 public:
 
     ContextFieldRangeProvider(InvertibleFieldSetterType& fieldSetter) :
-    	AbstractRangeProvider<RangeType, CxtRecordType>(0),
+        AbstractRangeProvider<RangeType, CxtRecordType>(0),
         _fieldSetter(fieldSetter)
     {
-    	if (!_fieldSetter.invertible())
-    	{
-    		throw LogicException("Cannot use non-invertible FieldSetter in ContextFieldRangeProvider");
-    	}
+        if (!_fieldSetter.invertible())
+        {
+            throw LogicException("Cannot use non-invertible FieldSetter in ContextFieldRangeProvider");
+        }
     }
 
     virtual ~ContextFieldRangeProvider()

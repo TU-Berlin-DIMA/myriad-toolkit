@@ -30,28 +30,28 @@ class ${{record_name}}Generator: public RandomSequenceGenerator<${{record_name}}
 {
 public:
 
-	typedef RecordTraits<${{record_name}}>::SetterChainType SetterChainType;
+    typedef RecordTraits<${{record_name}}>::SetterChainType SetterChainType;
 
-	${{record_name}}Generator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :
-		RandomSequenceGenerator<${{record_name}}>(name, config, notificationCenter)
-	{
-	}
+    ${{record_name}}Generator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :
+        RandomSequenceGenerator<${{record_name}}>(name, config, notificationCenter)
+    {
+    }
 
-	void prepare(Stage stage, const GeneratorPool& pool)
-	{
-		// call generator implementation
-		RandomSequenceGenerator<${{record_name}}>::prepare(stage, pool);
+    void prepare(Stage stage, const GeneratorPool& pool)
+    {
+        // call generator implementation
+        RandomSequenceGenerator<${{record_name}}>::prepare(stage, pool);
 
-		if (stage.name() == name())
-		{
-			registerTask(new PartitionedSequenceIteratorTask<${{record_name}}> (*this, _config));
-		}
-	}
+        if (stage.name() == name())
+        {
+	        registerTask(new PartitionedSequenceIteratorTask<${{record_name}}> (*this, _config));
+        }
+    }
 
-	${{record_name}}SetterChain setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random)
-	{
-		return ${{record_name}}SetterChain(opMode, random, _config);
-	}
+    ${{record_name}}SetterChain setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random)
+    {
+        return ${{record_name}}SetterChain(opMode, random, _config);
+    }
 };
 
 } // namespace ${{dgen_ns}}

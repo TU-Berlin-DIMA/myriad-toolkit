@@ -44,104 +44,104 @@ template<class T, unsigned int x> class RandomSeed
 {
 public:
 
-	RandomSeed()
-	{
-		for (unsigned int i = 0; i < x; i++)
-		{
-			v[i] = 0;
-		}
-	}
+    RandomSeed()
+    {
+        for (unsigned int i = 0; i < x; i++)
+        {
+	        v[i] = 0;
+        }
+    }
 
-	RandomSeed(T s[])
-	{
-		for (unsigned int i = 0; i < x; i++)
-		{
-			v[i] = s[i];
-		}
-	}
+    RandomSeed(T s[])
+    {
+        for (unsigned int i = 0; i < x; i++)
+        {
+	        v[i] = s[i];
+        }
+    }
 
-	RandomSeed(string seed)
-	{
-		seed.append(",");
+    RandomSeed(string seed)
+    {
+        seed.append(",");
 
-		for (unsigned int i = 0; i < x; i++)
-		{
-			v[i] = 0;
-		}
+        for (unsigned int i = 0; i < x; i++)
+        {
+	        v[i] = 0;
+        }
 
-		unsigned int i = 0;
-		size_t l = 0, r;
-		while (i < x && string::npos != (r = seed.find(',', l)))
-		{
-			v[i] = readComponent<T> (seed.substr(l, r - l));
+        unsigned int i = 0;
+        size_t l = 0, r;
+        while (i < x && string::npos != (r = seed.find(',', l)))
+        {
+	        v[i] = readComponent<T> (seed.substr(l, r - l));
 
-			l = r + 1;
-			i++;
-		}
+	        l = r + 1;
+	        i++;
+        }
 
-		if (i < x)
-		{
-			throw RuntimeException("Not enough random seed components found");
-		}
-	}
+        if (i < x)
+        {
+	        throw RuntimeException("Not enough random seed components found");
+        }
+    }
 
-	RandomSeed(const RandomSeed<T, x>& other)
-	{
-		for (unsigned int i = 0; i < x; i++)
-		{
-			v[i] = 0;
-			v[i] = other.v[i];
-		}
-	}
+    RandomSeed(const RandomSeed<T, x>& other)
+    {
+        for (unsigned int i = 0; i < x; i++)
+        {
+	        v[i] = 0;
+	        v[i] = other.v[i];
+        }
+    }
 
-	RandomSeed<T, x>& operator =(const RandomSeed<T, x>& other)
-	{
-		if (this != &other) // protect against invalid self-assignment
-		{
-			for (unsigned int i = 0; i < x; i++)
-			{
-				v[i] = other.v[i];
-			}
-		}
+    RandomSeed<T, x>& operator =(const RandomSeed<T, x>& other)
+    {
+        if (this != &other) // protect against invalid self-assignment
+        {
+	        for (unsigned int i = 0; i < x; i++)
+	        {
+		        v[i] = other.v[i];
+	        }
+        }
 
-		return *this;
-	}
+        return *this;
+    }
 
-	bool operator ==(const RandomSeed<T, x>& other) const
-	{
-		for (unsigned int i = 0; i < x; i++)
-		{
-			if (v[i] != other.v[i])
-			{
-				return false;
-			}
-		}
+    bool operator ==(const RandomSeed<T, x>& other) const
+    {
+        for (unsigned int i = 0; i < x; i++)
+        {
+	        if (v[i] != other.v[i])
+	        {
+		        return false;
+	        }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	void reset()
-	{
-		for (unsigned int i = 0; i < x; i++)
-		{
-			v[i] = 0;
-		}
-	}
+    void reset()
+    {
+        for (unsigned int i = 0; i < x; i++)
+        {
+	        v[i] = 0;
+        }
+    }
 
-	const std::string toString() const
-	{
-		std::stringstream ss;
+    const std::string toString() const
+    {
+        std::stringstream ss;
 
-		for (unsigned int i = 0; i < x-1; i++)
-		{
-			ss << v[i] << ",";
-		}
-		ss << v[x-1];
+        for (unsigned int i = 0; i < x-1; i++)
+        {
+	        ss << v[i] << ",";
+        }
+        ss << v[x-1];
 
-		return ss.str();
-	}
+        return ss.str();
+    }
 
-	T v[x];
+    T v[x];
 
 private:
 
@@ -149,22 +149,22 @@ private:
 
 template<class T> inline T readComponent(const string& s)
 {
-	throw RuntimeException("Read component not supported");
+    throw RuntimeException("Read component not supported");
 }
 
 template<> inline int readComponent<int>(const string& s)
 {
-	return atoi(s.c_str());
+    return atoi(s.c_str());
 }
 
 template<> inline unsigned int readComponent<unsigned int>(const string& s)
 {
-	return strtoul(s.c_str(), 0, 0);
+    return strtoul(s.c_str(), 0, 0);
 }
 
 template<> inline unsigned long int readComponent<unsigned long int>(const string& s)
 {
-	return strtoul(s.c_str(), 0, 0);
+    return strtoul(s.c_str(), 0, 0);
 }
 
 } // namespace Myriad

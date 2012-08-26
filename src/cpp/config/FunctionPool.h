@@ -52,75 +52,75 @@ class FunctionPool
 {
 public:
 
-	/**
-	 * Default constructor.
-	 */
-	FunctionPool()
-	{
-	}
+    /**
+     * Default constructor.
+     */
+    FunctionPool()
+    {
+    }
 
-	/**
-	 * Add a new function pointer to the pool.
-	 *
-	 * @param functionPtr a pointer to the function to be added.
-	 * @throw ConfigException if the function is already registered
-	 */
-	void add(AbstractFunction* functionPtr)
-	{
-		map<string, AbstractFunction*>::const_iterator it = functions.find(functionPtr->name());
+    /**
+     * Add a new function pointer to the pool.
+     *
+     * @param functionPtr a pointer to the function to be added.
+     * @throw ConfigException if the function is already registered
+     */
+    void add(AbstractFunction* functionPtr)
+    {
+        map<string, AbstractFunction*>::const_iterator it = functions.find(functionPtr->name());
 
-		if (it != functions.end())
-		{
-			throw ConfigException("Trying to add an already undefined function " + functionPtr->name());
-		}
+        if (it != functions.end())
+        {
+	        throw ConfigException("Trying to add an already undefined function " + functionPtr->name());
+        }
 
-		autoreleasePool.add(functionPtr);
-		functions[functionPtr->name()] = functionPtr;
-	}
+        autoreleasePool.add(functionPtr);
+        functions[functionPtr->name()] = functionPtr;
+    }
 
-	/**
-	 * Get a type-safe version of an already registered function identified by
-	 * the given \p name.
-	 *
-	 * @return a reference to a \p FunctionType function identified by the
-	 *         given \p name
-	 * @throw ConfigException if the function identified by the given \name is
-	 *                        not registered or if it cannot be cast to the
-	 *                        provided \p FunctionType
-	 */
-	template<class FunctionType> FunctionType& get(const string& name) const
-	{
-		map<string, AbstractFunction*>::const_iterator it = functions.find(name);
+    /**
+     * Get a type-safe version of an already registered function identified by
+     * the given \p name.
+     *
+     * @return a reference to a \p FunctionType function identified by the
+     *         given \p name
+     * @throw ConfigException if the function identified by the given \name is
+     *                        not registered or if it cannot be cast to the
+     *                        provided \p FunctionType
+     */
+    template<class FunctionType> FunctionType& get(const string& name) const
+    {
+        map<string, AbstractFunction*>::const_iterator it = functions.find(name);
 
-		if (it == functions.end())
-		{
-			throw ConfigException("Trying to access undefined function " + name);
-		}
+        if (it == functions.end())
+        {
+	        throw ConfigException("Trying to access undefined function " + name);
+        }
 
-		const AbstractFunction* abstractFunction(it->second);
-		const FunctionType* castFunction = dynamic_cast<const FunctionType*>(abstractFunction);
+        const AbstractFunction* abstractFunction(it->second);
+        const FunctionType* castFunction = dynamic_cast<const FunctionType*>(abstractFunction);
 
-		if (castFunction)
-		{
-			return *const_cast<FunctionType*>(castFunction);
-		}
-		else
-		{
-			throw ConfigException("Cannot cast function "  + name + " to the supplied template type ");
-		}
-	}
+        if (castFunction)
+        {
+	        return *const_cast<FunctionType*>(castFunction);
+        }
+        else
+        {
+	        throw ConfigException("Cannot cast function "  + name + " to the supplied template type ");
+        }
+    }
 
 private:
 
-	/**
-	 * A set of probability functions to be used by the configurator.
-	 */
-	map<string, AbstractFunction*> functions;
+    /**
+     * A set of probability functions to be used by the configurator.
+     */
+    map<string, AbstractFunction*> functions;
 
-	/**
-	 * An auto-release pool for the probabilities.
-	 */
-	AutoReleasePool<AbstractFunction> autoreleasePool;
+    /**
+     * An auto-release pool for the probabilities.
+     */
+    AutoReleasePool<AbstractFunction> autoreleasePool;
 };
 
 /** @}*/// add to core group

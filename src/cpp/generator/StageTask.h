@@ -53,60 +53,60 @@ class AbstractStageTask: public Runnable, public RefCountedObject
 {
 public:
 
-	/**
-	 * Constructor.
-	 */
-	AbstractStageTask(const string& name) :
-		_taskName(name), _progress(0)
-	{
-	}
+    /**
+     * Constructor.
+     */
+    AbstractStageTask(const string& name) :
+        _taskName(name), _progress(0)
+    {
+    }
 
-	/**
-	 * The name of this AbstractStageTask.
-	 */
-	const string& name() const
-	{
-		return _taskName;
-	}
+    /**
+     * The name of this AbstractStageTask.
+     */
+    const string& name() const
+    {
+        return _taskName;
+    }
 
-	/**
-	 * Indicates whether the task is runnable.
-	 *
-	 * Runnable tasks must provide a valid implementation of the run() method.
-	 */
-	virtual bool runnable()
-	{
-		return false;
-	}
+    /**
+     * Indicates whether the task is runnable.
+     *
+     * Runnable tasks must provide a valid implementation of the run() method.
+     */
+    virtual bool runnable()
+    {
+        return false;
+    }
 
-	/**
-	 * A virtual method to be implemented by all runnable tasks.
-	 */
-	virtual void run()
-	{
-	}
+    /**
+     * A virtual method to be implemented by all runnable tasks.
+     */
+    virtual void run()
+    {
+    }
 
-	/**
-	 * Updates the task progress in the given UpdateProgress \p notification.
-	 */
-	void reportProgress(UpdateProgress* notification)
-	{
-		notification->state.taskCount++;
-		notification->state.taskProgress += _progress;
-	}
+    /**
+     * Updates the task progress in the given UpdateProgress \p notification.
+     */
+    void reportProgress(UpdateProgress* notification)
+    {
+        notification->state.taskCount++;
+        notification->state.taskProgress += _progress;
+    }
 
 protected:
 
-	/**
-	 * Name of the task.
-	 */
-	string _taskName;
+    /**
+     * Name of the task.
+     */
+    string _taskName;
 
 
-	/**
-	 * Current progress.
-	 */
-	Decimal _progress;
+    /**
+     * Current progress.
+     */
+    Decimal _progress;
 };
 
 /**
@@ -120,67 +120,67 @@ class StageTask: public AbstractStageTask
 {
 public:
 
-	/**
-	 * The RandomSequenceGenerator type associated with the given \p RecordType.
-	 */
-	typedef typename RecordTraits<RecordType>::GeneratorType SequenceGeneratorType;
-	/**
-	 * The OutputCollector type associated with the given \p RecordType.
-	 */
-	typedef typename OutputTraits<RecordType>::CollectorType CollectorType;
+    /**
+     * The RandomSequenceGenerator type associated with the given \p RecordType.
+     */
+    typedef typename RecordTraits<RecordType>::GeneratorType SequenceGeneratorType;
+    /**
+     * The OutputCollector type associated with the given \p RecordType.
+     */
+    typedef typename OutputTraits<RecordType>::CollectorType CollectorType;
 
-	/**
-	 * Constructor.
-	 *
-	 * Opens the internal output collector.
-	 *
-	 * @param name The name of this StageTask.
-	 * @param generatorName The name of the enclosing generator.
-	 * @param config A reference to the global generator configuration.
-	 * @param dryRun A boolean flag indicating whether the output collector
-	 *               should be used or not (i.e. whether it is a dry run).
-	 */
-	StageTask(const string& name, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
-		AbstractStageTask(name),
-		_out(generatorName, config),
-		_dryRun(dryRun),
-		_logger(Logger::get("task."+name))
-	{
-		if (!_dryRun)
-		{
-			_out.open();
-		}
-	}
+    /**
+     * Constructor.
+     *
+     * Opens the internal output collector.
+     *
+     * @param name The name of this StageTask.
+     * @param generatorName The name of the enclosing generator.
+     * @param config A reference to the global generator configuration.
+     * @param dryRun A boolean flag indicating whether the output collector
+     *               should be used or not (i.e. whether it is a dry run).
+     */
+    StageTask(const string& name, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
+        AbstractStageTask(name),
+        _out(generatorName, config),
+        _dryRun(dryRun),
+        _logger(Logger::get("task."+name))
+    {
+        if (!_dryRun)
+        {
+	        _out.open();
+        }
+    }
 
-	/**
-	 * Destructor.
-	 *
-	 * Closes the internal output collector.
-	 */
-	~StageTask()
-	{
-		if (!_dryRun)
-		{
-			_out.close();
-		}
-	}
+    /**
+     * Destructor.
+     *
+     * Closes the internal output collector.
+     */
+    ~StageTask()
+    {
+        if (!_dryRun)
+        {
+	        _out.close();
+        }
+    }
 
 protected:
 
-	/**
-	 * An output stream used for writing the task output data.
-	 */
-	CollectorType _out;
+    /**
+     * An output stream used for writing the task output data.
+     */
+    CollectorType _out;
 
-	/**
-	 * A flag indicating whether writing the output is required.
-	 */
-	bool _dryRun;
+    /**
+     * A flag indicating whether writing the output is required.
+     */
+    bool _dryRun;
 
-	/**
-	 * Logger instance.
-	 */
-	Logger& _logger;
+    /**
+     * Logger instance.
+     */
+    Logger& _logger;
 };
 
 /** @}*/// add to generator group

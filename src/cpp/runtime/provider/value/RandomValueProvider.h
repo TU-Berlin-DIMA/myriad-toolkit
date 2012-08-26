@@ -38,7 +38,7 @@ public:
     typedef typename RecordFieldTraits<condFieldID, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
 
     RandomValueProvider(const PrFunctionType& prFunction) :
-    	AbstractValueProvider<ValueType, CxtRecordType>(1, false),
+        AbstractValueProvider<ValueType, CxtRecordType>(1, false),
         _prFunction(prFunction),
         _fieldGetter(RecordFieldTraits<condFieldID, CxtRecordType>::getter())
     {

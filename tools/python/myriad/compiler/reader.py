@@ -782,7 +782,7 @@ class XMLReader(object):
         elif (functionType == "pareto_probability"):
             functionNode = ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         elif (functionType == "uniform_probability"):
-            functionNode = UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"))
+            functionNode = UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type=functionMatch.group(3))
         elif (functionType == "conditional_combined_probability"):
             functionNode = ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type1=functionMatch.group(3), domain_type2=functionMatch.group(5))
         elif (functionMatch != "combined_probability"):

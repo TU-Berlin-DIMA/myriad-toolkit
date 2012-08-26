@@ -49,84 +49,85 @@ class CommunicationSubsystem: public Util::Subsystem
 {
 public:
 
-	/**
-	 * Constructor.
-	 */
-	CommunicationSubsystem(NotificationCenter& notificationCenter) :
-		_notificationCenter(notificationCenter), _state(), _progressMonitor("progress_monitor"), _heartbeatClient("heartbeat_client"), _initialized(false), _logger(Logger::get("communication.driver")), _ui(Logger::get("ui"))
-	{
-	}
+    /**
+     * Constructor.
+     */
+    CommunicationSubsystem(NotificationCenter& notificationCenter) :
+        _notificationCenter(notificationCenter), _state(), _progressMonitor("progress_monitor"), _heartbeatClient("heartbeat_client"), _initialized(false), _logger(Logger::get("communication.driver")), _ui(Logger::get("ui"))
+    {
+    }
 
-	/**
-	 * Destructor.
-	 */
-	~CommunicationSubsystem()
-	{
-	}
+    /**
+     * Destructor.
+     */
+    ~CommunicationSubsystem()
+    {
+    }
 
-	/**
-	 * Starts the CommunicationSubsystem instance.
-	 */
-	void start();
+    /**
+     * Starts the CommunicationSubsystem instance.
+     */
+    void start();
 
-	/**
-	 * StartStage listener.
-	 *
-	 * Updates the \p current_stage_id of the internal \p NodeState instance
-	 * with new stage_id provided by the StartStage notification.
-	 *
-	 */
-	void onStageStart(StartStage* notification);
+    /**
+     * StartStage listener.
+     *
+     * Updates the \p current_stage_id of the internal \p NodeState instance
+     * with new stage_id provided by the StartStage notification.
+     *
+     */
+    void onStageStart(StartStage* notification);
 
 
-	/**
-	 * ChangeStatus listener.
-	 *
-	 * Handles a ChangeNodeState notification, which is issued by the
-	 * GeneratorSubsystem between each pair of stages.
-	 * If the notification \p stage status is different than the \p_state.status member
-	 * the \p _state.status is updated and a new Heartbeat notification is sent.
-	 */
-	void onSatusChange(ChangeNodeState* status);
+    /**
+     * ChangeStatus listener.
+     *
+     * Handles a ChangeNodeState notification, which is issued by the
+     * GeneratorSubsystem between each pair of stages.
+     * If the notification \p stage status is different than the \p state.status
+     * member the \p _state.status is updated and a new Heartbeat notification
+     * is sent.
+     */
+    void onSatusChange(ChangeNodeState* status);
 
 protected:
 
-	/**
-	 * Returns a constant subsystem name "Communication Subsystem".
-	 */
-	const char* name() const
-	{
-		return "Communication Subsystem";
-	}
+    /**
+     * Returns a constant subsystem name "Communication Subsystem".
+     */
+    const char* name() const
+    {
+        return "Communication Subsystem";
+    }
 
-	/**
-	 * Initializes the subsystem.
-	 *
-	 * Resets the internal NodeState and attaches the Notification listeners.
-	 */
-	void initialize(Application&);
+    /**
+     * Initializes the subsystem.
+     *
+     * Resets the internal NodeState and attaches the Notification listeners.
+     */
+    void initialize(Application&);
 
-	/**
-	 * Sets the node status of the internal _state
-	 */
-	void uninitialize();
+    /**
+     * Sets the node status of the internal _state
+     */
+    void uninitialize();
 
 private:
 
-	NotificationCenter& _notificationCenter;
-	NotificationQueue  _notificationQueue;
+    NotificationCenter& _notificationCenter;
+    NotificationQueue  _notificationQueue;
 
-	NodeState _state;
-	Thread _progressMonitor;
-	Thread _heartbeatClient;
-	HTTPClientSession _httpSession;
-	I16u _badRequestCounter;
+    NodeState _state;
+    Thread _progressMonitor;
+    Thread _heartbeatClient;
+    HTTPClientSession _httpSession;
+    I16u _badRequestCounter;
 
-	bool _initialized;
+    bool _initialized;
 
-	LayeredConfiguration* _config;
-	Logger& _logger;
-	Logger& _ui;
+    LayeredConfiguration* _config;
+    Logger& _logger;
+    Logger& _ui;
 };
 
 /** @}*/// add to communication group

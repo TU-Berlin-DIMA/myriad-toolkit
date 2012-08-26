@@ -66,8 +66,8 @@ public:
         // lazy initialize max nested per parent
         if (_maxChildrenValue == nullValue<I32u>())
         {
-        	// TODO: passing a mock random object here is really not pretty
-        	RandomStream random;
+            // TODO: passing a mock random object here is really not pretty
+            RandomStream random;
             _maxChildrenValue = _maxChildrenProvider(cxtRecordPtr, random);
         }
 

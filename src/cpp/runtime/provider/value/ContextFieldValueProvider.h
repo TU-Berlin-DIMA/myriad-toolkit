@@ -34,11 +34,11 @@ class ContextFieldValueProvider: public AbstractValueProvider<ValueType, CxtReco
 {
 public:
 
-	typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldType CxtRecordFieldType;
-	typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
+    typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldType CxtRecordFieldType;
+    typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
 
     ContextFieldValueProvider() :
-    	AbstractValueProvider<ValueType, CxtRecordType>(0, false),
+        AbstractValueProvider<ValueType, CxtRecordType>(0, false),
         _fieldGetter(RecordFieldTraits<fid, CxtRecordType>::getter())
     {
     }

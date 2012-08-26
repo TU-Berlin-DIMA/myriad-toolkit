@@ -35,14 +35,14 @@ namespace Myriad {
  */
 struct Constant
 {
-	/**
-	 * The name of the data generator application.
-	 */
-	static const String APP_NAME;
-	/**
-	 * The version of the data generator application.
-	 */
-	static const String APP_VERSION;
+    /**
+     * The name of the data generator application.
+     */
+    static const String APP_NAME;
+    /**
+     * The version of the data generator application.
+     */
+    static const String APP_VERSION;
 };
 
 /** @}*/// add to core group
