@@ -147,8 +147,6 @@ public:
 
 	/**
 	 * Initialization method.
-	 *
-	 * @param appConfig
 	 */
 	virtual void initialize() = 0;
 

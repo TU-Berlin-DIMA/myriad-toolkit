@@ -52,6 +52,7 @@ public:
 	 * Handles the occurence of a '--help' CLI parameter.
 	 *
 	 * @param name The name of the processed parameter (always `help`).
+	 * @param value The value of the processed parameter (always empty).
 	 */
 	void handleHelp(const std::string& name, const std::string& value);
 
@@ -59,6 +60,7 @@ public:
 	 * Handles the occurence of a '--version' CLI parameter.
 	 *
 	 * @param name The name of the processed parameter (always `version`).
+     * @param value The value of the processed parameter (always empty).
 	 */
 	void handleVersion(const std::string& name, const std::string& value);
 

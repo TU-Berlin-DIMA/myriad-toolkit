@@ -102,7 +102,7 @@ I64u power(I32u x, I16u e);
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  *
  * @param x
- * @return
+ * @return An integer \p y, such that <tt>abs(2^y - x)</tt> is minimal.
  */
 I64u nearestPow2(I64u x);
 
@@ -112,7 +112,7 @@ I64u nearestPow2(I64u x);
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  *
  * @param x
- * @return
+ * @return The logarithm of \p to the base of 2.
  */
 I16u log2exact(I64u x);
 

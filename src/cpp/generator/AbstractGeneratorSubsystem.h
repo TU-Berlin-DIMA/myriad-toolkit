@@ -120,9 +120,9 @@ protected:
 	virtual void registerGenerators() = 0;
 
 	/**
-	 * Helper method. Adds a single generator to the generator pool.
+	 * Adds a single generator of the given \p T type to the generator pool.
 	 *
-	 * @param generator
+	 * @param name The name of the added generator.
 	 */
 	template<class T> void registerGenerator(const string& name)
 	{

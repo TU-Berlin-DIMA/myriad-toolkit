@@ -54,7 +54,7 @@ public:
 	/**
 	 * Add a new generator pointer to the pool.
 	 *
-	 * @param a pointer to the generator to be added.
+	 * @param generator A pointer to the generator to be added.
 	 * @throw ConfigException if a generator of the provided \p FunctionType is
 	 *                        already registered with this pool
 	 */
@@ -75,9 +75,9 @@ public:
 	 * Get a type-safe version of an already registered generator identified by
 	 * the given name.
 	 *
-	 * @return a reference of the \p generator of the given \p GeneratorType
+	 * @return A reference of the \p generator of the given \p GeneratorType.
 	 * @throw ConfigException if the function identified by the given
-	 *                        \GeneratorType is not registered
+	 *                        \p GeneratorType is not registered
 	 */
 	template<class GeneratorType> GeneratorType& get() const
 	{

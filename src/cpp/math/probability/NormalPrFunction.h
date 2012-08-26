@@ -48,9 +48,8 @@ public:
 	/**
 	 * Explicit anonymous parameter constructor.
 	 *
-	 * @param alpha The \p alpha parameter of the Pareto distribution.
-	 * @param xMin The left bound of the function range.
-	 * @param xMax The right bound of the function range.
+	 * @param mean The \p mean of this distribution.
+	 * @param stddev The <tt>standard deviation</tt> of this distribution.
 	 */
 	NormalPrFunction(Decimal mean = 0, Decimal stddev = 1) :
 		UnivariatePrFunction<Decimal> (""), _mean(mean), _stddev(stddev)
@@ -62,9 +61,8 @@ public:
 	 * Explicit named parameter constructor.
 	 *
 	 * @param name The name of this probability function instance.
-	 * @param alpha The \p alpha parameter of the Pareto distribution.
-	 * @param xMin The left bound of the function range.
-	 * @param xMax The right bound of the function range.
+     * @param mean The \p mean of this distribution.
+     * @param stddev The <tt>standard deviation</tt> of this distribution.
 	 */
 	NormalPrFunction(const string& name, Decimal mean = 0, Decimal stddev = 1) :
 		UnivariatePrFunction<Decimal> (name), _mean(mean), _stddev(stddev)

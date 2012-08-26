@@ -247,7 +247,14 @@ public:
 		return *this;
 	}
 
+	/**
+	 * Stream serializer friend operator.
+	 */
 	friend std::ostream& operator<<(std::ostream& stream, const MyriadDate& ob);
+
+	/**
+     * Stream deserializer friend operator.
+	 */
 	friend std::istream& operator>>(istream& stream, MyriadDate& ob);
 
 private:

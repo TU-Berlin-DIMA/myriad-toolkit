@@ -100,11 +100,11 @@ public:
 	 * The current node state.
 	 */
 	State currentState;
-	/*
+	/**
 	 * The ID of the currently processed node.
 	 */
 	I32u nodeID;
-	/*
+	/**
 	 * The ID of the current GeneratorStage.
 	 */
 	I16u currentGeneratorStageID;
@@ -185,6 +185,9 @@ class UpdateProgress: public Notification
 {
 public:
 
+    /**
+     * Constructor.
+     */
 	UpdateProgress(NodeState& state) :
 		state(state)
 	{
@@ -192,6 +195,9 @@ public:
 		state.taskProgress = 0;
 	}
 
+	/**
+	 * The NodeState which progress is to be updated.
+	 */
 	NodeState& state;
 };
 

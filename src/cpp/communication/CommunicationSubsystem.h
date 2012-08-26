@@ -84,8 +84,9 @@ public:
 	 *
 	 * Handles a ChangeNodeState notification, which is issued by the
 	 * GeneratorSubsystem between each pair of stages.
-	 * If the notification \p stage status is different than the \p_state.status member
-	 * the \p _state.status is updated and a new Heartbeat notification is sent.
+	 * If the notification \p stage status is different than the \p state.status
+	 * member the \p _state.status is updated and a new Heartbeat notification
+	 * is sent.
 	 */
 	void onSatusChange(ChangeNodeState* status);
 

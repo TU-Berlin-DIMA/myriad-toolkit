@@ -379,7 +379,7 @@ public:
 	/**
 	 * Indicates that this StageTask is runnable.
 	 *
-	 * @return Always \t true.
+	 * @return Always \p true.
 	 */
 	bool runnable()
 	{
@@ -390,7 +390,7 @@ public:
 	 * The run() of this runnable task.
 	 *
 	 * This method simply iterates over the allocated genID subsequence and
-	 * instantiates and writes out the \t RecordType instance at each position.
+	 * instantiates and writes out the \p RecordType instance at each position.
 	 */
 	void run()
 	{

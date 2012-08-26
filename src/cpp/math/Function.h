@@ -74,6 +74,9 @@ protected:
 	{
 	}
 
+	/**
+	 * The name of this function.
+	 */
 	const string _name;
 };
 
@@ -139,7 +142,7 @@ public:
 	 * Function evaluation operator.
      *
      * @param x1 The first function argument.
-     * @param x1 The second function argument.
+     * @param x2 The second function argument.
      * @return The <tt>f(x1, x2)</tt> value.
 	 */
 	virtual Range operator()(const Domain1 x1, const Domain2 x2) const = 0;
@@ -212,7 +215,7 @@ public:
 	 * according to this distribution function.
 	 *
 	 * @param r A uniformly drawn random value in the [0,1) interval.
-	 * @param A \Domain sample that corresponds to the given input \p r.
+	 * @return A \p Domain sample that corresponds to the given input \p r.
 	 */
 	virtual Domain sample(Decimal r) const = 0;
 
@@ -280,7 +283,8 @@ public:
      * according to this distribution function.
      *
      * @param r A uniformly drawn random value in the [0,1) interval.
-     * @param A \Domain1 sample that corresponds to the given input \p r.
+     * @param x2 An evidence for this conditional distribution.
+     * @return A \p Domain1 sample that corresponds to the given input \p r.
      */
 	virtual Domain1 sample(Decimal r, Domain2 x2) const = 0;
 
