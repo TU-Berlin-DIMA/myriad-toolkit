@@ -42,12 +42,12 @@ public:
     typedef ConstValueProvider<I32u, CxtRecordType> MaxChildrenValueProviderType;
     typedef RandomSequenceInspector<RefRecordType> RefRecordSetType;
 
-    ClusteredReferenceProvider(MaxChildrenValueProviderType& maxChildrenProvider, ChildrenCountValueProviderType& childrenCountProvider, RandomSequenceInspector<RefRecordType> parentSet) :
+    ClusteredReferenceProvider(MaxChildrenValueProviderType& maxChildrenProvider, ChildrenCountValueProviderType& childrenCountProvider, RefRecordSetType referenceSequence) :
         AbstractReferenceProvider<RefRecordType, CxtRecordType>(0, true),
         _maxChildrenValue(nullValue<I32u>()),
         _maxChildrenProvider(maxChildrenProvider),
         _childrenCountProvider(childrenCountProvider),
-        _referenceSequence(parentSet),
+        _referenceSequence(referenceSequence),
         _posFieldSetter(posFieldID != 0 ? RecordFieldTraits<posFieldID, CxtRecordType>::setter() : NULL)
     {
         // make sure that the _childrenCountProvider does not consume random records
