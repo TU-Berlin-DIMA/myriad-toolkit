@@ -17,7 +17,6 @@ CONFIG_FILES     = $(shell cd ../src && find config -type f -name "*.properties"
 CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.distribution")
 CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.domain")
 CONFIG_FILES    += $(shell cd ../vendor/myriad-toolkit/src && ls config/*xsd)
-CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 
 # uncomment one of the following lines depending on whether you maintain a 
 # $(MYRIAD_DGEN_NAME)-frontend.xml script in your src/config folder or not 
@@ -42,6 +41,7 @@ cleanall: clean
 	rm -Rf CHANGELOG LICENSE NOTICE README.md
 
 install: 
+	@echo 'Installing compiled data generator to $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)'
 	mkdir -p $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)
 	cp -Rf ./bin $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)
 	cp -Rf ./config $(MYRIAD_INSTALL_DIR)/$(MYRIAD_DGEN_NAME)

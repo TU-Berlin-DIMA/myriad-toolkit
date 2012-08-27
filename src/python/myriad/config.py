@@ -158,7 +158,7 @@ class Config(object):
         context.xpathRegisterNs("m", NAMESPACE)
         
         # read cloud environments
-        for node in context.xpathEval("//m:cloud-environments/m:cloud-env"):
+        for node in context.xpathEval("//m:cloud_environments/m:cloud_env"):
             environment = {} 
             
             context.setContextNode(node)
@@ -178,14 +178,14 @@ class Config(object):
             self.cloudEnvs[node.prop("id")] = environment
             
         # read dgen configurations
-        for node in context.xpathEval("//m:dgen-configurations/m:dgen-config"):
+        for node in context.xpathEval("//m:dgen_configurations/m:dgen_config"):
             config = {}
             
             context.setContextNode(node)
             for param in context.xpathEval("./*"):
-                if (param.get_name() == "nodes-per-host"):
+                if (param.get_name() == "nodes_per_host"):
                     config["nodesPerHost"] = int(param.content)
-                if (param.get_name() == "output-base"):
+                if (param.get_name() == "output_base"):
                     config["outputBase"] = str(param.content)
 
             config["environment"] = self.cloudEnvs[node.prop("cloud")]
