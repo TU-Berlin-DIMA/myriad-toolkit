@@ -10,4 +10,4 @@ To get a running example of a simple generator created with the help of the Myri
 Watch this space!
 -----------------
 
-If you want to find more about the architecture and the features of the toolkit, please follow our updates on the the [Wiki page](https://github.com/TU-Berlin-DIMA/myriad/wiki) of this project. We will be adding detailed project bootstrap and data generator specification instructions in the coming weeks.
+If you want to find more about the architecture and the features of the *Myriad Toolkit*, please follow the [Wiki pages](https://github.com/TU-Berlin-DIMA/myriad/wiki) of this project. In the coming weeks will be provide tutorials explaining how to bootstrap your own data generator projects and rapidly prototype a running program with the help of our custom, XML-based specification language.
