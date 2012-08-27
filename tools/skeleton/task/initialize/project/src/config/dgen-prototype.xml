@@ -10,15 +10,13 @@
   <!-- function configuration -->
   <functions>
     <!-- supported probability types: -->
-    <!--  * pareto_probability(Decimal: x_min, Decimal: alpha) -->
+    <!--  * uniform_probability[T](T: x_min, T: x_max) -->
     <!--  * normal_probability(Decimal: mean, Decimal: stddev) -->
-    <!--  * custom_discrete_probability(...) -->
-    <!--
-    <function key="Pr[some_probability]" type="pareto_probability">
-      <argument type="Decimal" key="x_min" value="1" />
-      <argument type="Decimal" key="alpha" value="1" />
+    <!--  * custom_discrete_probability[T](String: path) -->
+    <function key='Pr[customer.pk]' type='uniform_probability[I64u]'>
+      <argument key='x_min' type='I64u' value='1' />
+      <argument key='x_max' type='I64u' value='${%customer.sequence.cardinality% + 1}' />
     </function>
-    -->
   </functions>
 
   <!-- enumeration types -->
@@ -37,7 +35,7 @@
     <!-- users -->
     <random_sequence key="sample_type">
       <record_type>
-        <field name="id" type="I64u" />
+        <field name="pk" type="I64u" />
         <!-- add more fields and references here, supported types are: -->
         <!--  * core types: I16, I16u, I32, I32u, I64, I64u, Decimal, String, Date -->
         <!--  * enum types: Enum, with an additional enumref='{enum_set.key}' attribute -->
@@ -47,22 +45,20 @@
         <reference name='reference_alias' type='othertype_key' />
         -->
       </record_type>
-      <hydrators>
-        <hydrator key="id_hydrator" type="randomized_sequence_hydrator">
-          <argument key="field" type="field_ref" ref="id" />
-          <argument key="cardinality" type="long" value="%user.sequence.cardinality%" />
-        </hydrator>
+      <setter_chain>
+        <setter key='set_pk' type='field_setter'>
+          <argument key='field' type='field_ref' ref='customer:pk' />
+          <argument key='value' type='clustered_value_provider'>
+            <argument key='probability' type='function_ref' ref='Pr[sample_type.pk]' />
+            <argument key='cardinality' type='const_range_provider'>
+              <argument key='min' type='I64u' value='0' />
+              <argument key='max' type='I64u' value='%customer.sequence.cardinality%' />
+            </argument>
+          </argument>
+        </setter>
         <!-- add more hydrators here, supported hydrator types are: -->
         <!--  * randomized_sequence_hydrator<RT>(RT#Setter: field, I64u: cardinality, I64u: begin, I64u: end) -->
-      </hydrators>
-      <hydration_plan>
-        <hydrator_ref ref="id_hydrator" />
-        <!-- add more hydrator references here -->
-        <!-- 
-        <hydrator_ref ref="gender_hydrator" />
-        <hydrator_ref ref="first_name_hydrator" />
-        -->
-      </hydration_plan>
+      </setter_chain>
       <!-- supported cardinality estimator types are: -->
       <!--  * linear_scale_estimator(I64u: base_cardinality) -->
       <cardinality_estimator type="linear_scale_estimator">
