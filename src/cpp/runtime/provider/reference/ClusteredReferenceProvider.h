@@ -88,7 +88,15 @@ public:
 
         if (_reference.isNull() || _reference->genID() != parentRecordGenID)
         {
-            _reference = _referenceSequence.at(parentRecordGenID);
+            try
+            {
+                _reference = _referenceSequence.at(parentRecordGenID);
+            }
+            catch(const InvalidRecordException& e)
+            {
+                // throw adapted InvalidRecordException for the child sequence with custom nextValidGenID
+                throw InvalidRecordException(nestedRecordGenID, _maxChildrenValue, nestedRecordGenID % _maxChildrenValue, e.nextValidGenID() * _maxChildrenValue);
+            }
         }
 
         // FIXME: the random argument here is wrong

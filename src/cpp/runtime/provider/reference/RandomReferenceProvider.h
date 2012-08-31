@@ -64,7 +64,27 @@ public:
         // lazy-instantiate the corresponding reference
         if (_reference.isNull() || _reference->genID() != genID)
         {
-            _reference = _referenceSequence.at(genID);
+            // protect against InvalidRecordExceptions
+            I16u x = 0;
+            while(true)
+            {
+                try
+                {
+                    if (x > 1)
+                    {
+                        throw RuntimeException(format("Subsequent child sequences of effective length zero detected at position %Lu", genID));
+                    }
+
+                    _reference = _referenceSequence.at(genID);
+                    break;
+                }
+                catch(const InvalidRecordException& e)
+                {
+                    // use modValidGenID
+                    genID = e.prevValidGenIDMin() + genID % e.prevValidGenIDSize();
+                    x++;
+                }
+            }
         }
 
         // return the selected reference

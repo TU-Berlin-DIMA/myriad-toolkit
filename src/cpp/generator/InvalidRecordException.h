@@ -58,6 +58,25 @@ public:
     }
 
     /**
+     * Constructor.
+     *
+     * @param currentGenID The ID of the invalid record that triggered the
+     *        exception.
+     * @param maxPeriodSize The maximal number of valid records in each
+     *        cluster.
+     * @param currentPeriodSize The number of valid records in the current
+     *        cluster.
+     * @param nextValidGenID The ID of the next valid record.
+     */
+    InvalidRecordException(I64u currentGenID, I64u maxPeriodSize, I64u currentPeriodSize, I64u nextValidGenID) :
+        _currentGenID(currentGenID)
+    {
+        _nextValidGenID = nextValidGenID;
+        _prevValidGenIDMin = _nextValidGenID - maxPeriodSize;
+        _prevValidGenIDMax = _prevValidGenIDMin + currentPeriodSize;
+    }
+
+    /**
      * Returns the genID of the current (invalid) record.
      */
     I64u currentGenID() const

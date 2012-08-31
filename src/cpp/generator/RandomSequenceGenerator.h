@@ -262,33 +262,16 @@ public:
     /**
      * Instantiates and returns the \p RecordType at the given \p genID
      * position in the random sequence.
+     *
+     * @throws InvalidRecordException If the record at sequence position
+     *         \p genID is not valid, i.e. if it is not defined.
      */
     const AutoPtr<RecordType> at(const I64u genID) const
     {
         AutoPtr<RecordType> recordPtr = _recordFactory();
         recordPtr->genID(genID);
 
-        // protect against InvalidRecordExceptions
-        I16u x = 0;
-        while(true)
-        {
-	        try
-	        {
-		        if (x > 1)
-		        {
-		            throw RuntimeException(format("Subsequent child sequences of effective length zero detected at position %Lu", recordPtr->genID()));
-		        }
-
-		        _setterChain(recordPtr);
-		        break;
-	        }
-	        catch(const InvalidRecordException& e)
-	        {
-		        // use modValidGenID
-		        recordPtr->genID(e.prevValidGenIDMin() + genID % e.prevValidGenIDSize());
-		        x++;
-	        }
-        }
+        _setterChain(recordPtr);
 
         return recordPtr;
     }
