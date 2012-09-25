@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef HASHRANDOMSTREAM_H_
@@ -28,18 +27,38 @@
 using namespace std;
 
 namespace Myriad {
+/**
+ * @addtogroup math_random
+ * @{*/
 
+// forward declarations.
 class HashRandomStream;
 
+/**
+ * Traits specialization for the HashRandomStream random stream.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<> struct prng_traits<HashRandomStream>
 {
     typedef RandomSeed<UInt64, 1> seed_type;
 };
 
+/**
+ * A hash random stream implementation of a HierarchicalRNG.
+ *
+ * This is a port of the RNG used by Rabl et al. in the Parallel Data
+ * Generator Framework (PDGF).
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class HashRandomStream: public HierarchicalRNG
 {
 public:
 
+	/**
+	 * An alias of the seed type for this RNG implementation.
+	 */
     typedef prng_traits<HashRandomStream>::seed_type Seed;
 
     /**
@@ -59,12 +78,18 @@ public:
      */
     static const double D_2_POW_NEG_64;
 
+    /**
+     * Anonymous default constructor.
+     */
     HashRandomStream(const string name = "anonymous") :
         _name(name)
     {
         initialize();
     }
 
+    /**
+     * Named copy constructor.
+     */
     HashRandomStream(const HashRandomStream& o, const string name = "anonymous") :
         _name(name),
         _masterS(o._masterS),
@@ -75,10 +100,16 @@ public:
         initialize();
     }
 
+    /**
+     * Destructor.
+     */
     ~HashRandomStream()
     {
     }
 
+    /**
+     * Assignment operator.
+     */
     HashRandomStream& operator =(const HashRandomStream& o)
     {
         if (this != &o) // protect against invalid self-assignment
@@ -93,37 +124,41 @@ public:
         return *this;
     }
 
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-    // RandomStream: TODO: add to HashRandomStream interface
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-    double operator()()
-    {
-        return next();
-    }
-
-    template<class T> T operator()(T min, T max)
-    {
-//        return min + static_cast<T> ((max - min + 1.0) * next());
-        // FIXME: adapt dependant components to the new operator() semantics
-        return min + static_cast<T> ((max - min) * next());
-    }
-
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-    // HashRandomStream interface
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
+    /**
+     * Adjust the random stream to the given seed.
+     */
     void seed(Seed masterSeed)
     {
         _masterS = _substreamS = _chunkS = _elementS = masterSeed;
         _currentHash = computeHash();
     }
 
+    /**
+     * Get the current element seed.
+     */
     const Seed& seed() const
     {
         return _elementS;
     }
 
+    /**
+     * Dump the current RNG state to the <tt>std::cout</tt> stream.
+     */
+    void dumpState()
+    {
+        std::cout << "element   : [ " << _elementS.v[0]   << " ]" << std::endl;
+        std::cout << "chunk     : [ " << _chunkS.v[0]     << " ]" << std::endl;
+        std::cout << "substream : [ " << _substreamS.v[0] << " ]" << std::endl;
+        std::cout << "master:     [ " << _masterS.v[0]    << " ]" << std::endl;
+    }
+
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // RNG interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+    /**
+     * @see RNG::next()
+     */
     double next()
     {
         double next = _currentHash * D_2_POW_NEG_64;
@@ -134,6 +169,9 @@ public:
         return next;
     }
 
+    /**
+     * @see RNG::at()
+     */
     double at(UInt64 pos)
     {
         appendToSeed(_elementS, _chunkS, OFFSET_ELEMENT, pos);
@@ -142,6 +180,9 @@ public:
         return next();
     }
 
+    /**
+     * @see RNG::skip()
+     */
     void skip(UInt64 pos)
     {
         appendToSeed(_elementS, _elementS, OFFSET_ELEMENT, pos);
@@ -152,6 +193,9 @@ public:
     // HierarchicalRNG interface
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+    /**
+     * @see HierarchicalRNG::nextSubstream()
+     */
     HashRandomStream& nextSubstream()
     {
         appendToSeed(_substreamS, _substreamS, OFFSET_SUBSTREAM);
@@ -161,6 +205,9 @@ public:
         return *this;
     }
 
+    /**
+     * @see HierarchicalRNG::resetSubstream()
+     */
     HashRandomStream& resetSubstream()
     {
         _elementS = _chunkS = _substreamS;
@@ -169,6 +216,9 @@ public:
         return *this;
     }
 
+    /**
+     * @see HierarchicalRNG::nextChunk()
+     */
     HashRandomStream& nextChunk()
     {
         appendToSeed(_chunkS, _chunkS, OFFSET_CHUNK);
@@ -178,6 +228,9 @@ public:
         return *this;
     }
 
+    /**
+     * @see HierarchicalRNG::resetChunk()
+     */
     HashRandomStream& resetChunk()
     {
         _elementS = _chunkS;
@@ -186,6 +239,9 @@ public:
         return *this;
     }
 
+    /**
+     * @see HierarchicalRNG::atChunk()
+     */
     HashRandomStream& atChunk(UInt64 pos)
     {
         appendToSeed(_chunkS, _substreamS, OFFSET_CHUNK, pos);
@@ -193,14 +249,6 @@ public:
         _currentHash = computeHash();
 
         return *this;
-    }
-
-    void dumpState()
-    {
-        std::cout << "element   : [ " << _elementS.v[0]   << " ]" << std::endl;
-        std::cout << "chunk     : [ " << _chunkS.v[0]     << " ]" << std::endl;
-        std::cout << "substream : [ " << _substreamS.v[0] << " ]" << std::endl;
-        std::cout << "master:     [ " << _masterS.v[0]    << " ]" << std::endl;
     }
 
 private:
@@ -288,6 +336,7 @@ inline void HashRandomStream::appendToSeed(Seed& y, const Seed& o, const Seed& x
     y.v[0] = o.v[0] + x.v[0] * f;
 }
 
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* HASHRANDOMSTREAM_H_ */

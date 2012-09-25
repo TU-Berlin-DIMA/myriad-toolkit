@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef RANDOMSTREAM_H_
@@ -26,11 +25,20 @@
 using namespace std;
 
 namespace Myriad {
+/**
+ * @addtogroup math_random
+ * @{*/
 
+/**
+ * Type alias for the RNG implementation used by the toolkit.
+ *
+ * Currently supported values are CompoundEICG and HashRandomStream. You
+ * can implement your own RandomStream by extending the RNG interface.
+ */
 //typedef CompoundEICG RandomStream;
 typedef HashRandomStream RandomStream;
-//typedef NativeRandomStream RandomStream;
 
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* RANDOMSTREAM_H_ */

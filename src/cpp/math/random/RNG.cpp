@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #include "RNG.h"
@@ -21,8 +20,15 @@
 #include "HashRandomStream.h"
 
 namespace Myriad {
+/**
+ * @addtogroup math_random
+ * @{*/
 
-// init periods method
+/**
+ * Initialize the periods of all CompoundEICG components.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 CompoundEICG::Seed compoundEICGInitPeriods()
 {
     CompoundEICG::Seed tmp;
@@ -38,6 +44,11 @@ CompoundEICG::Seed compoundEICGInitPeriods()
     return tmp;
 }
 
+/**
+ * Initialize the substream offsets of all CompoundEICG components.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 CompoundEICG::Seed compoundEICGInitSubstreamOffset()
 {
     CompoundEICG::Seed tmp;
@@ -53,6 +64,11 @@ CompoundEICG::Seed compoundEICGInitSubstreamOffset()
     return tmp;
 }
 
+/**
+ * Initialize the chunk offsets of all CompoundEICG components.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 CompoundEICG::Seed compoundEICGInitChunkOffset()
 {
     CompoundEICG::Seed tmp;
@@ -68,6 +84,11 @@ CompoundEICG::Seed compoundEICGInitChunkOffset()
     return tmp;
 }
 
+/**
+ * Initialize the element offsets of all CompoundEICG components.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 CompoundEICG::Seed compoundEICGInitElementOffset()
 {
     CompoundEICG::Seed tmp;
@@ -83,6 +104,11 @@ CompoundEICG::Seed compoundEICGInitElementOffset()
     return tmp;
 }
 
+/**
+ * Initialize the substream offset for the HashRandomStream.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 HashRandomStream::Seed hashRandomStreamInitSubstreamOffset()
 {
     HashRandomStream::Seed tmp;
@@ -93,6 +119,11 @@ HashRandomStream::Seed hashRandomStreamInitSubstreamOffset()
     return tmp;
 }
 
+/**
+ * Initialize the chunk offset for the HashRandomStream.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 HashRandomStream::Seed hashRandomStreamInitChunkOffset()
 {
     HashRandomStream::Seed tmp;
@@ -103,6 +134,11 @@ HashRandomStream::Seed hashRandomStreamInitChunkOffset()
     return tmp;
 }
 
+/**
+ * Initialize the element offset for the HashRandomStream.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 HashRandomStream::Seed hashRandomStreamInitElementOffset()
 {
     HashRandomStream::Seed tmp;
@@ -113,22 +149,39 @@ HashRandomStream::Seed hashRandomStreamInitElementOffset()
     return tmp;
 }
 
-// set periods for the EICG components
+/**
+ * Period lengths of the CompoundEICG.
+ */
 const CompoundEICG::Seed CompoundEICG::PERIOD(compoundEICGInitPeriods());
+/**
+ * Substream offests of the CompoundEICG.
+ */
 const CompoundEICG::Seed CompoundEICG::OFFSET_SUBSTREAM(compoundEICGInitSubstreamOffset());
+/**
+ * Chunk offests of the CompoundEICG.
+ */
 const CompoundEICG::Seed CompoundEICG::OFFSET_CHUNK(compoundEICGInitChunkOffset());
+/**
+ * Element offests of the CompoundEICG.
+ */
 const CompoundEICG::Seed CompoundEICG::OFFSET_ELEMENT(compoundEICGInitElementOffset());
 
-// set periods for the HashRandomStream
+/**
+ * Substream offset of the HashRandomStream.
+ */
 const HashRandomStream::Seed HashRandomStream::OFFSET_SUBSTREAM(hashRandomStreamInitSubstreamOffset());
+/**
+ * Chunk offset of the HashRandomStream.
+ */
 const HashRandomStream::Seed HashRandomStream::OFFSET_CHUNK(hashRandomStreamInitChunkOffset());
+/**
+ * Element offset of the HashRandomStream.
+ */
 const HashRandomStream::Seed HashRandomStream::OFFSET_ELEMENT(hashRandomStreamInitElementOffset());
+/**
+ * A constant 2^(-64) used by the HashRandomStream algorithm.
+ */
 const double HashRandomStream::D_2_POW_NEG_64 = 5.4210108624275221700e-20;
 
-//const CompoundEICG::SeedBitmap CompoundEICG::BITMAP_SUBSTREAM = 0x03;
-//const CompoundEICG::SeedBitmap CompoundEICG::BITMAP_CHUNK = 0x0C;
-//const CompoundEICG::SeedBitmap CompoundEICG::BITMAP_ELEMENT = 0x30;
-//const CompoundEICG::SeedBitmap CompoundEICG::BITMAP_ALL = 0x3F;
-//const CompoundEICG::SeedBitmap CompoundEICG::BITMAP_NONE = 0x00;
-
+/** @}*/// add to math group
 }  // namespace Myriad

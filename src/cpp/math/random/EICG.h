@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef EICG_H_
@@ -28,26 +27,40 @@ using namespace Poco;
 using namespace std;
 
 namespace Myriad {
+/**
+ * @addtogroup math_random
+ * @{*/
 
 /**
- * The EICG is defined the following map over the Z_p field:
+ * An extended version of an inversive congruential generator (ICG).
  *
- * y_n := inv(a * (n + i) + b)
+ * The EICG is defined the following map over the \f$Z_p\f$ field:
+ *
+ * \f[ y_n := inv(a * (n + i) + b) \f]
  */
 class EICG : public RNG
 {
 public:
 
+	/**
+	 * Constructor.
+	 */
     EICG(const Int32 p, const Int32 a, const Int32 b, const Int32 n, const Int32 s = 0) :
         p(p), a(a), b(b), n(n), s(s)
     {
     }
 
+    /**
+     * See RNG::next()
+     */
     double next()
     {
         return at(s++);
     }
 
+    /**
+     * See RNG::at()
+     */
     double at(UInt64 s)
     {
         Int32 x = 0;
@@ -64,6 +77,14 @@ public:
 
         return x / static_cast<double> (p);
     }
+
+    /**
+     * See RNG::at()
+     */
+    void skip(UInt64 pos)
+	{
+        s += pos;
+	}
 
 private:
 
@@ -178,6 +199,7 @@ inline void EICG::extendedGCD(Int32 a, Int32 b, Int32& x, Int32& y, Int32& g) co
     g = a;
 }
 
+/** @}*/// add to math group
 }  // namespace Myriad
 
 #endif /* EICG_H_ */

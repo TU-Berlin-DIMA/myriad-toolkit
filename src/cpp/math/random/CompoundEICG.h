@@ -27,21 +27,33 @@
 using namespace std;
 
 namespace Myriad {
+/**
+ * @addtogroup math_random
+ * @{*/
 
 class CompoundEICG;
 
+/**
+ * Traits specialization for the CompoundEICG random stream.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<> struct prng_traits<CompoundEICG>
 {
     typedef RandomSeed<bool, 6> seed_bitmap_type;
     typedef RandomSeed<UInt32, 6> seed_type;
 };
 
+/**
+ * A compound linear combination of size extended inversive congruential
+ * generators (EICG).
+ *
+ */
 class CompoundEICG: public HierarchicalRNG
 {
 public:
 
     typedef prng_traits<CompoundEICG>::seed_type Seed;
-//    typedef UInt64 SeedBitmap;
 
     /**
      * A vector of period lengths for each seed component.
@@ -60,25 +72,26 @@ public:
      */
     static const Seed OFFSET_ELEMENT;
 
+    /**
+     * Anonymous default constructor.
+     */
     CompoundEICG(const string name = "anonymous") : _name(name)
     {
         initialize();
     }
 
+    /**
+     * Anonymous copy constructor.
+     */
     CompoundEICG(const CompoundEICG& o, const string name = "anonymous") :
         _name(name), _masterS(o._masterS), _substreamS(o._substreamS), _chunkS(o._chunkS), _elementS(o._elementS)
     {
         initialize();
     }
 
-    // TODO: remove this constructor
-    CompoundEICG(Seed masterSeed, const string name = "anonymous") :
-        _name(name), _masterS(masterSeed), _substreamS(masterSeed), _chunkS(masterSeed), _elementS(masterSeed)
-    {
-        _masterS = _substreamS = _chunkS = _elementS = masterSeed;
-        initialize();
-    }
-
+    /**
+     * Destructor.
+     */
     ~CompoundEICG()
     {
         for (unsigned int i = 0; i < 6; i++)
@@ -87,6 +100,9 @@ public:
         }
     }
 
+    /**
+     * Assignment operator.
+     */
     CompoundEICG& operator =(const CompoundEICG& o)
     {
         if (this != &o) // protect against invalid self-assignment
@@ -101,101 +117,26 @@ public:
         return *this;
     }
 
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-    // RandomStream: TODO: add to CompoundEICG interface
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-    double operator()()
-    {
-        return next();
-    }
-
-    template<class T> T operator()(T min, T max)
-    {
-        return min + static_cast<T> ((max - min + 1.0) * next());
-    }
-
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-    // CompoundEICG interface
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
+    /**
+     * Adjust the random stream to the given seed.
+     */
     void seed(Seed masterSeed)
     {
         _masterS = _substreamS = _chunkS = _elementS = masterSeed;
         _currentSum = updateResults();
     }
 
+    /**
+     * Get the current element seed.
+     */
     const Seed& seed() const
     {
         return _elementS;
     }
 
-    double next()
-    {
-        double fpart, ipart;
-        fpart = modf(_currentSum, &ipart);
-
-        appendToSeed(_elementS, _elementS, OFFSET_ELEMENT);
-        _currentSum = updateResults();
-
-        return fpart;
-    }
-
-    double at(UInt64 pos)
-    {
-        appendToSeed(_elementS, _chunkS, OFFSET_ELEMENT, pos);
-        _currentSum = updateResults();
-
-        return next();
-    }
-
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-    // HierarchicalRNG interface
-    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-    CompoundEICG& nextSubstream()
-    {
-        appendToSeed(_substreamS, _substreamS, OFFSET_SUBSTREAM);
-        _elementS = _chunkS = _substreamS;
-        _currentSum = updateResults();
-
-        return *this;
-    }
-
-    CompoundEICG& resetSubstream()
-    {
-        _elementS = _chunkS = _substreamS;
-        _currentSum = updateResults();
-
-        return *this;
-    }
-
-    CompoundEICG& nextChunk()
-    {
-        appendToSeed(_chunkS, _chunkS, OFFSET_CHUNK);
-        _elementS = _chunkS;
-        _currentSum = updateResults();
-
-        return *this;
-    }
-
-    CompoundEICG& resetChunk()
-    {
-        _elementS = _chunkS;
-        _currentSum = updateResults();
-
-        return *this;
-    }
-
-    CompoundEICG& atChunk(UInt64 pos)
-    {
-        appendToSeed(_chunkS, _substreamS, OFFSET_CHUNK, pos);
-        _elementS = _chunkS;
-        _currentSum = updateResults();
-
-        return *this;
-    }
-
+    /**
+     * Dump the current RNG state to the <tt>std::cout</tt> stream.
+     */
     void dumpState()
     {
         std::cout << "element   : [ ";
@@ -225,6 +166,97 @@ public:
 	        std::cout << _masterS.v[i] << ", ";
         }
         std::cout << _masterS.v[5] << " ]" << std::endl;
+    }
+
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // CompoundEICG interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+    /**
+     * See RNG::next()
+     */
+    double next()
+    {
+        double fpart, ipart;
+        fpart = modf(_currentSum, &ipart);
+
+        appendToSeed(_elementS, _elementS, OFFSET_ELEMENT);
+        _currentSum = updateResults();
+
+        return fpart;
+    }
+
+    /**
+     * See RNG::at()
+     */
+    double at(UInt64 pos)
+    {
+        appendToSeed(_elementS, _chunkS, OFFSET_ELEMENT, pos);
+        _currentSum = updateResults();
+
+        return next();
+    }
+
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+    // HierarchicalRNG interface
+    // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+    /**
+     * See CompoundEICG::nextSubstream()
+     */
+    CompoundEICG& nextSubstream()
+    {
+        appendToSeed(_substreamS, _substreamS, OFFSET_SUBSTREAM);
+        _elementS = _chunkS = _substreamS;
+        _currentSum = updateResults();
+
+        return *this;
+    }
+
+    /**
+     * See CompoundEICG::resetSubstream()
+     */
+    CompoundEICG& resetSubstream()
+    {
+        _elementS = _chunkS = _substreamS;
+        _currentSum = updateResults();
+
+        return *this;
+    }
+
+    /**
+     * See CompoundEICG::nextChunk()
+     */
+    CompoundEICG& nextChunk()
+    {
+        appendToSeed(_chunkS, _chunkS, OFFSET_CHUNK);
+        _elementS = _chunkS;
+        _currentSum = updateResults();
+
+        return *this;
+    }
+
+    /**
+     * See CompoundEICG::resetChunk()
+     */
+    CompoundEICG& resetChunk()
+    {
+        _elementS = _chunkS;
+        _currentSum = updateResults();
+
+        return *this;
+    }
+
+    /**
+     * See CompoundEICG::atChunk()
+     */
+    CompoundEICG& atChunk(UInt64 pos)
+    {
+        appendToSeed(_chunkS, _substreamS, OFFSET_CHUNK, pos);
+        _elementS = _chunkS;
+        _currentSum = updateResults();
+
+        return *this;
     }
 
 private:
@@ -353,6 +385,7 @@ inline Int64 CompoundEICG::mult64(Int64 x, Int64 y, Int32 p) const
     return z;
 }
 
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* COMPOUNDEICG_H_ */

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef UNIFORMPRFUNCTION_H_
@@ -32,12 +31,26 @@ using namespace std;
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup math_probability
+ * @{*/
 
+/**
+ * An uniform probability function implementation.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<typename T>
 class UniformPrFunction: public UnivariatePrFunction<T>
 {
 public:
 
+    /**
+     * Explicit anonymous parameter constructor.
+     *
+     * @param xMin The minimal \p X value (inclusive) for this distribution.
+     * @param xMax The The minimal \p X value (exclusive) for this distribution.
+     */
     UniformPrFunction(T xMin = 0, T xMax = 1) :
         UnivariatePrFunction<T> (""),
         _xMin(xMin),
@@ -47,6 +60,13 @@ public:
     {
     }
 
+    /**
+     * Explicit anonymous parameter constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param xMin The minimal \p X value (inclusive) for this distribution.
+     * @param xMax The The minimal \p X value (exclusive) for this distribution.
+     */
     UniformPrFunction(const string& name, T xMin = 0, T xMax = 1) :
         UnivariatePrFunction<T> (name),
         _xMin(xMin),
@@ -56,6 +76,11 @@ public:
     {
     }
 
+    /**
+     * Anonymous ObjectBuilder constructor.
+     *
+     * @param params An array containing the required function parameters.
+     */
     UniformPrFunction(map<string, Any>& params) :
         UnivariatePrFunction<T> ("")
     {
@@ -65,6 +90,12 @@ public:
         _xPDF = 1.0 / _size;
     }
 
+    /**
+     * Named ObjectBuilder Constructor.
+     *
+     * @param name The name of this probability function instance.
+     * @param params An array containing the required function parameters.
+     */
     UniformPrFunction(const string& name, map<string, Any>& params) :
         UnivariatePrFunction<T> (name)
     {
@@ -74,16 +105,34 @@ public:
         _xPDF = 1.0 / _size;
     }
 
+    /**
+     * @see UnivariatePrFunction::operator()
+     */
     Decimal operator()(const T x) const;
 
+    /**
+     * @see UnivariatePrFunction::pdf()
+     */
     Decimal pdf(T x) const;
 
+    /**
+     * @see UnivariatePrFunction::cdf()
+     */
     Decimal cdf(T x) const;
 
+    /**
+     * @see UnivariatePrFunction::invcdf()
+     */
     T invcdf(Decimal x) const;
 
+    /**
+     * @see UnivariatePrFunction::sample()
+     */
     T sample(Decimal random) const;
 
+    /**
+     * FIXME: this is suspicious.
+     */
     Interval<T> threshold(Decimal yMin) const;
 
 private:
@@ -151,7 +200,7 @@ inline Interval<T> UniformPrFunction<T>::threshold(Decimal yMin) const
     return Interval<Decimal>(_xMin, _xMax);
 }
 
+/** @}*/// add to math group
 } // namespace Myriad
-
 
 #endif /* UNIFORMPRFUNCTION_H_ */

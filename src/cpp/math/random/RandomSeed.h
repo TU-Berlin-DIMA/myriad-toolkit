@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef RANDOMSEED_H_
@@ -28,6 +27,9 @@ using namespace std;
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup math_random
+ * @{*/
 
 // forward declarations;
 template<class T> T readComponent(const string& s);
@@ -36,14 +38,18 @@ template<> unsigned int readComponent<unsigned int>(const string& s);
 template<> unsigned long int readComponent<unsigned long int>(const string& s);
 
 /**
- * A random seed template. Basically, a random seed is a wrapper around a
- * fixed length vector of some integer type. The number of integers and the
- * length of the vector are RNG implemtation dependant.
+ * A generic template for RNG seeds.
+ *
+ * This is a wrapper around a fixed vector of length \p x of some integer type
+ * \p T.
  */
 template<class T, unsigned int x> class RandomSeed
 {
 public:
 
+	/**
+	 * Default constructor. Initializes all seed components to zero.
+	 */
     RandomSeed()
     {
         for (unsigned int i = 0; i < x; i++)
@@ -52,6 +58,11 @@ public:
         }
     }
 
+	/**
+	 * Vector initialization constructor.
+	 *
+	 * @param s A vector of initialization values for this seed.
+	 */
     RandomSeed(T s[])
     {
         for (unsigned int i = 0; i < x; i++)
@@ -60,6 +71,14 @@ public:
         }
     }
 
+	/**
+	 * String initialization constructor.
+	 *
+	 * Initializes the components from a string of the form "{c1},...,{cn}".
+	 *
+	 * @param seed A comma separated contatenation of the string component
+	 *             values.
+	 */
     RandomSeed(string seed)
     {
         seed.append(",");
@@ -85,6 +104,12 @@ public:
         }
     }
 
+	/**
+	 * Copy constructor.
+	 *
+	 * @param other A comma separated contatenation of the string component
+	 *              values.
+	 */
     RandomSeed(const RandomSeed<T, x>& other)
     {
         for (unsigned int i = 0; i < x; i++)
@@ -94,6 +119,9 @@ public:
         }
     }
 
+	/**
+	 * Assignment operator.
+	 */
     RandomSeed<T, x>& operator =(const RandomSeed<T, x>& other)
     {
         if (this != &other) // protect against invalid self-assignment
@@ -107,6 +135,9 @@ public:
         return *this;
     }
 
+	/**
+	 * Value equality operator.
+	 */
     bool operator ==(const RandomSeed<T, x>& other) const
     {
         for (unsigned int i = 0; i < x; i++)
@@ -120,6 +151,9 @@ public:
         return true;
     }
 
+    /**
+     * Reset all components to zero.
+     */
     void reset()
     {
         for (unsigned int i = 0; i < x; i++)
@@ -128,6 +162,9 @@ public:
         }
     }
 
+    /**
+     * Output a comma separated string representation of all string components.
+     */
     const std::string toString() const
     {
         std::stringstream ss;
@@ -141,9 +178,10 @@ public:
         return ss.str();
     }
 
+    /**
+     * The value for the seed.
+     */
     T v[x];
-
-private:
 
 };
 
@@ -167,6 +205,7 @@ template<> inline unsigned long int readComponent<unsigned long int>(const strin
     return strtoul(s.c_str(), 0, 0);
 }
 
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* RANDOMSEED_H_ */
