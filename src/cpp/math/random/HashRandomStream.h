@@ -31,7 +31,7 @@ namespace Myriad {
  * @addtogroup math_random
  * @{*/
 
-// forward declarations.
+// forward declarations
 class HashRandomStream;
 
 /**
@@ -41,7 +41,7 @@ class HashRandomStream;
  */
 template<> struct prng_traits<HashRandomStream>
 {
-    typedef RandomSeed<UInt64, 1> seed_type;
+    typedef RandomSeed<UInt64, 1> seed_type; //!< The concrete seed type
 };
 
 /**
@@ -79,7 +79,7 @@ public:
     static const double D_2_POW_NEG_64;
 
     /**
-     * Anonymous default constructor.
+     * Default constructor.
      */
     HashRandomStream(const string name = "anonymous") :
         _name(name)
@@ -88,7 +88,7 @@ public:
     }
 
     /**
-     * Named copy constructor.
+     * Copy constructor.
      */
     HashRandomStream(const HashRandomStream& o, const string name = "anonymous") :
         _name(name),

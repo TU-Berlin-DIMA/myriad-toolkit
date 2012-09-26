@@ -180,7 +180,7 @@ public:
     /**
      * Initialization routine.
      *
-     * Initializes the function with the configuration stord in the file
+     * Initializes the function with the configuration stored in the file
      * located at the given \p path.
      *
      * @param path The location of the function configuration file.

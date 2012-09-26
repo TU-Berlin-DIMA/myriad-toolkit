@@ -59,6 +59,14 @@
  */
 
 /**
+ * @defgroup math_algebra Package 'math.algebra'
+ * @ingroup  math
+ *
+ * The 'math.algebra' package contains common algebra components that can be
+ * used to generate and analyze sequences with particular value structure.
+ */
+
+/**
  * @defgroup math_probability Package 'math.probability'
  * @ingroup  math
  *

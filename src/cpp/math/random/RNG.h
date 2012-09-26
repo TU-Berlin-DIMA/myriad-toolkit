@@ -38,7 +38,7 @@ namespace Myriad {
  */
 template<class RNG> struct prng_traits
 {
-    typedef RandomSeed<Int64, 3> seed_type;
+    typedef RandomSeed<Int64, 3> seed_type; //!< The concrete seed type
 };
 
 /**
@@ -60,7 +60,7 @@ public:
     /**
      * Empty functor operator. Alias of RNG::next().
      *
-     * @eturn The next double from this random stream.
+     * @return The next double from this random stream.
      */
     double operator()()
     {
@@ -70,7 +70,7 @@ public:
     /**
      * Range functor operator.
      *
-     * @eturn An arithmetic type \p T instance in the <tt>[min,max]</tt> range.
+     * @return An arithmetic type \p T instance in the <tt>[min,max]</tt> range.
      */
     template<class T> T operator()(T min, T max)
     {

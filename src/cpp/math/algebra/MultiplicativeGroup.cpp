@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-#include "math/random/SurrogateKeyGenerator.h"
+#include "math/algebra/MultiplicativeGroup.h"
 
 namespace Myriad {
+/**
+ * @addtogroup math_algebra
+ * @{*/
 
-SurrogateKeyGenerator::GeneratorMap initGenerators()
+/**
+ * Initialize the generator elements for some cardinalities.
+ */
+MultiplicativeGroup::GeneratorMap initGenerators()
 {
-    SurrogateKeyGenerator::GeneratorMap tmp;
+    MultiplicativeGroup::GeneratorMap tmp;
 
     // precomputed values for sf = 304
     tmp[7296001ULL] = 43ULL;
@@ -100,9 +105,9 @@ SurrogateKeyGenerator::GeneratorMap initGenerators()
     return tmp;
 }
 
-SurrogateKeyGenerator::GeneratorMap SurrogateKeyGenerator::GENERATORS(initGenerators());
+MultiplicativeGroup::GeneratorMap MultiplicativeGroup::GENERATORS(initGenerators());
 
-void SurrogateKeyGenerator::configure(I64u cardinality)
+void MultiplicativeGroup::configure(I64u cardinality)
 {
     _logger.information(format("Configuring generator for cardinality %Lu", cardinality));
 
@@ -144,5 +149,5 @@ void SurrogateKeyGenerator::configure(I64u cardinality)
     _logger.information(format("Generator of the unit group of (Z/%LuZ) is set to %Lu", N, g));
 }
 
+/** @}*/// add to math group
 } // namespace Myriad
-
