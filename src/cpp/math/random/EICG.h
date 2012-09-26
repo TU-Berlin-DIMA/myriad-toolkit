@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * See RNG::at()
+     * See RNG::skip()
      */
     void skip(UInt64 pos)
 	{

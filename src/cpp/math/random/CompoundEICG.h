@@ -201,6 +201,15 @@ public:
         return next();
     }
 
+    /**
+     * @see RNG::skip()
+     */
+    void skip(UInt64 pos)
+    {
+        appendToSeed(_elementS, _elementS, OFFSET_ELEMENT, pos);
+        _currentSum = updateResults();
+    }
+
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
     // HierarchicalRNG interface
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
