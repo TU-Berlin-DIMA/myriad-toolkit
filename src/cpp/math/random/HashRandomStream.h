@@ -336,7 +336,7 @@ inline void HashRandomStream::appendToSeed(Seed& y, const Seed& o, const Seed& x
     y.v[0] = o.v[0] + x.v[0] * f;
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 } // namespace Myriad
 
 #endif /* HASHRANDOMSTREAM_H_ */

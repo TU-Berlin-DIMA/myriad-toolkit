@@ -217,7 +217,7 @@ private:
     }
 };
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 } // namespace Myriad
 
 #endif /* NATIVERANDOMSTREAM_H_ */

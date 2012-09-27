@@ -413,7 +413,7 @@ T1 ConditionalCombinedPrFunction<T1, T2>::invcdf(Decimal y, T2 x2) const
 
 //@}
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 #endif /* CONDITIONALCOMBINEDPRFUNCTION_H_ */

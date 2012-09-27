@@ -220,7 +220,7 @@ template<> inline unsigned long int readComponent<unsigned long int>(const strin
     return strtoul(s.c_str(), 0, 0);
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 } // namespace Myriad
 
 #endif /* RANDOMSEED_H_ */

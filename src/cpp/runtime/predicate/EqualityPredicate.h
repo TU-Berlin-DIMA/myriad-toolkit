@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef EQUALITYPREDICATE_H_
@@ -24,14 +23,28 @@
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup runtime_predicate
+ * @{*/
 
+/**
+ * An equality predicate for the data generation runtime.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<class RecordType>
 class EqualityPredicate
 {
 public:
 
+    /**
+     * Alias of the record factory for the template \p RecordType.
+     */
     typedef typename RecordTraits<RecordType>::FactoryType RecordFactoryType;
 
+    /**
+     * Constructor.
+     */
     EqualityPredicate(const RecordFactoryType& recordFactory) :
         _valueHolder(recordFactory()),
         _boundValues(0) // FIXME: this restricts the max number of fields per record type to 64
@@ -87,8 +100,6 @@ public:
 
     /**
      * Generic template method - retrieves a predicate field value.
-     *
-     * @throws
      */
     template<I16u fid> typename RecordFieldTraits<fid, RecordType>::FieldType fieldValue() const
     {
@@ -114,6 +125,7 @@ private:
     I64u _boundValues;
 };
 
+/** @}*/// add to runtime_predicate group
 }  // namespace Myriad
 
 #endif /* EQUALITYPREDICATE_H_ */

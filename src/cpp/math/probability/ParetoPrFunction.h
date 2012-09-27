@@ -155,7 +155,7 @@ inline Interval<Decimal> ParetoPrFunction::threshold(Decimal yMin) const
     return Interval<Decimal>(xMin, invpdf(yMin));
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 

@@ -176,7 +176,7 @@ private:
     Decimal _a;
 };
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 #endif /* NORMALPRFUNCTION_H_ */

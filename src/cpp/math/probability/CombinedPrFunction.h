@@ -878,7 +878,7 @@ T CombinedPrFunction<T>::invcdf(Decimal y) const
 
 //@}
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 #endif /* COMBINEDPRFUNCTION_H_ */

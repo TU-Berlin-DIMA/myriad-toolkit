@@ -259,7 +259,7 @@ inline bool MultiplicativeGroup::Entry::operator !=(const I64u& o) const
     return x != o;
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_algebra group
 } // namespace Myriad
 
 #endif /* MULTIPLICATIVEGROUP_H_ */

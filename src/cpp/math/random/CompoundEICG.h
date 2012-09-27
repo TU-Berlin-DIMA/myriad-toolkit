@@ -398,7 +398,7 @@ inline Int64 CompoundEICG::mult64(Int64 x, Int64 y, Int32 p) const
     return z;
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 } // namespace Myriad
 
 #endif /* COMPOUNDEICG_H_ */

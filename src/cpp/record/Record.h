@@ -307,7 +307,7 @@ struct RecordFieldTraits<1, RecordType>
     }
 };
 
-/** @}*/// add to math group
+/** @}*/// add to record group
 } // namespace Myriad
 
 #endif /* RECORD_H_ */

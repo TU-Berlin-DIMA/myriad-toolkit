@@ -82,3 +82,63 @@
  * parallelizeable pseudo-random number generator and several exchangeable
  * implementations with different performance footpring and cycle length.
  */
+
+/**
+ * @defgroup runtime Package 'runtime'
+ *
+ * The 'runtime' package contains all execution runtime components.
+ */
+
+/**
+ * @defgroup runtime_predicate Package 'runtime.predicate'
+ * @ingroup  runtime
+ *
+ * The 'runtime.predicate' package contains various predicate components.
+ */
+
+/**
+ * @defgroup runtime_provider Package 'runtime.provider'
+ * @ingroup  runtime
+ *
+ * The 'runtime.provider' package contains various provider components.
+ */
+
+/**
+ * @defgroup runtime_provider_predicate Package 'runtime.provider.predicate'
+ * @ingroup  runtime_provider
+ *
+ * The 'runtime.provider.predicate' package contains predicate binding
+ * components.
+ */
+
+/**
+ * @defgroup runtime_provider_range Package 'runtime.provider.range'
+ * @ingroup  runtime_provider
+ *
+ * The 'runtime.provider.range' package contains runtime components that
+ * provide value ranges.
+ */
+
+/**
+ * @defgroup runtime_provider_reference Package 'runtime.provider.reference'
+ * @ingroup  runtime_provider
+ *
+ * The 'runtime.provider.reference' package contains runtime components that
+ * provide referenced records.
+ */
+
+/**
+ * @defgroup runtime_provider_value Package 'runtime.provider.value'
+ * @ingroup  runtime_provider
+ *
+ * The 'runtime.provider.value' package contains runtime components that
+ * provide field values.
+ */
+
+/**
+ * @defgroup runtime_setter Package 'runtime.setter'
+ * @ingroup  runtime
+ *
+ * The 'runtime.setter' package contains components that are used to set
+ * field values and references in the setter chain.
+ */

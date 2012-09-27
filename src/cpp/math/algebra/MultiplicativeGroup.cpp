@@ -149,5 +149,5 @@ void MultiplicativeGroup::configure(I64u cardinality)
     _logger.information(format("Generator of the unit group of (Z/%LuZ) is set to %Lu", N, g));
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_algebra group
 } // namespace Myriad
