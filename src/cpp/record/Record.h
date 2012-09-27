@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * 
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #include "core/types.h"
@@ -32,11 +31,11 @@ using namespace Poco;
 #define RECORD_H_
 
 namespace Myriad {
+/**
+ * @addtogroup record
+ * @{*/
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // forward declarations
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
 class AbstractSequenceGenerator;
 template<class RecordType>
 class SetterChain;
@@ -47,34 +46,60 @@ class RecordMeta;
 template<class RecordType>
 class RecordRangePredicate;
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// record traits
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+/**
+ * A base traits template for all record types.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<class RecordType>
 struct RecordTraits
 {
-    typedef RecordMeta<RecordType> MetaType;
-    typedef AbstractSequenceGenerator GeneratorType;
-    typedef SetterChain<RecordType> SetterChainType;
-    typedef RecordFactory<RecordType> FactoryType;
-    typedef RecordRangePredicate<RecordType> RangePredicateType;
+    typedef RecordMeta<RecordType> MetaType; //!< The concrete record meta type.
+    typedef AbstractSequenceGenerator GeneratorType; //!< The concrete sequence generator type.
+    typedef SetterChain<RecordType> SetterChainType; //!< The concrete setter chain type.
+    typedef RecordFactory<RecordType> FactoryType; //!< The concrete record factory type.
+    typedef RecordRangePredicate<RecordType> RangePredicateType; //!< The concrete range predicate type.
 
+    /**
+     * An enum of the record fields (zero is always <tt>UNKNOWN</tt>, one is <tt>GEN_ID</tt>).
+     */
     enum Field { UNKNOWN, GEN_ID };
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// record type
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+/**
+ * An abstract base for all record types.
+ *
+ * All records have a common field \p genID that contains the position of
+ * the record instance in the generated record sequence.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 class Record: public Poco::RefCountedObject
 {
 public:
 
+    /**
+     * Set the \p genID field.
+     *
+     * @param v The new \p genID.
+     */
     void genID(const I64u v);
+    /**
+     * @return The value of the \p genID field.
+     */
     I64u genID() const;
 
+    /**
+     * Set the \p genID field by reference.
+     *
+     * @param v The new \p genID.
+     */
     void genIDRef(const I64u& v);
+    /**
+     * @return A reference to the \p genID field.
+     */
     const I64u& genIDRef() const;
 
 private:
@@ -102,29 +127,46 @@ inline const I64u& Record::genIDRef() const
     return _gen_id;
 }
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// record factory
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+/**
+ * Default record factory implementation.
+ *
+ * A factory for a specific record maintains a central instance of the
+ * associated record meta type and injects it into all constructed record
+ * instances.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<class RecordType>
 class RecordFactory
 {
 public:
 
+    /**
+     * An alias of the associated record meta type for the \p RecordType.
+     */
     typedef typename RecordTraits<RecordType>::MetaType RecordMetaType;
 
+    /**
+     * Factory constructor.
+     */
     RecordFactory(RecordMetaType meta)
         : _meta(meta)
     {
     }
 
     /**
-     * Object generating function.
+     * Object factory function.
+     *
+     * @return A new \p RecordType instance.
      */
     AutoPtr<RecordType> operator()() const;
 
     /**
-     * Object generating function.
+     * Object factory function.
+     *
+     * @param genID The \p genID of the created record.
+     * @return A new \p RecordType instance.
      */
     AutoPtr<RecordType> operator()(const I64u& genID) const;
 
@@ -147,25 +189,50 @@ inline AutoPtr<RecordType> RecordFactory<RecordType>::operator()(const I64u& gen
     return record;
 }
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// record meta
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
+/**
+ * A base record meta template for a parameter \p RecordType.
+ *
+ * RecordMeta instances are used to provide meta required for the construction
+ * of a record in a central place. The most common type of such information are
+ * references to the specific enumerated sets required for this \p RecordType.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<class RecordType>
 class RecordMeta
 {
 public:
 
+    /**
+     * Cardinality only constructor.
+     *
+     * @param cardinality The cardinality of the sequence generated for this
+     *        \p RecordType.
+     */
     RecordMeta(const I64u cardinality = 0) :
         _cardinality(cardinality) // FIXME: mandatory cardinality
     {
     }
 
+    /**
+     * Default constructor.
+     *
+     * @param enumSets A collection of enumerated sets required for the
+     *        generation of this \p RecordType.
+     * @param cardinality The cardinality of the sequence generated for this
+     *        \p RecordType.
+     */
     RecordMeta(const map<string, vector<string> >& enumSets, const I64u cardinality = 0) :
         _cardinality(cardinality) // FIXME: mandatory cardinality
     {
     }
 
+    /**
+     * Get the cardinality of the described \p RecordType.
+     *
+     * @return The cardinality of the described \p RecordType.
+     */
     const I64u& cardinality() const
     {
         return _cardinality;
@@ -176,52 +243,71 @@ private:
     const I64u _cardinality;
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// record field inspection structures
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 /**
- * Unspecialized traits object for introspection on record fields.
+ * Unspecialized traits object for introspection of record fields.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template <I16u fid, class RecordType>
 struct RecordFieldTraits
 {
-    typedef I64u FieldType;
-    typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType;
-    typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType;
+    typedef I64u FieldType; //!< The field type.
+    typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType; //!< The field getter method type.
+    typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType; //!< The field setter method type.
 
+    /**
+     * Return a pointer to the field setter method.
+     *
+     * The default implementation throws a Poco::RuntimeException.
+     */
     static FieldSetterType setter()
     {
         throw RuntimeException("Trying to access record field setter for unknown field");
     }
 
+    /**
+     * Return a pointer to the field getter method.
+     *
+     * The default implementation throws a Poco::RuntimeException.
+     */
     static FieldGetterType getter()
     {
         throw RuntimeException("Trying to access record field getter for unknown field");
     }
 };
 
+
 /**
- * Unspecialized traits object for introspection on record fields.
+ * Specialized traits object for introspection of the \p genID record field.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template <class RecordType>
 struct RecordFieldTraits<1, RecordType>
 {
-    typedef I64u FieldType;
-    typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType;
-    typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType;
+    typedef I64u FieldType; //!< The \p genID field type.
+    typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType; //!< The \p genID field getter method type.
+    typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType; //!< The \p genID field setter method type.
 
+    /**
+     * Return a pointer to the \p genID setter method.
+     */
     static FieldSetterType setter()
     {
         return static_cast<FieldSetterType>(&Record::genIDRef);
     }
 
+    /**
+     * Return a pointer to the \p genID getter method.
+     */
     static FieldGetterType getter()
     {
         return static_cast<FieldGetterType>(&Record::genIDRef);
     }
 };
 
+/** @}*/// add to math group
 } // namespace Myriad
 
 #endif /* RECORD_H_ */
