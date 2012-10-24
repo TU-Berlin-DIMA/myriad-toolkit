@@ -116,8 +116,8 @@ class FieldTransfomer(object):
 
 class LiteralTransfomer(object):
     
-    _expr_pattern = re.compile('%(\([\w.\-]+\))?([\w.\-]+)%')    
-    _param_pattern = re.compile('^\${(.+)}$')
+    _param_pattern = re.compile('%(\([\w.\-]+\))?([\w.\-]+)%')    
+    _expr_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, *args, **kwargs):
         super(LiteralTransfomer, self).__init__()
@@ -135,13 +135,13 @@ class LiteralTransfomer(object):
             attributeType = argumentNode.getAttribute("type").strip()
             attributeValue = argumentNode.getAttribute("value").strip()
             
-            m = self._expr_pattern.match(attributeValue)
+            m = self._param_pattern.match(attributeValue)
             if (m):
                 return [ '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(2)) ]
             
-            m = self._param_pattern.match(attributeValue)
+            m = self._expr_pattern.match(attributeValue)
             if (m):
-                exprExpandedParams = self._expr_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType if m.group(1) == None else m.group(1)[1:-1], m.group(2)), attributeValue)
+                exprExpandedParams = self._param_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType if m.group(1) == None else m.group(1)[1:-1], m.group(2)), attributeValue)
                 return [ "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1]) ]
             else:
                 if attributeType == "String":
