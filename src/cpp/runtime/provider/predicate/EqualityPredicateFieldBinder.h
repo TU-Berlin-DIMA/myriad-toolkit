@@ -79,7 +79,7 @@ private:
     ValueProviderType& _valueProvider;
 };
 
-/** @}*/// add to runtime_predicate group
+/** @}*/// add to runtime_provider_predicate group
 }  // namespace Myriad
 
 #endif /* EQUALITYPREDICATEFIELDBINDER_H_ */
