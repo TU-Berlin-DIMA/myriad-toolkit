@@ -58,8 +58,17 @@ public:
      */
     CombinedPrFunction() :
         UnivariatePrFunction<T>(""),
+        _notNullProbability(0),
+        _activeDomain(nullValue<T>(), nullValue<T>()),
         _numberOfValues(0),
+        _values(NULL),
+        _valueProbability(0.0),
+        _valueProbabilities(NULL),
         _numberOfBuckets(0),
+        _buckets(0),
+        _bucketProbability(0),
+        _bucketProbabilities(NULL),
+        _cumulativeProbabilites(NULL),
         _EPSILON(0.000001)
     {
     }
@@ -74,8 +83,17 @@ public:
      */
     CombinedPrFunction(const string& path) :
         UnivariatePrFunction<T>(""),
+        _notNullProbability(0),
+        _activeDomain(nullValue<T>(), nullValue<T>()),
         _numberOfValues(0),
+        _values(NULL),
+        _valueProbability(0.0),
+        _valueProbabilities(NULL),
         _numberOfBuckets(0),
+        _buckets(0),
+        _bucketProbability(0),
+        _bucketProbabilities(NULL),
+        _cumulativeProbabilites(NULL),
         _EPSILON(0.000001)
     {
         initialize(path);
@@ -91,8 +109,17 @@ public:
      */
     CombinedPrFunction(istream& in) :
         UnivariatePrFunction<T>(""),
+        _notNullProbability(0),
+        _activeDomain(nullValue<T>(), nullValue<T>()),
         _numberOfValues(0),
+        _values(NULL),
+        _valueProbability(0.0),
+        _valueProbabilities(NULL),
         _numberOfBuckets(0),
+        _buckets(0),
+        _bucketProbability(0),
+        _bucketProbabilities(NULL),
+        _cumulativeProbabilites(NULL),
         _EPSILON(0.000001)
     {
         initialize(in);
@@ -109,8 +136,17 @@ public:
      */
     CombinedPrFunction(const string& name, const string& path) :
         UnivariatePrFunction<T>(name),
+        _notNullProbability(0),
+        _activeDomain(nullValue<T>(), nullValue<T>()),
         _numberOfValues(0),
+        _values(NULL),
+        _valueProbability(0.0),
+        _valueProbabilities(NULL),
         _numberOfBuckets(0),
+        _buckets(0),
+        _bucketProbability(0),
+        _bucketProbabilities(NULL),
+        _cumulativeProbabilites(NULL),
         _EPSILON(0.000001)
     {
         initialize(path);
@@ -127,8 +163,17 @@ public:
      */
     CombinedPrFunction(const string& name, istream& in) :
         UnivariatePrFunction<T>(name),
+        _notNullProbability(0),
+        _activeDomain(nullValue<T>(), nullValue<T>()),
         _numberOfValues(0),
+        _values(NULL),
+        _valueProbability(0.0),
+        _valueProbabilities(NULL),
         _numberOfBuckets(0),
+        _buckets(0),
+        _bucketProbability(0),
+        _bucketProbabilities(NULL),
+        _cumulativeProbabilites(NULL),
         _EPSILON(0.000001)
     {
         initialize(in);
@@ -144,8 +189,17 @@ public:
      */
     CombinedPrFunction(map<string, Any>& params) :
         UnivariatePrFunction<T>(""),
+        _notNullProbability(0),
+        _activeDomain(nullValue<T>(), nullValue<T>()),
         _numberOfValues(0),
+        _values(NULL),
+        _valueProbability(0.0),
+        _valueProbabilities(NULL),
         _numberOfBuckets(0),
+        _buckets(0),
+        _bucketProbability(0),
+        _bucketProbabilities(NULL),
+        _cumulativeProbabilites(NULL),
         _EPSILON(0.000001)
     {
         initialize(AnyCast<string>(params["path"]));
@@ -162,8 +216,17 @@ public:
      */
     CombinedPrFunction(const string& name, map<string, Any>& params) :
         UnivariatePrFunction<T>(name),
+        _notNullProbability(0),
+        _activeDomain(nullValue<T>(), nullValue<T>()),
         _numberOfValues(0),
+        _values(NULL),
+        _valueProbability(0.0),
+        _valueProbabilities(NULL),
         _numberOfBuckets(0),
+        _buckets(0),
+        _bucketProbability(0),
+        _bucketProbabilities(NULL),
+        _cumulativeProbabilites(NULL),
         _EPSILON(0.000001)
     {
         initialize(AnyCast<string>(params["path"]));
@@ -180,7 +243,7 @@ public:
     /**
      * Initialization routine.
      *
-     * Initializes the function with the configuration stord in the file
+     * Initializes the function with the configuration stored in the file
      * located at the given \p path.
      *
      * @param path The location of the function configuration file.
@@ -604,8 +667,8 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         // and does not a currentLine
         if (currentState == FIN)
         {
-	        T min = std::min(_buckets[0].min(), _values[0]);
-	        T max = std::max(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfBuckets-1]+1));
+	        T min = std::min<T>(_buckets[0].min(), _values[0]);
+	        T max = std::max<T>(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfValues-1]+1));
 
 	        _activeDomain.set(min, max);
 
@@ -684,7 +747,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         {
 	        if (!in.good() || !valueLineFormat.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad value probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = {' + x + ') }'", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad value probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = {' + x + ' }'", currentLineNumber, currentLine));
 	        }
 
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
@@ -878,7 +941,7 @@ T CombinedPrFunction<T>::invcdf(Decimal y) const
 
 //@}
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 #endif /* COMBINEDPRFUNCTION_H_ */
