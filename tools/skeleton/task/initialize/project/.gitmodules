@@ -1,6 +1,4 @@
 [submodule "vendor/myriad-toolkit"]
 	path = vendor/myriad-toolkit
-	url = git@bitbucket.org:aalexandrov/myriad-toolkit.git
-[submodule "vendor/myriad-onthology"]
-	path = vendor/myriad-onthology
-	url = git@bitbucket.org:aalexandrov/myriad-ontology.git
+	url = git://github.com/TU-Berlin-DIMA/myriad-toolkit.git
+

@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * See RNG::at()
+     * See RNG::skip()
      */
     void skip(UInt64 pos)
 	{
@@ -199,7 +199,7 @@ inline void EICG::extendedGCD(Int32 a, Int32 b, Int32& x, Int32& y, Int32& g) co
     g = a;
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 }  // namespace Myriad
 
 #endif /* EICG_H_ */

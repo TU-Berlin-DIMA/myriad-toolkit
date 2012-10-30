@@ -144,7 +144,7 @@ private:
     Decimal B;
 };
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 

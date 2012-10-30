@@ -38,7 +38,7 @@ namespace Myriad {
 //typedef CompoundEICG RandomStream;
 typedef HashRandomStream RandomStream;
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 } // namespace Myriad
 
 #endif /* RANDOMSTREAM_H_ */

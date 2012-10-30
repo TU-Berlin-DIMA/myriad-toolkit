@@ -131,7 +131,7 @@ inline Decimal BoundedNormalPrFunction::sample(Decimal random) const
     return invcdf(_yMin + _yFactor * random);
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 #endif /* BOUNDEDNORMALPRFUNCTION_H_ */

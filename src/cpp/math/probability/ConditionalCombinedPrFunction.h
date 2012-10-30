@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef CONDITIONALCOMBINEDPRFUNCTION_H_
@@ -37,52 +36,133 @@ using namespace Poco;
 
 namespace Myriad
 {
+/**
+ * @addtogroup math_probability
+ * @{*/
 
-template<typename T1, typename T2> class ConditionalCombinedPrFunction: public BivariatePrFunction<T1, T2>
+/**
+ * A custom conditional probability function.
+ *
+ * Conceptually, the implementation is a wrapper around a collection of
+ * CombinedProbabilityFunction objects, each one defining the probability
+ * conditioned on a range of \p T2 values from the condition domain.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
+template<typename T1, typename T2>
+class ConditionalCombinedPrFunction: public BivariatePrFunction<T1, T2>
 {
 public:
 
+    /**
+     * Anonymous file path initialization constructor.
+     *
+     * Loads the configuration for this probability function from the file
+     * given by the \p path parameter.
+     *
+     * @param path The location of the function configuration file.
+     */
     ConditionalCombinedPrFunction(const string& path) :
         BivariatePrFunction<T1, T2>(""), _numberOfx2Buckets(0), _x1Pr(NULL)
     {
         initialize(path);
     }
 
+    /**
+     * Named file path initialization constructor.
+     *
+     * Loads the configuration for this probability function from the file
+     * given by the \p path parameter.
+     *
+     * @param name The name of this probability function instance.
+     * @param path The location of the function configuration file.
+     */
     ConditionalCombinedPrFunction(const string& name, const string& path) :
         BivariatePrFunction<T1, T2>(name), _numberOfx2Buckets(0), _x1Pr(NULL)
     {
         initialize(path);
     }
 
+    /**
+     * Anonymous ObjectBuilder constructor.
+     *
+     * Loads the configuration for this probability function from the input
+     * stream given by the <tt>params['path']</tt> in parameter.
+     *
+     * @param params An array containing the required function parameters.
+     */
     ConditionalCombinedPrFunction(map<string, Any>& params) :
         BivariatePrFunction<T1, T2>(""), _numberOfx2Buckets(0), _x1Pr(NULL)
     {
         initialize(AnyCast<string>(params["path"]));
     }
 
+    /**
+     * Named ObjectBuilder constructor.
+     *
+     * Loads the configuration for this probability function from the input
+     * stream given by the <tt>params['path']</tt> in parameter.
+     *
+     * @param name The name of this probability function instance.
+     * @param params An array containing the required function parameters.
+     */
     ConditionalCombinedPrFunction(const string& name, map<string, Any>& params) :
         BivariatePrFunction<T1, T2>(name), _numberOfx2Buckets(0), _x1Pr(NULL)
     {
         initialize(AnyCast<string>(params["path"]));
     }
 
+    /**
+     * Destructor.
+     */
     virtual ~ConditionalCombinedPrFunction()
     {
         reset();
     }
 
+    /**
+     * Initialization routine.
+     *
+     * Initializes the function with the configuration stored in the file
+     * located at the given \p path.
+     *
+     * @param path The location of the function configuration file.
+     */
     void initialize(const string& path);
 
+    /**
+     * Initialization routine.
+     *
+     * Initializes the function with the configuration from the input stream
+     * given by the \p in parameter.
+     *
+     * @param in Input stream containing the function configuration.
+     */
     void initialize(istream& path);
 
+    /**
+     * @see UnivariatePrFunction::operator()
+     */
     Decimal operator()(const T1 x1, const T2 x2) const;
 
+    /**
+     * @see UnivariatePrFunction::pdf()
+     */
     Decimal pdf(T1 x1, T2 x2) const;
 
+    /**
+     * @see UnivariatePrFunction::cdf()
+     */
     Decimal cdf(T1 x1, T2 x2) const;
 
+    /**
+     * @see UnivariatePrFunction::invcdf()
+     */
     T1 invcdf(Decimal y, T2 x2) const;
 
+    /**
+     * @see UnivariatePrFunction::sample()
+     */
     T1 sample(Decimal r, T2 x2) const;
 
 private:
@@ -99,16 +179,20 @@ private:
     CombinedPrFunction<T1>* _x1Pr;
 };
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// static template members
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+////////////////////////////////////////////////////////////////////////////////
+/// @name Static Template Members
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine1Format("\\W*@numberofconditions\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
 template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine2Format("\\W*@condition\\W*=\\W*\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*(#(.+))?");
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// private member function templates
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+//@}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @name Member Functions
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 template<typename T1, typename T2> inline void ConditionalCombinedPrFunction<T1, T2>::reset()
 {
@@ -154,10 +238,6 @@ template<typename T1, typename T2> inline size_t ConditionalCombinedPrFunction<T
     return nullValue<size_t>();
 }
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// inline member function templates
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
 template<typename T1, typename T2> inline Decimal ConditionalCombinedPrFunction<T1, T2>::operator()(const T1 x1, const T2 x2) const
 {
     return cdf(x1, x2);
@@ -168,14 +248,11 @@ template<typename T1, typename T2> inline T1 ConditionalCombinedPrFunction<T1, T
     return invcdf(r, x2);
 }
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// member function templates
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
 /**
  * Load a Q-histogram from the given path.
  */
-template<typename T1, typename T2>  void ConditionalCombinedPrFunction<T1, T2>::initialize(const string& path)
+template<typename T1, typename T2>
+void ConditionalCombinedPrFunction<T1, T2>::initialize(const string& path)
 {
     ifstream in(path.c_str());
 
@@ -211,7 +288,8 @@ template<typename T1, typename T2>  void ConditionalCombinedPrFunction<T1, T2>::
  * Load the distribution data from the given input stream. For each entry add a
  * [min, max) interval of domain values to a lookup table.
  */
-template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
+template<typename T1, typename T2>
+void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
 {
     enum READ_STATE { NOC, CON, END };
 
@@ -294,7 +372,8 @@ template<typename T1, typename T2> void ConditionalCombinedPrFunction<T1, T2>::i
     }
 }
 
-template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>::pdf(T1 x1, T2 x2) const
+template<typename T1, typename T2>
+Decimal ConditionalCombinedPrFunction<T1, T2>::pdf(T1 x1, T2 x2) const
 {
     size_t i = findBucket(x2);
 
@@ -306,7 +385,8 @@ template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>
     return _x1Pr[i].pdf(x1);
 }
 
-template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>::cdf(T1 x1, T2 x2) const
+template<typename T1, typename T2>
+Decimal ConditionalCombinedPrFunction<T1, T2>::cdf(T1 x1, T2 x2) const
 {
     size_t i = findBucket(x2);
 
@@ -318,7 +398,8 @@ template<typename T1, typename T2> Decimal ConditionalCombinedPrFunction<T1, T2>
     return _x1Pr[i].cdf(x1);
 }
 
-template<typename T1, typename T2> T1 ConditionalCombinedPrFunction<T1, T2>::invcdf(Decimal y, T2 x2) const
+template<typename T1, typename T2>
+T1 ConditionalCombinedPrFunction<T1, T2>::invcdf(Decimal y, T2 x2) const
 {
     size_t i = findBucket(x2);
 
@@ -330,6 +411,9 @@ template<typename T1, typename T2> T1 ConditionalCombinedPrFunction<T1, T2>::inv
     return _x1Pr[i].invcdf(y);
 }
 
+//@}
+
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 #endif /* CONDITIONALCOMBINEDPRFUNCTION_H_ */

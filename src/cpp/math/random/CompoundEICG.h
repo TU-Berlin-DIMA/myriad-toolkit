@@ -31,6 +31,7 @@ namespace Myriad {
  * @addtogroup math_random
  * @{*/
 
+// forward declarations
 class CompoundEICG;
 
 /**
@@ -40,8 +41,8 @@ class CompoundEICG;
  */
 template<> struct prng_traits<CompoundEICG>
 {
-    typedef RandomSeed<bool, 6> seed_bitmap_type;
-    typedef RandomSeed<UInt32, 6> seed_type;
+    typedef RandomSeed<bool, 6> seed_bitmap_type; //!< Boolean seed map
+    typedef RandomSeed<UInt32, 6> seed_type; //!< The concrete seed type
 };
 
 /**
@@ -53,6 +54,9 @@ class CompoundEICG: public HierarchicalRNG
 {
 public:
 
+    /**
+     * An alias of the seed type for this RNG implementation.
+     */
     typedef prng_traits<CompoundEICG>::seed_type Seed;
 
     /**
@@ -73,7 +77,7 @@ public:
     static const Seed OFFSET_ELEMENT;
 
     /**
-     * Anonymous default constructor.
+     * Default constructor.
      */
     CompoundEICG(const string name = "anonymous") : _name(name)
     {
@@ -195,6 +199,15 @@ public:
         _currentSum = updateResults();
 
         return next();
+    }
+
+    /**
+     * @see RNG::skip()
+     */
+    void skip(UInt64 pos)
+    {
+        appendToSeed(_elementS, _elementS, OFFSET_ELEMENT, pos);
+        _currentSum = updateResults();
     }
 
     // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -385,7 +398,7 @@ inline Int64 CompoundEICG::mult64(Int64 x, Int64 y, Int32 p) const
     return z;
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 } // namespace Myriad
 
 #endif /* COMPOUNDEICG_H_ */

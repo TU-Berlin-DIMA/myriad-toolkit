@@ -200,7 +200,7 @@ inline Interval<T> UniformPrFunction<T>::threshold(Decimal yMin) const
     return Interval<Decimal>(_xMin, _xMax);
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_probability group
 } // namespace Myriad
 
 #endif /* UNIFORMPRFUNCTION_H_ */

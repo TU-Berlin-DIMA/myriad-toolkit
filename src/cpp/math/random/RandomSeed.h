@@ -185,27 +185,42 @@ public:
 
 };
 
+/**
+ * A generic method template for reading seed components of type \p T.
+ *
+ * The default implementation throws a Poco::RuntimeException.
+ */
 template<class T> inline T readComponent(const string& s)
 {
     throw RuntimeException("Read component not supported");
 }
 
+/**
+ * A template specialization for reading <tt>int</tt> seed components.
+ */
 template<> inline int readComponent<int>(const string& s)
 {
     return atoi(s.c_str());
 }
 
+/**
+ * A template specialization for reading <tt>unsigned int</tt>  seed components.
+ */
 template<> inline unsigned int readComponent<unsigned int>(const string& s)
 {
     return strtoul(s.c_str(), 0, 0);
 }
 
+/**
+ * A template specialization for reading <tt>unsigned long int</tt>  seed
+ * components.
+ */
 template<> inline unsigned long int readComponent<unsigned long int>(const string& s)
 {
     return strtoul(s.c_str(), 0, 0);
 }
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 } // namespace Myriad
 
 #endif /* RANDOMSEED_H_ */

@@ -183,5 +183,5 @@ const HashRandomStream::Seed HashRandomStream::OFFSET_ELEMENT(hashRandomStreamIn
  */
 const double HashRandomStream::D_2_POW_NEG_64 = 5.4210108624275221700e-20;
 
-/** @}*/// add to math group
+/** @}*/// add to math_random group
 }  // namespace Myriad

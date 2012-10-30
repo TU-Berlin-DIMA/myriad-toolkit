@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
 #ifndef ABSTRACTRANGEPROVIDER_H_
@@ -24,30 +23,54 @@
 #include <Poco/AutoPtr.h>
 
 namespace Myriad {
+/**
+ * @addtogroup runtime_provider_range
+ * @{*/
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// generic range provider template
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
+/**
+ * Generic range provider template.
+ *
+ * This is a common base for all runtime components that provide value ranges.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
 template<typename RangeType, class CxtRecordType>
 class AbstractRangeProvider
 {
 public:
 
+    /**
+     * Constructor.
+     *
+     * @param arity An integer specifying how many random seed are consumed on
+     *        each invocation of the provider.
+     */
     AbstractRangeProvider(const I16u arity) :
         _arity(arity)
     {
     }
 
+    /**
+     * Destructor.
+     */
     virtual ~AbstractRangeProvider()
     {
     }
 
+    /**
+     * Get the random stream arity of this binder.
+     */
     I16u arity() const
     {
         return _arity;
     }
 
+    /**
+     * Functor method. Provides an interval of \p RangeType values based on the
+     * given \p CxtRecordType object.
+     *
+     * @param cxtRecordPtr A context record for this range provider.
+     */
     virtual const Interval<RangeType> operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr) = 0;
 
 private:
@@ -55,6 +78,7 @@ private:
     const I16u _arity;
 };
 
+/** @}*/// add to runtime_provider_range group
 } // namespace Myriad
 
 #endif /* ABSTRACTRANGEPROVIDER_H_ */
