@@ -131,7 +131,7 @@ void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
 
         if (!in.good() || line.substr(0, 17) != "@numberofvalues =")
         {
-	        throw DataException("Unexpected file header");
+	        throw DataException("Unexpected file header for file `" + file.path() + "`");
         }
 
         I32 numberOfEntries = atoi(line.substr(17).c_str());
