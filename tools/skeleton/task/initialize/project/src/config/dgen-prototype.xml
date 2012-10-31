@@ -9,33 +9,53 @@
 
   <!-- function configuration -->
   <functions>
-    <!-- supported probability types: -->
-    <!--  * uniform_probability[T](T: x_min, T: x_max) -->
-    <!--  * normal_probability(Decimal: mean, Decimal: stddev) -->
-    <!--  * custom_discrete_probability[T](String: path) -->
+    <!-- example: Pr[customer.*] -->
     <function key='Pr[customer.pk]' type='uniform_probability[I64u]'>
       <argument key='x_min' type='I64u' value='1' />
       <argument key='x_max' type='I64u' value='${%customer.sequence.cardinality% + 1}' />
     </function>
+    <function key='Pr[customer.gender]' type='combined_probability[Enum]'>
+      <argument key='path' type='String' value='${%ENV.config-dir% + "/distributions/core/demographics/gender.distribution"}' />
+    </function>
+    <function key='Pr[customer.first_name]' type='conditional_combined_probability[Enum;Enum]'>
+      <argument key='path' type='String' value='${%ENV.config-dir% + "/distributions/core/demographics/first_name.distribution"}' />
+    </function>
+    <function key='Pr[customer.last_name]' type='combined_probability[Enum]'>
+      <argument key='path' type='String' value='${%ENV.config-dir% + "/distributions/core/demographics/last_name.distribution"}' />
+    </function>
+    <function key='Pr[customer.age]' type='normal_probability'>
+      <argument key='mean' type='I16u' value='48' />
+      <argument key='stddev' type='I16u' value='12' />
+    </function>
+    <!-- add more functions here, supported probability type are: -->
+    <!--  * uniform_probability[T](T: x_min, T: x_max) -->
+    <!--  * normal_probability(Decimal: mean, Decimal: stddev) -->
+    <!--  * combined_probability[T](String: path) -->
   </functions>
 
   <!-- enumeration types -->
   <enum_sets>
-    <!-- 
-    <enum_set key="CardSuit">
-      <item value="Spades" />
-      <item value="Hearts" />
-      <item value="Diamonds" />
-      <item value="Clubs" />
+    <!-- example: demographics.* -->
+    <enum_set key='demographics.gender'>
+      <argument key='path' type='String' value='${%ENV.config-dir% + "/domains/core/demographics/gender.domain"}' />
     </enum_set>
-    -->
+    <enum_set key='demographics.first_name'>
+      <argument key='path' type='String' value='${%ENV.config-dir% + "/domains/core/demographics/first_name.domain"}' />
+    </enum_set>
+    <enum_set key='demographics.last_name'>
+      <argument key='path' type='String' value='${%ENV.config-dir% + "/domains/core/demographics/last_name.domain"}' />
+    </enum_set>
   </enum_sets>
 
   <record_sequences>
-    <!-- users -->
-    <random_sequence key="sample_type">
+    <!-- example: customers -->
+    <random_sequence key="customer">
       <record_type>
         <field name="pk" type="I64u" />
+        <field name='first_name' type='Enum' enumref='demographics.first_name' />
+        <field name='last_name'  type='Enum' enumref='demographics.last_name' />
+        <field name='gender' type='Enum' enumref='demographics.gender' />
+        <field name='age' type='I16u' />
         <!-- add more fields and references here, supported types are: -->
         <!--  * core types: I16, I16u, I32, I32u, I64, I64u, Decimal, String, Date -->
         <!--  * enum types: Enum, with an additional enumref='{enum_set.key}' attribute -->
@@ -49,11 +69,36 @@
         <setter key='set_pk' type='field_setter'>
           <argument key='field' type='field_ref' ref='customer:pk' />
           <argument key='value' type='clustered_value_provider'>
-            <argument key='probability' type='function_ref' ref='Pr[sample_type.pk]' />
+            <argument key='probability' type='function_ref' ref='Pr[customer.pk]' />
             <argument key='cardinality' type='const_range_provider'>
               <argument key='min' type='I64u' value='0' />
               <argument key='max' type='I64u' value='%customer.sequence.cardinality%' />
             </argument>
+          </argument>
+        </setter>
+        <setter key='set_gender' type='field_setter'>
+          <argument key='field' type='field_ref' ref='customer:gender' />
+          <argument key='value' type='random_value_provider'>
+            <argument key='probability' type='function_ref' ref='Pr[customer.gender]' />
+          </argument>
+        </setter>
+        <setter key='set_first_name' type='field_setter'>
+          <argument key='field' type='field_ref' ref='customer:first_name' />
+          <argument key='value' type='random_value_provider'>
+            <argument key='probability' type='function_ref' ref='Pr[customer.first_name]' />
+            <argument key='condition_field' type='field_ref' ref='customer:gender' />
+          </argument>
+        </setter>
+        <setter key='set_last_name' type='field_setter'>
+          <argument key='field' type='field_ref' ref='customer:last_name' />
+          <argument key='value' type='random_value_provider'>
+            <argument key='probability' type='function_ref' ref='Pr[customer.last_name]' />
+          </argument>
+        </setter>
+        <setter key='set_age' type='field_setter'>
+          <argument key='field' type='field_ref' ref='customer:age' />
+          <argument key='value' type='random_value_provider'>
+            <argument key='probability' type='function_ref' ref='Pr[customer.age]' />
           </argument>
         </setter>
         <!-- add more hydrators here, supported hydrator types are: -->
