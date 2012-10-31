@@ -8,12 +8,13 @@ RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include vendor/myriad/src/cpp/math/random/subdir.mk
--include vendor/myriad/src/cpp/math/probability/subdir.mk
--include vendor/myriad/src/cpp/generator/subdir.mk
--include vendor/myriad/src/cpp/core/subdir.mk
--include vendor/myriad/src/cpp/config/subdir.mk
--include vendor/myriad/src/cpp/communication/subdir.mk
+-include vendor/myriad-toolkit/src/cpp/math/random/subdir.mk
+-include vendor/myriad-toolkit/src/cpp/math/probability/subdir.mk
+-include vendor/myriad-toolkit/src/cpp/math/algebra/subdir.mk
+-include vendor/myriad-toolkit/src/cpp/generator/subdir.mk
+-include vendor/myriad-toolkit/src/cpp/core/subdir.mk
+-include vendor/myriad-toolkit/src/cpp/config/subdir.mk
+-include vendor/myriad-toolkit/src/cpp/communication/subdir.mk
 -include src/cpp/io/subdir.mk
 -include src/cpp/generator/base/subdir.mk
 -include src/cpp/generator/subdir.mk
