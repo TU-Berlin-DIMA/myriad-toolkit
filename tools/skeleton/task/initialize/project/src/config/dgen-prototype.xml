@@ -4,7 +4,7 @@
   <!-- configurable parameters -->
   <parameters>
     <!-- naming convention {generator_name}.{parameter_name} -->
-    <parameter key="sample_type.sequence.base_cardinality">1000</parameter>
+    <parameter key="customer.sequence.base_cardinality">1000</parameter>
   </parameters>
 
   <!-- function configuration -->
@@ -107,7 +107,7 @@
       <!-- supported cardinality estimator types are: -->
       <!--  * linear_scale_estimator(I64u: base_cardinality) -->
       <cardinality_estimator type="linear_scale_estimator">
-        <argument key="base_cardinality" type="I64u" value="%sample_type.sequence.base_cardinality%" />
+        <argument key="base_cardinality" type="I64u" value="%customer.sequence.base_cardinality%" />
       </cardinality_estimator>
       <!-- supported sequence_iterator types: -->
       <!--  * partitioned_iterator() -->
