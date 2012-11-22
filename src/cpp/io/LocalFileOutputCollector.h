@@ -21,9 +21,10 @@
 #include "io/AbstractOutputCollector.h"
 
 #include <Poco/File.h>
-#include <Poco/Path.h>
 #include <Poco/FileStream.h>
 #include <Poco/Logger.h>
+#include <Poco/NumberFormatter.h>
+#include <Poco/Path.h>
 
 using namespace Poco;
 

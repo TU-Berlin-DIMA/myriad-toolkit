@@ -861,7 +861,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#include "record/Record.h"'
         print >> wfile, '#include "record/%sMeta.h"' % (typeNameCC)
         
-        for referenceType in sorted(recordType.getReferenceTypes()):
+        for referenceType in recordType.getReferenceTypes():
             print >> wfile, '#include "record/%s.h"' % (StringTransformer.sourceType(referenceType))
         
         print >> wfile, ''
@@ -897,11 +897,10 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    }'
         print >> wfile, ''
         
-        for field in recordType.getFields():
+        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             
-                
             print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(fieldName), StringTransformer.sourceType(fieldType))
             print >> wfile, '    const %s& %s() const;' % (StringTransformer.sourceType(fieldType), StringTransformer.us2cc(fieldName))
             
@@ -931,7 +930,7 @@ class RecordTypeCompiler(SourceCompiler):
         if recordType.hasFields():
             print >> wfile, ''
             print >> wfile, '    // fields'
-        for field in recordType.getFields():
+        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
             print >> wfile, '    %s _%s;' % (StringTransformer.sourceType(field.getAttribute("type")), field.getAttribute("name")) 
         
         if recordType.hasReferences():
@@ -943,7 +942,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '};'
         print >> wfile, ''
         
-        for field in recordType.getFields():
+        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             
@@ -1008,8 +1007,8 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         
         fieldConstants = []
-        fieldConstants.extend([StringTransformer.uc(field.getAttribute("name")) for field in sorted(recordType.getFields(), key=lambda f: f.orderkey)])
-        fieldConstants.extend([StringTransformer.uc(field.getAttribute("name")) for field in sorted(recordType.getReferences(), key=lambda f: f.orderkey)])
+        fieldConstants.extend([StringTransformer.uc(field.getAttribute("name")) for field in recordType.getFields()])
+        fieldConstants.extend([StringTransformer.uc(field.getAttribute("name")) for field in recordType.getReferences()])
 
         print >> wfile, 'template<>'
         print >> wfile, 'struct RecordTraits<%s::%s>' % (self._args.dgen_ns, typeNameCC)
@@ -1019,7 +1018,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    typedef %s::%sSetterChain SetterChainType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, '    typedef RecordFactory<%s::%s> FactoryType;' % (self._args.dgen_ns, typeNameCC)
         print >> wfile, ''
-        print >> wfile, '    enum Field { UNKNOWN, GEN_ID, %s };' % ', '.join(fieldConstants)
+        print >> wfile, '    enum Field { UNKNOWN, %s };' % ', '.join(fieldConstants)
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
@@ -1030,7 +1029,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'inline void OutputTraits<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputTraits<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         
-        for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
+        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             
@@ -1138,7 +1137,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// record field inspection structures'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         
-        for field in sorted(recordType.getFields(), key=lambda f: f.orderkey):
+        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             parameters = {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.uc(fieldName), 'f': StringTransformer.us2cc(fieldName)}
@@ -1163,7 +1162,7 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    }'
             print >> wfile, '};'
         
-        for field in sorted(recordType.getReferences(), key=lambda f: f.orderkey):
+        for field in recordType.getReferences():
             fieldType = field.getAttribute("type")
             fieldName = field.getAttribute("name")
             parameters = {'ns': self._args.dgen_ns, 't': typeNameCC, 'k': StringTransformer.uc(fieldName), 'f': StringTransformer.us2cc(fieldName)}
@@ -1271,7 +1270,7 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '#include "runtime/setter/SetterChain.h"'
         
-        for referenceType in sorted(recordSequence.getRecordType().getReferenceTypes()):
+        for referenceType in recordSequence.getRecordType().getReferenceTypes():
             print >> wfile, '#include "generator/%sGenerator.h"' % (StringTransformer.sourceType(referenceType))
             
         print >> wfile, '#include "record/%s.h"' % (typeNameCC)

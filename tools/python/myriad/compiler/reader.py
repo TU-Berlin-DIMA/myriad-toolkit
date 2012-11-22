@@ -650,12 +650,18 @@ class XMLReader(object):
         
         recordTypeNode = RecordTypeNode(key=astContext.getAttribute("key"))
         
+        # add implicit fields
         i = 0
+        recordFieldNode = RecordFieldNode(name="gen_id", type="I64u", implicit=True)
+        recordFieldNode.setOrderKey(i)
+        recordTypeNode.setField(recordFieldNode)
+        
+        i = 1
         for element in xPathContext.xpathEval("./m:field"):
             fieldType = element.prop("type")
             
             if fieldType == "Enum":
-                recordFieldNode = RecordEnumFieldNode(name=element.prop("name"), type=element.prop("type"), enumref=element.prop("enumref"))
+                recordFieldNode = RecordEnumFieldNode(name=element.prop("name"), type=element.prop("type"), implicit=False, enumref=element.prop("enumref"))
                 enumSetNode = self.__astRoot.getSpecification().getEnumSets().getSet(recordFieldNode.getAttribute('enumref'))
                 
                 if enumSetNode is None:
@@ -666,7 +672,7 @@ class XMLReader(object):
                 recordFieldNode.setEnumSetRef(enumSetNode)
                 recordTypeNode.setEnumField(recordFieldNode)
             else:
-                recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"))
+                recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"), implicit=False)
                 recordTypeNode.setField(recordFieldNode)
             
             recordFieldNode.setOrderKey(i)

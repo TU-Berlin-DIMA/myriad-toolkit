@@ -538,7 +538,7 @@ class RecordTypeNode(AbstractNode):
         return self._fields.get(key)
     
     def getFields(self):
-        return self._fields.itervalues()
+        return sorted(self._fields.itervalues(), key=lambda f: f.orderkey)
 
     def hasFields(self):
         return bool(self._fields)
@@ -556,13 +556,13 @@ class RecordTypeNode(AbstractNode):
         return self._references.get(key)
     
     def getReferences(self):
-        return self._references.itervalues()
+        return sorted(self._references.itervalues(), key=lambda f: f.orderkey)
 
     def hasReferences(self):
         return bool(self._references)
     
     def getReferenceTypes(self):
-        return self._referenceTypes
+        return sorted(self._referenceTypes)
         
     def setEnumField(self, node):
         self._enumFields[node.getAttribute('name')] = node
@@ -617,6 +617,9 @@ class RecordFieldNode(AbstractNode):
 
     def hasSetter(self):
         return self.__setter is not None
+    
+    def isImplicit(self):
+        return self.getAttribute("implicit", False)
     
     def getID(self):
         return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
@@ -748,8 +751,8 @@ class SetterChainNode(AbstractNode):
     
     def getComponentIncludePaths(self):
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
-        comopnentPaths = [ node.getIncludePath() for node in nodeFilter.getAll(self) ]
-        return sorted(set(comopnentPaths))
+        componentPaths = [ node.getIncludePath() for node in nodeFilter.getAll(self) ]
+        return sorted(set(componentPaths))
 
 #
 # Cardinality Estimators
