@@ -26,11 +26,90 @@ using namespace Poco;
 namespace Myriad {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// value provider for context field values
+// value provider for context field values (2-hop field)
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename ValueType, class CxtRecordType, I16u rid1, I16u rid2, I16u fid>
+class ContextFieldValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
+{
+public:
+
+    typedef typename RecordFieldTraits<rid1, CxtRecordType>::FieldType RID1Type;
+    typedef typename RecordFieldTraits<rid1, CxtRecordType>::FieldGetterType RID1GetterType;
+
+    typedef typename RecordFieldTraits<rid2, RID1Type>::FieldType RID2Type;
+    typedef typename RecordFieldTraits<rid2, RID1Type>::FieldGetterType RID2GetterType;
+
+    typedef typename RecordFieldTraits<fid, RID2Type>::FieldType FIDType;
+    typedef typename RecordFieldTraits<fid, RID2Type>::FieldGetterType FIDGetterType;
+
+    ContextFieldValueProvider() :
+        AbstractValueProvider<ValueType, CxtRecordType>(0, false),
+        _rid1Getter(RecordFieldTraits<rid1, CxtRecordType>::getter()),
+        _rid2Getter(RecordFieldTraits<rid2, RID1Type>::getter()),
+        _fidGetter(RecordFieldTraits<fid, RID2Type>::getter())
+    {
+    }
+
+    virtual ~ContextFieldValueProvider()
+    {
+    }
+
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    {
+        return (((((cxtRecordPtr->*_rid1Getter)())->*_rid2Getter)())->*_fidGetter)();
+    }
+
+private:
+
+    const RID1GetterType _rid1Getter;
+    const RID2GetterType _rid2Getter;
+    const FIDGetterType _fidGetter;
+};
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// value provider for context field values (1-hop field)
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename ValueType, class CxtRecordType, I16u rid1, I16u fid>
+class ContextFieldValueProvider<ValueType, CxtRecordType, rid1, fid, 0>: public AbstractValueProvider<ValueType, CxtRecordType>
+{
+public:
+
+    typedef typename RecordFieldTraits<rid1, CxtRecordType>::FieldType RID1Type;
+    typedef typename RecordFieldTraits<rid1, CxtRecordType>::FieldGetterType RID1GetterType;
+
+    typedef typename RecordFieldTraits<fid, RID1Type>::FieldType FIDType;
+    typedef typename RecordFieldTraits<fid, RID1Type>::FieldGetterType FIDGetterType;
+
+    ContextFieldValueProvider() :
+        AbstractValueProvider<ValueType, CxtRecordType>(0, false),
+        _rid1Getter(RecordFieldTraits<rid1, CxtRecordType>::getter()),
+        _fidGetter(RecordFieldTraits<fid, RID1Type>::getter())
+    {
+    }
+
+    virtual ~ContextFieldValueProvider()
+    {
+    }
+
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    {
+        return (((cxtRecordPtr->*_rid1Getter)())->*_fidGetter)();
+    }
+
+private:
+
+    const RID1GetterType _rid1Getter;
+    const FIDGetterType _fidGetter;
+};
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// value provider for context field values (direct field)
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<typename ValueType, class CxtRecordType, I16u fid>
-class ContextFieldValueProvider: public AbstractValueProvider<ValueType, CxtRecordType>
+class ContextFieldValueProvider<ValueType, CxtRecordType, fid, 0, 0>: public AbstractValueProvider<ValueType, CxtRecordType>
 {
 public:
 

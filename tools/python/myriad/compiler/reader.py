@@ -243,7 +243,7 @@ class ReferenceRefArgumentReader(SingleArgumentReader):
         
         # TODO: check format {record_key}.{field_key}
         
-        return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
+        return UnresolvedReferenceRefArgumentNode(key=argKey, ref=argRef)
 
 
 class FunctionRefArgumentReader(SingleArgumentReader):
@@ -418,6 +418,7 @@ class XMLReader(object):
         # resolve argument refs
         self.__resolveRecordReferenceNodes()
         self.__resolveFieldRefArguments()
+        self.__resolveReferenceRefArguments()
         self.__resolveFunctionRefArguments()
         
         # set setter references
@@ -454,82 +455,92 @@ class XMLReader(object):
             parent = unresolvedFieldRefArgumentNode.getParent()
             fqName = unresolvedFieldRefArgumentNode.getAttribute("ref")
 
+            if fqName.find(":") < 0:
+                message = "Cannot resolve field path `%s`" % (fqName)
+                self.__log.error(message)
+                raise RuntimeError(message)
+            
+            rootRecordKey = fqName[:fqName.find(":")]
+            innerPath = fqName[fqName.find(":")+1:fqName.rfind(":")]
+            if len(innerPath) == 0:
+                innerPath = []
+            else:
+                innerPath = innerPath.split(":")
+            fieldKey = fqName[fqName.rfind(":")+1:]
+            
+            rootRecordSequenceNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(rootRecordKey)
+            
+            if not rootRecordSequenceNode:
+                message = "Cannot resolve field path `%s` (non-existing root type `%s`)" % (fqName, rootRecordKey)
+                self.__log.error(message)
+                raise RuntimeError(message)
+            
+            currentParentRecordTypeNode = rootRecordSequenceNode.getRecordType()
+            
+            for i in range(len(innerPath)):
+                referenceKey = innerPath[i]
+                referenceNode = currentParentRecordTypeNode.getReference(referenceKey)
+                if not referenceNode:
+                    message = "Cannot resolve field path `%s` (non-existing reference `%s`)" % (fqName, referenceKey)
+                    self.__log.error(message)
+                    raise RuntimeError(message)
+                innerPath[i] = referenceNode
+                currentParentRecordTypeNode = referenceNode.getRecordTypeRef()
+            
+            fieldNode = currentParentRecordTypeNode.getField(fieldKey)
+            
+            if not fieldNode:
+                message = "Cannot resolve field path `%s` (non-existing record field `%s`)" % (fqName, fieldKey)
+                self.__log.error(message)
+                raise RuntimeError(message)
+            
+            resolvedFieldRefArgumentNode = ResolvedFieldRefArgumentNode()
+            resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
+            resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+            resolvedFieldRefArgumentNode.setAttribute('type', fieldNode.getAttribute("type"))
+            resolvedFieldRefArgumentNode.setRecordTypeRef(rootRecordSequenceNode.getRecordType())
+            resolvedFieldRefArgumentNode.setInnerPathRefs(innerPath)
+            resolvedFieldRefArgumentNode.setFieldRef(fieldNode)
+            parent.setArgument(resolvedFieldRefArgumentNode)
+    
+    def __resolveReferenceRefArguments(self):
+        nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedReferenceRefArgumentNode)
+        for unresolvedReferenceRefArgumentNode in nodeFilter.getAll(self.__astRoot):
+            parent = unresolvedReferenceRefArgumentNode.getParent()
+            fqName = unresolvedReferenceRefArgumentNode.getAttribute("ref")
+
             if fqName.find(":") > -1:
                 recordKey = fqName[:fqName.find(":")]
-                fieldPath = fqName[fqName.find(":")+1:]
+                referencePath = fqName[fqName.find(":")+1:]
             else:
-                message = "Cannot resolve field reference for field `%s`" % (fqName)
+                message = "Cannot resolve referenced record reference for `%s`" % (fqName)
                 self.__log.error(message)
                 raise RuntimeError(message)
             
             recordSequenceNode = self.__astRoot.getSpecification().getRecordSequences().getRecordSequence(recordKey)
             
             if not recordSequenceNode:
-                message = "Cannot resolve field reference for field `%s` (unexisting record type `%s`)" % (fqName, recordKey)
+                message = "Cannot resolve referenced record reference for `%s` (non-existing record type `%s`)" % (fqName, recordKey)
                 self.__log.error(message)
                 raise RuntimeError(message)
             
             recordTypeNode = recordSequenceNode.getRecordType()
             
-            if fieldPath.find(".") > -1:
-                fieldKey = fieldPath[fieldPath.find(".")+1:]
-                
-                referenceKey = fieldPath[:fieldPath.find(".")]
-                recordReferenceNode = recordTypeNode.getReference(referenceKey)
+            referenceKey = referencePath
+            referenceTypeNode = recordTypeNode.getReference(referenceKey)
             
-                if not recordReferenceNode:
-                    message = "Cannot resolve named record reference `%s` for record type `%s`" % (referenceKey, recordKey)
-                    self.__log.error(message)
-                    raise RuntimeError(message)
-                
-                fieldTypeNode = recordReferenceNode.getRecordTypeRef().getField(fieldKey)
-                
-                if not fieldTypeNode:
-                    message = "Cannot resolve field reference for field `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
-                    self.__log.error(message)
-                    raise RuntimeError(message)
-                
-                resolvedFieldRefArgumentNode = ResolvedReferencedFieldRefArgumentNode()
-                resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
-                resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
-                resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
-                resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
-                resolvedFieldRefArgumentNode.setRecordReferenceRef(recordReferenceNode)
-                resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
-                parent.setArgument(resolvedFieldRefArgumentNode)
-                
-            else:
-                fieldKey = fieldPath
-                fieldTypeNode = recordTypeNode.getField(fieldKey)
-                
-                if not fieldTypeNode:
-                    fieldTypeNode = recordTypeNode.getReference(fieldKey)
-                
-                if not fieldTypeNode:
-                    message = "Cannot resolve field reference for field `%s` (unexisting record field `%s`)" % (fqName, fieldKey)
-                    self.__log.error(message)
-                    raise RuntimeError(message)
-                
-                if isinstance(fieldTypeNode, RecordFieldNode):
-                    resolvedFieldRefArgumentNode = ResolvedDirectFieldRefArgumentNode()
-                    resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
-                    resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
-                    resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
-                    resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
-                    resolvedFieldRefArgumentNode.setFieldRef(fieldTypeNode)
-                    parent.setArgument(resolvedFieldRefArgumentNode)
-                elif isinstance(fieldTypeNode, RecordReferenceNode):
-                    resolvedFieldRefArgumentNode = ResolvedRecordReferenceRefArgumentNode()
-                    resolvedFieldRefArgumentNode.setAttribute('key', unresolvedFieldRefArgumentNode.getAttribute("key"))
-                    resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
-                    resolvedFieldRefArgumentNode.setAttribute('type', fieldTypeNode.getAttribute("type"))
-                    resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
-                    resolvedFieldRefArgumentNode.setRecordReferenceRef(recordTypeNode.getReference(fieldKey))
-                    parent.setArgument(resolvedFieldRefArgumentNode)
-                else:
-                    message = "Unexpected field type"
-                    self.__log.error(message)
-                    raise RuntimeError(message)
+            if not referenceTypeNode:
+                message = "Cannot resolve referenced record reference for `%s` (non-existing record field `%s`)" % (fqName, referenceKey)
+                self.__log.error(message)
+                raise RuntimeError(message)
+            
+            resolvedFieldRefArgumentNode = ResolvedReferenceRefArgumentNode()
+            resolvedFieldRefArgumentNode.setAttribute('key', unresolvedReferenceRefArgumentNode.getAttribute("key"))
+            resolvedFieldRefArgumentNode.setAttribute('ref', fqName)
+            resolvedFieldRefArgumentNode.setAttribute('type', referenceTypeNode.getAttribute("type"))
+            resolvedFieldRefArgumentNode.setRecordTypeRef(recordTypeNode)
+            resolvedFieldRefArgumentNode.setRecordReferenceRef(recordTypeNode.getReference(referenceKey))
+            parent.setArgument(resolvedFieldRefArgumentNode)
     
     def __resolveFunctionRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedFunctionRefArgumentNode)

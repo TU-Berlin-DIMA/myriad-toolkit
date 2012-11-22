@@ -532,6 +532,7 @@ class RecordTypeNode(AbstractNode):
         
     def setField(self, node):
         self._fields[node.getAttribute('name')] = node
+        node.setParent(self)
     
     def getField(self, key):
         return self._fields.get(key)
@@ -616,6 +617,9 @@ class RecordFieldNode(AbstractNode):
 
     def hasSetter(self):
         return self.__setter is not None
+    
+    def getID(self):
+        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
 
 
 class RecordEnumFieldNode(RecordFieldNode):
@@ -686,6 +690,9 @@ class ResolvedRecordReferenceNode(RecordReferenceNode):
 
     def getRecordTypeRef(self):
         return self.__recordTypeRef
+    
+    def getID(self):
+        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
 
 
 #
@@ -934,6 +941,15 @@ class UnresolvedFieldRefArgumentNode(ArgumentNode):
         super(UnresolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
 
 
+class UnresolvedReferenceRefArgumentNode(ArgumentNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        super(UnresolvedReferenceRefArgumentNode, self).__init__(*args, **kwargs)
+
+
 class UnresolvedFunctionRefArgumentNode(ArgumentNode):
     '''
     classdocs
@@ -957,22 +973,15 @@ class ResolvedFieldRefArgumentNode(ArgumentNode):
     classdocs
     '''
     
+    __fieldRef = None
+    __recordTypeRef = None
+    __innerPathRefs = None
+    
     def __init__(self, *args, **kwargs):
         super(ResolvedFieldRefArgumentNode, self).__init__(*args, **kwargs)
-
-
-class ResolvedDirectFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
-    '''
-    classdocs
-    '''
-    
-    __fieldRef = None
-    __recordTypeRef = None
-    
-    def __init__(self, *args, **kwargs):
-        super(ResolvedDirectFieldRefArgumentNode, self).__init__(*args, **kwargs)
         self.__fieldRef = None
         self.__recordTypeRef = None
+        self.__innerPathRefs = []
 
     def setRecordTypeRef(self, recordTypeRef):
         self.__recordTypeRef = recordTypeRef
@@ -980,17 +989,26 @@ class ResolvedDirectFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
     def getRecordTypeRef(self):
         return self.__recordTypeRef
 
+    def setInnerPathRefs(self, innerPathRefs):
+        self.__innerPathRefs = innerPathRefs
+
+    def getInnerPathRefs(self):
+        return self.__innerPathRefs
+
     def setFieldRef(self, fieldRef):
         self.__fieldRef = fieldRef
 
     def getFieldRef(self):
         return self.__fieldRef
     
-    def getFieldID(self):
-        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getRecordTypeRef().getAttribute("key")), self.getFieldRef().getAttribute("name").upper())
+    def isDirect(self):
+        return len(self.getInnerPathRefs()) == 0
+    
+    def getID(self):
+        return self.getFieldRef().getID()
 
 
-class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
+class ResolvedReferenceRefArgumentNode(ArgumentNode):
     '''
     classdocs
     '''
@@ -999,7 +1017,7 @@ class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
     __recordReferenceRef = None
     
     def __init__(self, *args, **kwargs):
-        super(ResolvedRecordReferenceRefArgumentNode, self).__init__(*args, **kwargs)
+        super(ResolvedReferenceRefArgumentNode, self).__init__(*args, **kwargs)
         self.__recordReferenceRef = None
         self.__recordTypeRef = None
 
@@ -1015,45 +1033,8 @@ class ResolvedRecordReferenceRefArgumentNode(ResolvedFieldRefArgumentNode):
     def getRecordReferenceRef(self):
         return self.__recordReferenceRef
     
-    def getFieldID(self):
-        referenceKey = self.getAttribute('ref')
-        if referenceKey.find(":") > -1:
-            referenceKey = referenceKey[referenceKey.find(":")+1:]
-        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getRecordTypeRef().getAttribute("key")), referenceKey.upper())
-
-
-class ResolvedReferencedFieldRefArgumentNode(ResolvedFieldRefArgumentNode):
-    '''
-    classdocs
-    '''
-    
-    __recordTypeRef = None
-    __recordReferenceRef = None
-    __fieldRef = None
-    
-    def __init__(self, *args, **kwargs):
-        super(ResolvedReferencedFieldRefArgumentNode, self).__init__(*args, **kwargs)
-        self.__fieldRef = None
-        self.__recordReferenceRef = None
-        self.__recordTypeRef = None
-
-    def setRecordTypeRef(self, recordTypeRef):
-        self.__recordTypeRef = recordTypeRef
-
-    def getRecordTypeRef(self):
-        return self.__recordTypeRef
-
-    def setRecordReferenceRef(self, recordReferenceRef):
-        self.__recordReferenceRef = recordReferenceRef
-
-    def getRecordReferenceRef(self):
-        return self.__recordReferenceRef
-
-    def setFieldRef(self, fieldRef):
-        self.__fieldRef = fieldRef
-
-    def getFieldRef(self):
-        return self.__fieldRef
+    def getID(self):
+        return self.getRecordReferenceRef().getID()
 
 
 class ResolvedFunctionRefArgumentNode(ArgumentNode):
@@ -1164,10 +1145,10 @@ class FieldSetterNode(AbstractSetterNode):
     def getConcreteType(self):
         # template<class RecordType, I16u fid, class ValueProviderType>
         recordType = self.getCxtRecordType() 
-        fieldID = self.getArgument("field").getFieldID()
+        fid = self.getArgument("field").getID()
         valueProviderType = self.getArgument("value").getAttribute("type_alias")
         
-        return "FieldSetter< %s, %s, %s >" % (recordType, fieldID, valueProviderType)
+        return "FieldSetter< %s, %s, %s >" % (recordType, fid, valueProviderType)
         
     def getXMLArguments(self):
         return [ { 'key': 'field', 'type': 'field_ref' }, 
@@ -1194,12 +1175,12 @@ class ReferenceSetterNode(AbstractSetterNode):
         return False # FIXME: implement
     
     def getConcreteType(self):
-        # template<class RecordType, I16u fid, class ValueProviderType>
+        # template<class RecordType, I16u fid, class ReferenceProviderType>
         recordType = self.getCxtRecordType()
-        fieldID = self.getArgument("reference").getFieldID()
+        fid = self.getArgument("reference").getID()
         referenceProviderType = self.getArgument("value").getAttribute("type_alias")
         
-        return "ReferenceSetter< %s, %s, %s >" % (recordType, fieldID, referenceProviderType)
+        return "ReferenceSetter< %s, %s, %s >" % (recordType, fid, referenceProviderType)
         
     def getXMLArguments(self):
         return [ { 'key': 'reference', 'type': 'reference_ref' }, 
@@ -1353,9 +1334,11 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
         # template<typename ValueType, class CxtRecordType, I16u fid>
         valueType = self.getValueType()
         cxtRecordType = self.getCxtRecordType()
-        fid = self.getArgument("field").getFieldID()
+        fids = [ x.getID() for x in self.getArgument("field").getInnerPathRefs() ] # inner path
+        fids.append(self.getArgument("field").getID()) # field path
+        fids.extend(['0'] * (3 - len(fids)))
         
-        return "ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, fid)
+        return "ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, ", ".join(fids))
         
     def getXMLArguments(self):
         return [ { 'key': 'field', 'type': 'field_ref' } 
@@ -1386,7 +1369,7 @@ class RandomValueProviderNode(AbstractValueProviderNode):
         cxtRecordType = self.getCxtRecordType()
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         if self.hasArgument("condition_field"):
-            condFieldID = self.getArgument("condition_field").getFieldID()
+            condFieldID = self.getArgument("condition_field").getID() # field path 
         else:
             condFieldID = '0'
         
@@ -1544,7 +1527,7 @@ class EqualityPredicateFieldBinderNode(AbstractRuntimeComponentNode):
     def getConcreteType(self):
         # template<class RecordType, I16u fid, class CxtRecordType, class ValueProviderType>
         refRecordType = self.getRefRecordType()
-        fid = self.getArgument("field").getFieldID()
+        fid = self.getArgument("field").getID() # direct field
         cxtRecordType = self.getCxtRecordType()
         valueProviderType = self.getArgument("value").getAttribute("type_alias")
         
@@ -1597,7 +1580,7 @@ class ClusteredReferenceProviderNode(AbstractReferenceProviderNode):
         cxtRecordType = self.getCxtRecordType()
         childrenCountType = self.getArgument("children_count").getAttribute("type_alias")
         if self.hasArgument("position_field"):
-            posFieldID = self.getArgument("position_field").getFieldID()
+            posFieldID = self.getArgument("position_field").getID() # direct field
         else:
             posFieldID = '0'
         

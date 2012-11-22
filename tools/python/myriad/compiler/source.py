@@ -32,9 +32,6 @@ from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
-from myriad.compiler.ast import ResolvedDirectFieldRefArgumentNode
-from myriad.compiler.ast import ResolvedRecordReferenceRefArgumentNode
-from myriad.compiler.ast import ResolvedReferencedFieldRefArgumentNode
 from myriad.compiler.ast import RecordEnumFieldNode
 from myriad.util.stringutil import StringTransformer
 
@@ -49,18 +46,19 @@ class ArgumentTransformer(object):
             transformerType = m.group(1)
             argTransformer = None
             argKey = m.group(2)
+            argOptional = None 
             argOptional = m.group(3) is not None 
             
             if (transformerType == "Literal"):
                 argTransformer = LiteralTransfomer()
-            elif (transformerType == "FieldSetter"):
-                argTransformer = FieldSetterTransfomer()
-            elif (transformerType == "FieldGetter"):
-                argTransformer = FieldGetterTransfomer()
+            elif (transformerType == "Verbatim"):
+                argTransformer = VerbatimTransfomer(verbatimCode=argKey)
+                argKey = None
+            elif (transformerType == "EnvVariable"):
+                argTransformer = EnvVariableTransfomer(varName=argKey)
+                argKey = None
             elif (transformerType == "FieldSetterRef"):
                 argTransformer = FieldSetterRefTransfomer()
-            elif (transformerType == "RandomSequenceInspector"):
-                argTransformer = RandomSequenceInspectorTransfomer()
             elif (transformerType == "SequenceInspector"):
                 argTransformer = SequenceInspectorTransfomer(recordTypeName=argKey)
                 argKey = None
@@ -68,12 +66,6 @@ class ArgumentTransformer(object):
                 argTransformer = FunctionRefTransfomer()
             elif (transformerType == "RuntimeComponentRef"):
                 argTransformer = RuntimeComponentRefTransformer()
-            elif (transformerType == "EnvVariable"):
-                argTransformer = EnvVariableTransfomer(varName=argKey)
-                argKey = None
-            elif (transformerType == "Verbatim"):
-                argTransformer = VerbatimTransfomer(verbatimCode=argKey)
-                argKey = None
             else:
                 message = "Unknown argument transformer type `%s`" % (transformerType)
                 ArgumentTransformer._log.error(message)
@@ -154,64 +146,6 @@ class LiteralTransfomer(object):
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
 
-class FieldSetterTransfomer(object):
-    
-    def __init__(self, *args, **kwargs):
-        super(FieldSetterTransfomer, self).__init__()
-    
-    def transform(self, argumentNode = None, configVarName = "config", optional = False):
-        if optional is True and argumentNode is None:
-            return [ None ]
-        
-        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
-            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
-            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getFieldRef().getAttribute("name"))
-            return [ '&%s::%s' % (typeName, fieldAccessMethodName) ]
-        if isinstance(argumentNode, ResolvedRecordReferenceRefArgumentNode):
-            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
-            fieldAccessMethodName = StringTransformer.us2cc(argumentNode.getRecordReferenceRef().getAttribute("name"))
-            return [ '&%s::%s' % (typeName, fieldAccessMethodName) ]
-        else:
-            raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
-
-
-class FieldGetterTransfomer(object):
-
-    def __init__(self, *args, **kwargs):
-        super(FieldGetterTransfomer, self).__init__()
-    
-    def transform(self, argumentNode = None, configVarName = "config", optional = False):
-        if optional is True and argumentNode is None:
-            return [ None ]
-        
-        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
-            recordTypeNameUS = argumentNode.getRecordTypeRef().getAttribute("key")
-            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
-            
-            fieldNode = argumentNode.getFieldRef()
-            fieldType = fieldNode.getAttribute("type")
-            fieldName = fieldNode.getAttribute("name")
-                
-            return [ "new FieldGetter<%(t)s, %(f)s>(&%(t)s::%(m)s)" % {'t': recordTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'm': StringTransformer.us2cc(fieldName)} ]
-
-        elif isinstance(argumentNode, ResolvedReferencedFieldRefArgumentNode):
-            recordTypeNameUS = argumentNode.getRecordTypeRef().getAttribute("key")
-            recordTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(recordTypeNameUS))
-            
-            referenceName = argumentNode.getRecordReferenceRef().getAttribute("name")
-            referenceTypeNameUS = argumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key")
-            referenceTypeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(referenceTypeNameUS))
-            
-            fieldNode = argumentNode.getFieldRef()
-            fieldType = fieldNode.getAttribute("type")
-            fieldName = fieldNode.getAttribute("name")
-
-            return [ "new ReferencedRecordFieldGetter<%(t)s, %(r)s, %(f)s>(&%(t)s::%(l)s, &%(r)s::%(m)s)" % {'t': recordTypeNameCC, 'r': referenceTypeNameCC, 'f': StringTransformer.sourceType(fieldType), 'l': StringTransformer.us2cc(referenceName), 'm': StringTransformer.us2cc(fieldName)} ]
-        
-        else:
-            raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
-
-
 class FieldSetterRefTransfomer(object):
     
     def __init__(self, *args, **kwargs):
@@ -227,30 +161,6 @@ class FieldSetterRefTransfomer(object):
             raise RuntimeError("Field `%s` does not have an associated setter" % (argumentNode.getFieldRef().getAttribute("name")))
         else:
             return [ argumentNode.getFieldRef().getSetter().getAttribute("var_name") ]
-
-
-class RandomSequenceInspectorTransfomer(object):
-    
-    def __init__(self, *args, **kwargs):
-        super(RandomSequenceInspectorTransfomer, self).__init__()
-    
-    def transform(self, argumentNode = None, configVarName = "config", optional = False):
-        if optional is True and argumentNode is None:
-            return [ None ]
-        
-        if configVarName is not None:
-            configPrefix = configVarName + "."
-        else:
-            configPrefix = ""
-            
-        if isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
-            typeName = StringTransformer.us2ccAll(argumentNode.getRecordTypeRef().getAttribute("key"))
-            return [ '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName) ]
-        if isinstance(argumentNode, ResolvedRecordReferenceRefArgumentNode):
-            typeName = StringTransformer.us2ccAll(argumentNode.getRecordReferenceRef().getRecordTypeRef().getAttribute("key"))
-            return [ '%sgeneratorPool().get<%sGenerator>().inspector()' % (configPrefix, typeName) ]
-        else:
-            raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
 
 class SequenceInspectorTransfomer(object):
