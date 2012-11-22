@@ -155,8 +155,10 @@ class FieldSetterRefTransfomer(object):
         if optional is True and argumentNode is None:
             return [ None ]
         
-        if not isinstance(argumentNode, ResolvedDirectFieldRefArgumentNode):
+        if not isinstance(argumentNode, ResolvedFieldRefArgumentNode):
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("name"), type(argumentNode)))
+        elif len(argumentNode.getInnerPathRefs()) > 0:
+            raise RuntimeError("Field `%s` is not directly attached to the context (i.e. the inner path is not empty)" % (argumentNode.getFieldRef().getAttribute("name")))
         elif not argumentNode.getFieldRef().hasSetter():
             raise RuntimeError("Field `%s` does not have an associated setter" % (argumentNode.getFieldRef().getAttribute("name")))
         else:
