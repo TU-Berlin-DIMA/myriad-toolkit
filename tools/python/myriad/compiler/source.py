@@ -31,6 +31,7 @@ from myriad.compiler.ast import EnumSetNode
 from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import RandomSequenceNode
+from myriad.compiler.ast import ResolvedFieldRefArgumentNode
 from myriad.compiler.ast import ResolvedFunctionRefArgumentNode
 from myriad.compiler.ast import RecordEnumFieldNode
 from myriad.util.stringutil import StringTransformer
