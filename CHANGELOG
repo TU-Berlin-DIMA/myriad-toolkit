@@ -1,4 +1,11 @@
-0.1.7 - 20011-10-07
+0.2.0 - 2012-22-11
+
+* new version of the XML specification language
+* new data generator runtime designed around modular setter components
+* multiple usability improvements 
+* cleaned up and documented C++ code
+
+0.1.7 - 2011-10-07
 
 * adjusted constructor signature of the MultiplicativeGroupHydrator
 * cleaned up SurrogateKeyGenerator related logic from FunctionPool, GeneratorConfig and ClusteredSelfReferenceHydrator
@@ -15,7 +22,7 @@
 * moved application constant from Frontend to a separate class (Constants)
 * removed obsolete file TODO.txt
 
-0.1.6 - 20011-10-05
+0.1.6 - 2011-10-05
 
 * changed iteration logic in the CompoundEICG test - all componens are now adjusted at each step (a bit slower now, but should provide more robust random behavior)
 * refactored substream initialization logic - RandomSetGenerator seeds are assigned iteratively from a master seed
@@ -27,7 +34,7 @@
 * fixed bug in the GeneratorPool::get() method
 * added support for bounded normal probability (not ideal as the implementation method skews the probabilities)
 
-0.1.5 - 20011-09-30
+0.1.5 - 2011-09-30
 
 * simplified myriad-config.xsd schema
 * added new hydrators: ClusteredSelfReferenceHydrator and MultiplicativeGroupHydrator
@@ -38,7 +45,7 @@
 * removed duplicated log messages from the Communication and the Generator subsystems
 * fixed bad format string bug in GeneratorSubsystem.cpp
 
-0.1.4 - 20011-08-02
+0.1.4 - 2011-08-02
 
 * added logger to the default record inspector
 * replaced std::cout with '\n' in operators.cpp (use of std::cout implicitly flushes the buffer)
@@ -53,13 +60,13 @@
 * integrated dgen python frontend to the toolkit
 * added lookback caching of size 1 in the IntervalMap
 
-0.1.3 - 20011-05-30
+0.1.3 - 2011-05-30
 
 * refactored PRNG interface - now an exchangeable component
 * added CompoundEICG - an alternative PRNG (used as default) 
 * cleared extension specific dependencies in GeneratorPool.h
 
-0.1.2 - 20011-05-13
+0.1.2 - 2011-05-13
 
 * updaed documentation in the README file
 * added EPQ04 query (filter + project on the product_offer relation) 
