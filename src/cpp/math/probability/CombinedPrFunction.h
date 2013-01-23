@@ -18,11 +18,13 @@
 #ifndef COMBINEDPRFUNCTION_H_
 #define COMBINEDPRFUNCTION_H_
 
+#include "core/exceptions.h"
 #include "core/types.h"
 #include "math/Function.h"
 
 #include <Poco/Any.h>
-#include <Poco/Exception.h>
+#include <Poco/File.h>
+#include <Poco/Path.h>
 #include <Poco/String.h>
 #include <Poco/RegularExpression.h>
 
@@ -100,7 +102,7 @@ public:
     }
 
     /**
-     * Anonymous stream initialization parameter.
+     * Anonymous stream initialization constructor.
      *
      * Loads the configuration for this probability function from the input
      * stream given by the \p in parameter.
@@ -249,6 +251,16 @@ public:
      * @param path The location of the function configuration file.
      */
     void initialize(const string& path);
+
+    /**
+     * Initialization routine.
+     *
+     * Initializes the function with the configuration stored in the file
+     * located at the given \p path.
+     *
+     * @param path The location of the function configuration file.
+     */
+    void initialize(const Path& path);
 
     /**
      * Initialization routine.
@@ -609,17 +621,34 @@ inline T CombinedPrFunction<T>::sample(Decimal random) const
 template<typename T>
 void CombinedPrFunction<T>::initialize(const string& path)
 {
-    ifstream in(path.c_str());
+    initialize(Path(path));
+}
+
+template<typename T>
+void CombinedPrFunction<T>::initialize(const Path& path)
+{
+    if (!path.isFile())
+    {
+        throw ConfigException(format("Cannot find file at `%s`", path.toString()));
+    }
+
+    File file(path);
+
+    if (!file.canRead())
+    {
+        throw ConfigException(format("Cannot read from file at `%s`", path.toString()));
+    }
+
+    ifstream in(file.path().c_str());
 
     if (!in.is_open())
     {
-        throw OpenFileException("Unexpected file header for file `" + path +  "`");
+        throw ConfigException(format("Cannot open file at `%s`", path.toString()));
     }
 
     try
     {
         initialize(in);
-
         in.close();
     }
     catch(Poco::Exception& e)

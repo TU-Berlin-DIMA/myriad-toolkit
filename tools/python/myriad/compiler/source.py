@@ -620,7 +620,7 @@ class ConfigCompiler(SourceCompiler):
         literalTransformer = LiteralTransfomer()
         nodeFilter = DepthFirstNodeFilter(filterType=EnumSetNode)
         for enumSet in nodeFilter.getAll(astRoot):
-            print >> wfile, '        bindEnumSet("%(n)s", %(p)s);' % {'n': enumSet.getAttribute("key"), 'p': literalTransformer.transform(enumSet.getArgument("path"), None).pop()}
+            print >> wfile, '        enumSet(new MyriadEnumSet("%(n)s", %(p)s));' % {'n': enumSet.getAttribute("key"), 'p': literalTransformer.transform(enumSet.getArgument("path"), None).pop()}
 
         print >> wfile, '    }'
         print >> wfile, '};'
@@ -776,8 +776,8 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         
         if recordType.hasEnumFields():
-            print >> wfile, '    Base%(t)sMeta(const map<string, vector<string> >& enumSets) : ' % {'t': typeNameCC}
-            print >> wfile, '        %s' % ', '.join([ '%(n)s(enumSets.find("%(r)s")->second)' % {'n': field.getAttribute("name"), 'r': field.getAttribute("enumref")} for field in recordType.getEnumFields() ])
+            print >> wfile, '    Base%(t)sMeta(const EnumSetPool& enumSets) : ' % {'t': typeNameCC}
+            print >> wfile, '        %s' % ', '.join([ '%(n)s(enumSets.get("%(r)s").values())' % {'n': field.getAttribute("name"), 'r': field.getAttribute("enumref")} for field in recordType.getEnumFields() ])
             print >> wfile, '    {'
             print >> wfile, '    }'
         else:
@@ -828,7 +828,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    %(t)sMeta(const map<string, vector<string> >& enumSets) :' % {'t': typeNameCC}
+        print >> wfile, '    %(t)sMeta(const EnumSetPool& enumSets) :' % {'t': typeNameCC}
         print >> wfile, '        Base%(t)sMeta(enumSets)' % {'t': typeNameCC}
         print >> wfile, '    {'
         print >> wfile, '    }'

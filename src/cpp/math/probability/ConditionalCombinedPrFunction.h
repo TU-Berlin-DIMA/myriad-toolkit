@@ -264,7 +264,6 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(const string& path)
     try
     {
         initialize(in);
-
         in.close();
     }
     catch(Poco::Exception& e)

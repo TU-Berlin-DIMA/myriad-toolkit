@@ -29,7 +29,6 @@
 #include <Poco/Logger.h>
 #include <Poco/Path.h>
 #include <Poco/Util/LayeredConfiguration.h>
-#include <Poco/SAX/XMLReader.h>
 
 using namespace std;
 using namespace Poco;
@@ -67,15 +66,15 @@ public:
      */
     void add(AbstractFunction* functionPtr)
     {
-        map<string, AbstractFunction*>::const_iterator it = functions.find(functionPtr->name());
+        map<string, AbstractFunction*>::const_iterator it = _functions.find(functionPtr->name());
 
-        if (it != functions.end())
+        if (it != _functions.end())
         {
 	        throw ConfigException("Trying to add an already undefined function " + functionPtr->name());
         }
 
-        autoreleasePool.add(functionPtr);
-        functions[functionPtr->name()] = functionPtr;
+        _autoreleasePool.add(functionPtr);
+        _functions[functionPtr->name()] = functionPtr;
     }
 
     /**
@@ -90,9 +89,9 @@ public:
      */
     template<class FunctionType> FunctionType& get(const string& name) const
     {
-        map<string, AbstractFunction*>::const_iterator it = functions.find(name);
+        map<string, AbstractFunction*>::const_iterator it = _functions.find(name);
 
-        if (it == functions.end())
+        if (it == _functions.end())
         {
 	        throw ConfigException("Trying to access undefined function " + name);
         }
@@ -113,14 +112,14 @@ public:
 private:
 
     /**
-     * A set of probability functions to be used by the configurator.
+     * A container for the registered functions.
      */
-    map<string, AbstractFunction*> functions;
+    map<string, AbstractFunction*> _functions;
 
     /**
-     * An auto-release pool for the probabilities.
+     * An auto-release pool for the registered functions.
      */
-    AutoReleasePool<AbstractFunction> autoreleasePool;
+    AutoReleasePool<AbstractFunction> _autoreleasePool;
 };
 
 /** @}*/// add to core group

@@ -18,7 +18,8 @@
 #ifndef TYPES_H_
 #define TYPES_H_
 
-#include "types/MyriadDate.h"
+#include "core/types/MyriadDate.h"
+#include "core/types/MyriadEnumSet.h"
 
 #include <Poco/Exception.h>
 #include <Poco/Types.h>

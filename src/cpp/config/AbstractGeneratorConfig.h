@@ -19,8 +19,9 @@
 #define ABSTRACTGENERATORCONFIG_H_
 
 #include "core/types.h"
-#include "config/ObjectBuilder.h"
+#include "config/EnumSetPool.h"
 #include "config/FunctionPool.h"
+#include "config/ObjectBuilder.h"
 #include "math/probability/Probability.h"
 #include "math/random/RandomStream.h"
 
@@ -91,6 +92,18 @@ public:
     void initialize(AbstractConfiguration& appConfig);
 
     /**
+     * Reads a parameter identified by the key 'generator.{\p key}' from tries
+     * to convert it to a \p ParameterType instance using the fromString
+     * conversion method.
+     *
+     * @return the \p ParameterType parameter identified by 'generator.{\p key}'
+     */
+    template<class ParameterType> ParameterType parameter(string key) const
+    {
+        return fromString<ParameterType>(getString("generator." + key));
+    }
+
+    /**
      * Wrapper around the FunctionPool::add() method of the private
      * FunctionPool member.
      *
@@ -114,33 +127,33 @@ public:
     }
 
     /**
-     * Reads a parameter identified by the key 'generator.{\p key}' from tries
-     * to convert it to a \p ParameterType instance using the fromString
-     * conversion method.
+     * Helper function - loads an enumerated set from a flat file to a vector.
      *
-     * @return the \p ParameterType parameter identified by 'generator.{\p key}'
+     * @param key
+     * @param path
+     *
      */
-    template<class ParameterType> ParameterType parameter(string key) const
+    void enumSet(MyriadEnumSet* enumSet)
     {
-        return fromString<ParameterType>(getString("generator." + key));
+        _enumSets.add(enumSet);
     }
 
     /**
-     * Retrieves the enumerated set identified by the given \p key.
+     * Retrieves the enum set identified by the given \p key.
      *
      * @return a const reference to the enumerated set identified by \p key
      */
     const vector<string>& enumSet(string key)
     {
-        return _enumSets[key];
+        return _enumSets.get(key).values();
     }
 
     /**
-     * Retrieves the map containing all enumerated sets.
+     * Retrieves a reference to the global enum set pool.
      *
-     * @return the map containing all enumerated sets.
+     * @return A reference to the global enum set pool.
      */
-    map<string, vector<string> >& enumSets()
+    EnumSetPool& enumSets()
     {
         return _enumSets;
     }
@@ -243,15 +256,6 @@ public:
 protected:
 
     /**
-     * Helper function - loads an enumerated set from a flat file to a vector.
-     *
-     * @param key
-     * @param path
-     *
-     */
-    void bindEnumSet(const string& key, Path path);
-
-    /**
      * Helper function - loads functions.
      */
     virtual void configureFunctions()
@@ -315,9 +319,9 @@ protected:
     FunctionPool _functionPool;
 
     /**
-     * The string sets bound from the config.
+     * The global enum sets pool.
      */
-    map<string, vector<string> > _enumSets;
+    EnumSetPool _enumSets;
 
     /**
      * A 'generator.config' logger instance.
