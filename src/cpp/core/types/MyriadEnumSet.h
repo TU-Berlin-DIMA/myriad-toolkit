@@ -21,6 +21,7 @@
 #include <Poco/Any.h>
 #include <Poco/Path.h>
 #include <Poco/RefCountedObject.h>
+#include <Poco/RegularExpression.h>
 
 #include <iostream>
 #include <map>
@@ -209,9 +210,17 @@ private:
     const string _name;
 
     /**
-     * The indexed set of values for this enum set.
+     * The specified number of values in this enum set.
+     */
+    size_t _numberOfValues;
+
+    /**
+     * An indexed array of the values specified for this enum set.
      */
     vector<string> _values;
+
+    static RegularExpression headerLine1Format;
+    static RegularExpression valueLineFormat;
 };
 
 /** @}*/// add to core group

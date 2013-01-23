@@ -22,12 +22,29 @@
 
 #include <Poco/File.h>
 #include <Poco/Format.h>
+#include <Poco/NumberParser.h>
+#include <Poco/String.h>
 
 #include <fstream>
 
 using namespace Poco;
 
 namespace Myriad {
+
+////////////////////////////////////////////////////////////////////////////////
+/// @name Static Template Members
+////////////////////////////////////////////////////////////////////////////////
+//@{
+
+RegularExpression MyriadEnumSet::headerLine1Format("\\s*@numberofvalues\\s*=\\s*([+]?[0-9]+)\\s*(#(.+))?");
+RegularExpression MyriadEnumSet::valueLineFormat("\\s*[0-9]*\\s*\\.\\.\\.+\\s*\"(.*)\"\\s*(#(.+))?");
+
+//@}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @name Member Functions
+////////////////////////////////////////////////////////////////////////////////
+//@{
 
 void MyriadEnumSet::initialize(const string& path)
 {
@@ -85,50 +102,89 @@ void MyriadEnumSet::initialize(istream& in)
 
 void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
 {
-    string currentLine;
+    enum READ_STATE { NOV, VLN, END };
 
-    // read first line
-    getline(in, currentLine);
+    // reset old state
+    reset();
 
-    if (!in.good() || currentLine.substr(0, 17) != "@numberofvalues =")
+    // reader variables
+    READ_STATE currentState = NOV; // current reader machine state
+    string currentLine; // the current line
+    I16u currentItemIndex = 0; // current item index
+    RegularExpression::MatchVec posVec; // a posVec for all regex matches
+
+    // reader finite state machine
+    while (currentState != END)
     {
-        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofvalues = ' + x", currentLineNumber, currentLine));
-    }
-
-    I32 numberOfEntries = atoi(currentLine.substr(17).c_str());
-
-    _values.resize(numberOfEntries);
-
-    for (I16u i = 0; i < numberOfEntries; i++)
-    {
-        if (!in.good())
-        {
-            throw DataException("Bad line for bin #" + toString(i));
-        }
-
+        // read next line
+        currentLine = "";
         getline(in, currentLine);
 
-        string::size_type t = currentLine.find_first_of('\t');
-        string::size_type c = currentLine.find_first_of('#');
-        string value;
+        // trim whitespace and unescape quotes
+        trimInPlace(replaceInPlace(currentLine, "\\\"", "\""));
 
-        if (t == string::npos)
+        // check if this line is empty or contains a single comment
+        if (currentLine.empty() || currentLine.at(0) == '#')
         {
-            throw DataException("Bad line for bin #" + toString(i) + ", expected format '{i}\t{value}[# {comment}]");
+            if (!in.good()) // break on end of stream
+            {
+                if (currentState == VLN && currentItemIndex < _numberOfValues)
+                {
+                    throw DataException(format("line %hu: Bad enum value line, should be: '%hu ........... $value' (not enough items specified?)", currentLineNumber, currentItemIndex));
+                }
+                else
+                {
+                    currentState = END;
+                }
+            }
+
+            currentLineNumber++;
+            continue; // skip this line
         }
 
-        if (c != string::npos)
+        if (currentState == NOV)
         {
-            value = currentLine.substr(t+1, c-t-1);
-            trim(value);
-        }
-        else
-        {
-            value = currentLine.substr(t+1);
-            trim(value);
-        }
+            if (!headerLine1Format.match(currentLine, 0, posVec))
+            {
+                throw DataException(format("line %hu: Bad header line, should be: '@numberofvalues = $N'", currentLineNumber));
+            }
 
-        _values[i] = value;
+            I64 numberOfValues = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+
+            if (numberOfValues <= 0 && static_cast<size_t>(numberOfValues) > numeric_limits<size_t>::max())
+            {
+                throw DataException("Invalid number of values '" + toString(numberOfValues) +  "'");
+            }
+
+            _numberOfValues = numberOfValues;
+            _values.resize(_numberOfValues);
+
+            currentState = VLN;
+        }
+        else if (currentState == VLN)
+        {
+            if (!valueLineFormat.match(currentLine, 0, posVec))
+            {
+                throw DataException(format("line %hu: Bad enum value line, should be: '%hu ........... $value' (missing new line at the end of file?)", currentLineNumber, currentItemIndex));
+            }
+
+            String value = currentLine.substr(posVec[1].offset, posVec[1].length);
+
+            _values[currentItemIndex] = value;
+            currentItemIndex++;
+
+            if (currentItemIndex >= _numberOfValues)
+            {
+                currentState = END;
+                currentItemIndex = 0;
+            }
+        }
+    }
+
+    // protect against unexpected reader state
+    if (currentState != END)
+    {
+        throw RuntimeException("Unexpected state in CombinedPrFunction reader at line " + currentLineNumber);
     }
 }
 
@@ -136,5 +192,7 @@ void MyriadEnumSet::reset()
 {
     // do nothing
 }
+
+//@}
 
 } // namespace Myriad

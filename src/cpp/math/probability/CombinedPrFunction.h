@@ -24,6 +24,7 @@
 
 #include <Poco/Any.h>
 #include <Poco/File.h>
+#include <Poco/NumberParser.h>
 #include <Poco/Path.h>
 #include <Poco/String.h>
 #include <Poco/RegularExpression.h>
@@ -373,15 +374,15 @@ private:
 //@{
 
 template<typename T>
-RegularExpression CombinedPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+RegularExpression CombinedPrFunction<T>::headerLine1Format("\\s*@numberofexactvals\\s*=\\s*([+]?[0-9]+)\\s*(#(.+))?");
 template<typename T>
-RegularExpression CombinedPrFunction<T>::headerLine2Format("\\W*@numberofbins\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+RegularExpression CombinedPrFunction<T>::headerLine2Format("\\s*@numberofbins\\s*=\\s*([+]?[0-9]+)\\s*(#(.+))?");
 template<typename T>
-RegularExpression CombinedPrFunction<T>::headerLine3Format("\\W*@nullprobability\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W*(#(.+))?");
+RegularExpression CombinedPrFunction<T>::headerLine3Format("\\s*@nullprobability\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s*(#(.+))?");
 template<typename T>
-RegularExpression CombinedPrFunction<T>::valueLineFormat( "\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*(.+)\\W*\\}\\W*(#(.+))?");
+RegularExpression CombinedPrFunction<T>::valueLineFormat( "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*(.+)\\s*\\}\\s*(#(.+))?");
 template<typename T>
-RegularExpression CombinedPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*\\}\\W*(#(.+))?");
+RegularExpression CombinedPrFunction<T>::bucketLineFormat("\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*x\\s+in\\s+\\[\\s*(.+)\\s*,\\s*(.+)\\s*\\)\\s*\\}\\s*(#(.+))?");
 
 //@}
 
@@ -693,7 +694,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     while (currentState != END)
     {
         // the special FIN stage contains only final initialization constructs
-        // and does not a currentLine
+        // and does not read the currentLine
         if (currentState == FIN)
         {
 	        T min = std::min<T>(_buckets[0].min(), _values[0]);
@@ -706,6 +707,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         }
 
         // read next line
+        currentLine = "";
         getline(in, currentLine);
 
         // trim whitespace
@@ -714,22 +716,38 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         // check if this line is empty or contains a single comment
         if (currentLine.empty() || currentLine.at(0) == '#')
         {
+            if (!in.good()) // break on end of stream
+            {
+                if (currentState == VLN && currentItemIndex < _numberOfValues)
+                {
+                    throw DataException(format("line %hu: Bad value probability line, should be: 'p(X) = $p_x for X = { $x }'", currentLineNumber));
+                }
+                else if (currentState == BLN && currentItemIndex < _numberOfBuckets)
+                {
+                    throw DataException(format("line %hu: Bad bucket probability line, should be: 'p(X) = $p_x for X = { x \\in [$x_min, $x_max) }'", currentLineNumber));
+                }
+                else
+                {
+                    currentState = FIN;
+                }
+            }
+
 	        currentLineNumber++;
 	        continue; // skip this line
         }
 
         if (currentState == NOE)
         {
-	        if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
+	        if (!headerLine1Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofexactvals = ' + x", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad header line, should be: '@numberofexactvals = $N'", currentLineNumber));
 	        }
 
-	        I32 numberOfValues = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+	        I64 numberOfValues = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
-	        if (numberOfValues <= 0 && numberOfValues > 65536)
+	        if (numberOfValues <= 0 && static_cast<size_t>(numberOfValues) > (numeric_limits<size_t>::max()/2U))
 	        {
-		        throw DataException("Invalid number of exact values '" + toString(numberOfValues) +  "'");
+		        throw DataException("Invalid number of exact values " + toString(numberOfValues) +  ", should be in the (0, " + toString(numeric_limits<size_t>::max()/2U) + "] range");
 	        }
 
 	        _numberOfValues = numberOfValues;
@@ -740,16 +758,16 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         }
         else if (currentState == NOB)
         {
-	        if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
+	        if (!headerLine2Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofbins = ' + x", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad header line, should be: '@numberofbins = $N'", currentLineNumber));
 	        }
 
-	        I32 numberOfBuckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+	        I64 numberOfBuckets = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
-	        if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
+	        if (numberOfBuckets <= 0 && static_cast<size_t>(numberOfBuckets) > (numeric_limits<size_t>::max()/2U))
 	        {
-		        throw DataException("Invalid number of buckets '" + toString(numberOfBuckets) +  "'");
+                throw DataException("Invalid number of buckets " + toString(numberOfBuckets) +  ", should be in the (0, " + toString(numeric_limits<size_t>::max()/2U) + "] range");
 	        }
 
 	        _numberOfBuckets = numberOfBuckets;
@@ -762,21 +780,21 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         }
         else if (currentState == NPR)
         {
-	        if (!in.good() || !headerLine3Format.match(currentLine, 0, posVec))
+	        if (!headerLine3Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@nullprobability = ' + x", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad header line, should be: '@nullprobability = $N'", currentLineNumber));
 	        }
 
-	        _notNullProbability = 1.0 - atof(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+	        _notNullProbability = 1.0 - NumberParser::parseFloat(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
 	        currentItemIndex = 0;
 	        currentState = (_numberOfValues > 0) ? VLN : BLN;
         }
         else if (currentState == VLN)
         {
-	        if (!in.good() || !valueLineFormat.match(currentLine, 0, posVec))
+	        if (!valueLineFormat.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad value probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = {' + x + ' }'", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad value probability line, should be: 'p(X) = $p_x for X = { $x }'", currentLineNumber));
 	        }
 
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
@@ -791,15 +809,15 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 
 	        if (currentItemIndex >= _numberOfValues)
 	        {
-		        currentState = (_numberOfBuckets > 0) ? BLN : FIN;
 		        currentItemIndex = 0;
+		        currentState = (_numberOfBuckets > 0) ? BLN : FIN;
 	        }
         }
         else if (currentState == BLN)
         {
-	        if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
+	        if (!bucketLineFormat.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [' + x_min + ', ' + x_max + ') }'", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad bucket probability line, should be: 'p(X) = $p_x for X = { x \\in [$x_min, $x_max) }'", currentLineNumber));
 	        }
 
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
@@ -815,8 +833,8 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 
 	        if (currentItemIndex >= _numberOfBuckets)
 	        {
+                currentItemIndex = 0;
 		        currentState = FIN;
-		        currentItemIndex = 0;
 	        }
         }
 
