@@ -121,7 +121,7 @@ void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
         getline(in, currentLine);
 
         // trim whitespace and unescape quotes
-        trimInPlace(replaceInPlace(currentLine, "\\\"", "\""));
+        trimInPlace(currentLine);
 
         // check if this line is empty or contains a single comment
         if (currentLine.empty() || currentLine.at(0) == '#')
@@ -169,6 +169,8 @@ void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
             }
 
             String value = currentLine.substr(posVec[1].offset, posVec[1].length);
+            replaceInPlace(value, "\\\"", "\"");
+            replaceInPlace(value, "\\n", "\n");
 
             _values[currentItemIndex] = value;
             currentItemIndex++;
