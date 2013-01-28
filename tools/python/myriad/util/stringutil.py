@@ -63,7 +63,6 @@ class StringTransformer(object):
     
     _cc2us_pattern1 = re.compile('(.)([A-Za-z]+)')
     _cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
-    _complex_type_pattern = re.compile('(vector|Interval)\[(\w+)\]')
     
     def uc(s):
         return s.upper()
@@ -89,32 +88,6 @@ class StringTransformer(object):
     def ucFirst(s):
         return "%s%s" % (s[0].capitalize(), s[1:])
     
-    def sourceType(s):
-        r = StringTransformer._complex_type_pattern.match(s)
-        if r:
-            return "%s<%s>" % (r.group(1), r.group(2))
-        else:
-            return s
-        
-    def isNumericType(s):
-        return s in ['I16', 'I32', 'I64', 'I16u', 'I32u', 'I64u', 'Decimal', 'Enum']
-        
-    def isVectorType(s):
-        r = StringTransformer._complex_type_pattern.match(s)
-        if r:
-            return r.group(1) == 'vector'
-        else:
-            return False
-        
-        r = StringTransformer._complex_type_pattern.match(s)
-        
-    def coreType(s):
-        r = StringTransformer._complex_type_pattern.match(s)
-        if r:
-            return r.group(2)
-        else:
-            return s
-    
     # static methods
     uc = staticmethod(uc)
     lc = staticmethod(lc)
@@ -122,7 +95,3 @@ class StringTransformer(object):
     us2cc = staticmethod(us2cc)
     us2ccAll = staticmethod(us2ccAll)
     ucFirst = staticmethod(ucFirst)
-    sourceType = staticmethod(sourceType)
-    isNumericType = staticmethod(isNumericType)
-    isVectorType = staticmethod(isVectorType)
-    coreType = staticmethod(coreType)

@@ -18,6 +18,7 @@ Created on Oct 14, 2011
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
 
+import re
 from myriad.compiler.visitor import AbstractVisitor
 from myriad.util.stringutil import StringTransformer
 
@@ -591,6 +592,11 @@ class RecordFieldNode(AbstractNode):
     classdocs
     '''
     
+    # a pattern for the simple types 
+    _simple_type_pattern = re.compile('(I16|I32|I64|I16u|I32u|I64u|Decimal|Enum|Char)')
+    # a pattern for the vector types
+    _vector_type_pattern = re.compile('(I16|I32|I64|I16u|I32u|I64u|Decimal|Enum|Char)\[(\d+)\]')
+    
     orderkey = None
     __parent = None
     __setter = None
@@ -623,6 +629,49 @@ class RecordFieldNode(AbstractNode):
     
     def getID(self):
         return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
+        
+    def isSimpleType(self):
+        r = RecordFieldNode._simple_type_pattern.match(self.getAttribute("type"))
+        return r is not None
+        
+    def isVectorType(self):
+        # check vector types
+        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        return r is not None
+        
+    def vectorTypeSize(self):
+        # check vector types
+        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        if r is not None:
+            return r.group(2)
+        
+    def sourceType(self):
+        # check vector types
+        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        if r is not None:
+            return "vector<%s>" % (r.group(1))
+        
+        # check simple types
+        r = RecordFieldNode._simple_type_pattern.match(self.getAttribute("type"))
+        if r is not None:
+            return r.group(1)
+        
+        # otherwise exception
+        raise RuntimeError("Unsupported Myriad type `%s`" % (self.getAttribute("type")))
+        
+    def coreType(self):
+        # check vector types
+        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        if r is not None:
+            return r.group(1)
+        
+        # check simple types
+        r = RecordFieldNode._simple_type_pattern.match(self.getAttribute("type"))
+        if r is not None:
+            return r.group(1)
+        
+        # otherwise exception
+        raise RuntimeError("Unsupported Myriad type `%s`" % (self.getAttribute("type")))
 
 
 class RecordEnumFieldNode(RecordFieldNode):
@@ -1216,6 +1265,38 @@ class AbstractValueProviderNode(AbstractRuntimeComponentNode):
             return self.getParent().getCxtRecordType()
 
 
+class ElementWiseValueProviderNode(AbstractValueProviderNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(template_type="ElementWiseValueProvider")
+        super(ElementWiseValueProviderNode, self).__init__(*args, **kwargs)
+    
+    def getIncludePath(self):
+        return "runtime/provider/value/ElementWiseValueProvider.h"
+    
+    def getValueType(self):
+        return "vector<%s>" % (self.getArgument("element_value_provider").getValueType())
+    
+    def getConcreteType(self):
+        # template<typename ValueType, class CxtRecordType>
+        valueType = self.getArgument("element_value_provider").getValueType()
+        valueVectorSize = self.getParent().getArgument("field").getFieldRef().vectorTypeSize()
+        cxtRecordType = self.getCxtRecordType()
+        
+        return "ElementWiseValueProvider< Char, %s, %s >" % (cxtRecordType, valueVectorSize)
+    
+    def getXMLArguments(self):
+        return [ { 'key': 'element_value_provider', 'type': 'value_provider' }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'RuntimeComponentRef(element_value_provider)'
+               ]
+
+
 class CallbackValueProviderNode(AbstractValueProviderNode):
     '''
     classdocs
@@ -1240,8 +1321,8 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
         return "CallbackValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, callbackType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'type', 'type': 'literal' }, 
-                 { 'key': 'name', 'type': 'literal' }, 
+        return [ { 'key': 'type' , 'type': 'literal' }, 
+                 { 'key': 'name' , 'type': 'literal' }, 
                  { 'key': 'arity', 'type': 'literal' }, 
                ]
         

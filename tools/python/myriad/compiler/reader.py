@@ -277,6 +277,8 @@ class ValueProviderArgumentReader(SingleArgumentReader):
         valueProviderNode = None
         if argType == 'callback_value_provider':
             valueProviderNode = CallbackValueProviderNode(key=argKey)
+        if argType == 'element_wise_value_provider':
+            valueProviderNode = ElementWiseValueProviderNode(key=argKey)
         elif argType == 'clustered_value_provider':
             valueProviderNode = ClusteredValueProviderNode(key=argKey)
         elif argType == 'const_value_provider':

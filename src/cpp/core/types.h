@@ -50,6 +50,7 @@ typedef Poco::UInt16 I16u;  //!< Signed 16-bit integer
 typedef Poco::UInt32 I32u;  //!< Signed 32-bit integer
 typedef Poco::UInt64 I64u;  //!< Signed 64-bit integer
 typedef std::size_t Enum;   //!< A enumerated sequence type (alias of \c std::size_t)
+typedef char Char;          //!< A character type (alias of \c char)
 typedef double Decimal;     //!< Decimal number, alias of \c double
 typedef MyriadDate Date;    //!< Date, alias of \c MyriadDate
 //TODO: remove this type, use I64u instead
@@ -105,6 +106,7 @@ struct NullValue
     static const I32u UINTEGER; //!< NULL constant for the I32u type.
     static const I64u UBIGINTEGER; //!< NULL constant for the I64u type.
     static const Decimal DECIMAL; //!< NULL constant for the Decimal type.
+    static const Char CHAR; //!< NULL constant for the Char type.
     static const Date DATE; //!< NULL constant for the Date type.
     static const String STRING; //!< NULL constant for the String type.
 };
@@ -173,6 +175,14 @@ template<> inline const I64u& nullValue<I64u>()
 template<> inline const Decimal& nullValue<Decimal>()
 {
     return NullValue::DECIMAL;
+}
+
+/**
+ * Returns the \c NULL value representation of the \c Char type.
+ */
+template<> inline const Char& nullValue<Char>()
+{
+    return NullValue::CHAR;
 }
 
 /**
@@ -350,6 +360,27 @@ template<> inline void write<String>(std::ostream& stream, const String& t, bool
     {
         stream << "NULL";
     }
+}
+
+/**
+ * Write out to the given \c std::ostream either the value vector \p t.
+ * The \p quoted parameter is passed to the write() call of each vector element.
+ */
+template<class T> inline void write(std::ostream& stream, const vector<T>& t, bool quoted = true)
+{
+    stream << "[";
+    typename vector<T>::const_iterator it = t.begin();
+    while (it != t.end())
+    {
+        write(stream, (*it), quoted);
+        it++;
+
+        if  (it != t.end())
+        {
+            stream << ", ";
+        }
+    }
+    stream << "]";
 }
 
 //@}

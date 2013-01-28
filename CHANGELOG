@@ -1,7 +1,9 @@
 0.2.1
 
-* Refactored enum sets. 
-* Implemented state machine reader for MyriadEnumSet objects.
+* Refactored enum sets
+* Implemented state machine reader for MyriadEnumSet objects
+* Added support for 'char' and 'vector' Myriad record types
+* Added runtime and XML specification support for element_wise_value_providers (can be used together with vector typed fields)
 
 0.2.0 - 2012-22-11
 
