@@ -781,7 +781,7 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    {'
             print >> wfile, '    }'
         else:
-            print >> wfile, '    Base%(t)sMeta(const map<string, vector<string> >& enumSets)' % {'t': typeNameCC}
+            print >> wfile, '    Base%(t)sMeta(const EnumSetPool& enumSets)' % {'t': typeNameCC}
             print >> wfile, '    {'
             print >> wfile, '    }'
         print >> wfile, ''
