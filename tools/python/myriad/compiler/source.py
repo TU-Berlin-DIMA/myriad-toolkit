@@ -904,7 +904,7 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '    const %s& %s() const;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
             
             if isinstance(field, RecordEnumFieldNode):
-                print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(fieldName))
+                print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(field.getAttribute("name")))
                 print >> wfile, ''
             else:
                 print >> wfile, ''
