@@ -167,10 +167,10 @@ public:
      * given by the \p in parameter. When reading from the \p in stream, uses
      * the \p currentLineNumber parameter to track the current line number.
      *
-     * @param currentLineNumber A reference to the current line number.
      * @param in Input stream containing the enum specification.
+     * @param currentLineNumber A reference to the current line number.
      */
-    void initialize(istream& in, UInt16& currentLineNumber);
+    void initialize(istream& in, size_t& currentLineNumber);
 
     /**
      * Return the name of this enum set.

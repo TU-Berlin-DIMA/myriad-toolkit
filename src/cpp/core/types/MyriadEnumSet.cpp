@@ -96,11 +96,11 @@ void MyriadEnumSet::initialize(const Path& path)
 
 void MyriadEnumSet::initialize(istream& in)
 {
-    I16u currentLineNumber = 1;
+    size_t currentLineNumber = 1;
     initialize(in, currentLineNumber);
 }
 
-void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
+void MyriadEnumSet::initialize(istream& in, size_t& currentLineNumber)
 {
     enum READ_STATE { NOV, VLN, END };
 
@@ -110,7 +110,7 @@ void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
     // reader variables
     READ_STATE currentState = NOV; // current reader machine state
     string currentLine; // the current line
-    I16u currentItemIndex = 0; // current item index
+    size_t currentItemIndex = 0; // current item index
     RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
     // reader finite state machine
@@ -130,7 +130,7 @@ void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
             {
                 if (currentState == VLN && currentItemIndex < _numberOfValues)
                 {
-                    throw DataException(format("line %hu: Bad enum value line, should be: '%hu ........... $value' (not enough items specified?)", currentLineNumber, currentItemIndex));
+                    throw DataException(format("line %z: Bad enum value line, should be: '%z ........... $value' (not enough items specified?)", currentLineNumber, currentItemIndex));
                 }
                 else
                 {
@@ -146,7 +146,7 @@ void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
         {
             if (!headerLine1Format.match(currentLine, 0, posVec))
             {
-                throw DataException(format("line %hu: Bad header line, should be: '@numberofvalues = $N'", currentLineNumber));
+                throw DataException(format("line %z: Bad header line, should be: '@numberofvalues = $N'", currentLineNumber));
             }
 
             I64 numberOfValues = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
@@ -165,7 +165,7 @@ void MyriadEnumSet::initialize(istream& in, I16u& currentLineNumber)
         {
             if (!valueLineFormat.match(currentLine, 0, posVec))
             {
-                throw DataException(format("line %hu: Bad enum value line, should be: '%hu ........... $value' (missing new line at the end of file?)", currentLineNumber, currentItemIndex));
+                throw DataException(format("line %z: Bad enum value line, should be: '%z ........... $value' (missing new line at the end of file?)", currentLineNumber, currentItemIndex));
             }
 
             String value = currentLine.substr(posVec[1].offset, posVec[1].length);

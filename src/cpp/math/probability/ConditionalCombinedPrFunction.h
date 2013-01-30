@@ -299,7 +299,7 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
     READ_STATE currentState = NOC; // current reader machine state
     string currentLine; // the current line
     I16u currentX2BucketIndex = 0; // current item index
-    I16u currentLineNumber = 1; // current line number
+    size_t currentLineNumber = 1; // current line number
     RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
     // reader finite state machine
@@ -319,7 +319,7 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
             {
                 if (currentX2BucketIndex < _numberOfx2Buckets)
                 {
-                    throw DataException(format("line %hu: Bad header line, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber));
+                    throw DataException(format("line %z: Bad header line, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber));
                 }
                 else
                 {
@@ -335,7 +335,7 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
         {
 	        if (!headerLine1Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line, should be: '@numberofconditions = [' + x", currentLineNumber));
+		        throw DataException(format("line %z: Bad header line, should be: '@numberofconditions = [' + x", currentLineNumber));
 	        }
 
 	        I64 numberOfx2Buckets = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());

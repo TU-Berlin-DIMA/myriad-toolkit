@@ -72,7 +72,7 @@ public:
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _EPSILON(0.000000001)
     {
     }
 
@@ -97,7 +97,7 @@ public:
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _EPSILON(0.000000001)
     {
         initialize(path);
     }
@@ -123,7 +123,7 @@ public:
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _EPSILON(0.000000001)
     {
         initialize(in);
     }
@@ -150,7 +150,7 @@ public:
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _EPSILON(0.000000001)
     {
         initialize(path);
     }
@@ -177,7 +177,7 @@ public:
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _EPSILON(0.000000001)
     {
         initialize(in);
     }
@@ -203,7 +203,7 @@ public:
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _EPSILON(0.000000001)
     {
         initialize(AnyCast<string>(params["path"]));
     }
@@ -230,7 +230,7 @@ public:
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _EPSILON(0.000000001)
     {
         initialize(AnyCast<string>(params["path"]));
     }
@@ -280,10 +280,10 @@ public:
      * given by the \p in parameter. When reading from the \p in stream, uses
      * the \p currentLineNumber parameter to track the current line number.
      *
-     * @param currentLineNumber A reference to the current line number.
      * @param in Input stream containing the function configuration.
+     * @param currentLineNumber A reference to the current line number.
      */
-    void initialize(istream& in, I16u& currentLineNumber);
+    void initialize(istream& in, size_t& currentLineNumber);
 
     /**
      * Returns the number of buckets for this (configured) function.
@@ -672,12 +672,12 @@ void CombinedPrFunction<T>::initialize(const Path& path)
 template<typename T>
 void CombinedPrFunction<T>::initialize(istream& in)
 {
-    I16u currentLineNumber = 1;
+    size_t currentLineNumber = 1;
     initialize(in, currentLineNumber);
 }
 
 template<typename T>
-void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
+void CombinedPrFunction<T>::initialize(istream& in, size_t& currentLineNumber)
 {
     enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
 
@@ -687,7 +687,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     // reader variables
     READ_STATE currentState = NOE; // current reader machine state
     string currentLine; // the current line
-    I16u currentItemIndex = 0; // current item index
+    size_t currentItemIndex = 0; // current item index
     RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
     // reader finite state machine
@@ -720,11 +720,11 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
             {
                 if (currentState == VLN && currentItemIndex < _numberOfValues)
                 {
-                    throw DataException(format("line %hu: Bad value probability line, should be: 'p(X) = $p_x for X = { $x }'", currentLineNumber));
+                    throw DataException(format("line %z: Bad value probability line, should be: 'p(X) = $p_x for X = { $x }'", currentLineNumber));
                 }
                 else if (currentState == BLN && currentItemIndex < _numberOfBuckets)
                 {
-                    throw DataException(format("line %hu: Bad bucket probability line, should be: 'p(X) = $p_x for X = { x \\in [$x_min, $x_max) }'", currentLineNumber));
+                    throw DataException(format("line %z: Bad bucket probability line, should be: 'p(X) = $p_x for X = { x \\in [$x_min, $x_max) }'", currentLineNumber));
                 }
                 else
                 {
@@ -740,7 +740,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         {
 	        if (!headerLine1Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line, should be: '@numberofexactvals = $N'", currentLineNumber));
+		        throw DataException(format("line %z: Bad header line, should be: '@numberofexactvals = $N'", currentLineNumber));
 	        }
 
 	        I64 numberOfValues = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
@@ -760,7 +760,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         {
 	        if (!headerLine2Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line, should be: '@numberofbins = $N'", currentLineNumber));
+		        throw DataException(format("line %z: Bad header line, should be: '@numberofbins = $N'", currentLineNumber));
 	        }
 
 	        I64 numberOfBuckets = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
@@ -782,7 +782,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         {
 	        if (!headerLine3Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line, should be: '@nullprobability = $N'", currentLineNumber));
+		        throw DataException(format("line %z: Bad header line, should be: '@nullprobability = $N'", currentLineNumber));
 	        }
 
 	        _notNullProbability = 1.0 - NumberParser::parseFloat(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
@@ -794,7 +794,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         {
 	        if (!valueLineFormat.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad value probability line, should be: 'p(X) = $p_x for X = { $x }'", currentLineNumber));
+		        throw DataException(format("line %z: Bad value probability line, should be: 'p(X) = $p_x for X = { $x }'", currentLineNumber));
 	        }
 
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
@@ -817,7 +817,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         {
 	        if (!bucketLineFormat.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad bucket probability line, should be: 'p(X) = $p_x for X = { x \\in [$x_min, $x_max) }'", currentLineNumber));
+		        throw DataException(format("line %z: Bad bucket probability line, should be: 'p(X) = $p_x for X = { x \\in [$x_min, $x_max) }'", currentLineNumber));
 	        }
 
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
@@ -848,7 +848,7 @@ void CombinedPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     }
 
     // check if extra normalization is required
-    if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
+    if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= _EPSILON)
     {
         normalize();
     }
