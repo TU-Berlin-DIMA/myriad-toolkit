@@ -15,19 +15,20 @@
  *
  */
 
-#ifndef LOCALFILEOUTPUTCOLLECTOR_H_
-#define LOCALFILEOUTPUTCOLLECTOR_H_
+#ifndef SOCKETSTREAMOUTPUTCOLLECTOR_H_
+#define SOCKETSTREAMOUTPUTCOLLECTOR_H_
 
 #include "io/AbstractOutputCollector.h"
 
-#include <Poco/File.h>
-#include <Poco/FileStream.h>
+#include <Poco/DigestEngine.h>
 #include <Poco/Logger.h>
+#include <Poco/MD5Engine.h>
 #include <Poco/NumberFormatter.h>
 #include <Poco/Path.h>
 #include <Poco/StreamCopier.h>
-
-using namespace Poco;
+#include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/StreamSocket.h>
+#include <Poco/Net/SocketStream.h>
 
 namespace Myriad {
 /**
@@ -44,7 +45,7 @@ namespace Myriad {
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template<typename RecordType>
-class LocalFileOutputCollector: public AbstractOutputCollector<RecordType>
+class SocketStreamOutputCollector: public AbstractOutputCollector<RecordType>
 {
 public:
 
@@ -54,10 +55,11 @@ public:
      * Opens an output stream in a file given by the value of the given
      * \p outputPath parameter.
      */
-    LocalFileOutputCollector(const Path& outputPath, const String& collectorName) :
+    SocketStreamOutputCollector(const Path& outputPath, const String& collectorName) :
         AbstractOutputCollector<RecordType>(),
         _outputPath(outputPath),
-        _isOpen(false),
+        _outputSocket(Poco::Net::IPAddress::IPv4),
+    	_isOpen(false),
         _flushRate(1000),
         _flushCounter(0),
         _logger(Logger::get(collectorName))
@@ -67,9 +69,10 @@ public:
     /**
      * Copy constructor.
      */
-    LocalFileOutputCollector(const LocalFileOutputCollector& o) :
+    SocketStreamOutputCollector(const SocketStreamOutputCollector& o) :
         AbstractOutputCollector<RecordType>(o),
         _outputPath(o._outputPath),
+        _outputSocket(o._outputSocket),
         _isOpen(false),
         _flushRate(o._flushRate),
         _flushCounter(o._flushCounter),
@@ -86,7 +89,7 @@ public:
      *
      * Closes the internal FileOutputStream instance if opened.
      */
-    virtual ~LocalFileOutputCollector()
+    virtual ~SocketStreamOutputCollector()
     {
         close();
     }
@@ -98,13 +101,18 @@ public:
     {
         if (!_isOpen)
         {
-            _logger.debug(format("Opening local file for output path `%s`", _outputPath.toString()));
+            _logger.debug(format("Opening socket for output path `%s` at port %hu", _outputPath.toString(), socketPortFromOutputPath(_outputPath)));
 
-	        // make sure that the output-dir exists
-	        File outputDir(_outputPath.parent());
-            outputDir.createDirectories();
+            try
+            {
+                Poco::Net::StreamSocket socket(Poco::Net::IPAddress::IPv4);
+                _outputSocket.connect(Poco::Net::SocketAddress("localhost", socketPortFromOutputPath(_outputPath)));
+            }
+            catch(const Poco::Exception& e)
+            {
+                throw RuntimeException(format("Could not connect to socket at address localhost:%hu", socketPortFromOutputPath(_outputPath)));
+            }
 
-	        _outputStream.open(_outputPath.toString(), std::ios::trunc | std::ios::binary);
 	        this->writeHeader();
 	        _isOpen = true;
 
@@ -113,7 +121,7 @@ public:
         }
         else
         {
-	        throw LogicException(format("Can't open already opened local file at `%s`", _outputPath.toString()));
+	        throw LogicException(format("Can't open already opened socket for output `%s`", _outputPath.toString()));
         }
     }
 
@@ -124,10 +132,10 @@ public:
     {
         if (_isOpen)
         {
-	        _logger.debug(format("Closing local file for output `%s`", _outputPath.toString()));
+	        _logger.debug(format("Closing socket stream for output `%s`", _outputPath.toString()));
 
 	        this->writeFooter();
-	        _outputStream.close();
+	        _outputSocket.close();
         }
     }
 
@@ -136,11 +144,12 @@ public:
      */
     void flush()
     {
-    	StreamCopier::copyStream(this->_outputBuffer, _outputStream, 8192);
+        Poco::Net::SocketStream socketStream(_outputSocket);
+    	StreamCopier::copyStream(this->_outputBuffer, socketStream, 8192);
 
         if (_isOpen)
         {
-            _outputStream.flush();
+            socketStream.flush();
         }
 
         this->_outputBuffer.str("");
@@ -159,7 +168,7 @@ public:
         	throw RuntimeException("Failed to read before-position from output stream");
         }
 
-        LocalFileOutputCollector<RecordType>::serialize(this->_outputBuffer, record);
+        SocketStreamOutputCollector<RecordType>::serialize(this->_outputBuffer, record);
 
         p2 = this->_outputBuffer.tellp();
         if (p2 == -1)
@@ -174,6 +183,20 @@ public:
         }
     }
 
+    static I16u socketPortFromOutputPath(const Path& path)
+    {
+        Poco::MD5Engine md5;
+        md5.update(path.toString());
+        const Poco::DigestEngine::Digest& digest = md5.digest();
+
+        I64 hashSuffix = ((0x000000FF & static_cast<I64>(digest.at(digest.size()-4))) << 48) |
+                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-3))) << 32) |
+                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-2))) << 16) |
+                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-1))) << 0 );
+
+        return static_cast<I16u>(50000 + ((hashSuffix % 1000 < 0) ? (1000 - (hashSuffix % 1000)) : (hashSuffix % 1000)));
+    }
+
 private:
 
     /**
@@ -184,10 +207,10 @@ private:
     /**
      * The underlying output stream.
      */
-    FileOutputStream _outputStream;
+    Poco::Net::StreamSocket _outputSocket;
 
     /**
-     * A boolean flag indicating that the underlying \p _outputFile is open.
+     * A boolean flag indicating that the underlying \p _outputSocket is open.
      */
     bool _isOpen;
 
@@ -212,4 +235,4 @@ private:
 /** @}*/// add to io group
 } // namespace Myriad
 
-#endif /* LOCALFILEOUTPUTCOLLECTOR_H_ */
+#endif /* SOCKETSTREAMOUTPUTCOLLECTOR_H_ */

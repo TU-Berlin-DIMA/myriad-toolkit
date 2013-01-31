@@ -18,11 +18,6 @@
 #ifndef ABSTRACTOUTPUTCOLLECTOR_H_
 #define ABSTRACTOUTPUTCOLLECTOR_H_
 
-#include "config/GeneratorConfig.h"
-#include "record/Record.h"
-
-#include <Poco/StreamCopier.h>
-
 using namespace Poco;
 
 namespace Myriad {

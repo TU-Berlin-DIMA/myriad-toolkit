@@ -140,11 +140,11 @@ public:
      * @param dryRun A boolean flag indicating whether the output collector
      *               should be used or not (i.e. whether it is a dry run).
      */
-    StageTask(const string& name, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
-        AbstractStageTask(name),
-        _out(generatorName, config),
+    StageTask(const string& taskName, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
+        AbstractStageTask(taskName),
+        _out(outputPath(generatorName, config), "task." + taskName + ".collector"),
         _dryRun(dryRun),
-        _logger(Logger::get("task."+name))
+        _logger(Logger::get("task." + taskName))
     {
         if (!_dryRun)
         {
@@ -166,6 +166,23 @@ public:
     }
 
 protected:
+
+    /**
+     * Computes the output path for this generator. The output path is defined
+     * as the concatenation {application.output-dir} and the
+     * {generator.GENERATOR-NAME.output-file} parameters. If the second config
+     * parameter is not defined, the GENERATOR-NAME value itself is used as
+     * default.
+     *
+     * @return path The path for the output produced by this generator.
+     */
+    static const Path outputPath(const string& generatorName, const GeneratorConfig& config)
+    {
+        Path path(config.getString(format("generator.%s.output-file", generatorName), generatorName));
+        path.makeAbsolute(config.getString("application.output-dir"));
+
+        return path;
+    }
 
     /**
      * An output stream used for writing the task output data.
