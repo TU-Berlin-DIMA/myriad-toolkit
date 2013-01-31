@@ -21,6 +21,8 @@
 #include "config/GeneratorConfig.h"
 #include "record/Record.h"
 
+#include <Poco/StreamCopier.h>
+
 using namespace Poco;
 
 namespace Myriad {
@@ -47,16 +49,14 @@ public:
     /**
      * Constructor.
      */
-    AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config) :
-        _config(config)
+    AbstractOutputCollector()
     {
     }
 
     /**
      * Copy constructor.
      */
-    AbstractOutputCollector(const AbstractOutputCollector& o) :
-        _config(o._config)
+    AbstractOutputCollector(const AbstractOutputCollector& o)
     {
     }
 
@@ -64,6 +64,20 @@ public:
      * Copy constructor.
      */
     virtual ~AbstractOutputCollector()
+    {
+    }
+
+    /**
+     * Writes out an output specific header.
+     */
+    virtual void writeHeader()
+    {
+    }
+
+    /**
+     * Writes out an output specific footer.
+     */
+    virtual void writeFooter()
     {
     }
 
@@ -78,26 +92,26 @@ public:
     virtual void close() = 0;
 
     /**
-     * Write an output header.
-     */
-    virtual void writeHeader() = 0;
-
-    /**
-     * Write an output footer.
-     */
-    virtual void writeFooter() = 0;
-
-    /**
      * Collect and write out a single \p RecordType instance.
      */
     virtual void collect(const RecordType& record) = 0;
 
+    /**
+     * Record serialization method.
+     *
+     * Writes the generated \p record into the given \p outputBuffer.
+     *
+     *
+     *
+     */
+    static void serialize(std::stringstream& outputBuffer, const RecordType& record)
+    {
+        outputBuffer << "abstract record #" << record.genID() << "\n";
+    }
+
 protected:
 
-    /**
-     * A reference to the generator config.
-     */
-    const GeneratorConfig& _config;
+    std::stringstream _outputBuffer;
 };
 
 /** @}*/// add to io group

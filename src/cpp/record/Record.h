@@ -16,6 +16,7 @@
  */
 
 #include "core/types.h"
+#include "io/AbstractOutputCollector.h"
 #include "config/EnumSetPool.h"
 
 #include <Poco/Any.h>

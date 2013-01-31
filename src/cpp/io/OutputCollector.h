@@ -36,10 +36,6 @@ template<class RecordType> struct OutputTraits
      * An alias to the output collector implementation to be used.
      */
     typedef LocalFileOutputCollector<RecordType> CollectorType;
-    /**
-     * An alias of the stream type associated with the specified CollectorType.
-     */
-    typedef typename CollectorType::StreamType StreamType;
 };
 
 /** @}*/// add to io group
