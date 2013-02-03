@@ -28,6 +28,7 @@
 #include <Poco/Exception.h>
 #include <Poco/Format.h>
 #include <Poco/Util/HelpFormatter.h>
+#include <Poco/Util/RegExpValidator.h>
 
 using std::string;
 using Poco::format;
@@ -55,11 +56,17 @@ void Frontend::initialize(Application& self)
         _ui.information(format("%s (Version %s)", Constant::APP_NAME, Constant::APP_VERSION));
     }
 
+    // set default values for the optional parameters
     if (!config().hasProperty("application.config-dir"))
     {
         config().setString("application.config-dir", "../config");
     }
+    if (!config().hasProperty("application.output-type"))
+    {
+        config().setString("application.output-type", "file");
+    }
 
+    // make sure that 'application.config-dir' is absolute
     Path configDir(config().getString("application.config-dir"));
     if (!configDir.isAbsolute())
     {
@@ -67,6 +74,7 @@ void Frontend::initialize(Application& self)
         config().setString("application.config-dir", configDir.toString());
     }
 
+    // load '{application.baseName}.properties' configuration
     loadConfiguration(config().getString("application.config-dir") + "/" + config().getString("application.baseName") + ".properties");
 
     // if the custom-stages flag is not set, enable all stages
@@ -165,6 +173,13 @@ void Frontend::defineOptions(OptionSet& options)
 	        .repeatable(false)
 	        .argument("<path>")
 	        .binding("application.output-base"));
+
+    options.addOption(Option("output-type", "t", "output collector type ('file' or 'socket')")
+            .required(false)
+            .repeatable(false)
+            .argument("<type>")
+            .validator(new RegExpValidator("^(file|socket)$"))
+            .binding("application.output-type"));
 
     options.addOption(Option("coordinator-host", "H", "coordinator server hostname")
 	        .required(false)

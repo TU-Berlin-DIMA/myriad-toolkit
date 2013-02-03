@@ -18,7 +18,12 @@
 #ifndef ABSTRACTOUTPUTCOLLECTOR_H_
 #define ABSTRACTOUTPUTCOLLECTOR_H_
 
-using namespace Poco;
+#include "core/types.h"
+
+#include <Poco/Path.h>
+#include <Poco/RefCountedObject.h>
+
+#include <sstream>
 
 namespace Myriad {
 /**
@@ -37,14 +42,14 @@ namespace Myriad {
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template<typename RecordType>
-class AbstractOutputCollector
+class AbstractOutputCollector : public Poco::RefCountedObject
 {
 public:
 
     /**
      * Constructor.
      */
-    AbstractOutputCollector()
+    AbstractOutputCollector(const Poco::Path& outputPath, const String& collectorName)
     {
     }
 
@@ -87,6 +92,11 @@ public:
     virtual void close() = 0;
 
     /**
+     * Flushes the underlying output stream.
+     */
+    virtual void flush() = 0;
+
+    /**
      * Collect and write out a single \p RecordType instance.
      */
     virtual void collect(const RecordType& record) = 0;
@@ -96,8 +106,9 @@ public:
      *
      * Writes the generated \p record into the given \p outputBuffer.
      *
-     *
-     *
+     * @param outputBuffer A reference to the <tt>std::stringstream</tt> output
+     *        buffer of the invoking <tt>AbstractOutputCollector</tt>.
+     * @param record The record to be serialized on the output buffer.
      */
     static void serialize(std::stringstream& outputBuffer, const RecordType& record)
     {

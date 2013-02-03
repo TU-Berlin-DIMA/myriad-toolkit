@@ -57,26 +57,7 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
     setString("generator.ENV.config-dir", getString("application.config-dir"));
     setString("generator.ENV.output-dir", getString("application.output-dir"));
 
-    // make sure that the job, log and output paths exist
-
-    // job-dir
-    File jobDir(getString("application.job-dir"));
-    jobDir.createDirectories();
-
-    // log-path
-    File logPath(getString("application.log-path"));
-    if (logPath.exists())
-    {
-        logPath.remove(true);
-    }
-    File logDir(Path(getString("application.log-path")).parent());
-    logDir.createDirectories();
-
-    // configure log channels
-    FormattingChannel* logChannel = new FormattingChannel(new PatternFormatter("%t"), new SimpleFileChannel());
-    logChannel->setProperty("path", getString("application.log-path"));
-    Logger::root().setChannel(logChannel);
-    _logger.setChannel(logChannel);
+    configureLogging();
 
     _logger.information("Loading generator configuration");
 
@@ -86,8 +67,29 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 
     if (hasProperty("common.master.seed"))
     {
-        // initialize the master random stream (otherwise use the default master seed)
+        // initialize the master random stream (otherwise - use the default master seed)
         _masterPRNG.seed(RandomStream::Seed(getString("common.master.seed")));
+    }
+}
+
+void AbstractGeneratorConfig::configureLogging()
+{
+    if (getString("application.output-type") != "socket")
+    {
+        // log-path
+        File logPath(getString("application.log-path"));
+        if (logPath.exists())
+        {
+            logPath.remove(true);
+        }
+        File logDir(Path(getString("application.log-path")).parent());
+        logDir.createDirectories();
+
+        // configure log channels
+        FormattingChannel* logChannel = new FormattingChannel(new PatternFormatter("%t"), new SimpleFileChannel());
+        logChannel->setProperty("path", getString("application.log-path"));
+        Logger::root().setChannel(logChannel);
+        _logger.setChannel(logChannel);
     }
 }
 

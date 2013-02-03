@@ -125,9 +125,9 @@ public:
      */
     typedef typename RecordTraits<RecordType>::GeneratorType SequenceGeneratorType;
     /**
-     * The OutputCollector type associated with the given \p RecordType.
+     * The \p AbstractOutputCollector template specialization for this \p RecordType.
      */
-    typedef typename OutputTraits<RecordType>::CollectorType CollectorType;
+    typedef AbstractOutputCollector<RecordType> AbstractOutputCollectorType;
 
     /**
      * Constructor.
@@ -142,13 +142,13 @@ public:
      */
     StageTask(const string& taskName, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
         AbstractStageTask(taskName),
-        _out(outputPath(generatorName, config), "task." + taskName + ".collector"),
+        _out(OutputCollector<RecordType>::factory(config.outputType(), config.outputPath(generatorName), "task." + taskName + ".collector")),
         _dryRun(dryRun),
         _logger(Logger::get("task." + taskName))
     {
         if (!_dryRun)
         {
-	        _out.open();
+	        _out->open();
         }
     }
 
@@ -161,33 +161,16 @@ public:
     {
         if (!_dryRun)
         {
-	        _out.close();
+	        _out->close();
         }
     }
 
 protected:
 
     /**
-     * Computes the output path for this generator. The output path is defined
-     * as the concatenation {application.output-dir} and the
-     * {generator.GENERATOR-NAME.output-file} parameters. If the second config
-     * parameter is not defined, the GENERATOR-NAME value itself is used as
-     * default.
-     *
-     * @return path The path for the output produced by this generator.
-     */
-    static const Path outputPath(const string& generatorName, const GeneratorConfig& config)
-    {
-        Path path(config.getString(format("generator.%s.output-file", generatorName), generatorName));
-        path.makeAbsolute(config.getString("application.output-dir"));
-
-        return path;
-    }
-
-    /**
      * An output stream used for writing the task output data.
      */
-    CollectorType _out;
+    AutoPtr<AbstractOutputCollectorType> _out;
 
     /**
      * A flag indicating whether writing the output is required.

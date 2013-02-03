@@ -24,7 +24,6 @@
 #include <Poco/FileStream.h>
 #include <Poco/Logger.h>
 #include <Poco/NumberFormatter.h>
-#include <Poco/Path.h>
 #include <Poco/StreamCopier.h>
 
 using namespace Poco;
@@ -55,7 +54,7 @@ public:
      * \p outputPath parameter.
      */
     LocalFileOutputCollector(const Path& outputPath, const String& collectorName) :
-        AbstractOutputCollector<RecordType>(),
+        AbstractOutputCollector<RecordType>(outputPath, collectorName),
         _outputPath(outputPath),
         _isOpen(false),
         _flushRate(1000),

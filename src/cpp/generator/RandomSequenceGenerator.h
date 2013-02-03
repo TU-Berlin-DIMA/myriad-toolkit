@@ -416,7 +416,7 @@ public:
 
 	        if (!this->_dryRun)
 	        {
-		        this->_out.collect(*recordPtr);
+		        this->_out->collect(*recordPtr);
 	        }
 
 	        ++current;
@@ -430,7 +430,7 @@ public:
         }
 
         // flush the output collector contents
-        this->_out.flush();
+        this->_out->flush();
 
         this->_progress = 1.0;
 

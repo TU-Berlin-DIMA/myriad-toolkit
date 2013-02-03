@@ -127,6 +127,16 @@ public:
     }
 
     /**
+     * Retrieves a reference to the global function pool.
+     *
+     * @return A reference to the global function pool.
+     */
+    FunctionPool& functions()
+    {
+        return _functionPool;
+    }
+
+    /**
      * Helper function - loads an enumerated set from a flat file to a vector.
      *
      * @param key
@@ -135,7 +145,7 @@ public:
      */
     void enumSet(MyriadEnumSet* enumSet)
     {
-        _enumSets.add(enumSet);
+        _enumSetPool.add(enumSet);
     }
 
     /**
@@ -145,7 +155,7 @@ public:
      */
     const vector<string>& enumSet(string key)
     {
-        return _enumSets.get(key).values();
+        return _enumSetPool.get(key).values();
     }
 
     /**
@@ -155,7 +165,7 @@ public:
      */
     EnumSetPool& enumSets()
     {
-        return _enumSets;
+        return _enumSetPool;
     }
 
     /**
@@ -163,7 +173,7 @@ public:
      *
      * @return the 'generator.{\p name}.sequence.cardinality' config parameter.
      */
-    ID cardinality(const string name)
+    ID cardinality(const string name) const
     {
         return fromString<I64u>(getString("generator." + name + ".sequence.cardinality"));
     }
@@ -176,7 +186,7 @@ public:
      *
      * @return the 'generator.{\p name}.partition.begin' config parameter.
      */
-    ID genIDBegin(const string name)
+    ID genIDBegin(const string name) const
     {
         return fromString<I64u>(getString("generator." + name + ".partition.begin"));
     }
@@ -189,9 +199,39 @@ public:
      *
      * @return the 'generator.{\p name}.partition.begin' config parameter.
      */
-    ID genIDEnd(const string name)
+    ID genIDEnd(const string name) const
     {
         return fromString<I64u>(getString("generator." + name + ".partition.end"));
+    }
+
+    /**
+     * Computes the output path for this generator. The output path is defined
+     * as the concatenation {application.output-dir} and the
+     * {generator.GENERATOR-NAME.output-file} parameters. If the second config
+     * parameter is not defined, the GENERATOR-NAME value itself is used as
+     * default.
+     *
+     * @return The path for the output produced by the generator identified by
+     *         the given \p name.
+     */
+    Path outputPath(const String& name) const
+    {
+        Path path(getString(format("generator.%s.output-file", name), name));
+        path.makeAbsolute(getString("application.output-dir"));
+
+        return path;
+    }
+
+    /**
+     * Computes the output type for this generator. The output type is bound to
+     * the {application.output-type} config parameter and can be either 'file'
+     * or 'socket' (default is 'file').
+     *
+     * @return The \p AbstractOutputCollector type used by all generators.
+     */
+    String outputType() const
+    {
+        return getString("application.output-type");
     }
 
     /**
@@ -202,7 +242,7 @@ public:
      *
      * @return the application scaling factor
      */
-    Decimal scalingFactor()
+    Decimal scalingFactor() const
     {
         return getDouble("application.scaling-factor");
     }
@@ -215,7 +255,7 @@ public:
      *
      * @return the number of chunks
      */
-    I16u numberOfChunks()
+    I16u numberOfChunks() const
     {
         return getInt("common.partitioning.number-of-chunks");
     }
@@ -228,7 +268,7 @@ public:
      *
      * @return the number of chunks
      */
-    I16u nodeID()
+    I16u nodeID() const
     {
         return getInt("common.partitioning.chunks-id");
     }
@@ -254,6 +294,11 @@ public:
     }
 
 protected:
+
+    /**
+     * Helper function - configures the logging subsystem.
+     */
+    void configureLogging();
 
     /**
      * Helper function - loads functions.
@@ -321,7 +366,7 @@ protected:
     /**
      * The global enum sets pool.
      */
-    EnumSetPool _enumSets;
+    EnumSetPool _enumSetPool;
 
     /**
      * A 'generator.config' logger instance.

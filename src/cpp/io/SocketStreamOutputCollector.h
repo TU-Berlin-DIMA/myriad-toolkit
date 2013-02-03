@@ -24,7 +24,6 @@
 #include <Poco/Logger.h>
 #include <Poco/MD5Engine.h>
 #include <Poco/NumberFormatter.h>
-#include <Poco/Path.h>
 #include <Poco/StreamCopier.h>
 #include <Poco/Net/SocketAddress.h>
 #include <Poco/Net/StreamSocket.h>
@@ -56,7 +55,7 @@ public:
      * \p outputPath parameter.
      */
     SocketStreamOutputCollector(const Path& outputPath, const String& collectorName) :
-        AbstractOutputCollector<RecordType>(),
+        AbstractOutputCollector<RecordType>(outputPath, collectorName),
         _outputPath(outputPath),
         _outputSocket(Poco::Net::IPAddress::IPv4),
     	_isOpen(false),
@@ -194,7 +193,7 @@ public:
                          ((0x000000FF & static_cast<I64>(digest.at(digest.size()-2))) << 16) |
                          ((0x000000FF & static_cast<I64>(digest.at(digest.size()-1))) << 0 );
 
-        return static_cast<I16u>(50000 + ((hashSuffix % 1000 < 0) ? (1000 - (hashSuffix % 1000)) : (hashSuffix % 1000)));
+        return static_cast<I16u>(42100 + ((hashSuffix % 900 < 0) ? (1000 - (hashSuffix % 900)) : (hashSuffix % 900)));
     }
 
 private:

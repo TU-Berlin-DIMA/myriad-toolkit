@@ -994,7 +994,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'template<>' 
-        print >> wfile, 'inline void OutputTraits<%(ns)s::Base%(t)s>::CollectorType::serialize(OutputTraits<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'inline void AbstractOutputCollector<%(ns)s::Base%(t)s>::serialize(std::stringstream& outputBuffer, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         
         for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
@@ -1002,15 +1002,15 @@ class RecordTypeCompiler(SourceCompiler):
             fieldName = field.getAttribute("name")
             
             if field.isVectorType():
-                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                print >> wfile, '    write(outputBuffer, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
             elif fieldType == "Enum":
-                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
-                print >> wfile, '    out << \'|\';'
+                print >> wfile, '    write(outputBuffer, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
+                print >> wfile, '    outputBuffer << \'|\';'
             else:
-                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
-                print >> wfile, '    out << \'|\';'
+                print >> wfile, '    write(outputBuffer, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                print >> wfile, '    outputBuffer << \'|\';'
 
-        print >> wfile, '    out << \'\\n\';'
+        print >> wfile, '    outputBuffer << \'\\n\';'
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -1069,9 +1069,9 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
         print >> wfile, 'template<>'
-        print >> wfile, 'inline void OutputTraits<%(ns)s::%(t)s>::CollectorType::serialize(OutputTraits<%(ns)s::%(t)s>::CollectorType::StreamType& out, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, 'inline void AbstractOutputCollector<%(ns)s::%(t)s>::serialize(std::stringstream& outputBuffer, const %(ns)s::%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
-        print >> wfile, '    OutputTraits<%(ns)s::Base%(t)s>::CollectorType::serialize(out, record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
+        print >> wfile, '    AbstractOutputCollector<%(ns)s::Base%(t)s>::serialize(outputBuffer, record);' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
