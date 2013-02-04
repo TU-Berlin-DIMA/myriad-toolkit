@@ -4,6 +4,7 @@
 * Implemented state machine reader for MyriadEnumSet objects
 * Added support for 'char' and 'vector' Myriad record types
 * Added runtime and XML specification support for element_wise_value_providers (can be used together with vector typed fields)
+* Refactored the I/O package - added support for 'file' and 'socket' output collectors.
 
 0.2.0 - 2012-22-11
 
@@ -40,6 +41,7 @@
 * refactored stage logic - stages are now class instanes with unique name and id instead of a simple enum type
 * fixed bug in the GeneratorPool::get() method
 * added support for bounded normal probability (not ideal as the implementation method skews the probabilities)
+* Refactored the I/O package - added support for socket OutputCollectors
 
 0.1.5 - 2011-09-30
 
