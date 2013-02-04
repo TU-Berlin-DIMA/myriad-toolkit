@@ -40,6 +40,7 @@
 * refactored stage logic - stages are now class instanes with unique name and id instead of a simple enum type
 * fixed bug in the GeneratorPool::get() method
 * added support for bounded normal probability (not ideal as the implementation method skews the probabilities)
+* Refactored the I/O package - added support for socket OutputCollectors
 
 0.1.5 - 2011-09-30
 
