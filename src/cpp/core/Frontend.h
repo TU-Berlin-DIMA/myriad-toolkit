@@ -77,6 +77,21 @@ public:
      */
     void handleExecuteStage(const std::string& name, const std::string& value);
 
+    /**
+     * Handles the '-o<output-type>' CLI parameter.
+     *
+     * If the parameter is 'file', sets the 'application.output-type' parameter
+     * to 'file.'.
+     *
+     * If the parameter is 'socket(port)', sets the 'application.output-base'
+     * parameter to 'socket' and the 'application.output-port' parameter to the
+     * given port.
+     *
+     * @param name The name of the processed parameter (always `output-type`).
+     * @param value The processed value (`file` or `socket(port)`).
+     */
+    void handleOutputType(const std::string& name, const std::string& value);
+
 protected:
 
     /**

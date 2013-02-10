@@ -51,13 +51,14 @@ public:
     /**
      * Constructor.
      *
-     * Opens an output stream in a file given by the value of the given
-     * \p outputPath parameter.
+     * Opens an output stream for the given \p outputPath in a localhost output
+     * socket specified by the given \p outputPort.
      */
-    SocketStreamOutputCollector(const Path& outputPath, const String& collectorName) :
+    SocketStreamOutputCollector(const Path& outputPath, const I16u outputPort, const String& collectorName) :
         AbstractOutputCollector<RecordType>(outputPath, collectorName),
         _outputPath(outputPath),
         _outputSocket(Poco::Net::IPAddress::IPv4),
+        _outputPort(outputPort),
     	_isOpen(false),
         _flushRate(1000),
         _flushCounter(0),
@@ -72,6 +73,7 @@ public:
         AbstractOutputCollector<RecordType>(o),
         _outputPath(o._outputPath),
         _outputSocket(o._outputSocket),
+        _outputPort(o._outputPort),
         _isOpen(false),
         _flushRate(o._flushRate),
         _flushCounter(o._flushCounter),
@@ -100,16 +102,16 @@ public:
     {
         if (!_isOpen)
         {
-            _logger.debug(format("Opening socket for output path `%s` at port %hu", _outputPath.toString(), socketPortFromOutputPath(_outputPath)));
+            _logger.debug(format("Opening socket for output path `%s` at port %hu", _outputPath.toString(), _outputPort));
 
             try
             {
                 Poco::Net::StreamSocket socket(Poco::Net::IPAddress::IPv4);
-                _outputSocket.connect(Poco::Net::SocketAddress("localhost", socketPortFromOutputPath(_outputPath)));
+                _outputSocket.connect(Poco::Net::SocketAddress("localhost", _outputPort));
             }
             catch(const Poco::Exception& e)
             {
-                throw RuntimeException(format("Could not connect to socket at address localhost:%hu", socketPortFromOutputPath(_outputPath)));
+                throw RuntimeException(format("Could not connect to socket at address localhost:%hu", _outputPort));
             }
 
 	        this->writeHeader();
@@ -182,19 +184,19 @@ public:
         }
     }
 
-    static I16u socketPortFromOutputPath(const Path& path)
-    {
-        Poco::MD5Engine md5;
-        md5.update(path.toString());
-        const Poco::DigestEngine::Digest& digest = md5.digest();
-
-        I64 hashSuffix = ((0x000000FF & static_cast<I64>(digest.at(digest.size()-4))) << 48) |
-                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-3))) << 32) |
-                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-2))) << 16) |
-                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-1))) << 0 );
-
-        return static_cast<I16u>(42100 + ((hashSuffix % 900 < 0) ? (1000 - (hashSuffix % 900)) : (hashSuffix % 900)));
-    }
+//    static I16u socketPortFromOutputPath(const Path& path)
+//    {
+//        Poco::MD5Engine md5;
+//        md5.update(path.toString());
+//        const Poco::DigestEngine::Digest& digest = md5.digest();
+//
+//        I64 hashSuffix = ((0x000000FF & static_cast<I64>(digest.at(digest.size()-4))) << 48) |
+//                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-3))) << 32) |
+//                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-2))) << 16) |
+//                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-1))) << 0 );
+//
+//        return static_cast<I16u>(42100 + ((hashSuffix % 900 < 0) ? (1000 - (hashSuffix % 900)) : (hashSuffix % 900)));
+//    }
 
 private:
 
@@ -207,6 +209,11 @@ private:
      * The underlying output stream.
      */
     Poco::Net::StreamSocket _outputSocket;
+
+    /**
+     * The connection port for the stream socket.
+     */
+    const I16u _outputPort;
 
     /**
      * A boolean flag indicating that the underlying \p _outputSocket is open.

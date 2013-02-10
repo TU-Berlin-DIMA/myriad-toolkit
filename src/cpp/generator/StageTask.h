@@ -142,7 +142,7 @@ public:
      */
     StageTask(const string& taskName, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
         AbstractStageTask(taskName),
-        _out(OutputCollector<RecordType>::factory(config.outputType(), config.outputPath(generatorName), "task." + taskName + ".collector")),
+        _out(OutputCollector<RecordType>::factory(config.outputType(), config.outputPort(), config.outputPath(generatorName), "task." + taskName + ".collector")),
         _dryRun(dryRun),
         _logger(Logger::get("task." + taskName))
     {
