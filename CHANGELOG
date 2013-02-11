@@ -4,7 +4,7 @@
 * Implemented state machine reader for MyriadEnumSet objects
 * Added support for 'char' and 'vector' Myriad record types
 * Added runtime and XML specification support for element_wise_value_providers (can be used together with vector typed fields)
-* Refactored the I/O package. Added support either local file or socket output, decided at runtime based on the `--output-type` CLI parameter.
+* Refactored the I/O package - added support for 'file' and 'socket' output collectors decided at runtime based on provided `--output-type` CLI parameter.
 
 0.2.0 - 2012-22-11
 
