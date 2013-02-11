@@ -18,7 +18,11 @@
 #ifndef OUTPUTCOLLECTOR_H_
 #define OUTPUTCOLLECTOR_H_
 
+#include "io/AbstractOutputCollector.h"
 #include "io/LocalFileOutputCollector.h"
+#include "io/SocketStreamOutputCollector.h"
+
+#include <Poco/AutoPtr.h>
 
 namespace Myriad {
 /**
@@ -26,20 +30,35 @@ namespace Myriad {
  * @{*/
 
 /**
- * A generic traits structure for I/O related type information.
+ * OutputCollector factory.
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
-template<class RecordType> struct OutputTraits
+template<class RecordType> struct OutputCollector
 {
     /**
-     * An alias to the output collector implementation to be used.
+     * Factory method.
+     *
+     * Constructs appropriate output collector based on given \p collectorType.
+     *
+     * @return The constructed <tt>AbstractOutputCollector<RecordType></tt>
+     *         subclass instance.
      */
-    typedef LocalFileOutputCollector<RecordType> CollectorType;
-    /**
-     * An alias of the stream type associated with the specified CollectorType.
-     */
-    typedef typename CollectorType::StreamType StreamType;
+    static Poco::AutoPtr< AbstractOutputCollector<RecordType> > factory(const String& collectorType, const I16u collectorPort, const Poco::Path& outputPath, const String& collectorName)
+    {
+        // local file
+        if (collectorType == "file")
+        {
+            return new LocalFileOutputCollector<RecordType>(outputPath, collectorName);
+        }
+        // socket stream
+        if (collectorType == "socket")
+        {
+            return new SocketStreamOutputCollector<RecordType>(outputPath, collectorPort, collectorName);
+        }
+        // unknown output collector type
+        throw RuntimeException("Cannot construct output collector of type `" + collectorType + "`");
+    }
 };
 
 /** @}*/// add to io group

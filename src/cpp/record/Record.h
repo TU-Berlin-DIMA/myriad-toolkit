@@ -16,9 +16,9 @@
  */
 
 #include "core/types.h"
+#include "io/AbstractOutputCollector.h"
+#include "config/EnumSetPool.h"
 
-#include <map>
-#include <string>
 #include <Poco/Any.h>
 #include <Poco/AutoPtr.h>
 #include <Poco/DynamicAny.h>
@@ -218,12 +218,12 @@ public:
     /**
      * Default constructor.
      *
-     * @param enumSets A collection of enumerated sets required for the
+     * @param enumSets The pool of enumerated sets required for the
      *        generation of this \p RecordType.
      * @param cardinality The cardinality of the sequence generated for this
      *        \p RecordType.
      */
-    RecordMeta(const map<string, vector<string> >& enumSets, const I64u cardinality = 0) :
+    RecordMeta(const EnumSetPool& enumSets, const I64u cardinality = 0) :
         _cardinality(cardinality) // FIXME: mandatory cardinality
     {
     }

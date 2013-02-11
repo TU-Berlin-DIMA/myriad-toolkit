@@ -25,11 +25,12 @@ C_UPPER_DEPS :=
 SUBDIRS := \
 vendor/myriad-toolkit/src/cpp/math/random \
 vendor/myriad-toolkit/src/cpp/math/probability \
+vendor/myriad-toolkit/src/cpp/math/algebra \
 vendor/myriad-toolkit/src/cpp/generator \
+vendor/myriad-toolkit/src/cpp/core/types \
 vendor/myriad-toolkit/src/cpp/core \
 vendor/myriad-toolkit/src/cpp/config \
 vendor/myriad-toolkit/src/cpp/communication \
-src/cpp/io \
 src/cpp/generator/base \
 src/cpp/generator \
 src/cpp/core \

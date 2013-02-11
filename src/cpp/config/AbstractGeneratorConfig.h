@@ -19,8 +19,9 @@
 #define ABSTRACTGENERATORCONFIG_H_
 
 #include "core/types.h"
-#include "config/ObjectBuilder.h"
+#include "config/EnumSetPool.h"
 #include "config/FunctionPool.h"
+#include "config/ObjectBuilder.h"
 #include "math/probability/Probability.h"
 #include "math/random/RandomStream.h"
 
@@ -91,6 +92,18 @@ public:
     void initialize(AbstractConfiguration& appConfig);
 
     /**
+     * Reads a parameter identified by the key 'generator.{\p key}' from tries
+     * to convert it to a \p ParameterType instance using the fromString
+     * conversion method.
+     *
+     * @return the \p ParameterType parameter identified by 'generator.{\p key}'
+     */
+    template<class ParameterType> ParameterType parameter(string key) const
+    {
+        return fromString<ParameterType>(getString("generator." + key));
+    }
+
+    /**
      * Wrapper around the FunctionPool::add() method of the private
      * FunctionPool member.
      *
@@ -114,35 +127,45 @@ public:
     }
 
     /**
-     * Reads a parameter identified by the key 'generator.{\p key}' from tries
-     * to convert it to a \p ParameterType instance using the fromString
-     * conversion method.
+     * Retrieves a reference to the global function pool.
      *
-     * @return the \p ParameterType parameter identified by 'generator.{\p key}'
+     * @return A reference to the global function pool.
      */
-    template<class ParameterType> ParameterType parameter(string key) const
+    FunctionPool& functions()
     {
-        return fromString<ParameterType>(getString("generator." + key));
+        return _functionPool;
     }
 
     /**
-     * Retrieves the enumerated set identified by the given \p key.
+     * Helper function - loads an enumerated set from a flat file to a vector.
+     *
+     * @param key
+     * @param path
+     *
+     */
+    void enumSet(MyriadEnumSet* enumSet)
+    {
+        _enumSetPool.add(enumSet);
+    }
+
+    /**
+     * Retrieves the enum set identified by the given \p key.
      *
      * @return a const reference to the enumerated set identified by \p key
      */
     const vector<string>& enumSet(string key)
     {
-        return _enumSets[key];
+        return _enumSetPool.get(key).values();
     }
 
     /**
-     * Retrieves the map containing all enumerated sets.
+     * Retrieves a reference to the global enum set pool.
      *
-     * @return the map containing all enumerated sets.
+     * @return A reference to the global enum set pool.
      */
-    map<string, vector<string> >& enumSets()
+    EnumSetPool& enumSets()
     {
-        return _enumSets;
+        return _enumSetPool;
     }
 
     /**
@@ -150,7 +173,7 @@ public:
      *
      * @return the 'generator.{\p name}.sequence.cardinality' config parameter.
      */
-    ID cardinality(const string name)
+    ID cardinality(const string name) const
     {
         return fromString<I64u>(getString("generator." + name + ".sequence.cardinality"));
     }
@@ -163,7 +186,7 @@ public:
      *
      * @return the 'generator.{\p name}.partition.begin' config parameter.
      */
-    ID genIDBegin(const string name)
+    ID genIDBegin(const string name) const
     {
         return fromString<I64u>(getString("generator." + name + ".partition.begin"));
     }
@@ -176,9 +199,50 @@ public:
      *
      * @return the 'generator.{\p name}.partition.begin' config parameter.
      */
-    ID genIDEnd(const string name)
+    ID genIDEnd(const string name) const
     {
         return fromString<I64u>(getString("generator." + name + ".partition.end"));
+    }
+
+    /**
+     * Computes the output path for this generator. The output path is defined
+     * as the concatenation {application.output-dir} and the
+     * {generator.GENERATOR-NAME.output-file} parameters. If the second config
+     * parameter is not defined, the GENERATOR-NAME value itself is used as
+     * default.
+     *
+     * @return The path for the output produced by the generator identified by
+     *         the given \p name.
+     */
+    Path outputPath(const String& name) const
+    {
+        Path path(getString(format("generator.%s.output-file", name), name));
+        path.makeAbsolute(getString("application.output-dir"));
+
+        return path;
+    }
+
+    /**
+     * Returns the application output type. The output type is bound to the
+     * {application.output-type} config parameter and can be either 'file' or
+     * 'socket' (default is 'file').
+     *
+     * @return The \p AbstractOutputCollector type.
+     */
+    String outputType() const
+    {
+        return getString("application.output-type");
+    }
+
+    /**
+     * Returns the application output port to be used by 'socket' collectors.
+     * The port is bound to the {application.output-port} config parameter.
+     *
+     * @return The socket port for \p SocketStreamOutputCollector instances.
+     */
+    I16u outputPort() const
+    {
+        return static_cast<I16u>(getInt("application.output-port", 0));
     }
 
     /**
@@ -189,7 +253,7 @@ public:
      *
      * @return the application scaling factor
      */
-    Decimal scalingFactor()
+    Decimal scalingFactor() const
     {
         return getDouble("application.scaling-factor");
     }
@@ -202,7 +266,7 @@ public:
      *
      * @return the number of chunks
      */
-    I16u numberOfChunks()
+    I16u numberOfChunks() const
     {
         return getInt("common.partitioning.number-of-chunks");
     }
@@ -215,7 +279,7 @@ public:
      *
      * @return the number of chunks
      */
-    I16u nodeID()
+    I16u nodeID() const
     {
         return getInt("common.partitioning.chunks-id");
     }
@@ -243,13 +307,9 @@ public:
 protected:
 
     /**
-     * Helper function - loads an enumerated set from a flat file to a vector.
-     *
-     * @param key
-     * @param path
-     *
+     * Helper function - configures the logging subsystem.
      */
-    void bindEnumSet(const string& key, Path path);
+    void configureLogging();
 
     /**
      * Helper function - loads functions.
@@ -315,9 +375,9 @@ protected:
     FunctionPool _functionPool;
 
     /**
-     * The string sets bound from the config.
+     * The global enum sets pool.
      */
-    map<string, vector<string> > _enumSets;
+    EnumSetPool _enumSetPool;
 
     /**
      * A 'generator.config' logger instance.

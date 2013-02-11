@@ -28,6 +28,7 @@
 #include <Poco/Exception.h>
 #include <Poco/Format.h>
 #include <Poco/Util/HelpFormatter.h>
+#include <Poco/Util/RegExpValidator.h>
 
 using std::string;
 using Poco::format;
@@ -55,11 +56,17 @@ void Frontend::initialize(Application& self)
         _ui.information(format("%s (Version %s)", Constant::APP_NAME, Constant::APP_VERSION));
     }
 
+    // set default values for the optional parameters
     if (!config().hasProperty("application.config-dir"))
     {
         config().setString("application.config-dir", "../config");
     }
+    if (!config().hasProperty("application.output-type"))
+    {
+        config().setString("application.output-type", "file");
+    }
 
+    // make sure that 'application.config-dir' is absolute
     Path configDir(config().getString("application.config-dir"));
     if (!configDir.isAbsolute())
     {
@@ -67,6 +74,7 @@ void Frontend::initialize(Application& self)
         config().setString("application.config-dir", configDir.toString());
     }
 
+    // load '{application.baseName}.properties' configuration
     loadConfiguration(config().getString("application.config-dir") + "/" + config().getString("application.baseName") + ".properties");
 
     // if the custom-stages flag is not set, enable all stages
@@ -166,6 +174,13 @@ void Frontend::defineOptions(OptionSet& options)
 	        .argument("<path>")
 	        .binding("application.output-base"));
 
+    options.addOption(Option("output-type", "t", "output collector type ('file' or 'socket[port]')")
+            .required(false)
+            .repeatable(false)
+            .argument("<type>")
+            .validator(new RegExpValidator("^(file|socket\\[\\d{4,5}\\])$"))
+            .callback(OptionCallback<Frontend> (this, &Frontend::handleOutputType)));
+
     options.addOption(Option("coordinator-host", "H", "coordinator server hostname")
 	        .required(false)
 	        .repeatable(false)
@@ -195,6 +210,21 @@ void Frontend::handleExecuteStage(const string& name, const string& stage)
 	        config().setBool("application.custom-stages", true);
 	        break;
         }
+    }
+}
+
+void Frontend::handleOutputType(const string& name, const string& value)
+{
+    if (value.substr(0, 4) == "file")
+    {
+        config().setString("application.output-type", "file");
+    }
+    else if (value.substr(0, 6) == "socket")
+    {
+        config().setString("application.output-type", "socket");
+        config().setInt("application.output-port", fromString<int>(value.substr(7, value.size()-8)));
+
+        _ui.information("Output port is " + toString<int>(config().getInt("application.output-port")));
     }
 }
 

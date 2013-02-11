@@ -25,20 +25,49 @@
 using namespace Poco;
 
 namespace Myriad {
+/**
+ * @addtogroup runtime_provider_reference
+ * @{*/
 
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// reference provider for clustered references
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
+/**
+ * Reference provider for random references.
+ *
+ * This component binds an equality predicate from the provided \p CxtRecordType
+ * instance, and uses it to obtain a range of \p RefRecordType \p genIDs
+ * fulfilling the predicate. One of the identified \p genIDs is picked uniformly
+ * at random as the referenced \p RefRecordType parent for the given
+ * \p CxtRecordType.
+ *
+ * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ */
+//
 template<class RefRecordType, class CxtRecordType>
 class RandomReferenceProvider: public AbstractReferenceProvider<RefRecordType, CxtRecordType>
 {
 public:
 
+    /**
+     * The type of the equality predicate associated with the \p RefRecordType.
+     */
     typedef EqualityPredicate<RefRecordType> EqualityPredicateType;
+    /**
+     * The type of the \p RefRecordType equality predicate provider with bound
+     * values obtained from the given \p CxtRecordType.
+     */
     typedef EqualityPredicateProvider<RefRecordType, CxtRecordType> EqualityPredicateProviderType;
+    /**
+     * The type of the sequence inspector for the referenced \p RefRecordType
+     * sequence .
+     */
     typedef RandomSequenceInspector<RefRecordType> RefRecordSetType;
 
+    /**
+     * Constructor.
+     *
+     * @param equalityPredicateProvider The provider used to obtain valid
+     *        selection predicates from the given \p CxtRecordType instances.
+     * @param referenceSequence The virtual sequence of the \p RefRecordType.
+     */
     RandomReferenceProvider(EqualityPredicateProvider<RefRecordType, CxtRecordType>& equalityPredicateProvider, RandomSequenceInspector<RefRecordType> referenceSequence) :
         AbstractReferenceProvider<RefRecordType, CxtRecordType>(1, false),
         _equalityPredicateProvider(equalityPredicateProvider),
@@ -46,10 +75,17 @@ public:
     {
     }
 
+    /**
+     * Destructor.
+     */
     virtual ~RandomReferenceProvider()
     {
     }
 
+
+    /**
+     * @see AbstractReferenceProvider::operator()
+     */
     virtual const AutoPtr<RefRecordType>& operator()(AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         // create EqualityPredicate
@@ -100,6 +136,7 @@ private:
     AutoPtr<RefRecordType> _reference;
 };
 
+/** @}*/// add to runtime_provider_reference group
 } // namespace Myriad
 
 #endif /* RANDOMREFERENCEPROVIDER_H_ */

@@ -7,7 +7,9 @@ Data generation programs created with the *Myriad Toolkit* have out-of-the-box s
 
 To get a running example of a simple generator created with the help of the *Myriad Toolkit*, check out the [vldb-demo](https://github.com/TU-Berlin-DIMA/vldb-demo) package.
 
-Watch this space!
------------------
+First Steps
+-----------
 
-If you want to find more about the architecture and the features of the *Myriad Toolkit*, please follow the [Wiki pages](https://github.com/TU-Berlin-DIMA/myriad-toolkit/wiki) of this project. In the coming weeks we will provide tutorials explaining how to bootstrap your own data generator and rapidly prototype them with the help of our custom, XML-based specification language.
+If you want to learn more about the *Myriad Toolkit*, please read the [Getting Started Guide](/TU-Berlin-DIMA/myriad-toolkit/wiki/Getting-started-with-Myriad) and the [XML Specification Reference Manual](/TU-Berlin-DIMA/myriad-toolkit/wiki/XML-Specification-Reference-Manual).
+
+To get a running demo of a simple data generator, please check the [vldb-demo](https://github.com/TU-Berlin-DIMA/vldb-demo) package.

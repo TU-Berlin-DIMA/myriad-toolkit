@@ -184,8 +184,8 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 //@{
 
-template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine1Format("\\W*@numberofconditions\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
-template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine2Format("\\W*@condition\\W*=\\W*\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*(#(.+))?");
+template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine1Format("\\s*@numberofconditions\\s*=\\s*([+]?[0-9]+)\\s*(#(.+))?");
+template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine2Format("\\s*@condition\\s*=\\s*\\[\\s*(.+)\\s*,\\s*(.+)\\s*\\)\\s*(#(.+))?");
 
 //@}
 
@@ -264,7 +264,6 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(const string& path)
     try
     {
         initialize(in);
-
         in.close();
     }
     catch(Poco::Exception& e)
@@ -300,13 +299,14 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
     READ_STATE currentState = NOC; // current reader machine state
     string currentLine; // the current line
     I16u currentX2BucketIndex = 0; // current item index
-    I16u currentLineNumber = 1; // current line number
+    size_t currentLineNumber = 1; // current line number
     RegularExpression::MatchVec posVec; // a posVec for all regex matches
 
     // reader finite state machine
     while (currentState != END)
     {
         // read next line
+        currentLine = "";
         getline(in, currentLine);
 
         // trim whitespace
@@ -315,22 +315,34 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
         // check if this line is empty or contains a single comment
         if (currentLine.empty() || currentLine.at(0) == '#')
         {
+            if (!in.good()) // break on end of stream
+            {
+                if (currentX2BucketIndex < _numberOfx2Buckets)
+                {
+                    throw DataException(format("line %z: Bad header line, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber));
+                }
+                else
+                {
+                    currentState = END;
+                }
+            }
+
 	        currentLineNumber++;
 	        continue; // skip this line
         }
 
         if (currentState == NOC)
         {
-	        if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
+	        if (!headerLine1Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofconditions = [' + x", currentLineNumber, currentLine));
+		        throw DataException(format("line %z: Bad header line, should be: '@numberofconditions = [' + x", currentLineNumber));
 	        }
 
-	        I32 numberOfx2Buckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+	        I64 numberOfx2Buckets = NumberParser::parse64(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
 
-	        if (numberOfx2Buckets <= 0 && numberOfx2Buckets > 65536)
+	        if (numberOfx2Buckets <= 0 && static_cast<size_t>(numberOfx2Buckets) > numeric_limits<size_t>::max())
 	        {
-	            throw DataException("Invalid number of conditions`" + toString(numberOfx2Buckets) +  "`");
+	            throw DataException("Invalid number of conditions " + toString(numberOfx2Buckets) +  ", should be in the (0, " + toString(numeric_limits<size_t>::max()) + "] range");
 	        }
 
 	        _numberOfx2Buckets = numberOfx2Buckets;
@@ -338,13 +350,13 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
 	        _x1Pr = new CombinedPrFunction<T1>[numberOfx2Buckets];
 
 	        currentX2BucketIndex = 0;
-	        currentState = (numberOfx2Buckets > 0) ? CON : END;
+	        currentState = CON;
         }
         else if (currentState == CON)
         {
-	        if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
+	        if (!headerLine2Format.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad header line, should be: '@condition = [' + x + ', ' + y + ')'", currentLineNumber));
 	        }
 
             T2 min = fromString<T2>(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());

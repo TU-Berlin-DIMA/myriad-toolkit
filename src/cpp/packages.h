@@ -20,16 +20,23 @@
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 /**
- * @defgroup core Package 'core'
- *
- * The 'core' package conatins all core runtime and type components.
- */
-
-/**
  * @defgroup config Package 'config'
  *
  * The 'config' package contains components for reading and accessing the
  * data generator application configuration.
+ */
+
+/**
+ * @defgroup core Package 'core'
+ *
+ * The 'core' package contains all core runtime and type components.
+ */
+
+/**
+ * @defgroup core_types Package 'core.types'
+ * @ingroup  core
+ *
+ * The 'core.type' package contains all core runtime and type components.
  */
 
 /**

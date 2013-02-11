@@ -202,7 +202,7 @@ private:
     AbstractBinderType** _binders;
 };
 
-/** @}*/// add to runtime_predicate group
+/** @}*/// add to runtime_provider_predicate group
 }  // namespace Myriad
 
 #endif /* EQUALITYPREDICATEPROVIDER_H_ */

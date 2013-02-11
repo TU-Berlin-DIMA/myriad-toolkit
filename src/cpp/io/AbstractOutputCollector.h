@@ -18,10 +18,12 @@
 #ifndef ABSTRACTOUTPUTCOLLECTOR_H_
 #define ABSTRACTOUTPUTCOLLECTOR_H_
 
-#include "config/GeneratorConfig.h"
-#include "record/Record.h"
+#include "core/types.h"
 
-using namespace Poco;
+#include <Poco/Path.h>
+#include <Poco/RefCountedObject.h>
+
+#include <sstream>
 
 namespace Myriad {
 /**
@@ -40,23 +42,21 @@ namespace Myriad {
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template<typename RecordType>
-class AbstractOutputCollector
+class AbstractOutputCollector : public Poco::RefCountedObject
 {
 public:
 
     /**
      * Constructor.
      */
-    AbstractOutputCollector(const String& generatorName, const GeneratorConfig& config) :
-        _config(config)
+    AbstractOutputCollector(const Poco::Path& outputPath, const String& collectorName)
     {
     }
 
     /**
      * Copy constructor.
      */
-    AbstractOutputCollector(const AbstractOutputCollector& o) :
-        _config(o._config)
+    AbstractOutputCollector(const AbstractOutputCollector& o)
     {
     }
 
@@ -64,6 +64,26 @@ public:
      * Copy constructor.
      */
     virtual ~AbstractOutputCollector()
+    {
+    }
+
+    /**
+     * Writes out an output specific header.
+     *
+     * @param out A reference to the <tt>std::ostream</tt> on which the output
+     *        will be written.
+     */
+    virtual void writeHeader(std::ostream& out)
+    {
+    }
+
+    /**
+     * Writes out an output specific footer.
+     *
+     * @param out A reference to the <tt>std::ostream</tt> on which the output
+     *        will be written.
+     */
+    virtual void writeFooter(std::ostream& out)
     {
     }
 
@@ -78,26 +98,28 @@ public:
     virtual void close() = 0;
 
     /**
-     * Write an output header.
+     * Flushes the underlying output stream.
      */
-    virtual void writeHeader() = 0;
-
-    /**
-     * Write an output footer.
-     */
-    virtual void writeFooter() = 0;
+    virtual void flush() = 0;
 
     /**
      * Collect and write out a single \p RecordType instance.
      */
     virtual void collect(const RecordType& record) = 0;
 
-protected:
-
     /**
-     * A reference to the generator config.
+     * Record serialization method.
+     *
+     * Writes the generated \p record into the given \p outputBuffer.
+     *
+     * @param out A reference to the <tt>std::ostream</tt> on which the object
+     *        should be serialized.
+     * @param record The record to be serialized on the output buffer.
      */
-    const GeneratorConfig& _config;
+    static void serialize(std::ostream& out, const RecordType& record)
+    {
+        out << "abstract record #" << record.genID() << "\n";
+    }
 };
 
 /** @}*/// add to io group

@@ -125,9 +125,9 @@ public:
      */
     typedef typename RecordTraits<RecordType>::GeneratorType SequenceGeneratorType;
     /**
-     * The OutputCollector type associated with the given \p RecordType.
+     * The \p AbstractOutputCollector template specialization for this \p RecordType.
      */
-    typedef typename OutputTraits<RecordType>::CollectorType CollectorType;
+    typedef AbstractOutputCollector<RecordType> AbstractOutputCollectorType;
 
     /**
      * Constructor.
@@ -140,15 +140,15 @@ public:
      * @param dryRun A boolean flag indicating whether the output collector
      *               should be used or not (i.e. whether it is a dry run).
      */
-    StageTask(const string& name, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
-        AbstractStageTask(name),
-        _out(generatorName, config),
+    StageTask(const string& taskName, const string& generatorName, const GeneratorConfig& config, bool dryRun = false) :
+        AbstractStageTask(taskName),
+        _out(OutputCollector<RecordType>::factory(config.outputType(), config.outputPort(), config.outputPath(generatorName), "task." + taskName + ".collector")),
         _dryRun(dryRun),
-        _logger(Logger::get("task."+name))
+        _logger(Logger::get("task." + taskName))
     {
         if (!_dryRun)
         {
-	        _out.open();
+	        _out->open();
         }
     }
 
@@ -161,7 +161,7 @@ public:
     {
         if (!_dryRun)
         {
-	        _out.close();
+	        _out->close();
         }
     }
 
@@ -170,7 +170,7 @@ protected:
     /**
      * An output stream used for writing the task output data.
      */
-    CollectorType _out;
+    AutoPtr<AbstractOutputCollectorType> _out;
 
     /**
      * A flag indicating whether writing the output is required.

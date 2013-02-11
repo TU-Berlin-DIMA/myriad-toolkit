@@ -21,9 +21,10 @@
 #include "io/AbstractOutputCollector.h"
 
 #include <Poco/File.h>
-#include <Poco/Path.h>
 #include <Poco/FileStream.h>
 #include <Poco/Logger.h>
+#include <Poco/NumberFormatter.h>
+#include <Poco/StreamCopier.h>
 
 using namespace Poco;
 
@@ -46,30 +47,18 @@ class LocalFileOutputCollector: public AbstractOutputCollector<RecordType>
 {
 public:
 
-    typedef FileOutputStream StreamType; //!< The type of the underlying stream.
-
     /**
      * Constructor.
      *
-     * Opens an output stream in a file named as the value of the
-     * <tt>"generator.{generatorName}.output-file"</tt> config property. The
-     * output folder where the file is stored is given by the value of the
-     * <tt>application.output-dir</tt> config parameter.
+     * Opens an output stream in a file given by the value of the given
+     * \p outputPath parameter.
      */
-    LocalFileOutputCollector(const String& generatorName, const GeneratorConfig& config) :
-        AbstractOutputCollector<RecordType>(generatorName, config),
+    LocalFileOutputCollector(const Path& outputPath, const String& collectorName) :
+        AbstractOutputCollector<RecordType>(outputPath, collectorName),
+        _outputPath(outputPath),
         _isOpen(false),
-        _logger(Logger::get("collector." + generatorName))
+        _logger(Logger::get(collectorName))
     {
-        // make sure that the output-dir exists
-        File outputDir(config.getString("application.output-dir"));
-        outputDir.createDirectories();
-
-        // compute the output path
-        Path path(config.getString(format("generator.%s.output-file", generatorName), generatorName));
-        path.makeAbsolute(config.getString("application.output-dir"));
-
-        _path = path.toString();
     }
 
     /**
@@ -77,7 +66,7 @@ public:
      */
     LocalFileOutputCollector(const LocalFileOutputCollector& o) :
         AbstractOutputCollector<RecordType>(o),
-        _path(o._path),
+        _outputPath(o._outputPath),
         _isOpen(false),
         _logger(Logger::get(o._logger.name()))
     {
@@ -90,7 +79,7 @@ public:
     /**
      * Destructor.
      *
-     * Closes the internal StreamType instance if opened.
+     * Closes the internal FileOutputStream instance if opened.
      */
     virtual ~LocalFileOutputCollector()
     {
@@ -98,60 +87,52 @@ public:
     }
 
     /**
-     * Opens the internal StreamType instance.
+     * Opens the internal FileOutputStream instance.
      */
     void open()
     {
         if (!_isOpen)
         {
-	        _logger.debug(format("Opening local file output `%s`", _path));
+            _logger.debug(format("Opening local file for output path `%s`", _outputPath.toString()));
 
-	        _out.open(_path, std::ios::trunc | std::ios::binary);
-	        writeHeader();
+	        // make sure that the output-dir exists
+	        File outputDir(_outputPath.parent());
+            outputDir.createDirectories();
+
+	        _outputStream.open(_outputPath.toString(), std::ios::trunc | std::ios::binary);
+	        AbstractOutputCollector<RecordType>::writeHeader(_outputStream);
 	        _isOpen = true;
         }
         else
         {
-	        throw LogicException(format("Can't open already opened FileOutputStream %s", _path));
+	        throw LogicException(format("Can't open already opened local file at `%s`", _outputPath.toString()));
         }
     }
 
     /**
-     * Closes the internal StreamType instance.
+     * Closes the internal FileOutputStream instance.
      */
     void close()
     {
         if (_isOpen)
         {
-	        _logger.debug(format("Closing local file output `%s`", _path));
-	        writeFooter();
-	        _out.close();
+	        _logger.debug(format("Closing local file for output `%s`", _outputPath.toString()));
+
+	        AbstractOutputCollector<RecordType>::writeFooter(_outputStream);
+	        flush();
+	        _outputStream.close();
         }
     }
 
     /**
-     * Flushes the internal StreamType instance.
+     * Flushes the internal FileOutputStream instance and resets the flush counter.
      */
     void flush()
     {
         if (_isOpen)
         {
-            _out.flush();
+            _outputStream.flush();
         }
-    }
-
-    /**
-     * Writes out an output specific header.
-     */
-    void writeHeader()
-    {
-    }
-
-    /**
-     * Writes out an output specific footer.
-     */
-    void writeFooter()
-    {
     }
 
     /**
@@ -159,15 +140,7 @@ public:
      */
     void collect(const RecordType& record)
     {
-        LocalFileOutputCollector<RecordType>::serialize(_out, record);
-    }
-
-    /**
-     * Output collection method.
-     */
-    static void serialize(StreamType& out, const RecordType& record)
-    {
-        out << "abstract record #" << record.genID() << "\n";
+        LocalFileOutputCollector<RecordType>::serialize(_outputStream, record);
     }
 
 private:
@@ -175,15 +148,15 @@ private:
     /**
      * The path of the underlying OutputStream.
      */
-    std::string _path;
+    const Path _outputPath;
 
     /**
      * The underlying output stream.
      */
-    StreamType _out;
+    FileOutputStream _outputStream;
 
     /**
-     * A boolean flag indicating that the underlying output stream is open.
+     * A boolean flag indicating that the underlying \p _outputFile is open.
      */
     bool _isOpen;
 

@@ -57,26 +57,7 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
     setString("generator.ENV.config-dir", getString("application.config-dir"));
     setString("generator.ENV.output-dir", getString("application.output-dir"));
 
-    // make sure that the job, log and output paths exist
-
-    // job-dir
-    File jobDir(getString("application.job-dir"));
-    jobDir.createDirectories();
-
-    // log-path
-    File logPath(getString("application.log-path"));
-    if (logPath.exists())
-    {
-        logPath.remove(true);
-    }
-    File logDir(Path(getString("application.log-path")).parent());
-    logDir.createDirectories();
-
-    // configure log channels
-    FormattingChannel* logChannel = new FormattingChannel(new PatternFormatter("%t"), new SimpleFileChannel());
-    logChannel->setProperty("path", getString("application.log-path"));
-    Logger::root().setChannel(logChannel);
-    _logger.setChannel(logChannel);
+    configureLogging();
 
     _logger.information("Loading generator configuration");
 
@@ -86,106 +67,29 @@ void AbstractGeneratorConfig::initialize(AbstractConfiguration& appConfig)
 
     if (hasProperty("common.master.seed"))
     {
-        // initialize the master random stream (otherwise use the default master seed)
+        // initialize the master random stream (otherwise - use the default master seed)
         _masterPRNG.seed(RandomStream::Seed(getString("common.master.seed")));
     }
 }
 
-void AbstractGeneratorConfig::bindEnumSet(const string& key, Path path)
+void AbstractGeneratorConfig::configureLogging()
 {
-    // compute the output path
-    path.makeAbsolute(getString("application.config-dir"));
-
-    if (_logger.debug())
+    if (getString("application.output-type") != "socket")
     {
-        _logger.debug(format("Loading enum set from file `%s`", path.toString()));
-    }
-
-    if (!path.isFile())
-    {
-        throw ConfigException(format("Cannot find file at `%s`", path.toString()));
-    }
-
-    File file(path);
-
-    if (!file.canRead())
-    {
-        throw ConfigException(format("Cannot read from file at `%s`", path.toString()));
-    }
-
-    ifstream in(file.path().c_str());
-
-    if (!in.is_open())
-    {
-        throw ConfigException(format("Cannot open file at `%s`", path.toString()));
-    }
-
-    string line;
-
-    try
-    {
-        vector<String>& set = _enumSets[key];
-
-        // read first line
-        getline(in, line);
-
-        if (!in.good() || line.substr(0, 17) != "@numberofvalues =")
+        // log-path
+        File logPath(getString("application.log-path"));
+        if (logPath.exists())
         {
-	        throw DataException("Unexpected file header");
+            logPath.remove(true);
         }
+        File logDir(Path(getString("application.log-path")).parent());
+        logDir.createDirectories();
 
-        I32 numberOfEntries = atoi(line.substr(17).c_str());
-
-        set.resize(numberOfEntries);
-
-        for (I16u i = 0; i < numberOfEntries; i++)
-        {
-	        if (!in.good())
-	        {
-		        throw DataException("Bad line for bin #" + toString(i));
-	        }
-
-	        getline(in, line);
-
-	        string::size_type t = line.find_first_of('\t');
-	        string::size_type c = line.find_first_of('#');
-	        string value;
-
-	        if (t == string::npos)
-	        {
-                throw DataException("Bad line for bin #" + toString(i) + ", expected format '{i}\t{value}[# {comment}]");
-	        }
-
-	        if (c != string::npos)
-	        {
-		        value = line.substr(t+1, c-t-1);
-		        trim(value);
-	        }
-	        else
-	        {
-		        value = line.substr(t+1);
-		        trim(value);
-	        }
-
-            set[i] = value;
-        }
-
-        in.close();
-    }
-    catch(Exception& e)
-    {
-        in.close();
-        throw e;
-    }
-    catch(exception& e)
-    {
-        in.close();
-        throw e;
-    }
-    catch(...)
-    {
-        in.close();
-        throw;
+        // configure log channels
+        FormattingChannel* logChannel = new FormattingChannel(new PatternFormatter("%t"), new SimpleFileChannel());
+        logChannel->setProperty("path", getString("application.log-path"));
+        Logger::root().setChannel(logChannel);
+        _logger.setChannel(logChannel);
     }
 }
 
