@@ -20,11 +20,11 @@
 
 #include "io/AbstractOutputCollector.h"
 
+#include <Poco/Buffer.h>
 #include <Poco/DigestEngine.h>
 #include <Poco/Logger.h>
 #include <Poco/MD5Engine.h>
 #include <Poco/NumberFormatter.h>
-#include <Poco/StreamCopier.h>
 #include <Poco/Net/SocketAddress.h>
 #include <Poco/Net/StreamSocket.h>
 #include <Poco/Net/SocketStream.h>
@@ -59,9 +59,9 @@ public:
         _outputPath(outputPath),
         _outputSocket(Poco::Net::IPAddress::IPv4),
         _outputPort(outputPort),
+        _outputBufferSize(8192),
+        _outputBuffer(_outputBufferSize),
     	_isOpen(false),
-        _flushRate(1000),
-        _flushCounter(0),
         _logger(Logger::get(collectorName))
     {
     }
@@ -74,9 +74,9 @@ public:
         _outputPath(o._outputPath),
         _outputSocket(o._outputSocket),
         _outputPort(o._outputPort),
+        _outputBufferSize(8192),
+        _outputBuffer(_outputBufferSize),
         _isOpen(false),
-        _flushRate(o._flushRate),
-        _flushCounter(o._flushCounter),
         _logger(Logger::get(o._logger.name()))
     {
         if (o._isOpen)
@@ -114,11 +114,11 @@ public:
                 throw RuntimeException(format("Could not connect to socket at address localhost:%hu", _outputPort));
             }
 
-	        this->writeHeader();
+            AbstractOutputCollector<RecordType>::writeHeader(_recordsBuffer);
 	        _isOpen = true;
 
-	        this->_outputBuffer.str("");
-			this->_outputBuffer.clear();
+	        _recordsBuffer.str("");
+			_recordsBuffer.clear();
         }
         else
         {
@@ -135,7 +135,8 @@ public:
         {
 	        _logger.debug(format("Closing socket stream for output `%s`", _outputPath.toString()));
 
-	        this->writeFooter();
+	        AbstractOutputCollector<RecordType>::writeFooter(_recordsBuffer);
+	        flush();
 	        _outputSocket.close();
         }
     }
@@ -145,17 +146,15 @@ public:
      */
     void flush()
     {
-        Poco::Net::SocketStream socketStream(_outputSocket);
-    	StreamCopier::copyStream(this->_outputBuffer, socketStream, 8192);
-
         if (_isOpen)
         {
+            Poco::Net::SocketStream socketStream(_outputSocket);
+            StreamCopier::copyStream(_recordsBuffer, socketStream, _outputBufferSize);
             socketStream.flush();
         }
 
-        this->_outputBuffer.str("");
-        this->_outputBuffer.clear();
-    	_flushCounter = 0;
+        _recordsBuffer.str("");
+        _recordsBuffer.clear();
     }
 
     /**
@@ -163,24 +162,23 @@ public:
      */
     void collect(const RecordType& record)
     {
-    	std::ostream::pos_type p2, p1 = this->_outputBuffer.tellp();
+    	std::ostream::pos_type p2, p1 = _recordsBuffer.tellp();
         if (p1 == -1)
         {
         	throw RuntimeException("Failed to read before-position from output stream");
         }
 
-        SocketStreamOutputCollector<RecordType>::serialize(this->_outputBuffer, record);
+        SocketStreamOutputCollector<RecordType>::serialize(_recordsBuffer, record);
 
-        p2 = this->_outputBuffer.tellp();
+        p2 = _recordsBuffer.tellp();
         if (p2 == -1)
         {
         	throw RuntimeException("Failed to read after-position from output stream");
         }
 
-        _flushCounter++;
-        if (_flushCounter >= _flushRate)
+        if (static_cast<size_t>(p2) >= _outputBufferSize)
         {
-        	flush();
+            writeToOutputSocket();
         }
     }
 
@@ -201,6 +199,43 @@ public:
 private:
 
     /**
+     * Writes the contents of the \p _recordsBuffer to the \p _outputSocket.
+     *
+     * Internally, the operation uses the \p _outputBuffer to perform copy
+     * operations of \p _outputBufferSize chars at a time.
+     */
+    void writeToOutputSocket()
+    {
+        if (_isOpen)
+        {
+            size_t N = static_cast<size_t>(_recordsBuffer.tellp()) / _outputBufferSize;
+
+            for (size_t i = 0; i < N; i++)
+            {
+                _recordsBuffer.read(_outputBuffer.begin(), _outputBufferSize);
+
+                Poco::Net::SocketStream socketStream(_outputSocket);
+                socketStream.write(_outputBuffer.begin(), _recordsBuffer.gcount());
+            }
+
+            _recordsBuffer.read(_outputBuffer.begin(), _outputBufferSize);
+            _recordsBuffer.str("");
+            _recordsBuffer.clear();
+            _recordsBuffer.write(_outputBuffer.begin(), _recordsBuffer.gcount());
+        }
+        else
+        {
+            _recordsBuffer.str("");
+            _recordsBuffer.clear();
+        }
+    }
+
+    /**
+     * A stringstream buffer holding the serialized record objects.
+     */
+    std::stringstream _recordsBuffer;
+
+    /**
      * The path of the underlying OutputStream.
      */
     const Path _outputPath;
@@ -216,21 +251,19 @@ private:
     const I16u _outputPort;
 
     /**
+     * The size of buffer that is flushed to the output stream.
+     */
+    size_t _outputBufferSize;
+
+    /**
+     * A char buffer for transfer from the \p _recordsBuffer to the \p _outputSocket.
+     */
+    Poco::Buffer<char> _outputBuffer;
+
+    /**
      * A boolean flag indicating that the underlying \p _outputSocket is open.
      */
     bool _isOpen;
-
-    /**
-     * The rate (in records) with which the \p _outputBuffer is flushed to the
-     * \p outputFile.
-     */
-    I16u _flushRate;
-
-    /**
-     * A counter of the records written into the \p _outputBuffer since the last
-     * flush() call.
-     */
-    I16u _flushCounter;
 
     /**
      * Logger instance.

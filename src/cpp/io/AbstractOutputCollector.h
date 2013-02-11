@@ -69,15 +69,21 @@ public:
 
     /**
      * Writes out an output specific header.
+     *
+     * @param out A reference to the <tt>std::ostream</tt> on which the output
+     *        will be written.
      */
-    virtual void writeHeader()
+    virtual void writeHeader(std::ostream& out)
     {
     }
 
     /**
      * Writes out an output specific footer.
+     *
+     * @param out A reference to the <tt>std::ostream</tt> on which the output
+     *        will be written.
      */
-    virtual void writeFooter()
+    virtual void writeFooter(std::ostream& out)
     {
     }
 
@@ -106,18 +112,14 @@ public:
      *
      * Writes the generated \p record into the given \p outputBuffer.
      *
-     * @param outputBuffer A reference to the <tt>std::stringstream</tt> output
-     *        buffer of the invoking <tt>AbstractOutputCollector</tt>.
+     * @param out A reference to the <tt>std::ostream</tt> on which the object
+     *        should be serialized.
      * @param record The record to be serialized on the output buffer.
      */
-    static void serialize(std::stringstream& outputBuffer, const RecordType& record)
+    static void serialize(std::ostream& out, const RecordType& record)
     {
-        outputBuffer << "abstract record #" << record.genID() << "\n";
+        out << "abstract record #" << record.genID() << "\n";
     }
-
-protected:
-
-    std::stringstream _outputBuffer;
 };
 
 /** @}*/// add to io group

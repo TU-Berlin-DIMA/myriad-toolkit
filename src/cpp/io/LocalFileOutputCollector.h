@@ -57,8 +57,6 @@ public:
         AbstractOutputCollector<RecordType>(outputPath, collectorName),
         _outputPath(outputPath),
         _isOpen(false),
-        _flushRate(1000),
-        _flushCounter(0),
         _logger(Logger::get(collectorName))
     {
     }
@@ -70,8 +68,6 @@ public:
         AbstractOutputCollector<RecordType>(o),
         _outputPath(o._outputPath),
         _isOpen(false),
-        _flushRate(o._flushRate),
-        _flushCounter(o._flushCounter),
         _logger(Logger::get(o._logger.name()))
     {
         if (o._isOpen)
@@ -104,11 +100,8 @@ public:
             outputDir.createDirectories();
 
 	        _outputStream.open(_outputPath.toString(), std::ios::trunc | std::ios::binary);
-	        this->writeHeader();
+	        AbstractOutputCollector<RecordType>::writeHeader(_outputStream);
 	        _isOpen = true;
-
-	        this->_outputBuffer.str("");
-			this->_outputBuffer.clear();
         }
         else
         {
@@ -125,7 +118,8 @@ public:
         {
 	        _logger.debug(format("Closing local file for output `%s`", _outputPath.toString()));
 
-	        this->writeFooter();
+	        AbstractOutputCollector<RecordType>::writeFooter(_outputStream);
+	        flush();
 	        _outputStream.close();
         }
     }
@@ -135,16 +129,10 @@ public:
      */
     void flush()
     {
-    	StreamCopier::copyStream(this->_outputBuffer, _outputStream, 8192);
-
         if (_isOpen)
         {
             _outputStream.flush();
         }
-
-        this->_outputBuffer.str("");
-        this->_outputBuffer.clear();
-    	_flushCounter = 0;
     }
 
     /**
@@ -152,25 +140,7 @@ public:
      */
     void collect(const RecordType& record)
     {
-    	std::ostream::pos_type p2, p1 = this->_outputBuffer.tellp();
-        if (p1 == -1)
-        {
-        	throw RuntimeException("Failed to read before-position from output stream");
-        }
-
-        LocalFileOutputCollector<RecordType>::serialize(this->_outputBuffer, record);
-
-        p2 = this->_outputBuffer.tellp();
-        if (p2 == -1)
-        {
-        	throw RuntimeException("Failed to read after-position from output stream");
-        }
-
-        _flushCounter++;
-        if (_flushCounter >= _flushRate)
-        {
-        	flush();
-        }
+        LocalFileOutputCollector<RecordType>::serialize(_outputStream, record);
     }
 
 private:
@@ -189,18 +159,6 @@ private:
      * A boolean flag indicating that the underlying \p _outputFile is open.
      */
     bool _isOpen;
-
-    /**
-     * The rate (in records) with which the \p _outputBuffer is flushed to the
-     * \p outputFile.
-     */
-    I16u _flushRate;
-
-    /**
-     * A counter of the records written into the \p _outputBuffer since the last
-     * flush() call.
-     */
-    I16u _flushCounter;
 
     /**
      * Logger instance.
