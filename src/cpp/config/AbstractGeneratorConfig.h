@@ -223,15 +223,26 @@ public:
     }
 
     /**
-     * Computes the output type for this generator. The output type is bound to
-     * the {application.output-type} config parameter and can be either 'file'
-     * or 'socket' (default is 'file').
+     * Returns the application output type. The output type is bound to the
+     * {application.output-type} config parameter and can be either 'file' or
+     * 'socket' (default is 'file').
      *
-     * @return The \p AbstractOutputCollector type used by all generators.
+     * @return The \p AbstractOutputCollector type.
      */
     String outputType() const
     {
         return getString("application.output-type");
+    }
+
+    /**
+     * Returns the application output port to be used by 'socket' collectors.
+     * The port is bound to the {application.output-port} config parameter.
+     *
+     * @return The socket port for \p SocketStreamOutputCollector instances.
+     */
+    I16u outputPort() const
+    {
+        return static_cast<I16u>(getInt("application.output-port", 0));
     }
 
     /**

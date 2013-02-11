@@ -44,7 +44,7 @@ template<class RecordType> struct OutputCollector
      * @return The constructed <tt>AbstractOutputCollector<RecordType></tt>
      *         subclass instance.
      */
-    static Poco::AutoPtr< AbstractOutputCollector<RecordType> > factory(const String& collectorType, const Poco::Path& outputPath, const String& collectorName)
+    static Poco::AutoPtr< AbstractOutputCollector<RecordType> > factory(const String& collectorType, const I16u collectorPort, const Poco::Path& outputPath, const String& collectorName)
     {
         // local file
         if (collectorType == "file")
@@ -54,7 +54,7 @@ template<class RecordType> struct OutputCollector
         // socket stream
         if (collectorType == "socket")
         {
-            return new SocketStreamOutputCollector<RecordType>(outputPath, collectorName);
+            return new SocketStreamOutputCollector<RecordType>(outputPath, collectorPort, collectorName);
         }
         // unknown output collector type
         throw RuntimeException("Cannot construct output collector of type `" + collectorType + "`");
