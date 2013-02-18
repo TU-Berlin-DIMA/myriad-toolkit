@@ -26,6 +26,7 @@ CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
 # script files
 SCRIPT_FILES     = bin/$(MYRIAD_DGEN_NAME)-frontend
 SCRIPT_FILES    += bin/$(MYRIAD_DGEN_NAME)-kill
+SCRIPT_FILES    += bin/$(MYRIAD_DGEN_NAME)-driver-jobs.jar
 
 # python files & dirs
 PYTHON_DIRS      = $(shell cd ../vendor/myriad-toolkit/src/python && find . -mindepth 1 -type d | grep -v '\.svn' | sed 's/^.\//lib\/python\/vendor\//')
@@ -58,7 +59,6 @@ work-dirs:
 	mkdir -p lib
 	mkdir -p lib/c++
 	mkdir -p lib/python
-	mkdir -p lib/query
 	for dir in ${CONFIG_DIRS}; do \
 		mkdir -p $$dir; \
 	done
@@ -81,6 +81,10 @@ lib-poco:
 	find $(POCO_LIBRARY_PATH) -name "libPoco*" -type f -exec cp -f {} ./lib/c++/. \;
 	find $(POCO_LIBRARY_PATH) -name "libPoco*" -type l -exec cp -PRf {} ./lib/c++/. \;
 	@echo ' '
+
+bin/$(MYRIAD_DGEN_NAME)-driver-jobs.jar: ../vendor/myriad-toolkit/bin/myriad-driver-jobs.jar
+	@echo 'Processing: $@'
+	cp $< $@
 
 bin/$(MYRIAD_DGEN_NAME)-%: ../vendor/myriad-toolkit/src/script/myriad-%
 	@echo 'Processing: $@'
