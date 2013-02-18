@@ -59,7 +59,7 @@ public:
         _outputPath(outputPath),
         _outputSocket(Poco::Net::IPAddress::IPv4),
         _outputPort(outputPort),
-        _outputBufferSize(65536), // 64K buffer 8192
+        _outputBufferSize(4194304), // 4MB buffer
         _outputBuffer(_outputBufferSize),
     	_isOpen(false),
         _logger(Logger::get(collectorName))
@@ -74,7 +74,7 @@ public:
         _outputPath(o._outputPath),
         _outputSocket(o._outputSocket),
         _outputPort(o._outputPort),
-        _outputBufferSize(65536), // 64K buffer 8192
+        _outputBufferSize(4194304), // 4MB buffer
         _outputBuffer(_outputBufferSize),
         _isOpen(false),
         _logger(Logger::get(o._logger.name()))
