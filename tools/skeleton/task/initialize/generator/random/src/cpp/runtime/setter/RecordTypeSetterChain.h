@@ -23,8 +23,6 @@
 #include "record/${{record_name}}.h"
 #include "record/${{record_name}}Util.h"
 
-using namespace Myriad;
-
 namespace ${{dgen_ns}} {
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
@@ -34,13 +32,13 @@ namespace ${{dgen_ns}} {
 /**
  * SetterChain specialization for ${{record_name}}.
  */
-class ${{record_name}}SetterChain : public SetterChain<${{record_name}}>
+class ${{record_name}}SetterChain : public Myriad::SetterChain<${{record_name}}>
 {
 public:
 
     // runtime components type aliases
 
-    ${{record_name}}SetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :
+    ${{record_name}}SetterChain(Myriad::BaseSetterChain::OperationMode& opMode, Myriad::RandomStream& random, Myriad::GeneratorConfig& config) :
         SetterChain<${{record_name}}>(opMode, random),
         _sequenceCardinality(config.cardinality("${cc2us{record_name}}")),
         _logger(Logger::get("${cc2us{record_name}}.setter.chain"))
@@ -64,9 +62,9 @@ public:
     /**
      * Predicate filter function.
      */
-    virtual Interval<I64u> filter(const EqualityPredicate<${{record_name}}>& predicate)
+    virtual Myriad::Interval<I64u> filter(const Myriad::EqualityPredicate<${{record_name}}>& predicate)
     {
-        Interval<I64u> result(0, _sequenceCardinality);
+        Myriad::Interval<I64u> result(0, _sequenceCardinality);
 
         // apply inverse setter chain
 

@@ -21,7 +21,7 @@
 #include "core/types.h"
 #include "communication/Notifications.h"
 #include "io/OutputCollector.h"
-#include "record/Record.h"
+#include "record/AbstractRecord.h"
 
 #include <Poco/Logger.h>
 #include <Poco/Path.h>

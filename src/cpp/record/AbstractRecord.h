@@ -27,8 +27,23 @@
 using namespace std;
 using namespace Poco;
 
-#ifndef RECORD_H_
-#define RECORD_H_
+using Myriad::I16;
+using Myriad::I32;
+using Myriad::I64;
+using Myriad::I16u;
+using Myriad::I32u;
+using Myriad::I64u;
+using Myriad::Enum;
+using Myriad::Char;
+using Myriad::Decimal;
+using Myriad::Date;
+using Myriad::String;
+
+// forward declarations of auxiliary complex types
+template<typename T> class Interval;;
+
+#ifndef ABSTRACTRECORD_H_
+#define ABSTRACTRECORD_H_
 
 namespace Myriad {
 /**
@@ -76,7 +91,7 @@ struct RecordTraits
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
-class Record: public Poco::RefCountedObject
+class AbstractRecord: public Poco::RefCountedObject
 {
 public:
 
@@ -107,22 +122,22 @@ private:
     ID    _gen_id;
 };
 
-inline void Record::genID(const I64u v)
+inline void AbstractRecord::genID(const I64u v)
 {
     _gen_id = v;
 }
 
-inline I64u Record::genID() const
+inline I64u AbstractRecord::genID() const
 {
     return _gen_id;
 }
 
-inline void Record::genIDRef(const I64u& v)
+inline void AbstractRecord::genIDRef(const I64u& v)
 {
     _gen_id = v;
 }
 
-inline const I64u& Record::genIDRef() const
+inline const I64u& AbstractRecord::genIDRef() const
 {
     return _gen_id;
 }
@@ -287,15 +302,15 @@ template <class RecordType>
 struct RecordFieldTraits<1, RecordType>
 {
     typedef I64u FieldType; //!< The \p genID field type.
-    typedef typename MethodTraits<Record, FieldType>::RefGetter FieldGetterType; //!< The \p genID field getter method type.
-    typedef typename MethodTraits<Record, FieldType>::RefSetter FieldSetterType; //!< The \p genID field setter method type.
+    typedef typename MethodTraits<AbstractRecord, FieldType>::RefGetter FieldGetterType; //!< The \p genID field getter method type.
+    typedef typename MethodTraits<AbstractRecord, FieldType>::RefSetter FieldSetterType; //!< The \p genID field setter method type.
 
     /**
      * Return a pointer to the \p genID setter method.
      */
     static FieldSetterType setter()
     {
-        return static_cast<FieldSetterType>(&Record::genIDRef);
+        return static_cast<FieldSetterType>(&AbstractRecord::genIDRef);
     }
 
     /**
@@ -303,11 +318,11 @@ struct RecordFieldTraits<1, RecordType>
      */
     static FieldGetterType getter()
     {
-        return static_cast<FieldGetterType>(&Record::genIDRef);
+        return static_cast<FieldGetterType>(&AbstractRecord::genIDRef);
     }
 };
 
 /** @}*/// add to record group
 } // namespace Myriad
 
-#endif /* RECORD_H_ */
+#endif /* ABSTRACTRECORD_H_ */

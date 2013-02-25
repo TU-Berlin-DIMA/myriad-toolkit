@@ -22,17 +22,15 @@
 #include "generator/RandomSequenceGenerator.h"
 #include "runtime/setter/${{record_name}}SetterChain.h"
 
-using namespace Myriad;
-
 namespace ${{dgen_ns}} {
 
 class ${{record_name}}Generator: public RandomSequenceGenerator<${{record_name}}>
 {
 public:
 
-    typedef RecordTraits<${{record_name}}>::SetterChainType SetterChainType;
+    typedef Myriad::RecordTraits<${{record_name}}>::SetterChainType SetterChainType;
 
-    ${{record_name}}Generator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :
+    ${{record_name}}Generator(const string& name, Myriad::GeneratorConfig& config, NotificationCenter& notificationCenter) :
         RandomSequenceGenerator<${{record_name}}>(name, config, notificationCenter)
     {
     }

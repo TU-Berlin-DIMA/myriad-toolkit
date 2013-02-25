@@ -73,9 +73,6 @@ class CompileModelTask(AbstractTask):
         # compile generator config
         configCompiler = ConfigCompiler(args=args)
         configCompiler.compileCode(ast)
-        # compile output collector
-        outputCollectorCompiler = OutputCollectorCompiler(args=args)
-        outputCollectorCompiler.compileCode(ast)
         # compile record types
         recordCompiler = RecordTypeCompiler(args=args)
         recordCompiler.compileCode(ast.getSpecification().getRecordSequences())

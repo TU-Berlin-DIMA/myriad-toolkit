@@ -169,8 +169,6 @@ class FunctionNode(AbstractNode):
     orderkey = None
     
     def __init__(self, *args, **kwargs):
-        if not kwargs.has_key("concrete_type"):
-            kwargs.update(concrete_type=kwargs["type"])
         super(FunctionNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
         self.orderkey = None
@@ -213,6 +211,7 @@ class ParetoProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="ParetoPrFunction")
+        kwargs.update(concrete_type="Myriad::ParetoPrFunction")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
@@ -238,6 +237,7 @@ class NormalProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="NormalPrFunction")
+        kwargs.update(concrete_type="Myriad::NormalPrFunction")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
@@ -263,7 +263,7 @@ class UniformProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="UniformPrFunction")
-        kwargs.update(concrete_type="UniformPrFunction<%s>" % kwargs["domain_type"])
+        kwargs.update(concrete_type="Myriad::UniformPrFunction<%s>" % kwargs["domain_type"])
         super(UniformProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
@@ -289,7 +289,7 @@ class CombinedProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="CombinedPrFunction")
-        kwargs.update(concrete_type="CombinedPrFunction<%s>" % kwargs["domain_type"])
+        kwargs.update(concrete_type="Myriad::CombinedPrFunction<%s>" % kwargs["domain_type"])
         super(CombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
@@ -312,7 +312,7 @@ class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="ConditionalCombinedPrFunction")
-        kwargs.update(concrete_type="ConditionalCombinedPrFunction<%s, %s>" % (kwargs["domain_type1"], kwargs["domain_type2"]))
+        kwargs.update(concrete_type="Myriad::ConditionalCombinedPrFunction<%s, %s>" % (kwargs["domain_type1"], kwargs["domain_type2"]))
         super(ConditionalCombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
@@ -646,7 +646,7 @@ class RecordFieldNode(AbstractNode):
         return self.getAttribute("derived", False)
     
     def getID(self):
-        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
+        return "Myriad::RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
         
     def isSimpleType(self):
         r = RecordFieldNode._simple_type_pattern.match(self.getAttribute("type"))
@@ -919,7 +919,7 @@ class SequenceIteratorNode(AbstractNode):
         return self.__parent
         
     def getConcreteType(self):
-        return "SequenceIterator"
+        return "Myriad::SequenceIterator"
         
     def getXMLArguments(self):
         return {}
@@ -942,7 +942,7 @@ class PartitionedSequenceIteratorNode(SequenceIteratorNode):
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
 
-        return "PartitionedSequenceIteratorTask< %s >" % (recordType)
+        return "Myriad::PartitionedSequenceIteratorTask< %s >" % (recordType)
 
 
 #
@@ -982,7 +982,7 @@ class OutputFormatterNode(AbstractNode):
         return self.__parent
         
     def getConcreteType(self):
-        return "OutputFormatter"
+        return "Myriad::OutputFormatter"
         
     def getXMLArguments(self):
         return {}
@@ -1004,7 +1004,7 @@ class CsvOutputFormatterNode(OutputFormatterNode):
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
 
-        return "CsvOutputFormatter< %s >" % (recordType)
+        return "Myriad::CsvOutputFormatter< %s >" % (recordType)
         
     def getXMLArguments(self):
         return [ { 'key': 'delimiter', 'type': 'literal' },
@@ -1030,7 +1030,7 @@ class EmptyOutputFormatterNode(OutputFormatterNode):
     def getConcreteType(self):
         recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
 
-        return "EmptyOutputFormatter< %s >" % (recordType)
+        return "Myriad::EmptyOutputFormatter< %s >" % (recordType)
         
     def getXMLArguments(self):
         return []
@@ -1323,7 +1323,7 @@ class FieldSetterNode(AbstractSetterNode):
         fid = self.getArgument("field").getID()
         valueProviderType = self.getArgument("value").getAttribute("type_alias")
         
-        return "FieldSetter< %s, %s, %s >" % (recordType, fid, valueProviderType)
+        return "Myriad::FieldSetter< %s, %s, %s >" % (recordType, fid, valueProviderType)
         
     def getXMLArguments(self):
         return [ { 'key': 'field', 'type': 'field_ref' }, 
@@ -1355,7 +1355,7 @@ class ReferenceSetterNode(AbstractSetterNode):
         fid = self.getArgument("reference").getID()
         referenceProviderType = self.getArgument("value").getAttribute("type_alias")
         
-        return "ReferenceSetter< %s, %s, %s >" % (recordType, fid, referenceProviderType)
+        return "Myriad::ReferenceSetter< %s, %s, %s >" % (recordType, fid, referenceProviderType)
         
     def getXMLArguments(self):
         return [ { 'key': 'reference', 'type': 'reference_ref' }, 
@@ -1409,7 +1409,7 @@ class ElementWiseValueProviderNode(AbstractValueProviderNode):
         valueVectorSize = self.getParent().getArgument("field").getFieldRef().vectorTypeSize()
         cxtRecordType = self.getCxtRecordType()
         
-        return "ElementWiseValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, valueVectorSize)
+        return "Myriad::ElementWiseValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, valueVectorSize)
     
     def getXMLArguments(self):
         return [ { 'key': 'element_value_provider', 'type': 'value_provider' }, 
@@ -1443,7 +1443,7 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
         cxtRecordType = self.getCxtRecordType()
         callbackType = "Base%sSetterChain" % (cxtRecordType)
         
-        return "CallbackValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, callbackType)
+        return "Myriad::CallbackValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, callbackType)
         
     def getXMLArguments(self):
         return [ { 'key': 'type' , 'type': 'literal' }, 
@@ -1480,7 +1480,7 @@ class ClusteredValueProviderNode(AbstractValueProviderNode):
         probabilityType = self.getArgument("probability").getFunctionRef().getAttribute("concrete_type")
         rangeProviderType = self.getArgument("cardinality").getAttribute("type_alias")
         
-        return "ClusteredValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, rangeProviderType)
+        return "Myriad::ClusteredValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, rangeProviderType)
         
     def getXMLArguments(self):
         return [ { 'key': 'probability', 'type': 'function_ref' }, 
@@ -1513,7 +1513,7 @@ class ConstValueProviderNode(AbstractValueProviderNode):
         valueType = self.getValueType()
         cxtRecordType = self.getCxtRecordType()
         
-        return "ConstValueProvider< %s, %s >" % (valueType, cxtRecordType)
+        return "Myriad::ConstValueProvider< %s, %s >" % (valueType, cxtRecordType)
         
     def getXMLArguments(self):
         return [ { 'key': 'value', 'type': 'literal' } 
@@ -1547,7 +1547,7 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
         fids.append(self.getArgument("field").getID()) # field path
         fids.extend(['0'] * (3 - len(fids)))
         
-        return "ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, ", ".join(fids))
+        return "Myriad::ContextFieldValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, ", ".join(fids))
         
     def getXMLArguments(self):
         return [ { 'key': 'field', 'type': 'field_ref' } 
@@ -1582,7 +1582,7 @@ class RandomValueProviderNode(AbstractValueProviderNode):
         else:
             condFieldID = '0'
         
-        return "RandomValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, condFieldID)
+        return "Myriad::RandomValueProvider< %s, %s, %s, %s >" % (valueType, cxtRecordType, probabilityType, condFieldID)
     
     def getXMLArguments(self):
         return [ { 'key': 'probability'    , 'type': 'function_ref' }, 
@@ -1633,7 +1633,7 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
         rangeType = self.getRangeType()
         cxtRecordType = self.getCxtRecordType()
         
-        return "ConstRangeProvider< %s, %s >" % (rangeType, cxtRecordType)
+        return "Myriad::ConstRangeProvider< %s, %s >" % (rangeType, cxtRecordType)
         
     def getXMLArguments(self):
         return [ { 'key': 'min', 'type': 'literal' }, 
@@ -1667,7 +1667,7 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
         cxtRecordType = self.getCxtRecordType()
         fieldSetterType = self.getArgument("field").getFieldRef().getSetter().getAttribute("type_alias")
         
-        return "ContextFieldRangeProvider< %s, %s, %s >" % (rangeType, cxtRecordType, fieldSetterType)
+        return "Myriad::ContextFieldRangeProvider< %s, %s, %s >" % (rangeType, cxtRecordType, fieldSetterType)
         
     def getXMLArguments(self):
         return [ { 'key': 'field', 'type': 'field_ref' }, 
@@ -1704,7 +1704,7 @@ class EqualityPredicateProviderNode(AbstractRuntimeComponentNode):
         refRecordType = self.getRefRecordType()
         cxtRecordType = self.getCxtRecordType()
         
-        return "EqualityPredicateProvider< %s, %s >" % (refRecordType, cxtRecordType)
+        return "Myriad::EqualityPredicateProvider< %s, %s >" % (refRecordType, cxtRecordType)
         
     def getXMLArguments(self):
         return [ { 'key': 'binder', 'type': 'collection<binder>' }, 
@@ -1740,7 +1740,7 @@ class EqualityPredicateFieldBinderNode(AbstractRuntimeComponentNode):
         cxtRecordType = self.getCxtRecordType()
         valueProviderType = self.getArgument("value").getAttribute("type_alias")
         
-        return "EqualityPredicateFieldBinder< %s, %s, %s, %s >" % (refRecordType, fid, cxtRecordType, valueProviderType)
+        return "Myriad::EqualityPredicateFieldBinder< %s, %s, %s, %s >" % (refRecordType, fid, cxtRecordType, valueProviderType)
         
     def getXMLArguments(self):
         return [ { 'key': 'field', 'type': 'field_ref' },
@@ -1793,7 +1793,7 @@ class ClusteredReferenceProviderNode(AbstractReferenceProviderNode):
         else:
             posFieldID = '0'
         
-        return "ClusteredReferenceProvider< %s, %s, %s, %s >" % (refRecordType, cxtRecordType, childrenCountType, posFieldID)
+        return "Myriad::ClusteredReferenceProvider< %s, %s, %s, %s >" % (refRecordType, cxtRecordType, childrenCountType, posFieldID)
         
     def getXMLArguments(self):
         return [ { 'key': 'children_count', 'type': 'value_provider' }, 
@@ -1825,7 +1825,7 @@ class RandomReferenceProviderNode(AbstractReferenceProviderNode):
         refRecordType = self.getRefRecordType()
         cxtRecordType = self.getCxtRecordType()
         
-        return "RandomReferenceProvider< %s, %s >" % (refRecordType, cxtRecordType)
+        return "Myriad::RandomReferenceProvider< %s, %s >" % (refRecordType, cxtRecordType)
         
     def getXMLArguments(self):
         return [ { 'key': 'predicate', 'type': 'equality_predicate_provider' }, 

@@ -19,9 +19,7 @@
 #ifndef ${uc{record_name}}_H_
 #define ${uc{record_name}}_H_
 
-#include "record/Record.h"
-
-using namespace Myriad;
+#include "record/AbstractRecord.h"
 
 namespace ${{dgen_ns}} {
 
@@ -30,7 +28,7 @@ class ${{record_name}}Generator;
 class ${{record_name}}SetterChain;
 
 // ${{record_name}} class
-class ${{record_name}}: public Record
+class ${{record_name}}: public Myriad::AbstractRecord
 {
 public:
 

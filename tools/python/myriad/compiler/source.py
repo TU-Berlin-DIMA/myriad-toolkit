@@ -732,7 +732,7 @@ class OutputCollectorCompiler(SourceCompiler):
             wfile = open(sourcePath, "w", SourceCompiler.BUFFER_SIZE)
             
             print >> wfile, '#include "io/OutputCollector.h"'
-            print >> wfile, '#include "record/Record.h"'
+            print >> wfile, '#include "record/AbstractRecord.h"'
             print >> wfile, ''
             print >> wfile, 'namespace Myriad {'
             print >> wfile, ''
@@ -781,27 +781,25 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#ifndef BASE%sMETA_H_' % (typeNameUC)
         print >> wfile, '#define BASE%sMETA_H_' % (typeNameUC)
         print >> wfile, ''
-        print >> wfile, '#include "record/Record.h"'
-        print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
+        print >> wfile, '#include "record/AbstractRecord.h"'
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '// forward declarations'
         print >> wfile, 'class %s;' % (typeNameCC)
         print >> wfile, ''
-        print >> wfile, 'class Base%(t)sMeta : public RecordMeta<%(t)s>' % { 't': typeNameCC }
+        print >> wfile, 'class Base%(t)sMeta : public Myriad::RecordMeta<%(t)s>' % { 't': typeNameCC }
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
         
         if recordType.hasEnumFields():
-            print >> wfile, '    Base%(t)sMeta(const EnumSetPool& enumSets) : ' % {'t': typeNameCC}
+            print >> wfile, '    Base%(t)sMeta(const Myriad::EnumSetPool& enumSets) : ' % {'t': typeNameCC}
             print >> wfile, '        %s' % ', '.join([ '%(n)s(enumSets.get("%(r)s").values())' % {'n': field.getAttribute("name"), 'r': field.getAttribute("enumref")} for field in recordType.getEnumFields() ])
             print >> wfile, '    {'
             print >> wfile, '    }'
         else:
-            print >> wfile, '    Base%(t)sMeta(const EnumSetPool& enumSets)' % {'t': typeNameCC}
+            print >> wfile, '    Base%(t)sMeta(const Myriad::EnumSetPool& enumSets)' % {'t': typeNameCC}
             print >> wfile, '    {'
             print >> wfile, '    }'
         print >> wfile, ''
@@ -842,8 +840,6 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '#include "record/base/Base%sMeta.h"' % (typeNameCC)
         print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
-        print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, 'class %(t)sMeta : public Base%(t)sMeta' % {'t': typeNameCC}
@@ -882,14 +878,12 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#ifndef BASE%s_H_' % (typeNameUC)
         print >> wfile, '#define BASE%s_H_' % (typeNameUC)
         print >> wfile, ''
-        print >> wfile, '#include "record/Record.h"'
+        print >> wfile, '#include "record/AbstractRecord.h"'
         print >> wfile, '#include "record/%sMeta.h"' % (typeNameCC)
         
         for referenceType in recordType.getReferenceTypes():
             print >> wfile, '#include "record/%s.h"' % (referenceType)
         
-        print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
@@ -906,7 +900,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '// base record type'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
-        print >> wfile, 'class Base%s: public Record' % (typeNameCC)
+        print >> wfile, 'class Base%s: public Myriad::AbstractRecord' % (typeNameCC)
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
@@ -1089,8 +1083,6 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '#define %s_H_' % (typeNameUC)
         print >> wfile, ''
         print >> wfile, '#include "record/base/Base%s.h"' % (typeNameCC)
-        print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
         print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
@@ -1320,8 +1312,6 @@ class SetterChainCompiler(SourceCompiler):
             print >> wfile, '#include "%s"' % (componentPath)
         
         print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
-        print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
@@ -1331,7 +1321,7 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, '/**'
         print >> wfile, ' * SetterChain specialization for User.'
         print >> wfile, ' */'
-        print >> wfile, 'class Base%(t)sSetterChain : public SetterChain<%(t)s>' % {'t': typeNameCC}
+        print >> wfile, 'class Base%(t)sSetterChain : public Myriad::SetterChain<%(t)s>' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
@@ -1344,8 +1334,8 @@ class SetterChainCompiler(SourceCompiler):
                 print >> wfile, '    typedef %s %s;' % (node.getConcreteType(), node.getAttribute("type_alias"))
             
         print >> wfile, ''
-        print >> wfile, '    Base%sSetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
-        print >> wfile, '        SetterChain<%s>(opMode, random),' % (typeNameCC)
+        print >> wfile, '    Base%sSetterChain(Myriad::BaseSetterChain::OperationMode& opMode, Myriad::RandomStream& random, Myriad::GeneratorConfig& config) :' % (typeNameCC)
+        print >> wfile, '        Myriad::SetterChain<%s>(opMode, random),' % (typeNameCC)
         
         
         print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
@@ -1383,9 +1373,9 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, '    /**'
         print >> wfile, '     * Predicate filter function.'
         print >> wfile, '     */'
-        print >> wfile, '    virtual Interval<I64u> filter(const EqualityPredicate<%(t)s>& predicate)' % {'t': typeNameCC}
+        print >> wfile, '    virtual Myriad::Interval<I64u> filter(const Myriad::EqualityPredicate<%(t)s>& predicate)' % {'t': typeNameCC}
         print >> wfile, '    {'
-        print >> wfile, '        Interval<I64u> result(0, _sequenceCardinality);'
+        print >> wfile, '        Myriad::Interval<I64u> result(0, _sequenceCardinality);'
         print >> wfile, ''
         print >> wfile, '        // apply inverse setter chain'
         for setter in recordSequence.getSetterChain().getFieldSetters():
@@ -1452,8 +1442,6 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '#include "runtime/setter/base/Base%sSetterChain.h"' % (typeNameCC)
         print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
-        print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
@@ -1464,7 +1452,7 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    %sSetterChain(OperationMode& opMode, RandomStream& random, GeneratorConfig& config) :' % (typeNameCC)
+        print >> wfile, '    %sSetterChain(Myriad::BaseSetterChain::OperationMode& opMode, Myriad::RandomStream& random, Myriad::GeneratorConfig& config) :' % (typeNameCC)
         print >> wfile, '        Base%sSetterChain(opMode, random, config)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
@@ -1540,27 +1528,25 @@ class AbstractSequenceGeneratorCompiler(SourceCompiler):
         print >> wfile, '#include "generator/RandomSequenceGenerator.h"'
         print >> wfile, '#include "runtime/setter/%sSetterChain.h"' % (typeNameCC)
         print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
-        print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, '// AbstractSequenceGenerator specialization (base class)'
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
         print >> wfile, ''
-        print >> wfile, 'class Base%(t)sGenerator: public RandomSequenceGenerator<%(t)s>' % {'t': typeNameCC}
+        print >> wfile, 'class Base%(t)sGenerator: public Myriad::RandomSequenceGenerator<%(t)s>' % {'t': typeNameCC}
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    Base%sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
-        print >> wfile, '        RandomSequenceGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
+        print >> wfile, '    Base%sGenerator(const string& name, Myriad::GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
+        print >> wfile, '        Myriad::RandomSequenceGenerator<%s>(name, config, notificationCenter)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
-        print >> wfile, '    void prepare(Stage stage, const GeneratorPool& pool)'
+        print >> wfile, '    void prepare(Stage stage, const Myriad::GeneratorPool& pool)'
         print >> wfile, '    {'
         print >> wfile, '        // call generator implementation'
-        print >> wfile, '        RandomSequenceGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
+        print >> wfile, '        Myriad::RandomSequenceGenerator<%s>::prepare(stage, pool);' % (typeNameCC)
         
         if recordSequence.hasSequenceIterator():
             sequenceIterator = recordSequence.getSequenceIterator()
@@ -1574,7 +1560,7 @@ class AbstractSequenceGeneratorCompiler(SourceCompiler):
             
         print >> wfile, '    }'
         print >> wfile, ''
-        print >> wfile, '    %(t)sSetterChain setterChain(BaseSetterChain::OperationMode opMode, RandomStream& random)' % {'t': typeNameCC}
+        print >> wfile, '    %(t)sSetterChain setterChain(Myriad::BaseSetterChain::OperationMode opMode, Myriad::RandomStream& random)' % {'t': typeNameCC}
         print >> wfile, '    {'
         print >> wfile, '        return %sSetterChain(opMode, random, _config);' % (typeNameCC)
         print >> wfile, '    }'
@@ -1614,8 +1600,6 @@ class AbstractSequenceGeneratorCompiler(SourceCompiler):
         print >> wfile, ''
         print >> wfile, '#include "generator/base/Base%sGenerator.h"' % (typeNameCC)
         print >> wfile, ''
-        print >> wfile, 'using namespace Myriad;'
-        print >> wfile, ''
         print >> wfile, 'namespace %s {' % (self._args.dgen_ns)
         print >> wfile, ''
         print >> wfile, '// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~'
@@ -1626,9 +1610,9 @@ class AbstractSequenceGeneratorCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    typedef RecordTraits<%s>::SetterChainType SetterChainType;' % (typeNameCC)
+        print >> wfile, '    typedef Myriad::RecordTraits<%s>::SetterChainType SetterChainType;' % (typeNameCC)
         print >> wfile, ''
-        print >> wfile, '    %sGenerator(const string& name, GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
+        print >> wfile, '    %sGenerator(const string& name, Myriad::GeneratorConfig& config, NotificationCenter& notificationCenter) :' % (typeNameCC)
         print >> wfile, '        Base%sGenerator(name, config, notificationCenter)' % (typeNameCC)
         print >> wfile, '    {'
         print >> wfile, '    }'
