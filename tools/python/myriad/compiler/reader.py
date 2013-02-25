@@ -628,9 +628,9 @@ class XMLReader(object):
         # read record type (mandatory)
         recordTypeXMLNode = xPathContext.xpathEval("./m:record_type")
         self.__readRecordType(recordSequenceNode, recordTypeXMLNode.pop())
-        # read output format (mandatory)
-        recordTypeXMLNode = xPathContext.xpathEval("./m:output_format")
-        self.__readOutputFormatter(recordSequenceNode, recordTypeXMLNode.pop())
+        # read output format (optional)
+        outputFormatterXMLNode = xPathContext.xpathEval("./m:output_format")
+        self.__readOutputFormatter(recordSequenceNode, outputFormatterXMLNode.pop() if len(outputFormatterXMLNode) > 0 else None)
         # read setter chain (optional)
         setterChainXMLNode = xPathContext.xpathEval("./m:setter_chain")
         self.__readSetterChain(recordSequenceNode, setterChainXMLNode.pop() if len(setterChainXMLNode) > 0 else None)
@@ -780,9 +780,14 @@ class XMLReader(object):
         
     def __sequenceIteratorFactory(self, sequenceIteratorXMLNode):
         sequenceIteratorType = sequenceIteratorXMLNode.prop("type")
-        
-        # factory logic
         sequenceIterator = None
+        
+        # default case (fallback if configuring XML node is missing)
+        if sequenceIteratorXMLNode is None:
+            sequenceIterator = PartitionedSequenceIteratorNode()
+            return sequenceIterator
+        
+        # factory logic: create sequence iterator object
         if (sequenceIteratorType == "partitioned_iterator"):
             sequenceIterator = PartitionedSequenceIteratorNode()
         else:
@@ -793,18 +798,25 @@ class XMLReader(object):
         
         return sequenceIterator
         
-    def __outputFormatterFactory(self, sequenceIteratorXMLNode):
-        outputFormatterType = sequenceIteratorXMLNode.prop("type")
-        
-        # factory logic
+    def __outputFormatterFactory(self, outputFormatterXMLNode):
+        outputFormatterType = outputFormatterXMLNode.prop("type")
         outputFormatter = None
+        
+        # default case (fallback if configuring XML node is missing)
+        if outputFormatterXMLNode is None:
+            outputFormatter = EmptyOutputFormatterNode()
+            return outputFormatter
+        
+        # factory logic: create output formatter object
         if (outputFormatterType == "csv"):
             outputFormatter = CsvOutputFormatterNode()
+        elif (outputFormatterType == "empty"):
+            outputFormatter = EmptyOutputFormatterNode()
         else:
             raise RuntimeError('Invalid output formatter type `%s`' % (outputFormatterType))
         
         # append arguments
-        ArgumentReader.readArguments(sequenceIteratorXMLNode, outputFormatter)
+        ArgumentReader.readArguments(outputFormatterXMLNode, outputFormatter)
         
         return outputFormatter
         

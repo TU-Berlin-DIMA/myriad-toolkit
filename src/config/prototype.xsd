@@ -142,7 +142,7 @@
           <xs:field xpath="@name" />
         </xs:unique>
       </xs:element>
-      <xs:element name="output_format" type="myriad:output_format" minOccurs="1" maxOccurs="1" />
+      <xs:element name="output_format" type="myriad:output_format" minOccurs="0" maxOccurs="1" />
       <xs:element name="setter_chain" type="myriad:setter_chain" minOccurs="0" maxOccurs="1">
         <xs:annotation>
           <xs:documentation>A chain of value and field setters to be applied in the PRDG sequence for this record.</xs:documentation>

@@ -1013,6 +1013,28 @@ class CsvOutputFormatterNode(OutputFormatterNode):
                ]
 
 
+class EmptyOutputFormatterNode(OutputFormatterNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="empty")
+        kwargs.update(template_type="EmptyOutputFormatter")
+        super(EmptyOutputFormatterNode, self).__init__(*args, **kwargs)
+        
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
+
+        return "EmptyOutputFormatter< %s >" % (recordType)
+        
+    def getXMLArguments(self):
+        return []
+        
+    def getConstructorArguments(self):
+        return []
+
+
 #
 # Arguments
 # 

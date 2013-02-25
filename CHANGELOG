@@ -3,8 +3,9 @@
 * Refactored enum sets
 * Implemented state machine reader for MyriadEnumSet objects
 * Added support for 'char' and 'vector' Myriad record types
-* Added runtime and XML specification support for element_wise_value_providers (can be used together with vector typed fields)
+* Added runtime and XML specification support for element_wise_value_providers (can be used together with vector typed fields).
 * Refactored the I/O package - added support for 'file' and 'socket' output collectors decided at runtime based on provided `--output-type` CLI parameter.
+* Added optional 'output_format' configuration element to the record sequences specification. If missing, an 'empty' output format is used by default. 
 
 0.2.0 - 2012-22-11
 

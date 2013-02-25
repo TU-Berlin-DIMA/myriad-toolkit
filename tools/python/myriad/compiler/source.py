@@ -1016,7 +1016,12 @@ class RecordTypeCompiler(SourceCompiler):
         
         outputFormatter = recordSequence.getOutputFormatter()
         
-        if outputFormatter.getAttribute("type") == "csv":
+        if outputFormatter.getAttribute("type") == "empty":
+            # do nothing if the specification expects an empty output format
+            pass
+        
+        elif outputFormatter.getAttribute("type") == "csv":
+            # produce the CSV output
             outputFormatDelimiter = outputFormatter.getArgument("delimiter").getAttribute("value")
             outputFormatFields = outputFormatter.getArgument("field")
             for fieldRef in outputFormatFields.getAll():
@@ -1031,7 +1036,7 @@ class RecordTypeCompiler(SourceCompiler):
                 else:
                     print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
                 print >> wfile, '    out << \'%s\';' % (outputFormatDelimiter)
-            print >> wfile, '    out << \'\\n\';'
+            print >> wfile, '    out << \'\\n\';' 
             
         print >> wfile, '}'
         print >> wfile, ''
