@@ -109,7 +109,8 @@ class FieldTransfomer(object):
 
 class LiteralTransfomer(object):
     
-    _param_pattern = re.compile('%(\([\w.\-]+\))?([\w.\-]+)%')    
+    _param_pattern = re.compile('%(\([a-zA-Z0-9]+\))?([\w.\-]+)%')    
+    _literal_pattern = re.compile('(\([a-zA-Z0-9]+\))?([\w.\-\[\]\_]+)')
     _expr_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, *args, **kwargs):
@@ -128,21 +129,38 @@ class LiteralTransfomer(object):
             attributeType = argumentNode.getAttribute("type").strip()
             attributeValue = argumentNode.getAttribute("value").strip()
             
-            m = self._param_pattern.match(attributeValue)
-            if (m):
-                return [ '%sparameter<%s>("%s")' % (configPrefix, attributeType, m.group(2)) ]
+            paramMatch = self._param_pattern.match(attributeValue)
+            if (paramMatch):
+                return [ '%sparameter<%s>("%s")' % (configPrefix, attributeType, paramMatch.group(2)) ]
             
-            m = self._expr_pattern.match(attributeValue)
-            if (m):
-                exprExpandedParams = self._param_pattern.sub(lambda m: '%sparameter<%s>("%s")' % (configPrefix, attributeType if m.group(1) == None else m.group(1)[1:-1], m.group(2)), attributeValue)
+            exprMatch = self._expr_pattern.match(attributeValue)
+            if (exprMatch):
+                exprExpandedParams = self._param_pattern.sub(lambda exprMatch: '%sparameter<%s>("%s")' % (configPrefix, attributeType if exprMatch.group(1) == None else exprMatch.group(1)[1:-1], exprMatch.group(2)), attributeValue)
                 return [ "static_cast<%s>(%s)" % (attributeType, exprExpandedParams[2:-1]) ]
-            else:
-                if attributeType == "String":
-                    return [ '"%s"' % (attributeValue) ]
-                if attributeType == "Date":
-                    return [ 'Date("%s")' % (attributeValue) ]
+            
+            literalMatch = self._literal_pattern.match(attributeValue)
+            if (literalMatch):
+                if literalMatch.group(1) is None:
+                    if attributeType == "String":
+                        return [ '"%s"' % (literalMatch.group(2)) ]
+                    if attributeType == "Char":
+                        return [ "'%s'" % (literalMatch.group(2)) ]
+                    if attributeType == "Date":
+                        return [ 'Date("%s")' % (literalMatch.group(2)) ]
+                    else:
+                        return [ '%s' % (literalMatch.group(2)) ]
                 else:
-                    return [ '%s' % (attributeValue) ]
+                    if attributeType == "String":
+                        return [ 'static_cast<%s>("%s")' % (literalMatch.group(1)[1:-1], literalMatch.group(2)) ]
+                    if attributeType == "Char":
+                        return [ "static_cast<%s>(%s)" % (literalMatch.group(1)[1:-1], literalMatch.group(2)) ]
+                    if attributeType == "Date":
+                        return [ 'Date(static_cast<%s>("%s"))' % (literalMatch.group(1)[1:-1], literalMatch.group(2)) ]
+                    else:
+                        return [ 'static_cast<%s>(%s)' % (literalMatch.group(1)[1:-1], literalMatch.group(2)) ]
+            else:
+                raise RuntimeError("Unsupported literal value `%s`" % (attributeValue))
+            
         else:
             raise RuntimeError("Unsupported argument `%s` of type `%s`" % (argumentNode.getAttribute("key"), type(argumentNode)))
 
@@ -1016,10 +1034,12 @@ class RecordTypeCompiler(SourceCompiler):
         
         outputFormatter = recordSequence.getOutputFormatter()
         
-        if outputFormatter.getAttribute("type") == "empty":
+        if not recordSequence.hasOutputFormatter():
+            # do nothing if the specification does not provide an output format
+            pass
+        elif outputFormatter.getAttribute("type") == "empty":
             # do nothing if the specification expects an empty output format
             pass
-        
         elif outputFormatter.getAttribute("type") == "csv":
             # produce the CSV output
             outputFormatDelimiter = outputFormatter.getArgument("delimiter").getAttribute("value")

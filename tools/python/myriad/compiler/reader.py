@@ -692,11 +692,6 @@ class XMLReader(object):
             i = i+1
 
         astContext.setRecordType(recordTypeNode)
-        
-    def __readCardinalityEstimator(self, astContext, xmlContext):
-        cardinalityEstimatorNode = self.__cardinalityEstimatorFactory(xmlContext)
-        ArgumentReader.readArguments(xmlContext, cardinalityEstimatorNode)
-        astContext.setCardinalityEstimator(cardinalityEstimatorNode)
                     
     def __readSetterChain(self, astContext, xmlContext):
         # create and attach the AST node
@@ -756,38 +751,44 @@ class XMLReader(object):
             typeAlias = node.getAttribute("type_alias")
             node.setAttribute("var_name", "_%s%s" % (typeAlias[0].lower(), typeAlias[1:-4]))
         
+    def __readCardinalityEstimator(self, astContext, xmlContext):
+        # read element from the corresponding factory
+        astContext.setCardinalityEstimator(self.__cardinalityEstimatorFactory(xmlContext))
+        
     def __readSequenceIterator(self, astContext, xmlContext):
         # sanity check (XML element is not mandatory)
         if (xmlContext == None):
             return
-        
+        # read element from the corresponding factory
         astContext.setSequenceIterator(self.__sequenceIteratorFactory(xmlContext))
         
     def __readOutputFormatter(self, astContext, xmlContext):
         # sanity check (XML element is not mandatory)
         if (xmlContext == None):
             return
-        
+        # read element from the corresponding factory
         astContext.setOutputFormatter(self.__outputFormatterFactory(xmlContext))
         
     def __cardinalityEstimatorFactory(self, cardinalityEstimatorXMLNode):
         cardinalityEstimatorType = cardinalityEstimatorXMLNode.prop("type")
         
+        # factory logic: create cardinality estimator object
+        cardinalityEstimator = None
         if (cardinalityEstimatorType == "linear_scale_estimator"):
-            return LinearScaleEstimatorNode()
-
-        raise RuntimeError('Invalid cardinality estimator type `%s`' % (cardinalityEstimatorType))
+            cardinalityEstimator = LinearScaleEstimatorNode()
+        else:
+            raise RuntimeError('Invalid cardinality estimator type `%s`' % (cardinalityEstimatorType))
+        
+        # Append arguments
+        ArgumentReader.readArguments(cardinalityEstimatorXMLNode, cardinalityEstimator)
+        
+        return cardinalityEstimator
         
     def __sequenceIteratorFactory(self, sequenceIteratorXMLNode):
         sequenceIteratorType = sequenceIteratorXMLNode.prop("type")
-        sequenceIterator = None
-        
-        # default case (fallback if configuring XML node is missing)
-        if sequenceIteratorXMLNode is None:
-            sequenceIterator = PartitionedSequenceIteratorNode()
-            return sequenceIterator
         
         # factory logic: create sequence iterator object
+        sequenceIterator = None
         if (sequenceIteratorType == "partitioned_iterator"):
             sequenceIterator = PartitionedSequenceIteratorNode()
         else:
@@ -800,14 +801,9 @@ class XMLReader(object):
         
     def __outputFormatterFactory(self, outputFormatterXMLNode):
         outputFormatterType = outputFormatterXMLNode.prop("type")
-        outputFormatter = None
-        
-        # default case (fallback if configuring XML node is missing)
-        if outputFormatterXMLNode is None:
-            outputFormatter = EmptyOutputFormatterNode()
-            return outputFormatter
         
         # factory logic: create output formatter object
+        outputFormatter = None
         if (outputFormatterType == "csv"):
             outputFormatter = CsvOutputFormatterNode()
         elif (outputFormatterType == "empty"):

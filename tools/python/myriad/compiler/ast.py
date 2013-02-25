@@ -463,6 +463,9 @@ class RecordSequenceNode(AbstractNode):
         
     def getOutputFormatter(self):
         return self._outputFormatter
+        
+    def hasOutputFormatter(self):
+        return self._outputFormatter is not None
 
 
 class RandomSequenceNode(RecordSequenceNode):
@@ -483,7 +486,8 @@ class RandomSequenceNode(RecordSequenceNode):
     def accept(self, visitor):
         visitor.preVisit(self)
         self._recordType.accept(visitor)
-        self._outputFormatter.accept(visitor)
+        if self._outputFormatter is not None:
+            self._outputFormatter.accept(visitor)
         self.__setterChain.accept(visitor)
         self.__cardinalityEstimator.accept(visitor)
         if self.__sequenceIterator is not None:
