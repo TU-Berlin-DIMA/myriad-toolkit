@@ -439,13 +439,16 @@ class RecordSequenceNode(AbstractNode):
     '''
     
     _recordType = None
+    _outputFormatter = None
     
     def __init__(self, *args, **kwargs):
         super(RecordSequenceNode, self).__init__(*args, **kwargs)
+        self._outputFormatter = None
     
     def accept(self, visitor):
         visitor.preVisit(self)
         self._recordType.accept(visitor)
+        self._outputFormatter.accept(visitor)
         visitor.postVisit(self)
         
     def setRecordType(self, node):
@@ -453,6 +456,13 @@ class RecordSequenceNode(AbstractNode):
         
     def getRecordType(self):
         return self._recordType
+        
+    def setOutputFormatter(self, node):
+        self._outputFormatter = node
+        node.setParent(self)
+        
+    def getOutputFormatter(self):
+        return self._outputFormatter
 
 
 class RandomSequenceNode(RecordSequenceNode):
@@ -473,6 +483,7 @@ class RandomSequenceNode(RecordSequenceNode):
     def accept(self, visitor):
         visitor.preVisit(self)
         self._recordType.accept(visitor)
+        self._outputFormatter.accept(visitor)
         self.__setterChain.accept(visitor)
         self.__cardinalityEstimator.accept(visitor)
         if self.__sequenceIterator is not None:
@@ -593,9 +604,9 @@ class RecordFieldNode(AbstractNode):
     '''
     
     # a pattern for the simple types 
-    _simple_type_pattern = re.compile('(I16|I32|I64|I16u|I32u|I64u|Decimal|Enum|Char)')
+    _simple_type_pattern = re.compile('(I16u?|I32u?|I64u?|Decimal|Enum|Char|String)')
     # a pattern for the vector types
-    _vector_type_pattern = re.compile('(I16|I32|I64|I16u|I32u|I64u|Decimal|Enum|Char)\[(\d+)\]')
+    _vector_type_pattern = re.compile('(I16u?|I32u?|I64u?|Decimal|Enum|Char)\[(\d+)\]')
     
     orderkey = None
     __parent = None
@@ -627,6 +638,9 @@ class RecordFieldNode(AbstractNode):
     def isImplicit(self):
         return self.getAttribute("implicit", False)
     
+    def isDerived(self):
+        return self.getAttribute("derived", False)
+    
     def getID(self):
         return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
         
@@ -657,7 +671,7 @@ class RecordFieldNode(AbstractNode):
             return r.group(1)
         
         # otherwise exception
-        raise RuntimeError("Unsupported Myriad type `%s`" % (self.getAttribute("type")))
+        raise RuntimeError("Unsupported Myriad source type `%s`" % (self.getAttribute("type")))
         
     def coreType(self):
         # check vector types
@@ -671,7 +685,7 @@ class RecordFieldNode(AbstractNode):
             return r.group(1)
         
         # otherwise exception
-        raise RuntimeError("Unsupported Myriad type `%s`" % (self.getAttribute("type")))
+        raise RuntimeError("Unsupported Myriad core type `%s`" % (self.getAttribute("type")))
 
 
 class RecordEnumFieldNode(RecordFieldNode):
@@ -928,6 +942,78 @@ class PartitionedSequenceIteratorNode(SequenceIteratorNode):
 
 
 #
+# Output Formatters
+# 
+ 
+class OutputFormatterNode(AbstractNode):
+    '''
+    classdocs
+    '''
+    
+    __arguments = {}
+    __parent = None
+    
+    def __init__(self, *args, **kwargs):
+        super(OutputFormatterNode, self).__init__(*args, **kwargs)
+        self.__arguments = {}
+        self.__parent = None
+    
+    def accept(self, visitor):
+        visitor.preVisit(self)
+        for node in self.__arguments.itervalues():
+            node.accept(visitor)
+        visitor.postVisit(self)
+        
+    def setArgument(self, node):
+        self.__arguments[node.getAttribute('key')] = node
+        node.setParent(self)
+    
+    def getArgument(self, key):
+        return self.__arguments.get(key)
+    
+    def setParent(self, parent):
+        self.__parent = parent
+
+    def getParent(self):
+        return self.__parent
+        
+    def getConcreteType(self):
+        return "OutputFormatter"
+        
+    def getXMLArguments(self):
+        return {}
+        
+    def getConstructorArguments(self):
+        return []
+
+
+class CsvOutputFormatterNode(OutputFormatterNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="csv")
+        kwargs.update(template_type="CsvOutputFormatter")
+        super(CsvOutputFormatterNode, self).__init__(*args, **kwargs)
+        
+    def getConcreteType(self):
+        recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
+
+        return "CsvOutputFormatter< %s >" % (recordType)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'delimiter', 'type': 'literal' },
+                 { 'key': 'field', 'type': 'collection<field_ref>' }, 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'Literal(delimiter)',
+                 'FieldSetterRef(field)'
+               ]
+
+
+#
 # Arguments
 # 
     
@@ -937,9 +1023,11 @@ class ArgumentNode(AbstractNode):
     '''
     
     __parent = None
+    orderkey = None
     
     def __init__(self, *args, **kwargs):
         super(ArgumentNode, self).__init__(*args, **kwargs)
+        self.orderkey = None
 
     def setParent(self, parent):
         self.__parent = parent
@@ -959,6 +1047,9 @@ class ArgumentCollectionNode(ArgumentNode):
     def __init__(self, *args, **kwargs):
         super(ArgumentCollectionNode, self).__init__(*args, **kwargs)
         self.__collection = kwargs['collection']
+        for i in range(len(self.__collection)):
+            self.__collection[i].setParent(self)
+            self.__collection[i].orderkey = i 
     
     def accept(self, visitor):
         visitor.preVisit(self)
@@ -968,9 +1059,15 @@ class ArgumentCollectionNode(ArgumentNode):
 
     def setParent(self, parent):
         self.__parent = parent
-        for arg in self.__collection:
-            arg.setParent(parent)
-
+        
+    def setArgument(self, pos, node):
+        self.__collection[pos] = node
+        node.setParent(self)
+        node.orderkey = pos
+    
+    def getArgument(self, pos):
+        return self.__collection[pos]
+    
     def getAll(self):
         return self.__collection
     
@@ -1286,14 +1383,16 @@ class ElementWiseValueProviderNode(AbstractValueProviderNode):
         valueVectorSize = self.getParent().getArgument("field").getFieldRef().vectorTypeSize()
         cxtRecordType = self.getCxtRecordType()
         
-        return "ElementWiseValueProvider< Char, %s, %s >" % (cxtRecordType, valueVectorSize)
+        return "ElementWiseValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, valueVectorSize)
     
     def getXMLArguments(self):
         return [ { 'key': 'element_value_provider', 'type': 'value_provider' }, 
+                 { 'key': 'element_length_value_provider', 'type': 'value_provider' }, 
                ]
         
     def getConstructorArguments(self):
-        return [ 'RuntimeComponentRef(element_value_provider)'
+        return [ 'RuntimeComponentRef(element_value_provider)',
+                 'RuntimeComponentRef(element_length_value_provider)'
                ]
 
 

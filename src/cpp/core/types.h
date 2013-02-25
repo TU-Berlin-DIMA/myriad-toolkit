@@ -77,8 +77,10 @@ template<typename T> class Interval;
 template<class RecordType, class T> struct MethodTraits
 {
     // getter / setter signatures in record types
-    typedef const T& (RecordType::*Getter)() const; //!< Getter signature.
-    typedef void (RecordType::*Setter)(const T&); //!< Setter signature.
+    typedef const T& (RecordType::*RefGetter)() const; //!< Get by reference signature.
+    typedef void (RecordType::*RefSetter)(const T&); //!< Set by reference signature.
+    typedef const T (RecordType::*ValGetter)() const; //!< Get by value signature.
+    typedef void (RecordType::*ValSetter)(const T); //!< Set by value signature.
     // getter / setter signatures in record range predicate types
     typedef const Interval<T>& (RecordType::*RangeGetter)() const; //!< Range getter signature.
     typedef void (RecordType::*RangeSetterLong)(T, T); //!< Range setter signature (long version).
@@ -381,6 +383,31 @@ template<class T> inline void write(std::ostream& stream, const vector<T>& t, bo
         }
     }
     stream << "]";
+}
+
+/**
+ * Write out to the given \c std::ostream character vector \p t as a character
+ * sequence. If \p quoted parameter is <tt>True</tt>, adds enclosing quotes to
+ * the character sequence.
+ */
+template<> inline void write(std::ostream& stream, const vector<Char>& t, bool quoted)
+{
+    if (quoted)
+    {
+        stream << '"';
+    }
+
+    typename vector<Char>::const_iterator it = t.begin();
+    while (it != t.end())
+    {
+        stream << (*it);
+        it++;
+    }
+
+    if (quoted)
+    {
+        stream << '"';
+    }
 }
 
 //@}

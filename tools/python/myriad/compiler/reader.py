@@ -88,11 +88,11 @@ class ArgumentReader(AbstractReader):
         elif (argType == "function_ref"):
             argReader = FunctionRefArgumentReader(descriptor=argDescriptor)
         elif (argType == "value_provider"):
-            argReader =ValueProviderArgumentReader(descriptor=argDescriptor)
+            argReader = ValueProviderArgumentReader(descriptor=argDescriptor)
         elif (argType == "range_provider"):
-            argReader =RangeProviderArgumentReader(descriptor=argDescriptor)
+            argReader = RangeProviderArgumentReader(descriptor=argDescriptor)
         elif (argType == "reference_provider"):
-            argReader =ReferenceProviderArgumentReader(descriptor=argDescriptor)
+            argReader = ReferenceProviderArgumentReader(descriptor=argDescriptor)
         elif (argType == "equality_predicate_provider"):
             argReader = EqualityPredicateProviderReader(descriptor=argDescriptor)
         elif (argType == "binder"):
@@ -105,7 +105,7 @@ class ArgumentReader(AbstractReader):
         if (encType is None):
             return argReader
         elif (encType == "collection"):
-            return CollectionReader(descriptor=argDescriptor,childReader=argReader)
+            return CollectionArgumentReader(descriptor=argDescriptor,childReader=argReader)
         else:
             message = "Unknown eclosing reader type `%s`" % (encType)
             ArgumentReader._log.error(message)
@@ -152,12 +152,12 @@ class SingleArgumentReader(ArgumentReader):
         argsContainerNode.setArgument(self.parse(argXMLNodes.pop(), argsContainerNode))
 
 
-class CollectionReader(ArgumentReader):
+class CollectionArgumentReader(ArgumentReader):
     
     _childReader = None
     
     def __init__(self, *args, **kwargs):
-        super(CollectionReader, self).__init__(*args, **kwargs)
+        super(CollectionArgumentReader, self).__init__(*args, **kwargs)
         self._childReader = kwargs['childReader']
         self._descriptor = self._childReader._descriptor
     
@@ -180,15 +180,6 @@ class CollectionReader(ArgumentReader):
         
         # arguments exist, parse them and attach them to the parent container
         argsContainerNode.setArgument(ArgumentCollectionNode(key=self._descriptor['key'],collection=[ self._childReader.parse(argXMLNode, argsContainerNode) for argXMLNode in argXMLNodes ]))
-
-
-class ListArgumentReader(ArgumentReader):
-
-    def __init__(self, *args, **kwargs):
-        super(ListArgumentReader, self).__init__(*args, **kwargs)
-    
-    def read(self, argContainerXMLNode, argsContainerNode):
-        raise RuntimeError("Called abstract method ListArgumentReader.read()")
 
 
 class LiteralArgumentReader(SingleArgumentReader):
@@ -277,7 +268,7 @@ class ValueProviderArgumentReader(SingleArgumentReader):
         valueProviderNode = None
         if argType == 'callback_value_provider':
             valueProviderNode = CallbackValueProviderNode(key=argKey)
-        if argType == 'element_wise_value_provider':
+        elif argType == 'element_wise_value_provider':
             valueProviderNode = ElementWiseValueProviderNode(key=argKey)
         elif argType == 'clustered_value_provider':
             valueProviderNode = ClusteredValueProviderNode(key=argKey)
@@ -503,7 +494,10 @@ class XMLReader(object):
             resolvedFieldRefArgumentNode.setRecordTypeRef(rootRecordSequenceNode.getRecordType())
             resolvedFieldRefArgumentNode.setInnerPathRefs(innerPath)
             resolvedFieldRefArgumentNode.setFieldRef(fieldNode)
-            parent.setArgument(resolvedFieldRefArgumentNode)
+            if isinstance(parent, ArgumentCollectionNode):
+                parent.setArgument(unresolvedFieldRefArgumentNode.orderkey, resolvedFieldRefArgumentNode)
+            else:
+                parent.setArgument(resolvedFieldRefArgumentNode)
     
     def __resolveReferenceRefArguments(self):
         nodeFilter = DepthFirstNodeFilter(filterType=UnresolvedReferenceRefArgumentNode)
@@ -634,6 +628,9 @@ class XMLReader(object):
         # read record type (mandatory)
         recordTypeXMLNode = xPathContext.xpathEval("./m:record_type")
         self.__readRecordType(recordSequenceNode, recordTypeXMLNode.pop())
+        # read output format (mandatory)
+        recordTypeXMLNode = xPathContext.xpathEval("./m:output_format")
+        self.__readOutputFormatter(recordSequenceNode, recordTypeXMLNode.pop())
         # read setter chain (optional)
         setterChainXMLNode = xPathContext.xpathEval("./m:setter_chain")
         self.__readSetterChain(recordSequenceNode, setterChainXMLNode.pop() if len(setterChainXMLNode) > 0 else None)
@@ -653,6 +650,7 @@ class XMLReader(object):
         recordTypeNode = RecordTypeNode(key=astContext.getAttribute("key"))
         
         # add implicit fields
+        # add `gen_id` field
         i = 0
         recordFieldNode = RecordFieldNode(name="gen_id", type="I64u", implicit=True)
         recordFieldNode.setOrderKey(i)
@@ -661,9 +659,13 @@ class XMLReader(object):
         i = 1
         for element in xPathContext.xpathEval("./m:field"):
             fieldType = element.prop("type")
+            if (element.prop("derived") is None):
+                fieldIsDerived = False
+            else:
+                fieldIsDerived = bool(element.prop("derived"))
             
             if fieldType == "Enum":
-                recordFieldNode = RecordEnumFieldNode(name=element.prop("name"), type=element.prop("type"), implicit=False, enumref=element.prop("enumref"))
+                recordFieldNode = RecordEnumFieldNode(name=element.prop("name"), type=element.prop("type"), implicit=False, derived=fieldIsDerived, enumref=element.prop("enumref"))
                 enumSetNode = self.__astRoot.getSpecification().getEnumSets().getSet(recordFieldNode.getAttribute('enumref'))
                 
                 if enumSetNode is None:
@@ -674,7 +676,7 @@ class XMLReader(object):
                 recordFieldNode.setEnumSetRef(enumSetNode)
                 recordTypeNode.setEnumField(recordFieldNode)
             else:
-                recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"), implicit=False)
+                recordFieldNode = RecordFieldNode(name=element.prop("name"), type=element.prop("type"), implicit=False, derived=fieldIsDerived)
                 recordTypeNode.setField(recordFieldNode)
             
             recordFieldNode.setOrderKey(i)
@@ -761,6 +763,13 @@ class XMLReader(object):
         
         astContext.setSequenceIterator(self.__sequenceIteratorFactory(xmlContext))
         
+    def __readOutputFormatter(self, astContext, xmlContext):
+        # sanity check (XML element is not mandatory)
+        if (xmlContext == None):
+            return
+        
+        astContext.setOutputFormatter(self.__outputFormatterFactory(xmlContext))
+        
     def __cardinalityEstimatorFactory(self, cardinalityEstimatorXMLNode):
         cardinalityEstimatorType = cardinalityEstimatorXMLNode.prop("type")
         
@@ -783,6 +792,21 @@ class XMLReader(object):
         ArgumentReader.readArguments(sequenceIteratorXMLNode, sequenceIterator)
         
         return sequenceIterator
+        
+    def __outputFormatterFactory(self, sequenceIteratorXMLNode):
+        outputFormatterType = sequenceIteratorXMLNode.prop("type")
+        
+        # factory logic
+        outputFormatter = None
+        if (outputFormatterType == "csv"):
+            outputFormatter = CsvOutputFormatterNode()
+        else:
+            raise RuntimeError('Invalid output formatter type `%s`' % (outputFormatterType))
+        
+        # append arguments
+        ArgumentReader.readArguments(sequenceIteratorXMLNode, outputFormatter)
+        
+        return outputFormatter
         
     def __functionFactory(self, functionXMLNode):
         

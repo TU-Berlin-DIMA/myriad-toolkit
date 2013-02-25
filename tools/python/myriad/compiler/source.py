@@ -737,18 +737,20 @@ class RecordTypeCompiler(SourceCompiler):
     def compileCode(self, recordSequences):
         for recordSequence in recordSequences.getRecordSequences():
             self._log.info("Compiling record C++ sources for `%s`." % (recordSequence.getAttribute("key")))
-            self.compileBaseRecordMeta(recordSequence.getRecordType())
-            self.compileBaseRecordType(recordSequence.getRecordType())
-            self.compileBaseRecordUtil(recordSequence.getRecordType())
-            self.compileRecordMeta(recordSequence.getRecordType())
-            self.compileRecordType(recordSequence.getRecordType())
-            self.compileRecordUtil(recordSequence.getRecordType())
+            self.compileBaseRecordMeta(recordSequence)
+            self.compileBaseRecordType(recordSequence)
+            self.compileBaseRecordUtil(recordSequence)
+            self.compileRecordMeta(recordSequence)
+            self.compileRecordType(recordSequence)
+            self.compileRecordUtil(recordSequence)
             
-    def compileBaseRecordMeta(self, recordType):
+    def compileBaseRecordMeta(self, recordSequence):
         try:
             os.makedirs("%s/cpp/record/base" % (self._srcPath))
         except OSError:
             pass
+        
+        recordType = recordSequence.getRecordType()
         
         typeNameUS = recordType.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
@@ -796,11 +798,13 @@ class RecordTypeCompiler(SourceCompiler):
 
         wfile.close()
             
-    def compileRecordMeta(self, recordType):
+    def compileRecordMeta(self, recordSequence):
         try:
             os.makedirs("%s/cpp/record" % (self._srcPath))
         except OSError:
             pass
+        
+        recordType = recordSequence.getRecordType()
         
         typeNameUS = recordType.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
@@ -841,11 +845,13 @@ class RecordTypeCompiler(SourceCompiler):
 
         wfile.close()
             
-    def compileBaseRecordType(self, recordType):
+    def compileBaseRecordType(self, recordSequence):
         try:
             os.makedirs("%s/cpp/record/base" % (self._srcPath))
         except OSError:
             pass
+        
+        recordType = recordSequence.getRecordType()
         
         typeNameUS = recordType.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
@@ -900,14 +906,17 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, ''
         
         for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
-            print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(field.getAttribute("name")), field.sourceType())
-            print >> wfile, '    const %s& %s() const;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
-            
-            if isinstance(field, RecordEnumFieldNode):
-                print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(field.getAttribute("name")))
-                print >> wfile, ''
+            if field.isDerived():
+                print >> wfile, '    virtual const %s %s() const = 0;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
             else:
-                print >> wfile, ''
+                print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(field.getAttribute("name")), field.sourceType())
+                print >> wfile, '    const %s& %s() const;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
+            
+                if isinstance(field, RecordEnumFieldNode):
+                    print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(field.getAttribute("name")))
+                    print >> wfile, ''
+                else:
+                    print >> wfile, ''
         
         for reference in recordType.getReferences():
             print >> wfile, '    void %s(const AutoPtr<%s>& v);' % (StringTransformer.us2cc(reference.getAttribute("name")), reference.getAttribute("type"))
@@ -919,7 +928,7 @@ class RecordTypeCompiler(SourceCompiler):
         if recordType.hasFields():
             print >> wfile, ''
             print >> wfile, '    // fields'
-        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
+        for field in filter(lambda f: not f.isImplicit() and not f.isDerived(), recordType.getFields()):
             print >> wfile, '    %s _%s;' % (field.sourceType(), field.getAttribute("name")) 
         
         if recordType.hasReferences():
@@ -934,13 +943,21 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '};'
         print >> wfile, ''
         
-        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
+        for field in filter(lambda f: not f.isImplicit() and not f.isDerived(), recordType.getFields()):
             
-            print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")), field.sourceType())
-            print >> wfile, '{'
-            print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
-            print >> wfile, '}'
-            print >> wfile, ''
+            if field.isVectorType():
+                print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")), field.sourceType())
+                print >> wfile, '{'
+                print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
+                print >> wfile, '    _%s.resize(v.size());' % (field.getAttribute("name"))
+                print >> wfile, '}'
+                print >> wfile, ''
+            else:
+                print >> wfile, 'inline void Base%s::%s(const %s& v)' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")), field.sourceType())
+                print >> wfile, '{'
+                print >> wfile, '    _%s = v;' % (field.getAttribute("name"))
+                print >> wfile, '}'
+                print >> wfile, ''
             print >> wfile, 'inline const %s& Base%s::%s() const' % (field.sourceType(), typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
             print >> wfile, '{'
             print >> wfile, '    return _%s;' % (field.getAttribute("name"))
@@ -997,20 +1014,25 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, 'inline void AbstractOutputCollector<%(ns)s::Base%(t)s>::serialize(std::ostream& out, const %(ns)s::Base%(t)s& record)' % {'ns': self._args.dgen_ns, 't': typeNameCC}
         print >> wfile, '{'
         
-        for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
-            fieldType = field.getAttribute("type")
-            fieldName = field.getAttribute("name")
+        outputFormatter = recordSequence.getOutputFormatter()
+        
+        if outputFormatter.getAttribute("type") == "csv":
+            outputFormatDelimiter = outputFormatter.getArgument("delimiter").getAttribute("value")
+            outputFormatFields = outputFormatter.getArgument("field")
+            for fieldRef in outputFormatFields.getAll():
+                field = fieldRef.getFieldRef()
+                fieldType = field.getAttribute("type")
+                fieldName = field.getAttribute("name")
+                
+                if fieldType == "Enum":
+                    print >> wfile, '    write(out, %s, true);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
+                elif fieldType == 'String' or (field.isVectorType() and field.coreType() == 'Char'):
+                    print >> wfile, '    write(out, %s, true);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                else:
+                    print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                print >> wfile, '    out << \'%s\';' % (outputFormatDelimiter)
+            print >> wfile, '    out << \'\\n\';'
             
-            if field.isVectorType():
-                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
-            elif fieldType == "Enum":
-                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
-                print >> wfile, '    out << \'|\';'
-            else:
-                print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
-                print >> wfile, '    out << \'|\';'
-
-        print >> wfile, '    out << \'\\n\';'
         print >> wfile, '}'
         print >> wfile, ''
         print >> wfile, '} // namespace Myriad'
@@ -1019,11 +1041,13 @@ class RecordTypeCompiler(SourceCompiler):
 
         wfile.close()
     
-    def compileRecordType(self, recordType):
+    def compileRecordType(self, recordSequence):
         try:
             os.makedirs("%s/cpp/record" % (self._srcPath))
         except OSError:
             pass
+        
+        recordType = recordSequence.getRecordType()
         
         typeNameUS = recordType.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
@@ -1058,6 +1082,17 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '    }'
         print >> wfile, ''
+        
+        for field in filter(lambda f: f.isDerived(), recordType.getFields()):
+            fieldType = field.getAttribute("type")
+            fieldName = field.getAttribute("name")
+
+            print >> wfile, '    virtual const %s %s() const' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
+            print >> wfile, '    {'
+            print >> wfile, '        return nullValue<String>();'
+            print >> wfile, '    }'
+            print >> wfile, ''
+
         print >> wfile, '};'
         print >> wfile, ''
         print >> wfile, '} // namespace %s' % (self._args.dgen_ns)
@@ -1080,11 +1115,13 @@ class RecordTypeCompiler(SourceCompiler):
 
         wfile.close()
             
-    def compileBaseRecordUtil(self, recordType):
+    def compileBaseRecordUtil(self, recordSequence):
         try:
             os.makedirs("%s/cpp/record/base" % (self._srcPath))
         except OSError:
             pass
+        
+        recordType = recordSequence.getRecordType()
         
         typeNameUS = recordType.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
@@ -1116,12 +1153,19 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, 'struct RecordFieldTraits<RecordTraits<%(ns)s::%(t)s>::%(k)s, %(ns)s::%(t)s>' % parameters
             print >> wfile, '{'
             print >> wfile, '    typedef %s FieldType;' % (fieldType)
-            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::Setter FieldSetterType;' % parameters
-            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::Getter FieldGetterType;' % parameters
+            if field.isDerived():
+                print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::ValSetter FieldSetterType;' % parameters
+                print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::ValGetter FieldGetterType;' % parameters
+            else:
+                print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::RefSetter FieldSetterType;' % parameters
+                print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, FieldType>::RefGetter FieldGetterType;' % parameters
             print >> wfile, ''
             print >> wfile, '    static inline FieldSetterType setter()'
             print >> wfile, '    {'
-            print >> wfile, '        return static_cast<FieldSetterType>(&%(ns)s::%(t)s::%(f)s);' % parameters
+            if field.isDerived():
+                print >> wfile, '        throw RuntimeException("Derived field `%(f)s` does not have a setter.");' % parameters
+            else:
+                print >> wfile, '        return static_cast<FieldSetterType>(&%(ns)s::%(t)s::%(f)s);' % parameters
             print >> wfile, '    }'
             print >> wfile, ''
             print >> wfile, '    static inline FieldGetterType getter()'
@@ -1142,8 +1186,8 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '{'
             print >> wfile, '    typedef %s::%s FieldType;' % (self._args.dgen_ns, fieldType)
             print >> wfile, '    // record field getter / setter types'
-            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Setter FieldSetterType;' % parameters
-            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::Getter FieldGetterType;' % parameters
+            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::RefSetter FieldSetterType;' % parameters
+            print >> wfile, '    typedef MethodTraits<%(ns)s::%(t)s, AutoPtr<FieldType> >::RefGetter FieldGetterType;' % parameters
             print >> wfile, ''
             print >> wfile, '    static inline FieldSetterType setter()'
             print >> wfile, '    {'
@@ -1163,11 +1207,13 @@ class RecordTypeCompiler(SourceCompiler):
 
         wfile.close()
     
-    def compileRecordUtil(self, recordType):
+    def compileRecordUtil(self, recordSequence):
         try:
             os.makedirs("%s/cpp/record" % (self._srcPath))
         except OSError:
             pass
+        
+        recordType = recordSequence.getRecordType()
         
         typeNameUS = recordType.getAttribute("key")
         typeNameCC = StringTransformer.ucFirst(StringTransformer.us2cc(typeNameUS))
@@ -1236,6 +1282,7 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, '#ifndef BASE%sSETTERCHAIN_H_' % (typeNameUC)
         print >> wfile, '#define BASE%sSETTERCHAIN_H_' % (typeNameUC)
         print >> wfile, ''
+        print >> wfile, '#include "config/GeneratorConfig.h"'
         print >> wfile, '#include "runtime/setter/SetterChain.h"'
         
         for referenceType in recordSequence.getRecordType().getReferenceTypes():

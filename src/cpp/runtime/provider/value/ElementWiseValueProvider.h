@@ -34,9 +34,10 @@ class ElementWiseValueProvider: public AbstractValueProvider<vector<ValueType>, 
 {
 public:
 
-    ElementWiseValueProvider(AbstractValueProvider<ValueType, CxtRecordType>& elementValueProvider) :
-        AbstractValueProvider<vector<ValueType>, CxtRecordType>(N, false), // TODO: maybe in some cases can be invertible
+    ElementWiseValueProvider(AbstractValueProvider<ValueType, CxtRecordType>& elementValueProvider, AbstractValueProvider<I16u, CxtRecordType>& sizeValueProvider) :
+        AbstractValueProvider<vector<ValueType>, CxtRecordType>(N*elementValueProvider.arity(), false), // TODO: maybe in some cases can be invertible
         _buffer(N),
+        _sizeValueProvider(sizeValueProvider),
         _elementValueProvider(elementValueProvider)
     {
     }
@@ -47,10 +48,20 @@ public:
 
     virtual const vector<ValueType> operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
-        for (size_t i = 0; i < N; i++)
+        size_t n = static_cast<size_t>(_sizeValueProvider(cxtRecordPtr, random));
+        if (n > N)
+        {
+            std::cout << "Invalid collection length in ElementWiseValueProvider." << std::endl;
+            throw RuntimeException("Invalid collection length in ElementWiseValueProvider.");
+        }
+
+        _buffer.resize(n);
+        for (size_t i = 0; i < n; i++)
         {
             _buffer[i] = _elementValueProvider(cxtRecordPtr, random);
         }
+        // skip the remaining random numbers
+        random.skip((N-n) * _elementValueProvider.arity());
 
         return _buffer;
     }
@@ -58,6 +69,8 @@ public:
 private:
 
     vector<ValueType> _buffer;
+
+    AbstractValueProvider<I16u, CxtRecordType>& _sizeValueProvider;
 
     AbstractValueProvider<ValueType, CxtRecordType>& _elementValueProvider;
 };

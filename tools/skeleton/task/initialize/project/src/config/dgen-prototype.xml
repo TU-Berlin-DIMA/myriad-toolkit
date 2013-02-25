@@ -65,6 +65,16 @@
         <reference name='reference_alias' type='othertype_key' />
         -->
       </record_type>
+      <!-- supported output_format types: -->
+      <!--  * csv(Char: delimiter, field_ref[]: field) -->
+      <output_format type="csv">
+        <argument key='delimiter' type='Char' value='|' />
+        <argument key='field' type='field_ref' ref='customer:pk' />
+        <argument key='field' type='field_ref' ref='customer:first_name' />
+        <argument key='field' type='field_ref' ref='customer:last_name' />
+        <argument key='field' type='field_ref' ref='customer:gender' />
+        <argument key='field' type='field_ref' ref='customer:age' />
+      </output_format>
       <setter_chain>
         <setter key='set_pk' type='field_setter'>
           <argument key='field' type='field_ref' ref='customer:pk' />

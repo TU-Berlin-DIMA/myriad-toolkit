@@ -253,8 +253,8 @@ template <I16u fid, class RecordType>
 struct RecordFieldTraits
 {
     typedef I64u FieldType; //!< The field type.
-    typedef typename MethodTraits<RecordType, FieldType>::Getter FieldGetterType; //!< The field getter method type.
-    typedef typename MethodTraits<RecordType, FieldType>::Setter FieldSetterType; //!< The field setter method type.
+    typedef typename MethodTraits<RecordType, FieldType>::RefGetter FieldGetterType; //!< The field getter method type.
+    typedef typename MethodTraits<RecordType, FieldType>::RefSetter FieldSetterType; //!< The field setter method type.
 
     /**
      * Return a pointer to the field setter method.
@@ -287,8 +287,8 @@ template <class RecordType>
 struct RecordFieldTraits<1, RecordType>
 {
     typedef I64u FieldType; //!< The \p genID field type.
-    typedef typename MethodTraits<Record, FieldType>::Getter FieldGetterType; //!< The \p genID field getter method type.
-    typedef typename MethodTraits<Record, FieldType>::Setter FieldSetterType; //!< The \p genID field setter method type.
+    typedef typename MethodTraits<Record, FieldType>::RefGetter FieldGetterType; //!< The \p genID field getter method type.
+    typedef typename MethodTraits<Record, FieldType>::RefSetter FieldSetterType; //!< The \p genID field setter method type.
 
     /**
      * Return a pointer to the \p genID setter method.

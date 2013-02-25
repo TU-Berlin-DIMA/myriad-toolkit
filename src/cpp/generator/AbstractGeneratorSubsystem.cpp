@@ -138,12 +138,14 @@ public:
      *
      * Can be used to implement coordinated cleanup logic to be executed when
      * the generation process fails at the subsystem level.
+     *
+     * @return True, if the handler was not invoked.
      */
-    void checkSanity()
+    bool checkSanity()
     {
         if (!_invoked)
         {
-	        return; // handler was not invoked, so we're ok
+	        return true; // handler was not invoked, so we're ok
         }
 
         if (_caller._logger.debug())
@@ -153,7 +155,7 @@ public:
 
         // basic resource cleaning of the generator subsystem can be done here
 
-        throw Poco::RuntimeException("Exception caught in generator thread");
+        return false;
     }
 
 private:
@@ -328,7 +330,10 @@ void AbstractGeneratorSubsystem::start()
 	        cleanupStage(*it);
 
 	        // make sure that all threads exited correctly
-	        handler.checkSanity();
+	        if (!handler.checkSanity())
+	        {
+	            throw Poco::RuntimeException(format("Error at stage `%s`. Aborting the generation process.", it->name()));
+	        }
 
 	        // stop the stage timer
 	        stageTimer.stop();
