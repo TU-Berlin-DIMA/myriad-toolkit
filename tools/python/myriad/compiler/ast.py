@@ -184,8 +184,8 @@ class FunctionNode(AbstractNode):
         self.__arguments[node.getAttribute('key')] = node
         node.setParent(self)
     
-    def getArgument(self, key):
-        return self.__arguments.get(key)
+    def getArgument(self, key, default=None):
+        return self.__arguments.get(key, default)
         
     def setOrderKey(self, key):
         self.orderkey = key
@@ -210,16 +210,17 @@ class ParetoProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(domain_type="Decimal")
         kwargs.update(type="ParetoPrFunction")
         kwargs.update(concrete_type="Myriad::ParetoPrFunction")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
-        return 'Decimal'
+        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
-        return [ { 'key': 'x_min', 'type': 'literal' }, 
-                 { 'key': 'alpha', 'type': 'literal' } 
+        return [ { 'key': 'x_min', 'type': self.getDomainType() }, 
+                 { 'key': 'alpha', 'type': self.getDomainType() } 
                ]
         
     def getConstructorArguments(self):
@@ -236,23 +237,24 @@ class NormalProbabilityFunctionNode(FunctionNode):
     '''
     
     def __init__(self, *args, **kwargs):
+        kwargs.update(domain_type="Decimal")
         kwargs.update(type="NormalPrFunction")
         kwargs.update(concrete_type="Myriad::NormalPrFunction")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
-        return self.getArgument('mean').getAttribute('type')
+        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
-        return [ { 'key': 'mean', 'type': 'literal' }, 
-                 { 'key': 'stddev', 'type': 'literal' } 
+        return [ { 'key': 'mean', 'type': self.getDomainType() }, 
+                 { 'key': 'stddev', 'type': self.getDomainType() } 
                ]
         
     def getConstructorArguments(self):
         args = super(NormalProbabilityFunctionNode, self).getConstructorArguments()
         args.extend(['Literal(mean)',
                      'Literal(stddev)'
-                     ])
+                    ])
         return args
 
 
@@ -270,8 +272,8 @@ class UniformProbabilityFunctionNode(FunctionNode):
         return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
-        return [ { 'key': 'x_min', 'type': 'literal' }, 
-                 { 'key': 'x_max', 'type': 'literal' } 
+        return [ { 'key': 'x_min', 'type': self.getDomainType() }, 
+                 { 'key': 'x_max', 'type': self.getDomainType() } 
                ]
         
     def getConstructorArguments(self):
@@ -296,7 +298,7 @@ class CombinedProbabilityFunctionNode(FunctionNode):
         return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
-        return [ { 'key': 'path', 'type': 'literal' } 
+        return [ { 'key': 'path', 'type': 'String' } 
                ]
         
     def getConstructorArguments(self):
@@ -319,7 +321,7 @@ class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
         return self.getAttribute('domain_type1')
         
     def getXMLArguments(self):
-        return [ { 'key': 'path', 'type': 'literal' } 
+        return [ { 'key': 'path', 'type': 'String' } 
                ]
         
     def getConstructorArguments(self):
@@ -387,7 +389,7 @@ class EnumSetNode(AbstractNode):
         return self.__arguments.get(key)
         
     def getXMLArguments(self):
-        return [ { 'key': 'path', 'type': 'literal' } 
+        return [ { 'key': 'path', 'type': 'String' } 
                ]
         
     def getConstructorArguments(self):
@@ -608,9 +610,9 @@ class RecordFieldNode(AbstractNode):
     '''
     
     # a pattern for the simple types 
-    _simple_type_pattern = re.compile('(I16u?|I32u?|I64u?|Decimal|Enum|Char|String)')
+    _simple_type_pattern = re.compile('(Bool|I16u?|I32u?|I64u?|Decimal|Enum|Char|String)')
     # a pattern for the vector types
-    _vector_type_pattern = re.compile('(I16u?|I32u?|I64u?|Decimal|Enum|Char)\[(\d+)\]')
+    _vector_type_pattern = re.compile('(Bool|I16u?|I32u?|I64u?|Decimal|Enum|Char)\[(\d+)\]')
     
     orderkey = None
     __parent = None
@@ -874,7 +876,7 @@ class LinearScaleEstimatorNode(CardinalityEstimatorNode):
         super(LinearScaleEstimatorNode, self).__init__(*args, **kwargs)
         
     def getXMLArguments(self):
-        return [ { 'key': 'base_cardinality', 'type': 'literal' } 
+        return [ { 'key': 'base_cardinality', 'type': 'I64u' } 
                ]
         
     def getConstructorArguments(self):
@@ -1007,7 +1009,8 @@ class CsvOutputFormatterNode(OutputFormatterNode):
         return "Myriad::CsvOutputFormatter< %s >" % (recordType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'delimiter', 'type': 'literal' },
+        return [ { 'key': 'delimiter', 'type': 'Char', 'default': '|' },
+                 { 'key': 'quoted', 'type': 'Bool', 'default': 'true' },
                  { 'key': 'field', 'type': 'collection<field_ref>' }, 
                ]
         
@@ -1435,7 +1438,7 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
         return "runtime/provider/value/CallbackValueProvider.h"
     
     def getValueType(self):
-        return self.getArgument("type").getAttribute('value')
+        return self.getAttribute("value_type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class CallbackType>
@@ -1446,9 +1449,9 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
         return "Myriad::CallbackValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, callbackType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'type' , 'type': 'literal' }, 
-                 { 'key': 'name' , 'type': 'literal' }, 
-                 { 'key': 'arity', 'type': 'literal' }, 
+        return [ { 'key': 'type' , 'type': 'String' }, 
+                 { 'key': 'name' , 'type': 'String' }, 
+                 { 'key': 'arity', 'type': 'I16u' }, 
                ]
         
     def getConstructorArguments(self):
@@ -1471,7 +1474,8 @@ class ClusteredValueProviderNode(AbstractValueProviderNode):
         return "runtime/provider/value/ClusteredValueProvider.h"
     
     def getValueType(self):
-        return self.getArgument("probability").getFunctionRef().getDomainType()
+#       return self.getArgument("probability").getFunctionRef().getDomainType()
+        return self.getAttribute("value_type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class PrFunctionType, class RangeProviderType>
@@ -1506,7 +1510,8 @@ class ConstValueProviderNode(AbstractValueProviderNode):
         return "runtime/provider/value/ConstValueProvider.h"
     
     def getValueType(self):
-        return self.getArgument("value").getAttribute("type")
+#       return self.getArgument("value").getAttribute("type")
+        return self.getAttribute("value_type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType>
@@ -1516,7 +1521,7 @@ class ConstValueProviderNode(AbstractValueProviderNode):
         return "Myriad::ConstValueProvider< %s, %s >" % (valueType, cxtRecordType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'value', 'type': 'literal' } 
+        return [ { 'key': 'value', 'type': self.getValueType() } 
                ]
         
     def getConstructorArguments(self):
@@ -1626,7 +1631,8 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
         return "runtime/provider/range/ConstRangeProvider.h"
     
     def getRangeType(self):
-        return self.getArgument('min').getAttribute('type')
+#       return self.getArgument('min').getAttribute('type')
+        return self.getAttribute("range_type")
     
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType>
@@ -1636,8 +1642,8 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
         return "Myriad::ConstRangeProvider< %s, %s >" % (rangeType, cxtRecordType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'min', 'type': 'literal' }, 
-                 { 'key': 'max', 'type': 'literal' }, 
+        return [ { 'key': 'min', 'type': self.getRangeType() },
+                 { 'key': 'max', 'type': self.getRangeType() }, 
                ]
         
     def getConstructorArguments(self):

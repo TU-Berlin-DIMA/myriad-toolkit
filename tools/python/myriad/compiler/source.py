@@ -109,8 +109,8 @@ class FieldTransfomer(object):
 
 class LiteralTransfomer(object):
     
-    _param_pattern = re.compile('%(\([a-zA-Z0-9]+\))?([\w.\-]+)%')    
-    _literal_pattern = re.compile('(\([a-zA-Z0-9]+\))?([\w.\-\[\]\_]+)')
+    _param_pattern = re.compile('%(\([a-zA-Z0-9]+\))?([\w.\-]+)%')
+    _literal_pattern = re.compile('(\([a-zA-Z0-9]+\))?(.+)')
     _expr_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, *args, **kwargs):
@@ -846,7 +846,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    %(t)sMeta(const EnumSetPool& enumSets) :' % {'t': typeNameCC}
+        print >> wfile, '    %(t)sMeta(const Myriad::EnumSetPool& enumSets) :' % {'t': typeNameCC}
         print >> wfile, '        Base%(t)sMeta(enumSets)' % {'t': typeNameCC}
         print >> wfile, '    {'
         print >> wfile, '    }'
@@ -920,13 +920,18 @@ class RecordTypeCompiler(SourceCompiler):
         for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
             if field.isDerived():
                 print >> wfile, '    virtual const %s %s() const = 0;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
+                print >> wfile, ''
             else:
                 print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(field.getAttribute("name")), field.sourceType())
                 print >> wfile, '    const %s& %s() const;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
             
-                if isinstance(field, RecordEnumFieldNode):
-                    print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(field.getAttribute("name")))
-                    print >> wfile, ''
+                if field.coreType() == 'Enum':
+                    if field.isVectorType():
+                        print >> wfile, '    const String& %sEnumValue(size_t i) const;' % (StringTransformer.us2cc(field.getAttribute("name")))
+                        print >> wfile, ''
+                    else:
+                        print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(field.getAttribute("name")))
+                        print >> wfile, ''
                 else:
                     print >> wfile, ''
         
@@ -976,12 +981,19 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '}'
             print >> wfile, ''
             
-            if isinstance(field, RecordEnumFieldNode):
-                print >> wfile, 'inline const String& Base%s::%sEnumValue() const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
-                print >> wfile, '{'
-                print >> wfile, '    return _meta.%(n)s[_%(n)s];' % {'n': field.getAttribute("name")}
-                print >> wfile, '}'
-                print >> wfile, ''
+            if field.coreType() == 'Enum':
+                if field.isVectorType():
+                    print >> wfile, 'inline const String& Base%s::%sEnumValue(size_t i) const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
+                    print >> wfile, '{'
+                    print >> wfile, '    return _meta.%(n)s[_%(n)s[i]];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '}'
+                    print >> wfile, ''
+                else:
+                    print >> wfile, 'inline const String& Base%s::%sEnumValue() const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
+                    print >> wfile, '{'
+                    print >> wfile, '    return _meta.%(n)s[_%(n)s];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '}'
+                    print >> wfile, ''
         
         for reference in recordType.getReferences():
             print >> wfile, 'inline void Base%s::%s(const AutoPtr<%s>& v)' % (typeNameCC, StringTransformer.us2cc(reference.getAttribute("name")), reference.getAttribute("type"))
@@ -1037,6 +1049,7 @@ class RecordTypeCompiler(SourceCompiler):
         elif outputFormatter.getAttribute("type") == "csv":
             # produce the CSV output
             outputFormatDelimiter = outputFormatter.getArgument("delimiter").getAttribute("value")
+            outputFormatIsQuoted = str(outputFormatter.getArgument("quoted").getAttribute("value").lower() == 'true').lower()
             outputFormatFields = outputFormatter.getArgument("field")
             for fieldRef in outputFormatFields.getAll():
                 field = fieldRef.getFieldRef()
@@ -1044,9 +1057,9 @@ class RecordTypeCompiler(SourceCompiler):
                 fieldName = field.getAttribute("name")
                 
                 if fieldType == "Enum":
-                    print >> wfile, '    write(out, %s, true);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
+                    print >> wfile, '    write(out, %s, %s);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()", outputFormatIsQuoted)
                 elif fieldType == 'String' or (field.isVectorType() and field.coreType() == 'Char'):
-                    print >> wfile, '    write(out, %s, true);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                    print >> wfile, '    write(out, %s, %s);' % ("record." + StringTransformer.us2cc(fieldName) + "()", outputFormatIsQuoted)
                 else:
                     print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
                 print >> wfile, '    out << \'%s\';' % (outputFormatDelimiter)
@@ -1106,7 +1119,7 @@ class RecordTypeCompiler(SourceCompiler):
 
             print >> wfile, '    virtual const %s %s() const' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
             print >> wfile, '    {'
-            print >> wfile, '        return nullValue<String>();'
+            print >> wfile, '        return Myriad::nullValue<%s>();' % (field.sourceType())
             print >> wfile, '    }'
             print >> wfile, ''
 

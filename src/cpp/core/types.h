@@ -294,6 +294,15 @@ template<class T> inline T fromString(const std::string& s)
     return t;
 }
 
+template<> inline char fromString<char>(const std::string& s)
+{
+    if (s.length() < 1) {
+        throw RuntimeException("Cannot read character from empty string");
+    } else {
+        return s[0];
+    }
+}
+
 /**
  * Trims the left-hand side of a string.
  */

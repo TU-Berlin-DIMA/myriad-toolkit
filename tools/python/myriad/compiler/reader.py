@@ -43,7 +43,8 @@ class AbstractReader(object):
 
 class ArgumentReader(AbstractReader):
     
-    _type_pattern = re.compile('^((collection)<([a-zA-Z_]+)>)|([a-zA-Z_]+)$')
+    _arg_type_pattern = re.compile('^((collection)<([a-zA-Z0-9_]+)>)|([a-zA-Z0-9_]+)$')
+    _literal_type_pattern = re.compile('(Bool|I16u?|I32u?|I64u?|Decimal|Enum|Char|String)')
     
     _descriptor = {}
     _log = logging.getLogger("argument.reader")
@@ -60,12 +61,12 @@ class ArgumentReader(AbstractReader):
     
     def createReader(argDescriptor):
         # set default values in the descriptor
-        argDescriptor['optional'] = argDescriptor.get('optional', False)
+        argDescriptor['optional'] = argDescriptor.has_key('default') or argDescriptor.get('optional', False)
         
         argType = argDescriptor['type']
         
         # argument reader factory logic
-        m = ArgumentReader._type_pattern.match(argDescriptor['type'])
+        m = ArgumentReader._arg_type_pattern.match(argDescriptor['type'])
         if (m):
             if m.group(1) is not None:
                 argType = m.group(3)
@@ -79,7 +80,7 @@ class ArgumentReader(AbstractReader):
             raise RuntimeError(message)
         
         argReader = None
-        if (argType == "literal"):
+        if (ArgumentReader._literal_type_pattern.match(argType)):
             argReader = LiteralArgumentReader(descriptor=argDescriptor)
         elif (argType == "field_ref"):
             argReader = FieldRefArgumentReader(descriptor=argDescriptor)
@@ -133,8 +134,15 @@ class SingleArgumentReader(ArgumentReader):
         
         # check if argument exists
         if len(argXMLNodes) < 1:
-            # argument does not exist, check if argument is optional
-            if not self._descriptor['optional']:
+            # check if argument has default value 
+            if self._descriptor.has_key('default') and ArgumentReader._literal_type_pattern.match(self._descriptor['type']):
+                argXMLNode = libxml2.newNode('argument')
+                argXMLNode.setProp('key', self._descriptor['key'])
+                argXMLNode.setProp('type', self._descriptor['type'])
+                argXMLNode.setProp('value', self._descriptor['default'])
+                argXMLNodes = [ argXMLNode ]
+            # check if argument is optional
+            elif not self._descriptor['optional']:
                 # argument is not optional 
                 message = "Cannot find required argument `%s` in container `%s` of type `%s`" % (self._descriptor['key'], argsContainerNode.getAttribute("key"), argsContainerNode.getAttribute("type"))
                 ArgumentReader._log.error(message)
@@ -191,7 +199,6 @@ class LiteralArgumentReader(SingleArgumentReader):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
         argValue = argXMLNode.prop("value")
-        
         return LiteralArgumentNode(key=argKey, type=argType, value=argValue)
 
 
@@ -265,21 +272,32 @@ class ValueProviderArgumentReader(SingleArgumentReader):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
         
+        typeMatch = re.match(r"([a-z\_]+)(\[([a-zA-Z0-9\_]+)\])?", argType)
+        # check if type is syntactically correct
+        if (typeMatch is None):
+            raise RuntimeError('Invalid value provider type `%s`' % (argType))
+        # grab the actual type
+        argType = typeMatch.group(1)
+        
         valueProviderNode = None
         if argType == 'callback_value_provider':
             valueProviderNode = CallbackValueProviderNode(key=argKey)
         elif argType == 'element_wise_value_provider':
             valueProviderNode = ElementWiseValueProviderNode(key=argKey)
         elif argType == 'clustered_value_provider':
-            valueProviderNode = ClusteredValueProviderNode(key=argKey)
+            if typeMatch.group(3) is None:
+                raise RuntimeError("Missing value type parameter T for value provider `%s` (expected `clustered_value_provider[T]`)" % (argKey))
+            valueProviderNode = ClusteredValueProviderNode(key=argKey, value_type=typeMatch.group(3))
         elif argType == 'const_value_provider':
-            valueProviderNode = ConstValueProviderNode(key=argKey)
+            if typeMatch.group(3) is None:
+                raise RuntimeError("Missing value type parameter T for value provider `%s` (expected `const_value_provider[T]`)" % (argKey))
+            valueProviderNode = ConstValueProviderNode(key=argKey, value_type=typeMatch.group(3))
         elif argType == 'context_field_value_provider':
             valueProviderNode = ContextFieldValueProviderNode(key=argKey)
         elif argType == 'random_value_provider':
             valueProviderNode = RandomValueProviderNode(key=argKey)
         else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(callback|clustered|const|context_field|random)_value_provider`)" % (argType, argKey))
+            raise RuntimeError("Unexpected value provider type `%s` for value provider `%s` (expected `(callback|clustered|const|context_field|random)_value_provider`)" % (argType, argKey))
         
         # recursively read value provider arguments
         ArgumentReader.readArguments(argXMLNode, valueProviderNode)
@@ -296,13 +314,20 @@ class RangeProviderArgumentReader(SingleArgumentReader):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
         
+        typeMatch = re.match(r"([a-z\_]+)(\[([a-zA-Z0-9\_]+)\])", argType)
+        # check if type is syntactically correct
+        if (typeMatch is None):
+            raise RuntimeError('Invalid range provider type `%s` (expected `(const|context_field)_range_provider[T]`)' % (argType))
+        # grab the actual type
+        argType = typeMatch.group(1)
+        
         rangeProviderNode = None
         if argType == 'const_range_provider':
-            rangeProviderNode = ConstRangeProviderNode(key=argKey)
+            rangeProviderNode = ConstRangeProviderNode(key=argKey, range_type=typeMatch.group(3))
         elif argType == 'context_field_range_provider':
-            rangeProviderNode = ContextFieldRangeProviderNode(key=argKey)
+            rangeProviderNode = ContextFieldRangeProviderNode(key=argKey, range_type=typeMatch.group(3))
         else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(const|context_field)_range_provider`)" % (argType, argKey))
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(const|context_field)_range_provider[T]`)" % (argType, argKey))
         
         # recursively read range provider arguments
         ArgumentReader.readArguments(argXMLNode, rangeProviderNode)
@@ -622,7 +647,7 @@ class XMLReader(object):
     def __readRandomSequence(self, astContext, xmlContext):
         # derive xPath context from the given xmlContext node
         xPathContext = AbstractReader._createXPathContext(xmlContext)
-        
+        # initialize recordSequenceNode
         recordSequenceNode = RandomSequenceNode(key=xmlContext.prop("key"))
         
         # read record type (mandatory)
@@ -664,7 +689,8 @@ class XMLReader(object):
             else:
                 fieldIsDerived = bool(element.prop("derived"))
             
-            if fieldType == "Enum":
+            enumPattern = re.compile('Enum(\[\d+\])?')
+            if enumPattern.match(fieldType):
                 recordFieldNode = RecordEnumFieldNode(name=element.prop("name"), type=element.prop("type"), implicit=False, derived=fieldIsDerived, enumref=element.prop("enumref"))
                 enumSetNode = self.__astRoot.getSpecification().getEnumSets().getSet(recordFieldNode.getAttribute('enumref'))
                 
@@ -860,5 +886,5 @@ class XMLReader(object):
         
         # append arguments
         ArgumentReader.readArguments(setterXMLNode, setterNode)
-        
+
         return setterNode
