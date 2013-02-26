@@ -167,6 +167,7 @@
     <xs:attribute name="name" type="xs:string" use="required" />
     <xs:attribute name="type" type="xs:string" use="required" />
     <xs:attribute name="enumref" type="xs:string" />
+    <xs:attribute name="derived" type="xs:boolean" default="false" />
   </xs:complexType>
   <xs:complexType name="reference_type">
     <xs:attribute name="name" type="xs:string" use="required" />
