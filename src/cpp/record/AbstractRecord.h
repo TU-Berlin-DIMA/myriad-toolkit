@@ -27,16 +27,17 @@
 using namespace std;
 using namespace Poco;
 
+using Myriad::Bool;
+using Myriad::Char;
+using Myriad::Date;
+using Myriad::Decimal;
+using Myriad::Enum;
 using Myriad::I16;
 using Myriad::I32;
 using Myriad::I64;
 using Myriad::I16u;
 using Myriad::I32u;
 using Myriad::I64u;
-using Myriad::Enum;
-using Myriad::Char;
-using Myriad::Decimal;
-using Myriad::Date;
 using Myriad::String;
 
 // forward declarations of auxiliary complex types
