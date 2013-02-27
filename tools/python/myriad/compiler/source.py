@@ -617,6 +617,10 @@ class ConfigCompiler(SourceCompiler):
                 print >> wfile, '        // setup linear scale estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
                 print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("base_cardinality"), None).pop())
                 print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
+            elif cardinalityEstimatorType == 'const_estimator':
+                print >> wfile, '        // setup constant estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
+                print >> wfile, '        setString("partitioning.%s.cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("cardinality"), None).pop())
+                print >> wfile, '        computeFixedPartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
         
         print >> wfile, '    }'
         print >> wfile, ''

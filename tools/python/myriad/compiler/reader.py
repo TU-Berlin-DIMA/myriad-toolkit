@@ -821,6 +821,8 @@ class XMLReader(object):
         cardinalityEstimator = None
         if (cardinalityEstimatorType == "linear_scale_estimator"):
             cardinalityEstimator = LinearScaleEstimatorNode()
+        elif (cardinalityEstimatorType == "const_estimator"):
+            cardinalityEstimator = ConstEstimatorNode()
         else:
             raise RuntimeError('Invalid cardinality estimator type `%s`' % (cardinalityEstimatorType))
         

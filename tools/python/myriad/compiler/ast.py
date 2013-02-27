@@ -884,6 +884,24 @@ class LinearScaleEstimatorNode(CardinalityEstimatorNode):
                ]
 
 
+class ConstEstimatorNode(CardinalityEstimatorNode):
+    '''
+    classdocs
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update(type="const_estimator")
+        super(ConstEstimatorNode, self).__init__(*args, **kwargs)
+        
+    def getXMLArguments(self):
+        return [ { 'key': 'cardinality', 'type': 'I64u' } 
+               ]
+        
+    def getConstructorArguments(self):
+        return [ 'Literal(base_cardinality)' 
+               ]
+
+
 #
 # Sequence Iterators
 # 
