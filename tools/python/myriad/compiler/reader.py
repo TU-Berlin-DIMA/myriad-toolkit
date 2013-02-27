@@ -199,6 +199,16 @@ class LiteralArgumentReader(SingleArgumentReader):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
         argValue = argXMLNode.prop("value")
+
+        if not ArgumentReader._literal_type_pattern.match(argType):
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected a literal argument type)" % (argType, argKey))
+
+        if not argKey:
+            raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
+
+        if not argValue:
+            raise RuntimeError("Missing attribute `value` for argument `%s`" % (argKey))
+            
         return LiteralArgumentNode(key=argKey, type=argType, value=argValue)
 
 
@@ -214,7 +224,10 @@ class FieldRefArgumentReader(SingleArgumentReader):
         
         if argType != 'field_ref':
             raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `field_ref`)" % (argType, argKey))
-        
+
+        if not argKey:
+            raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
+
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `field_ref` argument `%s`" % (argKey))
         
@@ -235,7 +248,10 @@ class ReferenceRefArgumentReader(SingleArgumentReader):
         
         if argType != 'reference_ref':
             raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `reference_ref`)" % (argType, argKey))
-        
+
+        if not argKey:
+            raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
+
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `reference_ref` argument `%s`" % (argKey))
         
@@ -257,6 +273,9 @@ class FunctionRefArgumentReader(SingleArgumentReader):
         if argType != 'function_ref':
             raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argType, argKey))
         
+        if not argKey:
+            raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
+
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `function_ref` argument `%s`" % (argKey))
 
