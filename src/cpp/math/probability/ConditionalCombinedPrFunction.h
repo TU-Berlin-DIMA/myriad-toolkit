@@ -184,8 +184,22 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 //@{
 
+// general @condition line regular expression
+template<typename T>
+inline String __headerLine2Format()
+{
+    return "\\s*@condition\\s*=\\s*\\[\\s*(.+)\\s*,\\s*(.+)\\s*\\)\\s*(#(.+))?";
+}
+
+// specialization for 'Char' as 'Char' values must be quoted
+template<>
+inline String __headerLine2Format<Char>()
+{
+    return "\\s*@condition\\s*=\\s*\\[\\s*'(.+)'\\s*,\\s*'(.+)'\\s*\\)\\s*(#(.+))?";
+}
+
 template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine1Format("\\s*@numberofconditions\\s*=\\s*([+]?[0-9]+)\\s*(#(.+))?");
-template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine2Format("\\s*@condition\\s*=\\s*\\[\\s*(.+)\\s*,\\s*(.+)\\s*\\)\\s*(#(.+))?");
+template<typename T1, typename T2> RegularExpression ConditionalCombinedPrFunction<T1, T2>::headerLine2Format(__headerLine2Format<T2>());
 
 //@}
 

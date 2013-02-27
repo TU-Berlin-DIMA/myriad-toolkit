@@ -92,12 +92,6 @@ Decimal NormalPrFunction::invcdf(Decimal y) const
     return sqrt(2) * _stddev * inverf(2 * y - 1) + _mean;
 }
 
-Interval<Decimal> NormalPrFunction::threshold(Decimal yMin) const
-{
-    Decimal x = invpdf(yMin);
-    return Interval<Decimal> (2*_mean - x, x);
-}
-
 Decimal NormalPrFunction::mean() const
 {
     return _mean;

@@ -125,11 +125,6 @@ public:
      */
     Decimal sample(Decimal random) const;
 
-    /**
-     * FIXME: this is suspicious.
-     */
-    Interval<Decimal> threshold(Decimal yMin) const;
-
 private:
 
     // parameters
@@ -148,11 +143,6 @@ inline Decimal ParetoPrFunction::operator()(const Decimal x) const
 inline Decimal ParetoPrFunction::sample(Decimal random) const
 {
     return invcdf(random);
-}
-
-inline Interval<Decimal> ParetoPrFunction::threshold(Decimal yMin) const
-{
-    return Interval<Decimal>(xMin, invpdf(yMin));
 }
 
 /** @}*/// add to math_probability group

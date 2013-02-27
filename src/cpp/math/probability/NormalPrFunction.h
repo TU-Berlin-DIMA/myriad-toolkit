@@ -135,11 +135,6 @@ public:
     Decimal invcdf(Decimal y) const;
 
     /**
-     * FIXME: this is suspicious.
-     */
-    Interval<Decimal> threshold(Decimal yMin) const;
-
-    /**
      * Returns the normal probability function \p mean parameter.
      */
     Decimal mean() const;

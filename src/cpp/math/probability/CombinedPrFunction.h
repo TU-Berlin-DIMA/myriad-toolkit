@@ -349,10 +349,6 @@ private:
     static RegularExpression valueLineFormat;
     static RegularExpression bucketLineFormat;
 
-    static String getValueLineFormat();
-
-    static String getBucketLineFormat();
-
     Decimal _notNullProbability;
 
     Interval<T> _activeDomain;
@@ -379,26 +375,26 @@ private:
 
 // general value and bucket line regular expressions
 template<typename T>
-inline String CombinedPrFunction<T>::getValueLineFormat()
+inline String __valueLineFormat()
 {
     return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*(.+)\\s*\\}\\s*(#(.+))?";
 }
 
 template<typename T>
-inline String CombinedPrFunction<T>::getBucketLineFormat()
+inline String __bucketLineFormat()
 {
     return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*x\\s+in\\s+\\[\\s*(.+)\\s*,\\s*(.+)\\s*\\)\\s*\\}\\s*(#(.+))?";
 }
 
 // specializations for 'Char' as 'Char' values must be quoted
 template<>
-inline String CombinedPrFunction<Char>::getValueLineFormat()
+inline String __valueLineFormat<Char>()
 {
     return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*'(.)'\\s*\\}\\s*(#(.+))?";
 }
 
 template<>
-inline String CombinedPrFunction<Char>::getBucketLineFormat()
+inline String __bucketLineFormat<Char>()
 {
     return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*x\\s+in\\s+\\[\\s*'(.)'\\s*,\\s*'(.+)'\\s*\\)\\s*\\}\\s*(#(.+))?";
 }
@@ -410,9 +406,9 @@ RegularExpression CombinedPrFunction<T>::headerLine2Format("\\s*@numberofbins\\s
 template<typename T>
 RegularExpression CombinedPrFunction<T>::headerLine3Format("\\s*@nullprobability\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s*(#(.+))?");
 template<typename T>
-RegularExpression CombinedPrFunction<T>::valueLineFormat(CombinedPrFunction<T>::getValueLineFormat());
+RegularExpression CombinedPrFunction<T>::valueLineFormat(__valueLineFormat<T>());
 template<typename T>
-RegularExpression CombinedPrFunction<T>::bucketLineFormat(CombinedPrFunction<T>::getBucketLineFormat());
+RegularExpression CombinedPrFunction<T>::bucketLineFormat(__bucketLineFormat<T>());
 
 //@}
 
