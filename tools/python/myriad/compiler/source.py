@@ -1405,7 +1405,7 @@ class SetterChainCompiler(SourceCompiler):
         if recordSequence.getSetterChain().settersCount() > 0:
             nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
             for node in nodeFilter.getAll(recordSequence.getSetterChain()):
-                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random) = 0;' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
+                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, Myriad::RandomStream& random) = 0;' % (node.getValueType(), node.getArgument('name').getAttribute('value'), typeNameCC)
                 print >> wfile, ''
                                 
         print >> wfile, 'protected:'
@@ -1482,12 +1482,12 @@ class SetterChainCompiler(SourceCompiler):
             nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
             for node in nodeFilter.getAll(recordSequence.getSetterChain()):
                 print >> wfile, ''
-                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random)' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
+                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, Myriad::RandomStream& random)' % (node.getValueType(), node.getArgument('name').getAttribute('value'), typeNameCC)
                 print >> wfile, '    {'
                 if (node.getArgument('type').getAttribute('value').lower() == 'string'):
                     print >> wfile, '        return "";'
                 else:
-                    print >> wfile, '        return nullValue<%s>();' % (node.getArgument('type').getAttribute('value'))
+                    print >> wfile, '        return Myriad::nullValue<%s>();' % (node.getArgument('type').getAttribute('value'))
                 print >> wfile, '    }'
         
         
