@@ -43,8 +43,7 @@ class AbstractReader(object):
 
 class ArgumentReader(AbstractReader):
     
-    _arg_type_pattern = re.compile('^((collection)<([a-zA-Z0-9_]+)>)|([a-zA-Z0-9_]+)$')
-    _literal_type_pattern = re.compile('(Bool|I16u?|I32u?|I64u?|Decimal|Enum|Char|String)')
+    _literal_type_pattern = re.compile('(Bool|Char|Date|Decimal|Enum|I16u?|I32u?|I64u?|String)')
     
     _descriptor = {}
     _log = logging.getLogger("argument.reader")
@@ -66,7 +65,7 @@ class ArgumentReader(AbstractReader):
         argType = argDescriptor['type']
         
         # argument reader factory logic
-        m = ArgumentReader._arg_type_pattern.match(argDescriptor['type'])
+        m = TypeUtils.matchArgumentType(argDescriptor['type'])
         if (m):
             if m.group(1) is not None:
                 argType = m.group(3)
@@ -80,7 +79,7 @@ class ArgumentReader(AbstractReader):
             raise RuntimeError(message)
         
         argReader = None
-        if (ArgumentReader._literal_type_pattern.match(argType)):
+        if (TypeUtils.matchLiteralType(argType)):
             argReader = LiteralArgumentReader(descriptor=argDescriptor)
         elif (argType == "field_ref"):
             argReader = FieldRefArgumentReader(descriptor=argDescriptor)
@@ -300,7 +299,9 @@ class ValueProviderArgumentReader(SingleArgumentReader):
         
         valueProviderNode = None
         if argType == 'callback_value_provider':
-            valueProviderNode = CallbackValueProviderNode(key=argKey)
+            if typeMatch.group(3) is None:
+                raise RuntimeError("Missing value type parameter T for value provider `%s` (expected `callback_value_provider[T]`)" % (argKey))
+            valueProviderNode = CallbackValueProviderNode(key=argKey, value_type=typeMatch.group(3))
         elif argType == 'element_wise_value_provider':
             valueProviderNode = ElementWiseValueProviderNode(key=argKey)
         elif argType == 'clustered_value_provider':
@@ -880,10 +881,18 @@ class XMLReader(object):
         elif (functionType == "pareto_probability"):
             functionNode = ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
         elif (functionType == "uniform_probability"):
+            if functionMatch.group(3) is None:
+                raise RuntimeError("Missing value type parameter T for function `%s` (expected `uniform_probability[T]`)" % (functionXMLNode.prop("key")))
             functionNode = UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type=functionMatch.group(3))
         elif (functionType == "conditional_combined_probability"):
+            if functionMatch.group(3) is None:
+                raise RuntimeError("Missing value type parameter T1 for function `%s` (expected `conditional_combined_probability[T1;T2]`)" % (functionXMLNode.prop("key")))
+            if functionMatch.group(5) is None:
+                raise RuntimeError("Missing value type parameter T2 for function `%s` (expected `conditional_combined_probability[T1;T2]`)" % (functionXMLNode.prop("key")))
             functionNode = ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type1=functionMatch.group(3), domain_type2=functionMatch.group(5))
         elif (functionMatch != "combined_probability"):
+            if functionMatch.group(3) is None:
+                raise RuntimeError("Missing value type parameter T for function `%s` (expected `combined_probability[T]`)" % (functionXMLNode.prop("key")))
             functionNode = CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type=functionMatch.group(3))
         else:
             raise RuntimeError('Invalid function type `%s`' % (functionType))

@@ -22,6 +22,32 @@ import re
 from myriad.compiler.visitor import AbstractVisitor
 from myriad.util.stringutil import StringTransformer
 
+class TypeUtils(object):
+    '''
+    classdocs
+    '''
+    
+    # a pattern for argument types
+    __argument_type_pattern = re.compile('^((collection)\[([a-zA-Z0-9_]+)\])|([a-zA-Z0-9_]+)$')     
+    # a pattern for the literal types 
+    __literal_type_pattern = re.compile('(Bool|Char|Date|Decimal|Enum|I16u?|I32u?|I64u?|String)')
+    # a pattern for the vector types
+    __vector_type_pattern = re.compile('(Bool|Char|Date|Decimal|Enum|I16u?|I32u?|I64u?|String)\[(\d+)\]')
+
+    def matchArgumentType(type):
+        return TypeUtils.__argument_type_pattern.match(type)
+
+    def matchLiteralType(type):
+        return TypeUtils.__literal_type_pattern.match(type)
+        
+    def matchVectorType(type):
+        return TypeUtils.__vector_type_pattern.match(type)
+    
+    matchArgumentType = staticmethod(matchArgumentType)
+    matchLiteralType = staticmethod(matchLiteralType)
+    matchVectorType = staticmethod(matchVectorType)
+
+
 class AbstractNode(object):
     '''
     classdocs
@@ -609,11 +635,6 @@ class RecordFieldNode(AbstractNode):
     classdocs
     '''
     
-    # a pattern for the simple types 
-    _simple_type_pattern = re.compile('(Bool|I16u?|I32u?|I64u?|Decimal|Enum|Char|String)')
-    # a pattern for the vector types
-    _vector_type_pattern = re.compile('(Bool|I16u?|I32u?|I64u?|Decimal|Enum|Char)\[(\d+)\]')
-    
     orderkey = None
     __parent = None
     __setter = None
@@ -651,28 +672,28 @@ class RecordFieldNode(AbstractNode):
         return "Myriad::RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
         
     def isSimpleType(self):
-        r = RecordFieldNode._simple_type_pattern.match(self.getAttribute("type"))
+        r = TypeUtils.matchLiteralType(self.getAttribute("type"))
         return r is not None
         
     def isVectorType(self):
         # check vector types
-        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        r = TypeUtils.matchVectorType(self.getAttribute("type"))
         return r is not None
         
     def vectorTypeSize(self):
         # check vector types
-        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        r = TypeUtils.matchVectorType(self.getAttribute("type"))
         if r is not None:
             return r.group(2)
         
     def sourceType(self):
         # check vector types
-        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        r = TypeUtils.matchVectorType(self.getAttribute("type"))
         if r is not None:
             return "vector<%s>" % (r.group(1))
         
         # check simple types
-        r = RecordFieldNode._simple_type_pattern.match(self.getAttribute("type"))
+        r = TypeUtils.matchLiteralType(self.getAttribute("type"))
         if r is not None:
             return r.group(1)
         
@@ -681,12 +702,12 @@ class RecordFieldNode(AbstractNode):
         
     def coreType(self):
         # check vector types
-        r = RecordFieldNode._vector_type_pattern.match(self.getAttribute("type"))
+        r = TypeUtils.matchVectorType(self.getAttribute("type"))
         if r is not None:
             return r.group(1)
         
         # check simple types
-        r = RecordFieldNode._simple_type_pattern.match(self.getAttribute("type"))
+        r = TypeUtils.matchLiteralType(self.getAttribute("type"))
         if r is not None:
             return r.group(1)
         
@@ -764,7 +785,7 @@ class ResolvedRecordReferenceNode(RecordReferenceNode):
         return self.__recordTypeRef
     
     def getID(self):
-        return "RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
+        return "Myriad::RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
 
 
 #
@@ -1029,7 +1050,7 @@ class CsvOutputFormatterNode(OutputFormatterNode):
     def getXMLArguments(self):
         return [ { 'key': 'delimiter', 'type': 'Char', 'default': '|' },
                  { 'key': 'quoted', 'type': 'Bool', 'default': 'true' },
-                 { 'key': 'field', 'type': 'collection<field_ref>' }, 
+                 { 'key': 'field', 'type': 'collection[field_ref]' }, 
                ]
         
     def getConstructorArguments(self):
@@ -1088,7 +1109,6 @@ class ArgumentCollectionNode(ArgumentNode):
     classdocs
     '''
     
-    __parent = None
     __collection = []
     
     def __init__(self, *args, **kwargs):
@@ -1103,9 +1123,6 @@ class ArgumentCollectionNode(ArgumentNode):
         for node in self.__collection:
             node.accept(visitor)
         visitor.postVisit(self)
-
-    def setParent(self, parent):
-        self.__parent = parent
         
     def setArgument(self, pos, node):
         self.__collection[pos] = node
@@ -1467,8 +1484,7 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
         return "Myriad::CallbackValueProvider< %s, %s, %s >" % (valueType, cxtRecordType, callbackType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'type' , 'type': 'String' }, 
-                 { 'key': 'name' , 'type': 'String' }, 
+        return [ { 'key': 'name' , 'type': 'String' }, 
                  { 'key': 'arity', 'type': 'I16u' }, 
                ]
         
@@ -1731,7 +1747,7 @@ class EqualityPredicateProviderNode(AbstractRuntimeComponentNode):
         return "Myriad::EqualityPredicateProvider< %s, %s >" % (refRecordType, cxtRecordType)
         
     def getXMLArguments(self):
-        return [ { 'key': 'binder', 'type': 'collection<binder>' }, 
+        return [ { 'key': 'binder', 'type': 'collection[binder]' },
                ]
         
     def getConstructorArguments(self):
@@ -1752,10 +1768,20 @@ class EqualityPredicateFieldBinderNode(AbstractRuntimeComponentNode):
         return "runtime/provider/predicate/EqualityPredicateFieldBinder.h"
     
     def getRefRecordType(self):
-        return self.getParent().getRefRecordType()
+        parent = self.getParent()
+        while parent is not None and not isinstance(parent, AbstractRuntimeComponentNode):
+            parent = parent.getParent()
+        if parent is None:
+            raise RuntimeException("Could not determine RefRecordType of EqualityPredicateFieldBinderNode (parent is None)")
+        return parent.getRefRecordType()
     
     def getCxtRecordType(self):
-        return self.getParent().getCxtRecordType()
+        parent = self.getParent()
+        while parent is not None and not isinstance(parent, AbstractRuntimeComponentNode):
+            parent = parent.getParent()
+        if parent is None:
+            raise RuntimeException("Could not determine CxtRecordType of EqualityPredicateFieldBinderNode (parent is None)")
+        return parent.getCxtRecordType()
     
     def getConcreteType(self):
         # template<class RecordType, I16u fid, class CxtRecordType, class ValueProviderType>
