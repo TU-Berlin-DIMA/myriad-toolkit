@@ -425,4 +425,18 @@ template<> inline void write(std::ostream& stream, const vector<Char>& t, bool q
 /** @}*/// add to core group
 } // namespace Myriad
 
+// explicitly enable direct use of the Myriad types in the common namespace
+using Myriad::Bool;
+using Myriad::Char;
+using Myriad::Date;
+using Myriad::Decimal;
+using Myriad::Enum;
+using Myriad::I16;
+using Myriad::I32;
+using Myriad::I64;
+using Myriad::I16u;
+using Myriad::I32u;
+using Myriad::I64u;
+using Myriad::String;
+
 #endif /* TYPES_H_ */
