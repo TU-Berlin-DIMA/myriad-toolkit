@@ -31,19 +31,19 @@ class AbstractReader(object):
     def __init__(self, *args, **kwargs):
         pass
         
+    @staticmethod
     def _createXPathContext(xmlNode):
         context = xmlNode.get_doc().xpathNewContext()
         context.xpathRegisterNs("m", AbstractReader.__NAMESPACE)
         context.setContextNode(xmlNode)
         return context
-        
-    # static methods
-    _createXPathContext = staticmethod(_createXPathContext)
 
+
+#
+# Argument Reader
+#
 
 class ArgumentReader(AbstractReader):
-    
-    _literal_type_pattern = re.compile('(Bool|Char|Date|Decimal|Enum|I16u?|I32u?|I64u?|String)')
     
     _descriptor = {}
     _log = logging.getLogger("argument.reader")
@@ -58,14 +58,13 @@ class ArgumentReader(AbstractReader):
     def parse(self, argXMLNode, argsContainerNode):
         raise RuntimeError("Called abstract method ArgumentReader.parse()")
     
+    @staticmethod
     def createReader(argDescriptor):
         # set default values in the descriptor
         argDescriptor['optional'] = argDescriptor.has_key('default') or argDescriptor.get('optional', False)
         
-        argType = argDescriptor['type']
-        
         # argument reader factory logic
-        m = TypeUtils.matchArgumentType(argDescriptor['type'])
+        m = AstUtils.matchArgumentType(argDescriptor['type'])
         if (m):
             if m.group(1) is not None:
                 argType = m.group(3)
@@ -74,54 +73,36 @@ class ArgumentReader(AbstractReader):
                 argType = m.group(4)
                 encType = None
         else:
-            message = "Unknown argument reader type `%s`" % (argType)
-            ArgumentReader._log.error(message)
-            raise RuntimeError(message)
+            raise RuntimeError("Unknown argument reader type `%s`" % (argDescriptor['type']))
         
         argReader = None
-        if (TypeUtils.matchLiteralType(argType)):
-            argReader = LiteralArgumentReader(descriptor=argDescriptor)
-        elif (argType == "field_ref"):
-            argReader = FieldRefArgumentReader(descriptor=argDescriptor)
-        elif (argType == "reference_ref"):
-            argReader = ReferenceRefArgumentReader(descriptor=argDescriptor)
-        elif (argType == "function_ref"):
-            argReader = FunctionRefArgumentReader(descriptor=argDescriptor)
-        elif (argType == "value_provider"):
-            argReader = ValueProviderArgumentReader(descriptor=argDescriptor)
-        elif (argType == "range_provider"):
-            argReader = RangeProviderArgumentReader(descriptor=argDescriptor)
-        elif (argType == "reference_provider"):
-            argReader = ReferenceProviderArgumentReader(descriptor=argDescriptor)
-        elif (argType == "equality_predicate_provider"):
-            argReader = EqualityPredicateProviderReader(descriptor=argDescriptor)
-        elif (argType == "binder"):
-            argReader = BinderReader(descriptor=argDescriptor)
-        else:
-            message = "Unknown argument reader type `%s`" % (argType)
-            ArgumentReader._log.error(message)
-            raise RuntimeError(message)
+        for cls in AstUtils.iterSubClasses(SingleArgumentReader):
+            try:
+                cls.parseType(argType)
+                argReader = cls(descriptor=argDescriptor)
+                break
+            except ParseTypeError:
+                pass
+        
+        if argReader is None:
+            raise RuntimeError("Unknown argument reader type `%s`" % (argType))
         
         if (encType is None):
             return argReader
         elif (encType == "collection"):
             return CollectionArgumentReader(descriptor=argDescriptor,childReader=argReader)
-        else:
-            message = "Unknown eclosing reader type `%s`" % (encType)
-            ArgumentReader._log.error(message)
-            raise RuntimeError(message)
-        
+    
+    @staticmethod
     def readArguments(argsContainerXMLNode, argsContainerNode):
         for argDescriptor in argsContainerNode.getXMLArguments():
             argReader = ArgumentReader.createReader(argDescriptor)
             argReader.read(argsContainerXMLNode, argsContainerNode)
-        
-    # static methods
-    createReader = staticmethod(createReader)
-    readArguments = staticmethod(readArguments)
 
 
 class SingleArgumentReader(ArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^$')
     
     def __init__(self, *args, **kwargs):
         super(SingleArgumentReader, self).__init__(*args, **kwargs)
@@ -134,7 +115,7 @@ class SingleArgumentReader(ArgumentReader):
         # check if argument exists
         if len(argXMLNodes) < 1:
             # check if argument has default value 
-            if self._descriptor.has_key('default') and ArgumentReader._literal_type_pattern.match(self._descriptor['type']):
+            if self._descriptor.has_key('default') and AstUtils.matchLiteralType(self._descriptor['type']):
                 argXMLNode = libxml2.newNode('argument')
                 argXMLNode.setProp('key', self._descriptor['key'])
                 argXMLNode.setProp('type', self._descriptor['type'])
@@ -157,16 +138,20 @@ class SingleArgumentReader(ArgumentReader):
         
         # argument exists, pare it and attach it to the parent container
         argsContainerNode.setArgument(self.parse(argXMLNodes.pop(), argsContainerNode))
+    
+    @classmethod
+    def parseType(cls, type):
+        raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class CollectionArgumentReader(ArgumentReader):
     
-    _childReader = None
+    __childReader = None
     
     def __init__(self, *args, **kwargs):
         super(CollectionArgumentReader, self).__init__(*args, **kwargs)
-        self._childReader = kwargs['childReader']
-        self._descriptor = self._childReader._descriptor
+        self.__childReader = kwargs['childReader']
+        self._descriptor = self.__childReader._descriptor
     
     def read(self, argContainerXMLNode, argsContainerNode):
         # create XML context and grap argument XML node
@@ -186,10 +171,13 @@ class CollectionArgumentReader(ArgumentReader):
                 return
         
         # arguments exist, parse them and attach them to the parent container
-        argsContainerNode.setArgument(ArgumentCollectionNode(key=self._descriptor['key'],collection=[ self._childReader.parse(argXMLNode, argsContainerNode) for argXMLNode in argXMLNodes ]))
+        argsContainerNode.setArgument(ArgumentCollectionNode(key=self._descriptor['key'],collection=[ self.__childReader.parse(argXMLNode, argsContainerNode) for argXMLNode in argXMLNodes ]))
 
 
 class LiteralArgumentReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^(%s)$' % '|'.join(AstUtils.literalTypes()))
     
     def __init__(self, *args, **kwargs):
         super(LiteralArgumentReader, self).__init__(*args, **kwargs)
@@ -199,19 +187,30 @@ class LiteralArgumentReader(SingleArgumentReader):
         argKey = argXMLNode.prop("key")
         argValue = argXMLNode.prop("value")
 
-        if not ArgumentReader._literal_type_pattern.match(argType):
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected a literal argument type)" % (argType, argKey))
-
         if not argKey:
             raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
 
         if not argValue:
             raise RuntimeError("Missing attribute `value` for argument `%s`" % (argKey))
+
+        if not AstUtils.matchLiteralType(argType):
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected a literal argument type)" % (argType, argKey))
             
         return LiteralArgumentNode(key=argKey, type=argType, value=argValue)
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class FieldRefArgumentReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^field_ref$')
     
     def __init__(self, *args, **kwargs):
         super(FieldRefArgumentReader, self).__init__(*args, **kwargs)
@@ -220,9 +219,6 @@ class FieldRefArgumentReader(SingleArgumentReader):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
         argRef = argXMLNode.prop("ref")
-        
-        if argType != 'field_ref':
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `field_ref`)" % (argType, argKey))
 
         if not argKey:
             raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
@@ -230,12 +226,26 @@ class FieldRefArgumentReader(SingleArgumentReader):
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `field_ref` argument `%s`" % (argKey))
         
+        if argType != 'field_ref':
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `field_ref`)" % (argType, argKey))
+        
         # TODO: check format {record_key}.{field_key}
         
         return UnresolvedFieldRefArgumentNode(key=argKey, ref=argRef)
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class ReferenceRefArgumentReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^reference_ref$')
     
     def __init__(self, *args, **kwargs):
         super(ReferenceRefArgumentReader, self).__init__(*args, **kwargs)
@@ -244,9 +254,6 @@ class ReferenceRefArgumentReader(SingleArgumentReader):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
         argRef = argXMLNode.prop("ref")
-        
-        if argType != 'reference_ref':
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `reference_ref`)" % (argType, argKey))
 
         if not argKey:
             raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
@@ -254,12 +261,26 @@ class ReferenceRefArgumentReader(SingleArgumentReader):
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `reference_ref` argument `%s`" % (argKey))
         
+        if argType != 'reference_ref':
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `reference_ref`)" % (argType, argKey))
+        
         # TODO: check format {record_key}.{field_key}
         
         return UnresolvedReferenceRefArgumentNode(key=argKey, ref=argRef)
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class FunctionRefArgumentReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^function_ref$')
     
     def __init__(self, *args, **kwargs):
         super(FunctionRefArgumentReader, self).__init__(*args, **kwargs)
@@ -269,19 +290,30 @@ class FunctionRefArgumentReader(SingleArgumentReader):
         argKey = argXMLNode.prop("key")
         argRef = argXMLNode.prop("ref")
         
-        if argType != 'function_ref':
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argType, argKey))
-        
         if not argKey:
-            raise RuntimeError("Missing attribute `key` for argument `%s`" % (argXMLNode))
+            raise RuntimeError("Missing required attribute `key` for argument `%s`" % (argXMLNode))
 
         if not argRef:
             raise RuntimeError("Missing required attribute `ref` for `function_ref` argument `%s`" % (argKey))
+        
+        if argType != 'function_ref':
+            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `function_ref`)" % (argType, argKey))
 
         return UnresolvedFunctionRefArgumentNode(key=argKey, ref=argRef)
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class ValueProviderArgumentReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^value_provider$')
     
     def __init__(self, *args, **kwargs):
         super(ValueProviderArgumentReader, self).__init__(*args, **kwargs)
@@ -289,43 +321,38 @@ class ValueProviderArgumentReader(SingleArgumentReader):
     def parse(self, argXMLNode, argsContainerNode):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
-        
-        typeMatch = re.match(r"([a-z\_]+)(\[([a-zA-Z0-9\_]+)\])?", argType)
-        # check if type is syntactically correct
-        if (typeMatch is None):
-            raise RuntimeError('Invalid value provider type `%s`' % (argType))
-        # grab the actual type
-        argType = typeMatch.group(1)
-        
         valueProviderNode = None
-        if argType == 'callback_value_provider':
-            if typeMatch.group(3) is None:
-                raise RuntimeError("Missing value type parameter T for value provider `%s` (expected `callback_value_provider[T]`)" % (argKey))
-            valueProviderNode = CallbackValueProviderNode(key=argKey, value_type=typeMatch.group(3))
-        elif argType == 'element_wise_value_provider':
-            valueProviderNode = ElementWiseValueProviderNode(key=argKey)
-        elif argType == 'clustered_value_provider':
-            if typeMatch.group(3) is None:
-                raise RuntimeError("Missing value type parameter T for value provider `%s` (expected `clustered_value_provider[T]`)" % (argKey))
-            valueProviderNode = ClusteredValueProviderNode(key=argKey, value_type=typeMatch.group(3))
-        elif argType == 'const_value_provider':
-            if typeMatch.group(3) is None:
-                raise RuntimeError("Missing value type parameter T for value provider `%s` (expected `const_value_provider[T]`)" % (argKey))
-            valueProviderNode = ConstValueProviderNode(key=argKey, value_type=typeMatch.group(3))
-        elif argType == 'context_field_value_provider':
-            valueProviderNode = ContextFieldValueProviderNode(key=argKey)
-        elif argType == 'random_value_provider':
-            valueProviderNode = RandomValueProviderNode(key=argKey)
-        else:
-            raise RuntimeError("Unexpected value provider type `%s` for value provider `%s` (expected `(callback|clustered|const|context_field|random)_value_provider`)" % (argType, argKey))
+        
+        for cls in AstUtils.iterSubClasses(AbstractValueProviderNode):
+            try:
+                args, kwargs = cls.parseType(argType)
+                kwargs.update(key=argKey)
+                valueProviderNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if valueProviderNode is None:    
+            raise RuntimeError("Unexpected value provider type `%s` for value provider `%s` (expected one of `(callback|clustered|const|context_field|random)_value_provider[T]`)" % (argType, argKey))
         
         # recursively read value provider arguments
         ArgumentReader.readArguments(argXMLNode, valueProviderNode)
         
         return valueProviderNode
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class RangeProviderArgumentReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^range_provider$')
     
     def __init__(self, *args, **kwargs):
         super(RangeProviderArgumentReader, self).__init__(*args, **kwargs)
@@ -333,29 +360,38 @@ class RangeProviderArgumentReader(SingleArgumentReader):
     def parse(self, argXMLNode, argsContainerNode):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
-        
-        typeMatch = re.match(r"([a-z\_]+)(\[([a-zA-Z0-9\_]+)\])", argType)
-        # check if type is syntactically correct
-        if (typeMatch is None):
-            raise RuntimeError('Invalid range provider type `%s` (expected `(const|context_field)_range_provider[T]`)' % (argType))
-        # grab the actual type
-        argType = typeMatch.group(1)
-        
         rangeProviderNode = None
-        if argType == 'const_range_provider':
-            rangeProviderNode = ConstRangeProviderNode(key=argKey, range_type=typeMatch.group(3))
-        elif argType == 'context_field_range_provider':
-            rangeProviderNode = ContextFieldRangeProviderNode(key=argKey, range_type=typeMatch.group(3))
-        else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(const|context_field)_range_provider[T]`)" % (argType, argKey))
+        
+        for cls in AstUtils.iterSubClasses(AbstractRangeProviderNode):
+            try:
+                args, kwargs = cls.parseType(argType)
+                kwargs.update(key=argKey)
+                rangeProviderNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if rangeProviderNode is None:    
+            raise RuntimeError('Unexpected range provider type `%s` for range provider `%s` (expected one of `(const|context_field)_range_provider[T]`)' % (argType, argKey))
         
         # recursively read range provider arguments
         ArgumentReader.readArguments(argXMLNode, rangeProviderNode)
         
         return rangeProviderNode
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class ReferenceProviderArgumentReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^reference_provider$')
     
     def __init__(self, *args, **kwargs):
         super(ReferenceProviderArgumentReader, self).__init__(*args, **kwargs)
@@ -363,22 +399,38 @@ class ReferenceProviderArgumentReader(SingleArgumentReader):
     def parse(self, argXMLNode, argsContainerNode):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
-        
         referenceProviderNode = None
-        if argType == 'clustered_reference_provider':
-            referenceProviderNode = ClusteredReferenceProviderNode(key=argKey)
-        elif argType == 'random_reference_provider':
-            referenceProviderNode = RandomReferenceProviderNode(key=argKey)
-        else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `(clustered|random)_reference_provider`)" % (argType, argKey))
+        
+        for cls in AstUtils.iterSubClasses(AbstractReferenceProviderNode):
+            try:
+                args, kwargs = cls.parseType(argType)
+                kwargs.update(key=argKey)
+                referenceProviderNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if referenceProviderNode is None:    
+            raise RuntimeError('Unexpected reference provider type `%s` for reference provider `%s` (expected one of `(clustered|random)_reference_provider`)' % (argType, argKey))
         
         # recursively read range provider arguments
         ArgumentReader.readArguments(argXMLNode, referenceProviderNode)
         
         return referenceProviderNode
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class EqualityPredicateProviderReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^equality_predicate_provider$')
     
     def __init__(self, *args, **kwargs):
         super(EqualityPredicateProviderReader, self).__init__(*args, **kwargs)
@@ -386,20 +438,38 @@ class EqualityPredicateProviderReader(SingleArgumentReader):
     def parse(self, argXMLNode, argsContainerNode):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
-        
         predicateProviderNode = None
-        if argType == 'equality_predicate_provider':
-            predicateProviderNode = EqualityPredicateProviderNode(key=argKey)
-        else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `equality_predicate_provider`)" % (argType, argKey))
+        
+        for cls in AstUtils.iterSubClasses(AbstractPredicateProviderNode):
+            try:
+                args, kwargs = cls.parseType(argType)
+                kwargs.update(key=argKey)
+                predicateProviderNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if predicateProviderNode is None:    
+            raise RuntimeError('Unexpected predicate provider type `%s` for predicate provider `%s` (expected `equality_predicate_provider`)' % (argType, argKey))
         
         # recursively read value provider arguments
         ArgumentReader.readArguments(argXMLNode, predicateProviderNode)
         
         return predicateProviderNode
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
 
 
 class BinderReader(SingleArgumentReader):
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^binder$')
     
     def __init__(self, *args, **kwargs):
         super(BinderReader, self).__init__(*args, **kwargs)
@@ -407,20 +477,39 @@ class BinderReader(SingleArgumentReader):
     def parse(self, argXMLNode, argsContainerNode):
         argType = argXMLNode.prop("type")
         argKey = argXMLNode.prop("key")
-        
         binderNode = None
-        if argType == 'predicate_value_binder':
-            binderNode = EqualityPredicateFieldBinderNode(key=argKey)
-        else:
-            raise RuntimeError("Unexpected argument type `%s` for argument `%s` (expected `predicate_value_binder`)" % (argType, argKey))
+        
+        for cls in AstUtils.iterSubClasses(AbstractFieldBinderNode):
+            try:
+                args, kwargs = cls.parseType(argType)
+                kwargs.update(key=argKey)
+                binderNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if binderNode is None:
+            raise RuntimeError('Unexpected binder type `%s` for binder `%s` (expected `predicate_value_binder`)' % (argType, argKey))
         
         # recursively read value provider arguments
         ArgumentReader.readArguments(argXMLNode, binderNode)
         
         return binderNode
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if type and m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-2])
+
+#
+# Argument Reader
+#
 
 
-class XMLReader(object):
+class PrototypeSpecificationReader(object):
     '''
     Reads the AST from an XML file.
     '''
@@ -434,7 +523,7 @@ class XMLReader(object):
         '''
         Constructor
         '''
-        super(XMLReader, self).__init__()
+        super(PrototypeSpecificationReader, self).__init__()
         self.__args = args
         self.__log = logging.getLogger("prototype.reader")
     
@@ -816,105 +905,106 @@ class XMLReader(object):
         astContext.setOutputFormatter(self.__outputFormatterFactory(xmlContext))
         
     def __cardinalityEstimatorFactory(self, cardinalityEstimatorXMLNode):
-        cardinalityEstimatorType = cardinalityEstimatorXMLNode.prop("type")
+        t = cardinalityEstimatorXMLNode.prop("type")
+        cardinalityEstimatorNode = None
         
-        # factory logic: create cardinality estimator object
-        cardinalityEstimator = None
-        if (cardinalityEstimatorType == "linear_scale_estimator"):
-            cardinalityEstimator = LinearScaleEstimatorNode()
-        elif (cardinalityEstimatorType == "const_estimator"):
-            cardinalityEstimator = ConstEstimatorNode()
-        else:
-            raise RuntimeError('Invalid cardinality estimator type `%s`' % (cardinalityEstimatorType))
+        for cls in AstUtils.iterSubClasses(AbstractCardinalityEstimatorNode):
+            try:
+                args, kwargs = cls.parseType(t)
+                cardinalityEstimatorNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
         
-        # Append arguments
-        ArgumentReader.readArguments(cardinalityEstimatorXMLNode, cardinalityEstimator)
+        if cardinalityEstimatorNode is None:    
+            raise RuntimeError('Unexpected cardinality estimator type `%s` (expected one of `(linear_scale_estimator|const_estimator)`)' % (t))
         
-        return cardinalityEstimator
+        # recursively read range provider arguments
+        ArgumentReader.readArguments(cardinalityEstimatorXMLNode, cardinalityEstimatorNode)
+        
+        return cardinalityEstimatorNode
         
     def __sequenceIteratorFactory(self, sequenceIteratorXMLNode):
-        sequenceIteratorType = sequenceIteratorXMLNode.prop("type")
+        t = sequenceIteratorXMLNode.prop("type")
+        sequenceIteratorNode = None
         
-        # factory logic: create sequence iterator object
-        sequenceIterator = None
-        if (sequenceIteratorType == "partitioned_iterator"):
-            sequenceIterator = PartitionedSequenceIteratorNode()
-        else:
-            raise RuntimeError('Invalid generator task type `%s`' % (sequenceIteratorType))
+        for cls in AstUtils.iterSubClasses(AbstractSequenceIteratorNode):
+            try:
+                args, kwargs = cls.parseType(t)
+                sequenceIteratorNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
         
-        # append arguments
-        ArgumentReader.readArguments(sequenceIteratorXMLNode, sequenceIterator)
+        if sequenceIteratorNode is None:    
+            raise RuntimeError('Unexpected sequence iterator type `%s` (expected `partitioned_iterator`)' % (t))
         
-        return sequenceIterator
+        # recursively read range provider arguments
+        ArgumentReader.readArguments(sequenceIteratorXMLNode, sequenceIteratorNode)
+        
+        return sequenceIteratorNode
         
     def __outputFormatterFactory(self, outputFormatterXMLNode):
-        outputFormatterType = outputFormatterXMLNode.prop("type")
-        
-        # factory logic: create output formatter object
+        t = outputFormatterXMLNode.prop("type")
         outputFormatter = None
-        if (outputFormatterType == "csv"):
-            outputFormatter = CsvOutputFormatterNode()
-        elif (outputFormatterType == "empty"):
-            outputFormatter = EmptyOutputFormatterNode()
-        else:
-            raise RuntimeError('Invalid output formatter type `%s`' % (outputFormatterType))
         
-        # append arguments
+        for cls in AstUtils.iterSubClasses(AbstractOutputFormatterNode):
+            try:
+                args, kwargs = cls.parseType(t)
+                outputFormatter = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if outputFormatter is None:    
+            raise RuntimeError('Unexpected output formatter type `%s` (expected one of `(csv|empty)`)' % (t))
+        
+        # recursively read range provider arguments
         ArgumentReader.readArguments(outputFormatterXMLNode, outputFormatter)
         
         return outputFormatter
         
     def __functionFactory(self, functionXMLNode):
-        
-        # TODO: second and third component should be mandatory 
-        functionMatch = re.match(r"([a-z\_]+)(\[([a-zA-Z0-9\_]+)(;([a-zA-Z0-9\_,]+))?\])?", functionXMLNode.prop("type"))
-        # check if type is syntactically correct
-        if (functionMatch is None):
-            raise RuntimeError('Invalid function type `%s`' % (functionXMLNode.prop("type")))
-        # grab the function type
-        functionType = functionMatch.group(1)
-
-        # factory logic
+        t = functionXMLNode.prop("type")
+        k = functionXMLNode.prop("key")
         functionNode = None
-        if (functionType == "normal_probability"):
-            functionNode = NormalProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-        elif (functionType == "pareto_probability"):
-            functionNode = ParetoProbabilityFunctionNode(key=functionXMLNode.prop("key"))
-        elif (functionType == "uniform_probability"):
-            if functionMatch.group(3) is None:
-                raise RuntimeError("Missing value type parameter T for function `%s` (expected `uniform_probability[T]`)" % (functionXMLNode.prop("key")))
-            functionNode = UniformProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type=functionMatch.group(3))
-        elif (functionType == "conditional_combined_probability"):
-            if functionMatch.group(3) is None:
-                raise RuntimeError("Missing value type parameter T1 for function `%s` (expected `conditional_combined_probability[T1;T2]`)" % (functionXMLNode.prop("key")))
-            if functionMatch.group(5) is None:
-                raise RuntimeError("Missing value type parameter T2 for function `%s` (expected `conditional_combined_probability[T1;T2]`)" % (functionXMLNode.prop("key")))
-            functionNode = ConditionalCombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type1=functionMatch.group(3), domain_type2=functionMatch.group(5))
-        elif (functionMatch != "combined_probability"):
-            if functionMatch.group(3) is None:
-                raise RuntimeError("Missing value type parameter T for function `%s` (expected `combined_probability[T]`)" % (functionXMLNode.prop("key")))
-            functionNode = CombinedProbabilityFunctionNode(key=functionXMLNode.prop("key"), domain_type=functionMatch.group(3))
-        else:
-            raise RuntimeError('Invalid function type `%s`' % (functionType))
         
-        # append arguments
+        for cls in AstUtils.iterSubClasses(AbstractFunctionNode):
+            try:
+                args, kwargs = cls.parseType(t)
+                kwargs.update(key=k)
+                functionNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if functionNode is None:    
+            raise RuntimeError('Unexpected function type `%s` for function `%s`' % (t, k))
+        
+        # recursively read range provider arguments
         ArgumentReader.readArguments(functionXMLNode, functionNode)
         
         return functionNode
         
     def __setterFactory(self, setterXMLNode):
         t = setterXMLNode.prop("type")
-        
-        # factory logic
+        k = setterXMLNode.prop("key")
         setterNode = None
-        if t == "field_setter":
-            setterNode = FieldSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias="%sType" % StringTransformer.us2ccAll(setterXMLNode.prop("key")))
-        elif t == "reference_setter":
-            setterNode = ReferenceSetterNode(key=setterXMLNode.prop("key"), type=setterXMLNode.prop("type"), type_alias="%sType" % StringTransformer.us2ccAll(setterXMLNode.prop("key")))
-        else:
-            raise RuntimeError('Unsupported setter type `%s`' % (t))
         
-        # append arguments
+        for cls in AstUtils.iterSubClasses(AbstractSetterNode):
+            try:
+                args, kwargs = cls.parseType(t)
+                kwargs.update(key=k)
+                kwargs.update(type_alias="%sType" % StringTransformer.us2ccAll(k))
+                setterNode = cls(*args, **kwargs)
+                break
+            except ParseTypeError:
+                pass
+        
+        if setterNode is None:    
+            raise RuntimeError('Unexpected setter type `%s` for setter `%s` (expected one of `(field|reference)_setter`)' % (t, k))
+        
+        # recursively read range provider arguments
         ArgumentReader.readArguments(setterXMLNode, setterNode)
-
+        
         return setterNode

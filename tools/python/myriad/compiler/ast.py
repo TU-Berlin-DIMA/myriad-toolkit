@@ -21,32 +21,85 @@ Created on Oct 14, 2011
 import re
 from myriad.compiler.visitor import AbstractVisitor
 from myriad.util.stringutil import StringTransformer
+    
 
-class TypeUtils(object):
+#
+# Utility classes
+#
+
+class AstUtils(object):
     '''
     classdocs
     '''
     
     # a pattern for argument types
-    __argument_type_pattern = re.compile('^((collection)\[([a-zA-Z0-9_]+)\])|([a-zA-Z0-9_]+)$')     
-    # a pattern for the literal types 
-    __literal_type_pattern = re.compile('(Bool|Char|Date|Decimal|Enum|I16u?|I32u?|I64u?|String)')
+    __argument_type_pattern = re.compile('^((collection)\[([a-zA-Z0-9_]+)\])|([a-zA-Z0-9_]+)$')
+    # a list of all incremental types
+    __incremental_types = ['Char', 'Date', 'Enum', 'I16', 'I32', 'I64', 'I16u', 'I32u', 'I64u']
+    # a list of all ordered types
+    __ordered_types = ['Char', 'Date', 'Decimal', 'Enum', 'I16', 'I32', 'I64', 'I16u', 'I32u', 'I64u']
+    # a list of all literal types
+    __literal_types = ['Bool', 'Char', 'Date', 'Decimal', 'Enum', 'I16', 'I32', 'I64', 'I16u', 'I32u', 'I64u', 'String']
+    # a pattern for the literal types
+    __literal_type_pattern = re.compile('^(%s)$' % '|'.join(['Bool', 'Char', 'Date', 'Decimal', 'Enum', 'I16', 'I32', 'I64', 'I16u', 'I32u', 'I64u', 'String']))
     # a pattern for the vector types
-    __vector_type_pattern = re.compile('(Bool|Char|Date|Decimal|Enum|I16u?|I32u?|I64u?|String)\[(\d+)\]')
-
-    def matchArgumentType(type):
-        return TypeUtils.__argument_type_pattern.match(type)
-
-    def matchLiteralType(type):
-        return TypeUtils.__literal_type_pattern.match(type)
-        
-    def matchVectorType(type):
-        return TypeUtils.__vector_type_pattern.match(type)
+    __vector_type_pattern = re.compile('^(%s)\[(\d+)\]$' % '|'.join(['Bool', 'Char', 'Date', 'Decimal', 'Enum', 'I16', 'I32', 'I64', 'I16u', 'I32u', 'I64u', 'String']))
     
-    matchArgumentType = staticmethod(matchArgumentType)
-    matchLiteralType = staticmethod(matchLiteralType)
-    matchVectorType = staticmethod(matchVectorType)
+    @classmethod
+    def incrementalTypes(cls):
+        return cls.__incremental_types
+    
+    @classmethod
+    def orderedTypes(cls):
+        return cls.__ordered_types
+    
+    @classmethod
+    def literalTypes(cls):
+        return cls.__literal_types
 
+    @classmethod
+    def matchArgumentType(cls, type):
+        return cls.__argument_type_pattern.match(type)
+
+    @classmethod
+    def matchLiteralType(cls, type):
+        return cls.__literal_type_pattern.match(type)
+        
+    @classmethod
+    def matchVectorType(cls, type):
+        return cls.__vector_type_pattern.match(type)
+    
+    @staticmethod
+    def iterSubClasses(cls, _seen=None):
+        if not isinstance(cls, type):
+            raise TypeError('itersubclasses must be called with new-style classes, not %.100r' % cls)
+        if _seen is None: _seen = set()
+        try:
+            subs = cls.__subclasses__()
+        except TypeError: # fails only when cls is type
+            subs = cls.__subclasses__(cls)
+        for sub in subs:
+            if sub not in _seen:
+                _seen.add(sub)
+                yield sub
+                for sub in AstUtils.iterSubClasses(sub, _seen):
+                    yield sub
+
+
+#
+# Error types
+#
+
+class ParseTypeError(TypeError):
+    '''
+    An error type to be thrown by parseType() AST node methods
+    '''
+    pass
+
+
+#
+# AST nodes
+#
 
 class AbstractNode(object):
     '''
@@ -185,7 +238,7 @@ class FunctionsNode(AbstractNode):
         return self.__functions.has_key(key)
 
     
-class FunctionNode(AbstractNode):
+class AbstractFunctionNode(AbstractNode):
     '''
     classdocs
     '''
@@ -195,7 +248,7 @@ class FunctionNode(AbstractNode):
     orderkey = None
     
     def __init__(self, *args, **kwargs):
-        super(FunctionNode, self).__init__(*args, **kwargs)
+        super(AbstractFunctionNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
         self.orderkey = None
         self.setArgument(LiteralArgumentNode(key='key', type='String', value=self.getAttribute("key")))
@@ -220,7 +273,7 @@ class FunctionNode(AbstractNode):
         return self.getAttribute("concrete_type")
         
     def getDomainType(self):
-        raise RuntimeError("Calling abstract FunctionNode::getDomainType() method")
+        return self.getAttribute('domain_type')
     
     def getXMLArguments(self):
         return {}
@@ -230,19 +283,18 @@ class FunctionNode(AbstractNode):
 
     
 
-class ParetoProbabilityFunctionNode(FunctionNode):
+class ParetoProbabilityFunctionNode(AbstractFunctionNode):
     '''
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^normal_probability\[(Decimal)\]$')
+    
     def __init__(self, *args, **kwargs):
-        kwargs.update(domain_type="Decimal")
         kwargs.update(type="ParetoPrFunction")
         kwargs.update(concrete_type="Myriad::ParetoPrFunction")
         super(ParetoProbabilityFunctionNode, self).__init__(*args, **kwargs)
-        
-    def getDomainType(self):
-        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
         return [ { 'key': 'x_min', 'type': self.getDomainType() }, 
@@ -255,21 +307,28 @@ class ParetoProbabilityFunctionNode(FunctionNode):
                      'Literal(alpha)'
                      ])
         return args
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'domain_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
     
-class NormalProbabilityFunctionNode(FunctionNode):
+class NormalProbabilityFunctionNode(AbstractFunctionNode):
     '''
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^normal_probability\[(Decimal)\]$')
+    
     def __init__(self, *args, **kwargs):
-        kwargs.update(domain_type="Decimal")
         kwargs.update(type="NormalPrFunction")
         kwargs.update(concrete_type="Myriad::NormalPrFunction")
         super(NormalProbabilityFunctionNode, self).__init__(*args, **kwargs)
-        
-    def getDomainType(self):
-        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
         return [ { 'key': 'mean', 'type': self.getDomainType() }, 
@@ -282,20 +341,28 @@ class NormalProbabilityFunctionNode(FunctionNode):
                      'Literal(stddev)'
                     ])
         return args
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'domain_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
-class UniformProbabilityFunctionNode(FunctionNode):
+class UniformProbabilityFunctionNode(AbstractFunctionNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^uniform_probability\[(%s)\]$' % ('|'.join(AstUtils.orderedTypes())))
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="UniformPrFunction")
         kwargs.update(concrete_type="Myriad::UniformPrFunction<%s>" % kwargs["domain_type"])
         super(UniformProbabilityFunctionNode, self).__init__(*args, **kwargs)
-        
-    def getDomainType(self):
-        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
         return [ { 'key': 'x_min', 'type': self.getDomainType() }, 
@@ -309,19 +376,27 @@ class UniformProbabilityFunctionNode(FunctionNode):
                      ])
         return args
     
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'domain_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
+    
 
-class CombinedProbabilityFunctionNode(FunctionNode):
+class CombinedProbabilityFunctionNode(AbstractFunctionNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^combined_probability\[(%s)\]$' % ('|'.join(AstUtils.orderedTypes())))
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="CombinedPrFunction")
         kwargs.update(concrete_type="Myriad::CombinedPrFunction<%s>" % kwargs["domain_type"])
         super(CombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
-        
-    def getDomainType(self):
-        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
         return [ { 'key': 'path', 'type': 'String' } 
@@ -332,19 +407,30 @@ class CombinedProbabilityFunctionNode(FunctionNode):
         args.extend(['Literal(path)'])
         return args
     
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'domain_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
+    
 
-class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
+class ConditionalCombinedProbabilityFunctionNode(AbstractFunctionNode):
     '''
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^conditional_combined_probability\[(%s);(%s)\]$' % ('|'.join(AstUtils.orderedTypes()), '|'.join(AstUtils.orderedTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(type="ConditionalCombinedPrFunction")
-        kwargs.update(concrete_type="Myriad::ConditionalCombinedPrFunction<%s, %s>" % (kwargs["domain_type1"], kwargs["domain_type2"]))
+        kwargs.update(concrete_type="Myriad::ConditionalCombinedPrFunction<%s, %s>" % (kwargs["domain_type"], kwargs["condition_type"]))
         super(ConditionalCombinedProbabilityFunctionNode, self).__init__(*args, **kwargs)
         
     def getDomainType(self):
-        return self.getAttribute('domain_type1')
+        return self.getAttribute('domain_type')
         
     def getXMLArguments(self):
         return [ { 'key': 'path', 'type': 'String' } 
@@ -354,6 +440,14 @@ class ConditionalCombinedProbabilityFunctionNode(FunctionNode):
         args = super(ConditionalCombinedProbabilityFunctionNode, self).getConstructorArguments()
         args.extend(['Literal(path)'])
         return args
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'domain_type': m.group(1), 'condition_type': m.group(2) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
@@ -672,28 +766,28 @@ class RecordFieldNode(AbstractNode):
         return "Myriad::RecordTraits<%s>::%s" % (StringTransformer.us2ccAll(self.getParent().getAttribute("key")), self.getAttribute("name").upper())
         
     def isSimpleType(self):
-        r = TypeUtils.matchLiteralType(self.getAttribute("type"))
+        r = AstUtils.matchLiteralType(self.getAttribute("type"))
         return r is not None
         
     def isVectorType(self):
         # check vector types
-        r = TypeUtils.matchVectorType(self.getAttribute("type"))
+        r = AstUtils.matchVectorType(self.getAttribute("type"))
         return r is not None
         
     def vectorTypeSize(self):
         # check vector types
-        r = TypeUtils.matchVectorType(self.getAttribute("type"))
+        r = AstUtils.matchVectorType(self.getAttribute("type"))
         if r is not None:
             return r.group(2)
         
     def sourceType(self):
         # check vector types
-        r = TypeUtils.matchVectorType(self.getAttribute("type"))
+        r = AstUtils.matchVectorType(self.getAttribute("type"))
         if r is not None:
             return "vector<%s>" % (r.group(1))
         
         # check simple types
-        r = TypeUtils.matchLiteralType(self.getAttribute("type"))
+        r = AstUtils.matchLiteralType(self.getAttribute("type"))
         if r is not None:
             return r.group(1)
         
@@ -702,12 +796,12 @@ class RecordFieldNode(AbstractNode):
         
     def coreType(self):
         # check vector types
-        r = TypeUtils.matchVectorType(self.getAttribute("type"))
+        r = AstUtils.matchVectorType(self.getAttribute("type"))
         if r is not None:
             return r.group(1)
         
         # check simple types
-        r = TypeUtils.matchLiteralType(self.getAttribute("type"))
+        r = AstUtils.matchLiteralType(self.getAttribute("type"))
         if r is not None:
             return r.group(1)
         
@@ -848,7 +942,7 @@ class SetterChainNode(AbstractNode):
 # Cardinality Estimators
 # 
 
-class CardinalityEstimatorNode(AbstractNode):
+class AbstractCardinalityEstimatorNode(AbstractNode):
     '''
     classdocs
     '''
@@ -857,7 +951,7 @@ class CardinalityEstimatorNode(AbstractNode):
     __arguments = {}
     
     def __init__(self, *args, **kwargs):
-        super(CardinalityEstimatorNode, self).__init__(*args, **kwargs)
+        super(AbstractCardinalityEstimatorNode, self).__init__(*args, **kwargs)
         self.__parent = None
         self.__arguments = {}
     
@@ -887,10 +981,13 @@ class CardinalityEstimatorNode(AbstractNode):
         return []
 
 
-class LinearScaleEstimatorNode(CardinalityEstimatorNode):
+class LinearScaleEstimatorNode(AbstractCardinalityEstimatorNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^linear_scale_estimator$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="linear_scale_estimator")
@@ -903,12 +1000,23 @@ class LinearScaleEstimatorNode(CardinalityEstimatorNode):
     def getConstructorArguments(self):
         return [ 'Literal(base_cardinality)' 
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
-class ConstEstimatorNode(CardinalityEstimatorNode):
+class ConstEstimatorNode(AbstractCardinalityEstimatorNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^const_estimator$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="const_estimator")
@@ -921,13 +1029,21 @@ class ConstEstimatorNode(CardinalityEstimatorNode):
     def getConstructorArguments(self):
         return [ 'Literal(base_cardinality)' 
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
 # Sequence Iterators
 # 
  
-class SequenceIteratorNode(AbstractNode):
+class AbstractSequenceIteratorNode(AbstractNode):
     '''
     classdocs
     '''
@@ -936,7 +1052,7 @@ class SequenceIteratorNode(AbstractNode):
     __parent = None
     
     def __init__(self, *args, **kwargs):
-        super(SequenceIteratorNode, self).__init__(*args, **kwargs)
+        super(AbstractSequenceIteratorNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
         self.__parent = None
     
@@ -971,10 +1087,13 @@ class SequenceIteratorNode(AbstractNode):
                ]
 
 
-class PartitionedSequenceIteratorNode(SequenceIteratorNode):
+class PartitionedSequenceIteratorNode(AbstractSequenceIteratorNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^partitioned_iterator$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="PartitionedSequenceIteratorTask")
@@ -984,13 +1103,21 @@ class PartitionedSequenceIteratorNode(SequenceIteratorNode):
         recordType = StringTransformer.us2ccAll(self.getParent().getAttribute("key"))
 
         return "Myriad::PartitionedSequenceIteratorTask< %s >" % (recordType)
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
 # Output Formatters
 # 
  
-class OutputFormatterNode(AbstractNode):
+class AbstractOutputFormatterNode(AbstractNode):
     '''
     classdocs
     '''
@@ -999,7 +1126,7 @@ class OutputFormatterNode(AbstractNode):
     __parent = None
     
     def __init__(self, *args, **kwargs):
-        super(OutputFormatterNode, self).__init__(*args, **kwargs)
+        super(AbstractOutputFormatterNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
         self.__parent = None
     
@@ -1032,10 +1159,13 @@ class OutputFormatterNode(AbstractNode):
         return []
 
 
-class CsvOutputFormatterNode(OutputFormatterNode):
+class CsvOutputFormatterNode(AbstractOutputFormatterNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^csv$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="csv")
@@ -1057,12 +1187,23 @@ class CsvOutputFormatterNode(OutputFormatterNode):
         return [ 'Literal(delimiter)',
                  'FieldSetterRef(field)'
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
-class EmptyOutputFormatterNode(OutputFormatterNode):
+class EmptyOutputFormatterNode(AbstractOutputFormatterNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^empty$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="empty")
@@ -1079,6 +1220,14 @@ class EmptyOutputFormatterNode(OutputFormatterNode):
         
     def getConstructorArguments(self):
         return []
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
@@ -1281,7 +1430,7 @@ class AbstractRuntimeComponentNode(ArgumentNode):
     def __init__(self, *args, **kwargs):
         super(AbstractRuntimeComponentNode, self).__init__(*args, **kwargs)
         self.__arguments = {}
-    
+        
     def accept(self, visitor):
         visitor.preVisit(self)
         availableArgKeys = self.__arguments.keys() 
@@ -1314,6 +1463,9 @@ class AbstractRuntimeComponentNode(ArgumentNode):
     def hasArgument(self, key):
         return self.__arguments.has_key(key)
     
+    @classmethod
+    def parseType(cls, type):
+        raise ParseTypeError("Calling abstract AbstractRuntimeComponentNode::parseType() method")
 
 #
 # Setters
@@ -1345,6 +1497,9 @@ class FieldSetterNode(AbstractSetterNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^field_setter$')
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="FieldSetter")
         super(FieldSetterNode, self).__init__(*args, **kwargs)
@@ -1370,12 +1525,23 @@ class FieldSetterNode(AbstractSetterNode):
         
     def getConstructorArguments(self):
         return [ 'RuntimeComponentRef(value)' ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class ReferenceSetterNode(AbstractSetterNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^reference_setter$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ReferenceSetter")
@@ -1402,6 +1568,14 @@ class ReferenceSetterNode(AbstractSetterNode):
         
     def getConstructorArguments(self):
         return [ 'RuntimeComponentRef(value)' ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
@@ -1417,7 +1591,11 @@ class AbstractValueProviderNode(AbstractRuntimeComponentNode):
         super(AbstractValueProviderNode, self).__init__(*args, **kwargs)
     
     def getValueType(self):
-        raise RuntimeError("Calling abstract AbstractValueProviderNode::getValueType() method")
+#       return self.getArgument("probability").getFunctionRef().getDomainType()
+#       return self.getArgument("value").getAttribute("type")
+#       return self.getArgument("field").getFieldRef().getAttribute("type")
+#       return self.getArgument("probability").getFunctionRef().getDomainType()
+        return self.getAttribute("value_type")
     
     def getCxtRecordType(self):
         if isinstance(self.getParent(), ClusteredReferenceProviderNode) and self.getAttribute("key") == "children_count":
@@ -1431,6 +1609,9 @@ class ElementWiseValueProviderNode(AbstractValueProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^element_wise_value_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ElementWiseValueProvider")
         super(ElementWiseValueProviderNode, self).__init__(*args, **kwargs)
@@ -1439,7 +1620,8 @@ class ElementWiseValueProviderNode(AbstractValueProviderNode):
         return "runtime/provider/value/ElementWiseValueProvider.h"
     
     def getValueType(self):
-        return "vector<%s>" % (self.getArgument("element_value_provider").getValueType())
+#       return "vector<%s>" % (self.getArgument("element_value_provider").getValueType())
+        return "vector<%s>" % self.getAttribute("range_type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType>
@@ -1458,6 +1640,14 @@ class ElementWiseValueProviderNode(AbstractValueProviderNode):
         return [ 'RuntimeComponentRef(element_value_provider)',
                  'RuntimeComponentRef(element_length_value_provider)'
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'value_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class CallbackValueProviderNode(AbstractValueProviderNode):
@@ -1465,15 +1655,15 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^callback_value_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="CallbackValueProvider")
         super(CallbackValueProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/value/CallbackValueProvider.h"
-    
-    def getValueType(self):
-        return self.getAttribute("value_type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class CallbackType>
@@ -1493,6 +1683,14 @@ class CallbackValueProviderNode(AbstractValueProviderNode):
                  'Verbatim(&Base%sSetterChain::%s)' % (self.getCxtRecordType(), self.getArgument("name").getAttribute("value")),
                  'Literal(arity)'
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'value_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class ClusteredValueProviderNode(AbstractValueProviderNode):
@@ -1500,16 +1698,15 @@ class ClusteredValueProviderNode(AbstractValueProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^clustered_value_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ClusteredValueProvider")
         super(ClusteredValueProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/value/ClusteredValueProvider.h"
-    
-    def getValueType(self):
-#       return self.getArgument("probability").getFunctionRef().getDomainType()
-        return self.getAttribute("value_type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class PrFunctionType, class RangeProviderType>
@@ -1529,6 +1726,14 @@ class ClusteredValueProviderNode(AbstractValueProviderNode):
         return [ 'FunctionRef(probability)', 
                  'RuntimeComponentRef(cardinality)' 
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'value_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class ConstValueProviderNode(AbstractValueProviderNode):
@@ -1536,16 +1741,15 @@ class ConstValueProviderNode(AbstractValueProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^const_value_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ConstValueProvider")
         super(ConstValueProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/value/ConstValueProvider.h"
-    
-    def getValueType(self):
-#       return self.getArgument("value").getAttribute("type")
-        return self.getAttribute("value_type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType>
@@ -1561,6 +1765,14 @@ class ConstValueProviderNode(AbstractValueProviderNode):
     def getConstructorArguments(self):
         return [ 'Literal(value)' 
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'value_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class ContextFieldValueProviderNode(AbstractValueProviderNode):
@@ -1568,15 +1780,15 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^context_field_value_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ContextFieldValueProvider")
         super(ContextFieldValueProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/value/ContextFieldValueProvider.h"
-    
-    def getValueType(self):
-        return self.getArgument("field").getFieldRef().getAttribute("type")
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, I16u fid>
@@ -1594,6 +1806,14 @@ class ContextFieldValueProviderNode(AbstractValueProviderNode):
         
     def getConstructorArguments(self):
         return []
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'value_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class RandomValueProviderNode(AbstractValueProviderNode):
@@ -1601,15 +1821,15 @@ class RandomValueProviderNode(AbstractValueProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^random_value_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="RandomValueProvider")
         super(RandomValueProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/value/RandomValueProvider.h"
-    
-    def getValueType(self):
-        return self.getArgument("probability").getFunctionRef().getDomainType()
     
     def getConcreteType(self):
         # template<typename ValueType, class CxtRecordType, class PrFunctionType, I16u conditionFID>
@@ -1631,6 +1851,14 @@ class RandomValueProviderNode(AbstractValueProviderNode):
     def getConstructorArguments(self):
         return [ 'FunctionRef(probability)'
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'value_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
@@ -1645,11 +1873,11 @@ class AbstractRangeProviderNode(AbstractRuntimeComponentNode):
     def __init__(self, *args, **kwargs):
         super(AbstractRangeProviderNode, self).__init__(*args, **kwargs)
     
-    def getRangeType(self):
-        raise RuntimeError("Calling abstract AbstractRuntimeComponentNode::getRangeType() method")
-    
     def getCxtRecordType(self):
         return self.getParent().getCxtRecordType()
+    
+    def getRangeType(self):
+        return self.getAttribute("range_type")
 
 
 class ConstRangeProviderNode(AbstractRangeProviderNode):
@@ -1657,16 +1885,15 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^const_range_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ConstRangeProvider")
         super(ConstRangeProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/range/ConstRangeProvider.h"
-    
-    def getRangeType(self):
-#       return self.getArgument('min').getAttribute('type')
-        return self.getAttribute("range_type")
     
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType>
@@ -1684,6 +1911,14 @@ class ConstRangeProviderNode(AbstractRangeProviderNode):
         return [ 'Literal(min)', 
                  'Literal(max)' 
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'range_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
@@ -1691,15 +1926,15 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
     classdocs
     '''
     
+    # the type pattern for this class
+    __type_pattern = re.compile('^context_field_range_provider\[(%s)\]$' % ('|'.join(AstUtils.literalTypes())))
+    
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ContextFieldRangeProvider")
         super(ContextFieldRangeProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/range/ContextFieldRangeProvider.h"
-    
-    def getRangeType(self): 
-        return self.getArgument('field').getAttribute('type')
     
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
@@ -1716,28 +1951,48 @@ class ContextFieldRangeProviderNode(AbstractRangeProviderNode):
     def getConstructorArguments(self):
         return [ 'FieldSetterRef(field)'
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], { 'range_type': m.group(1) }
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
 # Runtime Components: Predicate Providers 
 # 
 
-class EqualityPredicateProviderNode(AbstractRuntimeComponentNode):
+class AbstractPredicateProviderNode(AbstractRuntimeComponentNode):
     '''
     classdocs
     '''
+    
+    def __init__(self, *args, **kwargs):
+        super(AbstractPredicateProviderNode, self).__init__(*args, **kwargs)
+    
+    def getCxtRecordType(self):
+        return self.getParent().getCxtRecordType()
+    
+    def getRefRecordType(self):
+        return self.getParent().getRefRecordType()
+
+
+class EqualityPredicateProviderNode(AbstractPredicateProviderNode):
+    '''
+    classdocs
+    '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^equality_predicate_provider$')
     
     def __init__(self, *args, **kwargs):
         super(EqualityPredicateProviderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/predicate/EqualityPredicateProvider.h"
-    
-    def getRefRecordType(self):
-        return self.getParent().getRefRecordType()
-    
-    def getCxtRecordType(self):
-        return self.getParent().getCxtRecordType()
     
     def getConcreteType(self):
         # template<typename RangeType, class CxtRecordType, class InvertibleFieldSetterType>
@@ -1754,34 +2009,58 @@ class EqualityPredicateProviderNode(AbstractRuntimeComponentNode):
         return [ 'Verbatim(config.generatorPool().get<%sGenerator>().recordFactory())' % (self.getRefRecordType()),
                  'RuntimeComponentRef(binder)'
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
-class EqualityPredicateFieldBinderNode(AbstractRuntimeComponentNode):
+#
+# Runtime Components: Binders 
+# 
+
+class AbstractFieldBinderNode(AbstractRuntimeComponentNode):
     '''
     classdocs
     '''
+    
+    def __init__(self, *args, **kwargs):
+        super(AbstractFieldBinderNode, self).__init__(*args, **kwargs)
+    
+    def getCxtRecordType(self):
+        parent = self.getParent()
+        while parent is not None and not isinstance(parent, AbstractPredicateProviderNode):
+            parent = parent.getParent()
+        if parent is None:
+            raise RuntimeException("Could not determine CxtRecordType of AbstractFieldBinderNode (parent is None)")
+        return parent.getCxtRecordType()
+    
+    def getRefRecordType(self):
+        parent = self.getParent()
+        while parent is not None and not isinstance(parent, AbstractPredicateProviderNode):
+            parent = parent.getParent()
+        if parent is None:
+            raise RuntimeException("Could not determine RefRecordType of AbstractFieldBinderNode (parent is None)")
+        return parent.getRefRecordType()
+
+
+class EqualityPredicateFieldBinderNode(AbstractFieldBinderNode):
+    '''
+    classdocs
+    '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^predicate_value_binder$')
     
     def __init__(self, *args, **kwargs):
         super(EqualityPredicateFieldBinderNode, self).__init__(*args, **kwargs)
     
     def getIncludePath(self):
         return "runtime/provider/predicate/EqualityPredicateFieldBinder.h"
-    
-    def getRefRecordType(self):
-        parent = self.getParent()
-        while parent is not None and not isinstance(parent, AbstractRuntimeComponentNode):
-            parent = parent.getParent()
-        if parent is None:
-            raise RuntimeException("Could not determine RefRecordType of EqualityPredicateFieldBinderNode (parent is None)")
-        return parent.getRefRecordType()
-    
-    def getCxtRecordType(self):
-        parent = self.getParent()
-        while parent is not None and not isinstance(parent, AbstractRuntimeComponentNode):
-            parent = parent.getParent()
-        if parent is None:
-            raise RuntimeException("Could not determine CxtRecordType of EqualityPredicateFieldBinderNode (parent is None)")
-        return parent.getCxtRecordType()
     
     def getConcreteType(self):
         # template<class RecordType, I16u fid, class CxtRecordType, class ValueProviderType>
@@ -1800,6 +2079,14 @@ class EqualityPredicateFieldBinderNode(AbstractRuntimeComponentNode):
     def getConstructorArguments(self):
         return [ 'RuntimeComponentRef(value)'
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #
@@ -1825,6 +2112,9 @@ class ClusteredReferenceProviderNode(AbstractReferenceProviderNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^clustered_reference_provider$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="ClusteredReferenceProvider")
@@ -1856,12 +2146,23 @@ class ClusteredReferenceProviderNode(AbstractReferenceProviderNode):
                  'RuntimeComponentRef(children_count)', 
                  'SequenceInspector(%s)' % (self.getRefRecordType()), 
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 class RandomReferenceProviderNode(AbstractReferenceProviderNode):
     '''
     classdocs
     '''
+    
+    # the type pattern for this class
+    __type_pattern = re.compile('^random_reference_provider$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(template_type="RandomReferenceProvider")
@@ -1885,6 +2186,14 @@ class RandomReferenceProviderNode(AbstractReferenceProviderNode):
         return [ 'RuntimeComponentRef(predicate)', 
                  'SequenceInspector(%s)' % (self.getRefRecordType()), 
                ]
+    
+    @classmethod
+    def parseType(cls, type):
+        m = cls.__type_pattern.match(type)
+        if m is not None:
+            return [], {}
+        else:
+            raise ParseTypeError("Bad %s type" % str(cls).split('.').pop()[0:-6])
 
 
 #

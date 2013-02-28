@@ -19,7 +19,7 @@ Created on Oct 14, 2011
 '''
 
 from myriad.compiler.debug import PrintVisitor #@UnusedImport
-from myriad.compiler.reader import XMLReader
+from myriad.compiler.reader import PrototypeSpecificationReader
 from myriad.compiler.source import * #@UnusedWildImport
 from myriad.task.common import AbstractTask
 
@@ -61,7 +61,7 @@ class CompileModelTask(AbstractTask):
         
     def _do(self, args):
         # reed the AST
-        reader = XMLReader(args)
+        reader = PrototypeSpecificationReader(args)
         ast = reader.read()
 
         # compile output collector

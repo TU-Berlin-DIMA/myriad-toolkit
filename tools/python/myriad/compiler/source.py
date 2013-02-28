@@ -22,13 +22,13 @@ import logging
 import os
 import re
 
+from myriad.compiler.ast import AbstractCardinalityEstimatorNode
+from myriad.compiler.ast import AbstractFunctionNode
 from myriad.compiler.ast import AbstractRuntimeComponentNode
 from myriad.compiler.ast import ArgumentCollectionNode
 from myriad.compiler.ast import CallbackValueProviderNode
-from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.compiler.ast import DepthFirstNodeFilter
 from myriad.compiler.ast import EnumSetNode
-from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import ResolvedFieldRefArgumentNode
@@ -41,9 +41,9 @@ class ArgumentTransformer(object):
     _log = logging.getLogger("source.transformer.factory")
     _descriptor_pattern = re.compile('^([a-zA-Z_]+)\((.+)\)(\*)?$')
     
-    @staticmethod
-    def createTransformer(transformerDescriptor):
-        m = ArgumentTransformer._descriptor_pattern.match(transformerDescriptor)
+    @classmethod
+    def createTransformer(cls, transformerDescriptor):
+        m = cls._descriptor_pattern.match(transformerDescriptor)
         if (m):
             transformerType = m.group(1)
             argTransformer = None
@@ -70,21 +70,21 @@ class ArgumentTransformer(object):
                 argTransformer = RuntimeComponentRefTransformer()
             else:
                 message = "Unknown argument transformer type `%s`" % (transformerType)
-                ArgumentTransformer._log.error(message)
+                cls._log.error(message)
                 raise RuntimeError(message)
             
             return (argTransformer, argKey, argOptional)
         else:
             message = "Bad argument transformer descriptor `%s`" % (transformerDescriptor)
-            ArgumentTransformer._log.error(message)
+            cls._log.error(message)
             raise RuntimeError(message)
     
-    @staticmethod
-    def compileConstructorArguments(self, argsContainerNode, env = {}):
+    @classmethod
+    def compileConstructorArguments(cls, argsContainerNode, env = {}):
         argsCode = []
         
         for transformerDescriptor in argsContainerNode.getConstructorArguments():
-            (argTransformer, argKey, argOptional) = ArgumentTransformer.createTransformer(transformerDescriptor)
+            (argTransformer, argKey, argOptional) = cls.createTransformer(transformerDescriptor)
             
             if argKey is None:
                 argument = None
@@ -607,7 +607,7 @@ class ConfigCompiler(SourceCompiler):
 
 
         literalTransformer = LiteralTransfomer()
-        nodeFilter = DepthFirstNodeFilter(filterType=CardinalityEstimatorNode)
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractCardinalityEstimatorNode)
         for cardinalityEstimator in nodeFilter.getAll(astRoot.getSpecification().getRecordSequences()):
             cardinalityEstimatorType = cardinalityEstimator.getAttribute("type")
             
@@ -626,9 +626,9 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '        // register prototype functions'
         
-        nodeFilter = DepthFirstNodeFilter(filterType=FunctionNode)
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractFunctionNode)
         for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
-            argsCode = ArgumentTransformer.compileConstructorArguments(self, function, {'config': None})
+            argsCode = ArgumentTransformer.compileConstructorArguments(function, {'config': None})
             print >> wfile, '        function(new %(t)s(%(a)s));' % {'t': function.getConcreteType(), 'a': ', '.join(argsCode)}
 
         print >> wfile, '    }'
@@ -1356,7 +1356,7 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
         for node in nodeFilter.getAll(recordSequence.getSetterChain()):
-            argsCode = ArgumentTransformer.compileConstructorArguments(self, node, {'config': 'config'})
+            argsCode = ArgumentTransformer.compileConstructorArguments(node, {'config': 'config'})
             print >> wfile, '        %s(%s),' % (node.getAttribute("var_name"), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.setter.chain"))' % (typeNameUS)
@@ -1565,7 +1565,7 @@ class AbstractSequenceGeneratorCompiler(SourceCompiler):
         
         if recordSequence.hasSequenceIterator():
             sequenceIterator = recordSequence.getSequenceIterator()
-            sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
+            sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(sequenceIterator, {'config': '_config'})
             
             print >> wfile, ''
             print >> wfile, '        if (stage.name() == name())'
