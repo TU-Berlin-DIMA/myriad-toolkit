@@ -41,6 +41,7 @@ class ArgumentTransformer(object):
     _log = logging.getLogger("source.transformer.factory")
     _descriptor_pattern = re.compile('^([a-zA-Z_]+)\((.+)\)(\*)?$')
     
+    @staticmethod
     def createTransformer(transformerDescriptor):
         m = ArgumentTransformer._descriptor_pattern.match(transformerDescriptor)
         if (m):
@@ -77,7 +78,8 @@ class ArgumentTransformer(object):
             message = "Bad argument transformer descriptor `%s`" % (transformerDescriptor)
             ArgumentTransformer._log.error(message)
             raise RuntimeError(message)
-        
+    
+    @staticmethod
     def compileConstructorArguments(self, argsContainerNode, env = {}):
         argsCode = []
         
@@ -92,10 +94,6 @@ class ArgumentTransformer(object):
             argsCode.extend(argTransformer.transform(argument, env.get("config", "config"), argOptional))
         
         return filter(None, argsCode)
-        
-    # static methods
-    createTransformer = staticmethod(createTransformer)
-    compileConstructorArguments = staticmethod(compileConstructorArguments)
 
 
 class FieldTransfomer(object):
