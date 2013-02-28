@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 DIMA Research Group, TU Berlin
+ * Copyright 2010-2013 DIMA Research Group, TU Berlin
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -373,6 +373,32 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 //@{
 
+// general value and bucket line regular expressions
+template<typename T>
+inline String __valueLineFormat()
+{
+    return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*(.+)\\s*\\}\\s*(#(.+))?";
+}
+
+template<typename T>
+inline String __bucketLineFormat()
+{
+    return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*x\\s+in\\s+\\[\\s*(.+)\\s*,\\s*(.+)\\s*\\)\\s*\\}\\s*(#(.+))?";
+}
+
+// specializations for 'Char' as 'Char' values must be quoted
+template<>
+inline String __valueLineFormat<Char>()
+{
+    return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*'(.)'\\s*\\}\\s*(#(.+))?";
+}
+
+template<>
+inline String __bucketLineFormat<Char>()
+{
+    return "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*x\\s+in\\s+\\[\\s*'(.)'\\s*,\\s*'(.+)'\\s*\\)\\s*\\}\\s*(#(.+))?";
+}
+
 template<typename T>
 RegularExpression CombinedPrFunction<T>::headerLine1Format("\\s*@numberofexactvals\\s*=\\s*([+]?[0-9]+)\\s*(#(.+))?");
 template<typename T>
@@ -380,9 +406,9 @@ RegularExpression CombinedPrFunction<T>::headerLine2Format("\\s*@numberofbins\\s
 template<typename T>
 RegularExpression CombinedPrFunction<T>::headerLine3Format("\\s*@nullprobability\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s*(#(.+))?");
 template<typename T>
-RegularExpression CombinedPrFunction<T>::valueLineFormat( "\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*(.+)\\s*\\}\\s*(#(.+))?");
+RegularExpression CombinedPrFunction<T>::valueLineFormat(__valueLineFormat<T>());
 template<typename T>
-RegularExpression CombinedPrFunction<T>::bucketLineFormat("\\s*p\\(X\\)\\s*=\\s*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\s+for\\s+X\\s*=\\s*\\{\\s*x\\s+in\\s+\\[\\s*(.+)\\s*,\\s*(.+)\\s*\\)\\s*\\}\\s*(#(.+))?");
+RegularExpression CombinedPrFunction<T>::bucketLineFormat(__bucketLineFormat<T>());
 
 //@}
 

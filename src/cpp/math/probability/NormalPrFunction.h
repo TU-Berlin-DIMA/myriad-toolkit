@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 DIMA Research Group, TU Berlin
+ * Copyright 2010-2013 DIMA Research Group, TU Berlin
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,11 +133,6 @@ public:
      * @see UnivariatePrFunction::invcdf()
      */
     Decimal invcdf(Decimal y) const;
-
-    /**
-     * FIXME: this is suspicious.
-     */
-    Interval<Decimal> threshold(Decimal yMin) const;
 
     /**
      * Returns the normal probability function \p mean parameter.

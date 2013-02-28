@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 DIMA Research Group, TU Berlin
+ * Copyright 2010-2013 DIMA Research Group, TU Berlin
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,19 +43,20 @@ namespace Myriad {
 ////////////////////////////////////////////////////////////////////////////////
 //@{
 
+typedef bool Bool;          //!< Date, alias of \c bool
+typedef char Char;          //!< A character type (alias of \c char)
+typedef MyriadDate Date;    //!< Date, alias of \c MyriadDate
+typedef double Decimal;     //!< Decimal number, alias of \c double
+typedef std::size_t Enum;   //!< A enumerated sequence type (alias of \c std::size_t)
 typedef Poco::Int16 I16;    //!< Unsigned 16-bit integer
 typedef Poco::Int32 I32;    //!< Unsigned 32-bit integer
 typedef Poco::Int64 I64;    //!< Unsigned 64-bit integer
 typedef Poco::UInt16 I16u;  //!< Signed 16-bit integer
 typedef Poco::UInt32 I32u;  //!< Signed 32-bit integer
 typedef Poco::UInt64 I64u;  //!< Signed 64-bit integer
-typedef std::size_t Enum;   //!< A enumerated sequence type (alias of \c std::size_t)
-typedef char Char;          //!< A character type (alias of \c char)
-typedef double Decimal;     //!< Decimal number, alias of \c double
-typedef MyriadDate Date;    //!< Date, alias of \c MyriadDate
+typedef std::string String; //!< String type, alias of \c std::string
 //TODO: remove this type, use I64u instead
 typedef Poco::UInt64 ID;    //!< Generic ID type, alias of \c I64u
-typedef std::string String; //!< String type, alias of \c std::string
 
 // forward declarations of auxiliary complex types
 template<typename T> class Interval;
@@ -292,6 +293,15 @@ template<class T> inline T fromString(const std::string& s)
     T t;
     ss >> t;
     return t;
+}
+
+template<> inline char fromString<char>(const std::string& s)
+{
+    if (s.length() < 1) {
+        throw RuntimeException("Cannot read character from empty string");
+    } else {
+        return s[0];
+    }
 }
 
 /**

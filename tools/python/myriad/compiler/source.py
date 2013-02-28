@@ -1,5 +1,5 @@
 '''
-Copyright 2010-2011 DIMA Research Group, TU Berlin
+Copyright 2010-2013 DIMA Research Group, TU Berlin
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import logging
 import os
 import re
 
+from myriad.compiler.ast import AbstractCardinalityEstimatorNode
+from myriad.compiler.ast import AbstractFunctionNode
 from myriad.compiler.ast import AbstractRuntimeComponentNode
 from myriad.compiler.ast import ArgumentCollectionNode
 from myriad.compiler.ast import CallbackValueProviderNode
-from myriad.compiler.ast import CardinalityEstimatorNode
 from myriad.compiler.ast import DepthFirstNodeFilter
 from myriad.compiler.ast import EnumSetNode
-from myriad.compiler.ast import FunctionNode
 from myriad.compiler.ast import LiteralArgumentNode
 from myriad.compiler.ast import RandomSequenceNode
 from myriad.compiler.ast import ResolvedFieldRefArgumentNode
@@ -41,8 +41,9 @@ class ArgumentTransformer(object):
     _log = logging.getLogger("source.transformer.factory")
     _descriptor_pattern = re.compile('^([a-zA-Z_]+)\((.+)\)(\*)?$')
     
-    def createTransformer(transformerDescriptor):
-        m = ArgumentTransformer._descriptor_pattern.match(transformerDescriptor)
+    @classmethod
+    def createTransformer(cls, transformerDescriptor):
+        m = cls._descriptor_pattern.match(transformerDescriptor)
         if (m):
             transformerType = m.group(1)
             argTransformer = None
@@ -69,20 +70,21 @@ class ArgumentTransformer(object):
                 argTransformer = RuntimeComponentRefTransformer()
             else:
                 message = "Unknown argument transformer type `%s`" % (transformerType)
-                ArgumentTransformer._log.error(message)
+                cls._log.error(message)
                 raise RuntimeError(message)
             
             return (argTransformer, argKey, argOptional)
         else:
             message = "Bad argument transformer descriptor `%s`" % (transformerDescriptor)
-            ArgumentTransformer._log.error(message)
+            cls._log.error(message)
             raise RuntimeError(message)
-        
-    def compileConstructorArguments(self, argsContainerNode, env = {}):
+    
+    @classmethod
+    def compileConstructorArguments(cls, argsContainerNode, env = {}):
         argsCode = []
         
         for transformerDescriptor in argsContainerNode.getConstructorArguments():
-            (argTransformer, argKey, argOptional) = ArgumentTransformer.createTransformer(transformerDescriptor)
+            (argTransformer, argKey, argOptional) = cls.createTransformer(transformerDescriptor)
             
             if argKey is None:
                 argument = None
@@ -92,10 +94,6 @@ class ArgumentTransformer(object):
             argsCode.extend(argTransformer.transform(argument, env.get("config", "config"), argOptional))
         
         return filter(None, argsCode)
-        
-    # static methods
-    createTransformer = staticmethod(createTransformer)
-    compileConstructorArguments = staticmethod(compileConstructorArguments)
 
 
 class FieldTransfomer(object):
@@ -109,8 +107,8 @@ class FieldTransfomer(object):
 
 class LiteralTransfomer(object):
     
-    _param_pattern = re.compile('%(\([a-zA-Z0-9]+\))?([\w.\-]+)%')    
-    _literal_pattern = re.compile('(\([a-zA-Z0-9]+\))?([\w.\-\[\]\_]+)')
+    _param_pattern = re.compile('%(\([a-zA-Z0-9]+\))?([\w.\-]+)%')
+    _literal_pattern = re.compile('(\([a-zA-Z0-9]+\))?(.+)')
     _expr_pattern = re.compile('^\${(.+)}$')
     
     def __init__(self, *args, **kwargs):
@@ -609,7 +607,7 @@ class ConfigCompiler(SourceCompiler):
 
 
         literalTransformer = LiteralTransfomer()
-        nodeFilter = DepthFirstNodeFilter(filterType=CardinalityEstimatorNode)
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractCardinalityEstimatorNode)
         for cardinalityEstimator in nodeFilter.getAll(astRoot.getSpecification().getRecordSequences()):
             cardinalityEstimatorType = cardinalityEstimator.getAttribute("type")
             
@@ -617,6 +615,10 @@ class ConfigCompiler(SourceCompiler):
                 print >> wfile, '        // setup linear scale estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
                 print >> wfile, '        setString("partitioning.%s.base-cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("base_cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("base_cardinality"), None).pop())
                 print >> wfile, '        computeLinearScalePartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
+            elif cardinalityEstimatorType == 'const_estimator':
+                print >> wfile, '        // setup constant estimator for %s' % (cardinalityEstimator.getParent().getAttribute("key"))
+                print >> wfile, '        setString("partitioning.%s.cardinality", toString<%s>(%s));' % (cardinalityEstimator.getParent().getAttribute("key"), cardinalityEstimator.getArgument("cardinality").getAttribute("type").strip(), literalTransformer.transform(cardinalityEstimator.getArgument("cardinality"), None).pop())
+                print >> wfile, '        computeFixedPartitioning("%s");' % (cardinalityEstimator.getParent().getAttribute("key"))
         
         print >> wfile, '    }'
         print >> wfile, ''
@@ -624,9 +626,9 @@ class ConfigCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '        // register prototype functions'
         
-        nodeFilter = DepthFirstNodeFilter(filterType=FunctionNode)
+        nodeFilter = DepthFirstNodeFilter(filterType=AbstractFunctionNode)
         for function in nodeFilter.getAll(astRoot.getSpecification().getFunctions()):
-            argsCode = ArgumentTransformer.compileConstructorArguments(self, function, {'config': None})
+            argsCode = ArgumentTransformer.compileConstructorArguments(function, {'config': None})
             print >> wfile, '        function(new %(t)s(%(a)s));' % {'t': function.getConcreteType(), 'a': ', '.join(argsCode)}
 
         print >> wfile, '    }'
@@ -846,7 +848,7 @@ class RecordTypeCompiler(SourceCompiler):
         print >> wfile, '{'
         print >> wfile, 'public:'
         print >> wfile, ''
-        print >> wfile, '    %(t)sMeta(const EnumSetPool& enumSets) :' % {'t': typeNameCC}
+        print >> wfile, '    %(t)sMeta(const Myriad::EnumSetPool& enumSets) :' % {'t': typeNameCC}
         print >> wfile, '        Base%(t)sMeta(enumSets)' % {'t': typeNameCC}
         print >> wfile, '    {'
         print >> wfile, '    }'
@@ -920,13 +922,18 @@ class RecordTypeCompiler(SourceCompiler):
         for field in filter(lambda f: not f.isImplicit(), recordType.getFields()):
             if field.isDerived():
                 print >> wfile, '    virtual const %s %s() const = 0;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
+                print >> wfile, ''
             else:
                 print >> wfile, '    void %s(const %s& v);' % (StringTransformer.us2cc(field.getAttribute("name")), field.sourceType())
                 print >> wfile, '    const %s& %s() const;' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
             
-                if isinstance(field, RecordEnumFieldNode):
-                    print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(field.getAttribute("name")))
-                    print >> wfile, ''
+                if field.coreType() == 'Enum':
+                    if field.isVectorType():
+                        print >> wfile, '    const String& %sEnumValue(size_t i) const;' % (StringTransformer.us2cc(field.getAttribute("name")))
+                        print >> wfile, ''
+                    else:
+                        print >> wfile, '    const String& %sEnumValue() const;' % (StringTransformer.us2cc(field.getAttribute("name")))
+                        print >> wfile, ''
                 else:
                     print >> wfile, ''
         
@@ -976,12 +983,19 @@ class RecordTypeCompiler(SourceCompiler):
             print >> wfile, '}'
             print >> wfile, ''
             
-            if isinstance(field, RecordEnumFieldNode):
-                print >> wfile, 'inline const String& Base%s::%sEnumValue() const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
-                print >> wfile, '{'
-                print >> wfile, '    return _meta.%(n)s[_%(n)s];' % {'n': field.getAttribute("name")}
-                print >> wfile, '}'
-                print >> wfile, ''
+            if field.coreType() == 'Enum':
+                if field.isVectorType():
+                    print >> wfile, 'inline const String& Base%s::%sEnumValue(size_t i) const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
+                    print >> wfile, '{'
+                    print >> wfile, '    return _meta.%(n)s[_%(n)s[i]];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '}'
+                    print >> wfile, ''
+                else:
+                    print >> wfile, 'inline const String& Base%s::%sEnumValue() const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
+                    print >> wfile, '{'
+                    print >> wfile, '    return _meta.%(n)s[_%(n)s];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '}'
+                    print >> wfile, ''
         
         for reference in recordType.getReferences():
             print >> wfile, 'inline void Base%s::%s(const AutoPtr<%s>& v)' % (typeNameCC, StringTransformer.us2cc(reference.getAttribute("name")), reference.getAttribute("type"))
@@ -1037,6 +1051,7 @@ class RecordTypeCompiler(SourceCompiler):
         elif outputFormatter.getAttribute("type") == "csv":
             # produce the CSV output
             outputFormatDelimiter = outputFormatter.getArgument("delimiter").getAttribute("value")
+            outputFormatIsQuoted = str(outputFormatter.getArgument("quoted").getAttribute("value").lower() == 'true').lower()
             outputFormatFields = outputFormatter.getArgument("field")
             for fieldRef in outputFormatFields.getAll():
                 field = fieldRef.getFieldRef()
@@ -1044,9 +1059,9 @@ class RecordTypeCompiler(SourceCompiler):
                 fieldName = field.getAttribute("name")
                 
                 if fieldType == "Enum":
-                    print >> wfile, '    write(out, %s, true);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()")
+                    print >> wfile, '    write(out, %s, %s);' % ("record." + StringTransformer.us2cc(fieldName) + "EnumValue()", outputFormatIsQuoted)
                 elif fieldType == 'String' or (field.isVectorType() and field.coreType() == 'Char'):
-                    print >> wfile, '    write(out, %s, true);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
+                    print >> wfile, '    write(out, %s, %s);' % ("record." + StringTransformer.us2cc(fieldName) + "()", outputFormatIsQuoted)
                 else:
                     print >> wfile, '    write(out, %s, false);' % ("record." + StringTransformer.us2cc(fieldName) + "()")
                 print >> wfile, '    out << \'%s\';' % (outputFormatDelimiter)
@@ -1106,7 +1121,7 @@ class RecordTypeCompiler(SourceCompiler):
 
             print >> wfile, '    virtual const %s %s() const' % (field.sourceType(), StringTransformer.us2cc(field.getAttribute("name")))
             print >> wfile, '    {'
-            print >> wfile, '        return nullValue<String>();'
+            print >> wfile, '        return Myriad::nullValue<%s>();' % (field.sourceType())
             print >> wfile, '    }'
             print >> wfile, ''
 
@@ -1341,7 +1356,7 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, '        _sequenceCardinality(config.cardinality("%s")),' % (typeNameUS)
         nodeFilter = DepthFirstNodeFilter(filterType=AbstractRuntimeComponentNode)
         for node in nodeFilter.getAll(recordSequence.getSetterChain()):
-            argsCode = ArgumentTransformer.compileConstructorArguments(self, node, {'config': 'config'})
+            argsCode = ArgumentTransformer.compileConstructorArguments(node, {'config': 'config'})
             print >> wfile, '        %s(%s),' % (node.getAttribute("var_name"), ', '.join(argsCode))
         
         print >> wfile, '        _logger(Logger::get("%s.setter.chain"))' % (typeNameUS)
@@ -1388,7 +1403,7 @@ class SetterChainCompiler(SourceCompiler):
         if recordSequence.getSetterChain().settersCount() > 0:
             nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
             for node in nodeFilter.getAll(recordSequence.getSetterChain()):
-                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random) = 0;' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
+                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, Myriad::RandomStream& random) = 0;' % (node.getValueType(), node.getArgument('name').getAttribute('value'), typeNameCC)
                 print >> wfile, ''
                                 
         print >> wfile, 'protected:'
@@ -1465,12 +1480,12 @@ class SetterChainCompiler(SourceCompiler):
             nodeFilter = DepthFirstNodeFilter(filterType=CallbackValueProviderNode)
             for node in nodeFilter.getAll(recordSequence.getSetterChain()):
                 print >> wfile, ''
-                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, RandomStream& random)' % (node.getArgument('type').getAttribute('value'), node.getArgument('name').getAttribute('value'), typeNameCC)
+                print >> wfile, '    virtual %s %s(const AutoPtr<%s>& recordPtr, Myriad::RandomStream& random)' % (node.getValueType(), node.getArgument('name').getAttribute('value'), typeNameCC)
                 print >> wfile, '    {'
                 if (node.getArgument('type').getAttribute('value').lower() == 'string'):
                     print >> wfile, '        return "";'
                 else:
-                    print >> wfile, '        return nullValue<%s>();' % (node.getArgument('type').getAttribute('value'))
+                    print >> wfile, '        return Myriad::nullValue<%s>();' % (node.getArgument('type').getAttribute('value'))
                 print >> wfile, '    }'
         
         
@@ -1550,7 +1565,7 @@ class AbstractSequenceGeneratorCompiler(SourceCompiler):
         
         if recordSequence.hasSequenceIterator():
             sequenceIterator = recordSequence.getSequenceIterator()
-            sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(self, sequenceIterator, {'config': '_config'})
+            sequenceIteratorArgsCode = ArgumentTransformer.compileConstructorArguments(sequenceIterator, {'config': '_config'})
             
             print >> wfile, ''
             print >> wfile, '        if (stage.name() == name())'

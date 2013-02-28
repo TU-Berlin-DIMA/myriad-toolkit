@@ -64,15 +64,19 @@ class StringTransformer(object):
     _cc2us_pattern1 = re.compile('(.)([A-Za-z]+)')
     _cc2us_pattern2 = re.compile('([a-z0-9])([A-Z])')
     
+    @staticmethod
     def uc(s):
         return s.upper()
     
+    @staticmethod
     def lc(s):
         return s.lower()
     
+    @staticmethod
     def cc2us(s):
         return StringTransformer._cc2us_pattern2.sub(r'\1_\2', StringTransformer._cc2us_pattern1.sub(r'\1_\2', s)).lower()
     
+    @staticmethod
     def us2cc(s):
         def camelcase(): 
             yield str.lower
@@ -82,16 +86,10 @@ class StringTransformer(object):
         c = camelcase()
         return "".join(c.next()(x) if x else '_' for x in s.split("_"))
     
+    @staticmethod
     def us2ccAll(s):
         return StringTransformer.ucFirst(StringTransformer.us2cc(s))
     
+    @staticmethod
     def ucFirst(s):
         return "%s%s" % (s[0].capitalize(), s[1:])
-    
-    # static methods
-    uc = staticmethod(uc)
-    lc = staticmethod(lc)
-    cc2us = staticmethod(cc2us)
-    us2cc = staticmethod(us2cc)
-    us2ccAll = staticmethod(us2ccAll)
-    ucFirst = staticmethod(ucFirst)

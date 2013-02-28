@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 DIMA Research Group, TU Berlin
+ * Copyright 2010-2013 DIMA Research Group, TU Berlin
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,17 @@
 using namespace std;
 using namespace Poco;
 
+using Myriad::Bool;
+using Myriad::Char;
+using Myriad::Date;
+using Myriad::Decimal;
+using Myriad::Enum;
 using Myriad::I16;
 using Myriad::I32;
 using Myriad::I64;
 using Myriad::I16u;
 using Myriad::I32u;
 using Myriad::I64u;
-using Myriad::Enum;
-using Myriad::Char;
-using Myriad::Decimal;
-using Myriad::Date;
 using Myriad::String;
 
 // forward declarations of auxiliary complex types

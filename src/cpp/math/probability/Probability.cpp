@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 DIMA Research Group, TU Berlin
+ * Copyright 2010-2013 DIMA Research Group, TU Berlin
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,12 +90,6 @@ Decimal NormalPrFunction::invpdf(Decimal y) const
 Decimal NormalPrFunction::invcdf(Decimal y) const
 {
     return sqrt(2) * _stddev * inverf(2 * y - 1) + _mean;
-}
-
-Interval<Decimal> NormalPrFunction::threshold(Decimal yMin) const
-{
-    Decimal x = invpdf(yMin);
-    return Interval<Decimal> (2*_mean - x, x);
 }
 
 Decimal NormalPrFunction::mean() const

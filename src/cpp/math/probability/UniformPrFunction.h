@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 DIMA Research Group, TU Berlin
+ * Copyright 2010-2013 DIMA Research Group, TU Berlin
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,9 +131,14 @@ public:
     T sample(Decimal random) const;
 
     /**
-     * FIXME: this is suspicious.
+     * Returns the \p xMax parameter for this function.
      */
-    Interval<T> threshold(Decimal yMin) const;
+    const T& xMin() const;
+
+    /**
+     * Returns the \p xMax parameter for this function.
+     */
+    const T& xMax() const;
 
 private:
 
@@ -195,9 +200,15 @@ inline T UniformPrFunction<T>::sample(Decimal random) const
 }
 
 template<typename T>
-inline Interval<T> UniformPrFunction<T>::threshold(Decimal yMin) const
+const T& UniformPrFunction<T>::xMin() const
 {
-    return Interval<Decimal>(_xMin, _xMax);
+    return _xMin;
+}
+
+template<typename T>
+const T& UniformPrFunction<T>::xMax() const
+{
+    return _xMax;
 }
 
 /** @}*/// add to math_probability group
