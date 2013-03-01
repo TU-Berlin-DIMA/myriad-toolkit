@@ -27,7 +27,9 @@
 
 #include <string>
 #include <Poco/AutoPtr.h>
+#include <Poco/Channel.h>
 #include <Poco/Exception.h>
+#include <Poco/Formatter.h>
 #include <Poco/Logger.h>
 #include <Poco/Path.h>
 #include <Poco/RegularExpression.h>
@@ -378,6 +380,16 @@ protected:
      * The global enum sets pool.
      */
     EnumSetPool _enumSetPool;
+
+    /**
+     * An auto-release pool for the registered logger channel(s).
+     */
+    AutoReleasePool<Channel> _loggerChannelsPool;
+
+    /**
+     * An auto-release pool for the registered logger formatter(s).
+     */
+    AutoReleasePool<Formatter> _loggerFormattersPool;
 
     /**
      * A 'generator.config' logger instance.

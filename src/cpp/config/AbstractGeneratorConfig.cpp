@@ -85,11 +85,16 @@ void AbstractGeneratorConfig::configureLogging()
         File logDir(Path(getString("application.log-path")).parent());
         logDir.createDirectories();
 
-        // configure log channels
-        FormattingChannel* logChannel = new FormattingChannel(new PatternFormatter("%t"), new SimpleFileChannel());
-        logChannel->setProperty("path", getString("application.log-path"));
-        Logger::root().setChannel(logChannel);
-        _logger.setChannel(logChannel);
+        // create the formatting file channel
+        Formatter* simpleFileFormatter = new PatternFormatter("%t");
+        _loggerFormattersPool.add(simpleFileFormatter);
+        Channel* simpleFileChannel = new SimpleFileChannel(getString("application.log-path"));
+        _loggerChannelsPool.add(simpleFileChannel);
+        Channel* formattingChannel = new FormattingChannel(simpleFileFormatter, simpleFileChannel);
+        _loggerChannelsPool.add(formattingChannel);
+        // configure the formatting file channel
+        Logger::root().setChannel(formattingChannel);
+        _logger.setChannel(formattingChannel);
     }
 }
 
