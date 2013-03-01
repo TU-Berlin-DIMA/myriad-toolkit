@@ -17,11 +17,9 @@ CONFIG_FILES     = $(shell cd ../src && find config -type f -name "*.properties"
 CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.distribution")
 CONFIG_FILES    += $(shell cd ../src && find config -type f -name "*.domain")
 CONFIG_FILES    += $(shell cd ../vendor/myriad-toolkit/src && ls config/*xsd)
-
-# uncomment one of the following lines depending on whether you maintain a 
-# $(MYRIAD_DGEN_NAME)-frontend.xml script in your src/config folder or not 
-CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
-#CONFIG_FILES    += config/$(MYRIAD_DGEN_NAME)-frontend.xml
+# one of the following two lines is executed depending on whether you maintain a src/config/$(MYRIAD_DGEN_NAME)-frontend.xml script.
+CONFIG_FILES    += $(shell test -e ../src/config/$(MYRIAD_DGEN_NAME)-frontend.xml && echo config/$(MYRIAD_DGEN_NAME)-frontend.xml)
+CONFIG_FILES    += $(shell test ! -e ../src/config/$(MYRIAD_DGEN_NAME)-frontend.xml && echo config/$(MYRIAD_DGEN_NAME)-frontend.template.xml)
 
 # script files
 SCRIPT_FILES     = bin/$(MYRIAD_DGEN_NAME)-frontend
