@@ -1,3 +1,6 @@
+# ignore the machine-specific ${{dgen_name}}-frontend.xml file.
+src/config/${{dgen_name}}-frontend.xml
+
 # ignore the soft link to the myriad assistant
 # myriad-assistant
 
