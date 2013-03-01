@@ -68,7 +68,7 @@ public:
         _valueProbability(0.0),
         _valueProbabilities(NULL),
         _numberOfBuckets(0),
-        _buckets(0),
+        _buckets(NULL),
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
@@ -93,7 +93,7 @@ public:
         _valueProbability(0.0),
         _valueProbabilities(NULL),
         _numberOfBuckets(0),
-        _buckets(0),
+        _buckets(NULL),
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
@@ -119,7 +119,7 @@ public:
         _valueProbability(0.0),
         _valueProbabilities(NULL),
         _numberOfBuckets(0),
-        _buckets(0),
+        _buckets(NULL),
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
@@ -146,7 +146,7 @@ public:
         _valueProbability(0.0),
         _valueProbabilities(NULL),
         _numberOfBuckets(0),
-        _buckets(0),
+        _buckets(NULL),
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
@@ -173,7 +173,7 @@ public:
         _valueProbability(0.0),
         _valueProbabilities(NULL),
         _numberOfBuckets(0),
-        _buckets(0),
+        _buckets(NULL),
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
@@ -199,7 +199,7 @@ public:
         _valueProbability(0.0),
         _valueProbabilities(NULL),
         _numberOfBuckets(0),
-        _buckets(0),
+        _buckets(NULL),
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
@@ -226,7 +226,7 @@ public:
         _valueProbability(0.0),
         _valueProbabilities(NULL),
         _numberOfBuckets(0),
-        _buckets(0),
+        _buckets(NULL),
         _bucketProbability(0),
         _bucketProbabilities(NULL),
         _cumulativeProbabilites(NULL),
@@ -723,10 +723,33 @@ void CombinedPrFunction<T>::initialize(istream& in, size_t& currentLineNumber)
         // and does not read the currentLine
         if (currentState == FIN)
         {
-	        T min = std::min<T>(_buckets[0].min(), _values[0]);
-	        T max = std::max<T>(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfValues-1]+1));
+            T min, max;
 
-	        _activeDomain.set(min, max);
+            if (_numberOfValues == 0 && _numberOfBuckets == 0)
+            {
+                throw LogicException("Cannot specify a combined probability with zero values and zero buckets");
+            }
+
+            if (_numberOfValues == 0)
+            {
+                // no values - active domain determined only by buckets
+                min = _buckets[0].min();
+                max = _buckets[_numberOfBuckets-1].max();
+            }
+            else if (_numberOfBuckets == 0)
+            {
+                // no buckets - active domain determined only by values
+                min = _values[0];
+	            max = static_cast<T>(_values[_numberOfValues-1]+1);
+            }
+            else
+            {
+                // buckets and values - active domain determined by both
+                min = std::min<T>(_buckets[0].min(), _values[0]);
+                max = std::max<T>(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfValues-1]+1));
+            }
+
+            _activeDomain.set(min, max);
 
 	        currentState = END;
 	        continue;
@@ -777,8 +800,11 @@ void CombinedPrFunction<T>::initialize(istream& in, size_t& currentLineNumber)
 	        }
 
 	        _numberOfValues = numberOfValues;
-	        _values = new T[numberOfValues];
-	        _valueProbabilities = new Decimal[numberOfValues];
+	        if (_numberOfValues > 0)
+	        {
+                _values = new T[numberOfValues];
+                _valueProbabilities = new Decimal[numberOfValues];
+	        }
 
 	        currentState = NOB;
         }
@@ -797,8 +823,11 @@ void CombinedPrFunction<T>::initialize(istream& in, size_t& currentLineNumber)
 	        }
 
 	        _numberOfBuckets = numberOfBuckets;
-	        _buckets = new Interval<T>[numberOfBuckets];
-	        _bucketProbabilities = new Decimal[numberOfBuckets];
+            if (_numberOfBuckets > 0)
+            {
+                _buckets = new Interval<T>[numberOfBuckets];
+                _bucketProbabilities = new Decimal[numberOfBuckets];
+            }
 
 	        _cumulativeProbabilites = new Decimal[_numberOfValues+_numberOfBuckets];
 
