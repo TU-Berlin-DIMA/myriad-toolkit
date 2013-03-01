@@ -34,7 +34,7 @@
 #include <Poco/Logger.h>
 #include <Poco/NotificationCenter.h>
 #include <Poco/Notification.h>
-#include <Poco/Observer.h>
+#include <Poco/NObserver.h>
 #include <Poco/Util/AbstractConfiguration.h>
 
 using namespace std;
@@ -236,7 +236,7 @@ protected:
 	        _runnableTasksCount++;
         }
 
-        _notificationCenter.addObserver(Observer<AbstractStageTask, UpdateProgress> (*task, &AbstractStageTask::reportProgress));
+        _notificationCenter.addObserver(NObserver<AbstractStageTask, UpdateProgress> (*task, &AbstractStageTask::reportProgress));
     }
 
     /**
@@ -247,7 +247,7 @@ protected:
     {
         for (TaskPtrList::iterator it = _stageTasks.begin(); it != _stageTasks.end(); ++it)
         {
-	        _notificationCenter.removeObserver(Observer<AbstractStageTask, UpdateProgress> (**it, &AbstractStageTask::reportProgress));
+	        _notificationCenter.removeObserver(NObserver<AbstractStageTask, UpdateProgress> (**it, &AbstractStageTask::reportProgress));
         }
 
         _stageTasks.clear();

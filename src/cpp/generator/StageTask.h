@@ -89,7 +89,7 @@ public:
     /**
      * Updates the task progress in the given UpdateProgress \p notification.
      */
-    void reportProgress(UpdateProgress* notification)
+    void reportProgress(const AutoPtr<UpdateProgress>& notification)
     {
         notification->state.taskCount++;
         notification->state.taskProgress += _progress;

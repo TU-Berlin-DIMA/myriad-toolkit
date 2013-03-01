@@ -76,7 +76,7 @@ public:
      * with new stage_id provided by the StartStage notification.
      *
      */
-    void onStageStart(StartStage* notification);
+    void onStageStart(const AutoPtr<StartStage>& notification);
 
 
     /**
@@ -88,7 +88,7 @@ public:
      * member the \p _state.status is updated and a new Heartbeat notification
      * is sent.
      */
-    void onSatusChange(ChangeNodeState* status);
+    void onSatusChange(const AutoPtr<ChangeNodeState>& status);
 
 protected:
 

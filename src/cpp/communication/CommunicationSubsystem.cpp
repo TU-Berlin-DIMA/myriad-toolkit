@@ -166,8 +166,8 @@ void CommunicationSubsystem::initialize(Application& app)
         _state.reset(_config->getInt("common.partitioning.chunks-id"), AbstractSequenceGenerator::STAGES.size());
 
         // attach observers
-        _notificationCenter.addObserver(Observer<CommunicationSubsystem, StartStage> (*this, &CommunicationSubsystem::onStageStart));
-        _notificationCenter.addObserver(Observer<CommunicationSubsystem, ChangeNodeState> (*this, &CommunicationSubsystem::onSatusChange));
+        _notificationCenter.addObserver(NObserver<CommunicationSubsystem, StartStage> (*this, &CommunicationSubsystem::onStageStart));
+        _notificationCenter.addObserver(NObserver<CommunicationSubsystem, ChangeNodeState> (*this, &CommunicationSubsystem::onSatusChange));
     }
     catch (const Exception& exc)
     {
@@ -207,8 +207,8 @@ void CommunicationSubsystem::uninitialize()
     _config = NULL;
 
     // remove attached observers
-    _notificationCenter.removeObserver(Observer<CommunicationSubsystem, StartStage> (*this, &CommunicationSubsystem::onStageStart));
-    _notificationCenter.removeObserver(Observer<CommunicationSubsystem, ChangeNodeState> (*this, &CommunicationSubsystem::onSatusChange));
+    _notificationCenter.removeObserver(NObserver<CommunicationSubsystem, StartStage> (*this, &CommunicationSubsystem::onStageStart));
+    _notificationCenter.removeObserver(NObserver<CommunicationSubsystem, ChangeNodeState> (*this, &CommunicationSubsystem::onSatusChange));
 
     _initialized = false;
 }
@@ -240,12 +240,12 @@ void CommunicationSubsystem::start()
     }
 }
 
-void CommunicationSubsystem::onStageStart(StartStage* notification)
+void CommunicationSubsystem::onStageStart(const AutoPtr<StartStage>& notification)
 {
     _state.currentGeneratorStageID = notification->stageID;
 }
 
-void CommunicationSubsystem::onSatusChange(ChangeNodeState* notification)
+void CommunicationSubsystem::onSatusChange(const AutoPtr<ChangeNodeState>& notification)
 {
     if (_state.currentState < notification->newNodeState)
     {
