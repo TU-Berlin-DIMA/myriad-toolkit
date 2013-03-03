@@ -1392,7 +1392,14 @@ class SetterChainCompiler(SourceCompiler):
         print >> wfile, '    {'
         print >> wfile, '        Myriad::Interval<I64u> result(0, _sequenceCardinality);'
         print >> wfile, ''
-        print >> wfile, '        // apply inverse setter chain'
+        print >> wfile, '        // explicitly mimic inverse setter logic for gen_id'
+        print >> wfile, '        if (predicate.bound(Myriad::RecordTraits<%(t)s>::GEN_ID))' % {'t': typeNameCC}
+        print >> wfile, '        {'
+        print >> wfile, '            const AutoPtr<%(t)s>& valueHolder = predicate.valueHolder();' % {'t': typeNameCC}
+        print >> wfile, '            result.intersect(Myriad::Interval<I64u>(valueHolder->genID(), valueHolder->genID()+1));' % {'t': typeNameCC}
+        print >> wfile, '        }'
+        print >> wfile, ''
+        print >> wfile, '        // apply inverse setter chain, setters are applied in the same order'
         for setter in recordSequence.getSetterChain().getFieldSetters():
             print >> wfile, '        %s.filterRange(predicate, result);' % (setter.getAttribute("var_name"))
         print >> wfile, ''
