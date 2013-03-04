@@ -21,6 +21,7 @@
 
 #include "core/types.h"
 #include "math/random/RandomStream.h"
+#include "runtime/predicate/EqualityPredicate.h"
 
 #include <Poco/AutoPtr.h>
 
@@ -30,7 +31,7 @@ namespace Myriad {
 // generic range provider template
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
-template<class RecordType, I16u fid>
+template<class RecordType>
 class AbstractSetter
 {
 public:
@@ -57,6 +58,16 @@ public:
         return _invertible;
     }
 
+    void enabled(bool enabled)
+    {
+        _enabled = enabled;
+    }
+
+    bool enabled() const
+    {
+        return _enabled;
+    }
+
     virtual Interval<I64u> valueRange(const AutoPtr<RecordType>& cxtRecordPtr)
     {
         if (_invertible)
@@ -69,15 +80,13 @@ public:
         }
     }
 
-    inline void filterRange(const EqualityPredicateType& predicate, Interval<I64u>& currentRange)
-    {
-        if (predicate.bound(fid))
-        {
-            currentRange.intersect(valueRange(predicate.valueHolder()));
-        }
-    }
+    virtual void filterRange(const EqualityPredicateType& predicate, Interval<I64u>& currentRange) = 0;
 
     virtual const void operator()(AutoPtr<RecordType>& cxtRecordPtr, RandomStream& random) = 0;
+
+protected:
+
+    bool _enabled;
 
 private:
 

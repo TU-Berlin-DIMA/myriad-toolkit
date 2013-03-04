@@ -28,16 +28,17 @@ namespace Myriad {
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
 template<class RecordType, I16u fid, class ValueProviderType>
-class FieldSetter: public AbstractSetter<RecordType, fid>
+class FieldSetter: public AbstractSetter<RecordType>
 {
 public:
 
+    typedef EqualityPredicate<RecordType> EqualityPredicateType;
     typedef typename RecordFieldTraits<fid, RecordType>::FieldType RecordFieldType;
     typedef typename RecordFieldTraits<fid, RecordType>::FieldSetterType RecordFieldSetterType;
     typedef typename RecordFieldTraits<fid, RecordType>::FieldGetterType RecordFieldGetterType;
 
     FieldSetter(ValueProviderType& valueProvider) :
-        AbstractSetter<RecordType, fid>(0, valueProvider.invertible()),
+        AbstractSetter<RecordType>(0, valueProvider.invertible()),
         _fieldSetter(RecordFieldTraits<fid, RecordType>::setter()),
         _fieldGetter(RecordFieldTraits<fid, RecordType>::getter()),
         _valueProvider(valueProvider)
@@ -51,6 +52,14 @@ public:
     virtual Interval<I64u> valueRange(const AutoPtr<RecordType>& cxtRecordPtr)
     {
         return _valueProvider.valueRange((cxtRecordPtr->*_fieldGetter)(), cxtRecordPtr);
+    }
+
+    virtual void filterRange(const EqualityPredicateType& predicate, Interval<I64u>& currentRange)
+    {
+        if (predicate.bound(fid))
+        {
+            currentRange.intersect(valueRange(predicate.valueHolder()));
+        }
     }
 
     virtual const void operator()(AutoPtr<RecordType>& cxtRecordPtr, RandomStream& random)

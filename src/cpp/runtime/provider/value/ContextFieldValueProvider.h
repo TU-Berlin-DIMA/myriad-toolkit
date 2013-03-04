@@ -68,6 +68,38 @@ private:
 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+// value provider for context field values (direct field)
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+template<typename ValueType, class CxtRecordType, I16u fid>
+class ContextFieldValueProvider<ValueType, CxtRecordType, fid, 0, 0>: public AbstractValueProvider<ValueType, CxtRecordType>
+{
+public:
+
+    typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldType CxtRecordFieldType;
+    typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
+
+    ContextFieldValueProvider() :
+        AbstractValueProvider<ValueType, CxtRecordType>(0, false),
+        _fieldGetter(RecordFieldTraits<fid, CxtRecordType>::getter())
+    {
+    }
+
+    virtual ~ContextFieldValueProvider()
+    {
+    }
+
+    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
+    {
+        return (cxtRecordPtr->*_fieldGetter)();
+    }
+
+private:
+
+    const CxtRecordFieldGetterType _fieldGetter;
+};
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // value provider for context field values (1-hop field)
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 
@@ -102,38 +134,6 @@ private:
 
     const RID1GetterType _rid1Getter;
     const FIDGetterType _fidGetter;
-};
-
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-// value provider for context field values (direct field)
-// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-
-template<typename ValueType, class CxtRecordType, I16u fid>
-class ContextFieldValueProvider<ValueType, CxtRecordType, fid, 0, 0>: public AbstractValueProvider<ValueType, CxtRecordType>
-{
-public:
-
-    typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldType CxtRecordFieldType;
-    typedef typename RecordFieldTraits<fid, CxtRecordType>::FieldGetterType CxtRecordFieldGetterType;
-
-    ContextFieldValueProvider() :
-        AbstractValueProvider<ValueType, CxtRecordType>(0, false),
-        _fieldGetter(RecordFieldTraits<fid, CxtRecordType>::getter())
-    {
-    }
-
-    virtual ~ContextFieldValueProvider()
-    {
-    }
-
-    virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
-    {
-        return (cxtRecordPtr->*_fieldGetter)();
-    }
-
-private:
-
-    const CxtRecordFieldGetterType _fieldGetter;
 };
 
 } // namespace Myriad

@@ -19,7 +19,7 @@
 #ifndef SETTERCHAIN_H_
 #define SETTERCHAIN_H_
 
-#include "runtime/predicate/EqualityPredicate.h"
+#include "runtime/setter/AbstractSetter.h"
 
 #include <Poco/AutoReleasePool.h>
 #include <Poco/AutoPtr.h>
@@ -70,8 +70,13 @@ class SetterChain : public BaseSetterChain
 {
 public:
 
-    SetterChain<RecordType>(OperationMode opMode, RandomStream& random) : BaseSetterChain(opMode, random)
+    SetterChain<RecordType>(OperationMode opMode, RandomStream& random) :
+        BaseSetterChain(opMode, random)
     {
+        for (size_t i = 0; i < 256; i++)
+        {
+            _setters[i] = NULL;
+        }
     }
 
     virtual ~SetterChain<RecordType>()
@@ -87,6 +92,65 @@ public:
      * Predicate filter function.
      */
     virtual Interval<I64u> filter(const EqualityPredicate<RecordType>& predicate) = 0;
+
+protected:
+
+    /**
+     *
+     */
+    void registerSetter(I16u fid, AbstractSetter<RecordType>* setter)
+    {
+        _setters[fid] = setter;
+    }
+
+    /**
+     *
+     */
+    void enableSetter(I16u fid)
+    {
+        if (_setters[fid] != NULL)
+        {
+            _setters[fid]->enabled(true);
+        }
+    }
+
+    /**
+     *
+     */
+    void disableSetter(I16u fid)
+    {
+        if (_setters[fid] != NULL)
+        {
+            _setters[fid]->enabled(false);
+        }
+    }
+
+    /**
+     *
+     */
+    void enableOnlySetters(const vector<I16u> fids)
+    {
+        // disable all setters
+        for (size_t i = 0; i < 256; i++)
+        {
+            if (_setters[i] != NULL)
+            {
+                _setters[i]->enabled(false);
+            }
+        }
+        // enable setters in the fids list
+        for (size_t i = 0; i < fids.size(); i++)
+        {
+            if (_setters[fids[i]] != NULL)
+            {
+                _setters[fids[i]]->enabled(true);
+            }
+        }
+    }
+
+private:
+
+    AbstractSetter<RecordType>* _setters[256];
 };
 
 } // namespace Myriad
