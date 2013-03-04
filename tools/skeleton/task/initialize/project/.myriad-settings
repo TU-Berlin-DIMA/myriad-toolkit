@@ -1,4 +1,5 @@
 # the data generator name
 MYRIAD_DGEN_NAME = ${{dgen_name}}
 MYRIAD_DGEN_NS   = ${{dgen_ns}}
+MYRIAD_OLIGOS_CP = ${{oligos_cp}}
 MYRIAD_IS_ARCH64 = True

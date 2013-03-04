@@ -167,6 +167,8 @@ class AbstractTask(object):
     
     _log = None
     
+    orderkey = 0
+    
     def __init__(self, assistant, group="default", name="default", description=""):
         '''
         Constructor
@@ -233,8 +235,8 @@ class AbstractTask(object):
                 # add extra args from the .myriad-settings file
                 args.dgen_name = p.getProperty("MYRIAD_DGEN_NAME");
                 args.dgen_ns = p.getProperty("MYRIAD_DGEN_NS");
+                args.oligos_cp = p.getProperty("MYRIAD_OLIGOS_CP")
                 args.is_arch64 = p.getProperty("MYRIAD_IS_ARCH64").lower() == 'true'
-                args.dgen_project_path = p.getProperty("MYRIAD_DGEN_NS")
             else:
                 raise myriad.error.UninitializedProjectError(myriadProjectPath)
                 

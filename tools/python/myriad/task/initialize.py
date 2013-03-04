@@ -42,21 +42,62 @@ class InitializeProjectTask(myriad.task.common.AbstractTask):
                             help="name of the new project")
         # options
         parser.add_option("--ns", metavar="NS", dest="dgen_ns", type="str",
-                          help="namespace for the C++ generator extensions")
+                          default=None, help="namespace for the C++ generator extensions")
+        parser.add_option("--oligos-cp", metavar="CP", dest="oligos_cp", type="str",
+                          default=None, help="extra class path entries to be used by the `compile:oligos` task")
 
         return parser
         
     def _fixArgs(self, args):
         super(InitializeProjectTask, self)._fixArgs(args)
         
-        if args.dgen_ns == None:
+        if args.dgen_ns is None:
             args.dgen_ns = "__%s" % (args.dgen_name)
+        
+        if args.oligos_cp is None:
+            args.oligos_cp = ""
             
     def _requiresMyriadSettings(self):
         return False
 
     def _do(self, args):
         skeletonBase = "%s/tools/skeleton/task/%s/%s" % (args.base_path, self.group(), self.name())
+        projectBase = "%s/../.." % (args.base_path)
+
+        self._log.info("Processing skeleton for task.")
+        skeletonProcessor = myriad.task.common.SkeletonProcessor(skeletonBase)
+        skeletonProcessor.process(projectBase, args)
+
+
+class InitializePrototypeTask(myriad.task.common.AbstractTask):
+    '''
+    classdocs
+    '''
+
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        kwargs.update(group=TASK_PREFIX, name="prototype", description="Initialize an XML prototype for this project.")
+        super(InitializePrototypeTask, self).__init__(*args, **kwargs)
+    
+    def argsParser(self):
+        parser = super(InitializePrototypeTask, self).argsParser()
+        
+        # arguments
+        parser.add_argument("--name", metavar="NAME", dest="prototype_name", type="str",
+                            help="name of the prototype example to initialize (currently only `customer` is supported)")
+
+        return parser
+        
+    def _fixArgs(self, args):
+        super(InitializePrototypeTask, self)._fixArgs(args)
+        
+        if args.prototype_name not in ['customer']:
+            args.prototype_name = 'customer'
+
+    def _do(self, args):
+        skeletonBase = "%s/tools/skeleton/task/%s/%s/%s" % (args.base_path, self.group(), self.name(), args.prototype_name)
         projectBase = "%s/../.." % (args.base_path)
 
         self._log.info("Processing skeleton for task.")
@@ -84,9 +125,9 @@ class InitializeRecordTask(myriad.task.common.AbstractTask):
                             help="name of the new record (CamelCase)")
         # options
         parser.add_option("--dgen_name", metavar="NAME", dest="dgen_name", type="str",
-                            help="name of the new project")
+                          default=None, help="name of the new project")
         parser.add_option("--ns", metavar="NS", dest="dgen_ns", type="str",
-                          help="namespace for the C++ generator extensions")
+                          default=None, help="namespace for the C++ generator extensions")
 
         return parser
         

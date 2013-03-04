@@ -26,7 +26,7 @@ from myriad.task.common import AbstractTask
 
 TASK_PREFIX = "compile"
 
-class CompileModelTask(AbstractTask):
+class CompilePrototypeTask(AbstractTask):
     '''
     classdocs
     '''
@@ -35,21 +35,21 @@ class CompileModelTask(AbstractTask):
         '''
         Constructor
         '''
-        kwargs.update(group=TASK_PREFIX, name="prototype", description="Compile generator extensions from XML prototype specification.")
+        kwargs.update(group=TASK_PREFIX, name="prototype", description="Compile data generator C++ extensions from an XML prototype.")
 
-        super(CompileModelTask, self).__init__(*args, **kwargs)
+        super(CompilePrototypeTask, self).__init__(*args, **kwargs)
     
     def argsParser(self):
-        parser = super(CompileModelTask, self).argsParser()
+        parser = super(CompilePrototypeTask, self).argsParser()
         
         # arguments
-        parser.add_option("--input-spec", metavar="PROTOTYPE", dest="prototype_path", type="str", 
-                            default=None, help="path to the prototype specification XML file")
+        parser.add_option("--prototype-file", metavar="PROTOTYPE", dest="prototype_path", type="str", 
+                          default=None, help="path to the compiled XML prototype file (defaults to `${config-dir}/${dgen-name}-prototype.xml`)")
 
         return parser
         
     def _fixArgs(self, args):
-        super(CompileModelTask, self)._fixArgs(args)
+        super(CompilePrototypeTask, self)._fixArgs(args)
         
         if (args.prototype_path == None):
             args.prototype_path = "%s-prototype.xml" % (args.dgen_name)
@@ -82,3 +82,50 @@ class CompileModelTask(AbstractTask):
         # compile record generators
         generatorCompiler = AbstractSequenceGeneratorCompiler(args=args)
         generatorCompiler.compileCode(ast.getSpecification().getRecordSequences())
+
+
+class CompileOligosTask(AbstractTask):
+    '''
+    classdocs
+    '''
+
+    def __init__(self, *args, **kwargs):
+        '''
+        Constructor
+        '''
+        kwargs.update(group=TASK_PREFIX, name="oligos", description="Compile an XML prototype form a reference DB using the Oligos tool.")
+        super(CompileOligosTask, self).__init__(*args, **kwargs)
+    
+    def argsParser(self):
+        parser = super(CompileOligosTask, self).argsParser()
+        
+        # arguments
+        parser.add_option("--prototype-file", metavar="PROTOTYPE", dest="prototype_path", type="str",
+                          default=None, help="path to the generated XML prototype file (defaults to `${config-dir}/${dgen-name}-prototype.xml`)")
+
+        return parser
+        
+    def _fixArgs(self, args):
+        super(CompileOligosTask, self)._fixArgs(args)
+        
+        if (args.prototype_path == None):
+            args.prototype_path = "%s-prototype.xml" % (args.dgen_name)
+                    
+        if (not os.path.isabs(args.prototype_path)):
+            args.prototype_path = "%s/../../src/config/%s" % (args.base_path, args.prototype_path)
+            
+        args.prototype_path = os.path.realpath(args.prototype_path)
+
+    def _do(self, args):
+        self._log.info("Running Oligos data profiler.")
+        projectBase = "%s/../.." % (args.base_path)
+        oligosPath  = "%s/bin/oligos.jar" % (args.base_path)
+        oligosClassPath = args.oligos_cp
+        prototypePath = args.prototype_path
+        
+        print "Project base is %s" % projectBase
+        print "Oligos JAR path is %s" % oligosPath
+        print "Oligos classpath is %s" % oligosClassPath
+        print "Prototype path is %s" % prototypePath
+
+        # TODO: invoke Oligos and redirect the output 
