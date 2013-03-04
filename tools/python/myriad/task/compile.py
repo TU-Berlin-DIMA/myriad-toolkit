@@ -100,6 +100,9 @@ class CompileOligosTask(AbstractTask):
         parser = super(CompileOligosTask, self).argsParser()
         
         # arguments
+        parser.add_argument("--schema", metavar="SCHEMA", dest="schema", type="str",
+                            help="schema pattern to be profiled")
+        # options
         parser.add_option("--prototype-file", metavar="PROTOTYPE", dest="prototype_path", type="str",
                           default=None, help="path to the generated XML prototype file (defaults to `${config-dir}/${dgen-name}-prototype.xml`)")
 
@@ -123,6 +126,7 @@ class CompileOligosTask(AbstractTask):
         oligosClassPath = args.oligos_cp
         prototypePath = args.prototype_path
         
+        print "Project schema is %s" % args.schema
         print "Project base is %s" % projectBase
         print "Oligos JAR path is %s" % oligosPath
         print "Oligos classpath is %s" % oligosClassPath
