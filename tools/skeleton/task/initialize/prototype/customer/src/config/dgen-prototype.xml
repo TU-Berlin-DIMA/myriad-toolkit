@@ -23,14 +23,15 @@
     <function key='Pr[customer.last_name]' type='combined_probability[Enum]'>
       <argument key='path' type='String' value='${%ENV.config-dir% + "/distributions/core/demographics/last_name.distribution"}' />
     </function>
-    <function key='Pr[customer.age]' type='normal_probability'>
-      <argument key='mean' type='I16u' value='48' />
-      <argument key='stddev' type='I16u' value='12' />
+    <function key='Pr[customer.age]' type='normal_probability[Decimal]'>
+      <argument key='mean' type='Decimal' value='48' />
+      <argument key='stddev' type='Decimal' value='12' />
     </function>
     <!-- add more functions here, supported probability type are: -->
     <!--  * uniform_probability[T](T: x_min, T: x_max) -->
-    <!--  * normal_probability(Decimal: mean, Decimal: stddev) -->
+    <!--  * normal_probability[Decimal](Decimal: mean, Decimal: stddev) -->
     <!--  * combined_probability[T](String: path) -->
+    <!--  * conditional_combined_probability[T1;T2](String: path) -->
   </functions>
 
   <!-- enumeration types -->
@@ -57,7 +58,7 @@
         <field name='gender' type='Enum' enumref='demographics.gender' />
         <field name='age' type='I16u' />
         <!-- add more fields and references here, supported types are: -->
-        <!--  * core types: I16, I16u, I32, I32u, I64, I64u, Decimal, String, Date -->
+        <!--  * core types: Bool, Char, Decimal, Date, I16, I16u, I32, I32u, I64, I64u, String -->
         <!--  * enum types: Enum, with an additional enumref='{enum_set.key}' attribute -->
         <!--  * ref. types: all record_sequence keys defined in this XML document -->
         <!--
@@ -66,7 +67,7 @@
         -->
       </record_type>
       <!-- supported output_format types: -->
-      <!--  * csv(Char: delimiter, field_ref[]: field) -->
+      <!--  * csv(Char: delimiter = '|', Bool: quoted = True, field_ref[]: field) -->
       <output_format type="csv">
         <argument key='delimiter' type='Char' value='|' />
         <argument key='field' type='field_ref' ref='customer:pk' />
@@ -78,7 +79,7 @@
       <setter_chain>
         <setter key='set_pk' type='field_setter'>
           <argument key='field' type='field_ref' ref='customer:pk' />
-          <argument key='value' type='clustered_value_provider'>
+          <argument key='value' type='clustered_value_provider[I64u]'>
             <argument key='probability' type='function_ref' ref='Pr[customer.pk]' />
             <argument key='cardinality' type='const_range_provider'>
               <argument key='min' type='I64u' value='0' />
@@ -88,31 +89,32 @@
         </setter>
         <setter key='set_gender' type='field_setter'>
           <argument key='field' type='field_ref' ref='customer:gender' />
-          <argument key='value' type='random_value_provider'>
+          <argument key='value' type='random_value_provider[Enum]'>
             <argument key='probability' type='function_ref' ref='Pr[customer.gender]' />
           </argument>
         </setter>
         <setter key='set_first_name' type='field_setter'>
           <argument key='field' type='field_ref' ref='customer:first_name' />
-          <argument key='value' type='random_value_provider'>
+          <argument key='value' type='random_value_provider[Enum]'>
             <argument key='probability' type='function_ref' ref='Pr[customer.first_name]' />
             <argument key='condition_field' type='field_ref' ref='customer:gender' />
           </argument>
         </setter>
         <setter key='set_last_name' type='field_setter'>
           <argument key='field' type='field_ref' ref='customer:last_name' />
-          <argument key='value' type='random_value_provider'>
+          <argument key='value' type='random_value_provider[Enum]'>
             <argument key='probability' type='function_ref' ref='Pr[customer.last_name]' />
           </argument>
         </setter>
         <setter key='set_age' type='field_setter'>
           <argument key='field' type='field_ref' ref='customer:age' />
-          <argument key='value' type='random_value_provider'>
+          <argument key='value' type='random_value_provider[I16u]'>
             <argument key='probability' type='function_ref' ref='Pr[customer.age]' />
           </argument>
         </setter>
         <!-- add more hydrators here, supported hydrator types are: -->
-        <!--  * randomized_sequence_hydrator<RT>(RT#Setter: field, I64u: cardinality, I64u: begin, I64u: end) -->
+        <!--  * field_setter(field_ref: field, *_value_provider: value) -->
+        <!--  * reference_setter(field_ref: reference, *_reference_provider: value) -->
       </setter_chain>
       <!-- supported cardinality estimator types are: -->
       <!--  * linear_scale_estimator(I64u: base_cardinality) -->

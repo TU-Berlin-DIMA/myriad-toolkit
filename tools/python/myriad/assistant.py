@@ -67,7 +67,7 @@ class Assistant(object):
     __log = None
     
     # assistant version
-    VERSION = "0.1.0"
+    VERSION = "0.3.0"
     
     def __init__(self, basePath, fileName, argv):
         '''
@@ -88,11 +88,14 @@ class Assistant(object):
 
         try:
             # register `compile:*` tasks
-            self.registerTask(myriad.task.compile.CompileModelTask(self))
+            self.registerTask(myriad.task.compile.CompileOligosTask(self))
+            self.registerTask(myriad.task.compile.CompilePrototypeTask(self))
             # register `initialize:*` tasks
             self.registerTask(myriad.task.initialize.InitializeProjectTask(self))
-            self.registerTask(myriad.task.initialize.InitializeRecordTask(self))
-            self.registerTask(myriad.task.initialize.InitializeGeneratorTask(self))
+            self.registerTask(myriad.task.initialize.InitializePrototypeTask(self))
+            # TODO: revise whether these tasks are needed at all
+#            self.registerTask(myriad.task.initialize.InitializeRecordTask(self))
+#            self.registerTask(myriad.task.initialize.InitializeGeneratorTask(self))
             
             if len(argv) == 2 and argv[0] == "help":
                 self.__isTaskHelp = True
@@ -169,10 +172,11 @@ class Assistant(object):
             raise myriad.event.UndefinedEventException()
             
     def registerTask(self, task):
+        task.orderkey = len(self.__tasks)
         self.__tasks[task.qname()] = task
         
     def tasks(self):
-        return self.__tasks.values()
+        return sorted(self.__tasks.itervalues(), key=lambda s: s.orderkey)
     
     def currentTask(self):
         if self.__tasks.has_key(self.__taskQName):

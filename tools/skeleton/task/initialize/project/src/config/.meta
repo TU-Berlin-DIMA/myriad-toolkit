@@ -1,4 +1,3 @@
 [filenames]
 dgen-node.properties: ${{dgen_name}}-node.properties
-dgen-prototype.xml: ${{dgen_name}}-prototype.xml
 dgen-frontend.template.xml: ${{dgen_name}}-frontend.template.xml
