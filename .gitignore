@@ -1,4 +1,8 @@
 # ignore compiled python files
 *.pyc
+# ignore eclipse project files
+.cproject
+.project
+.pydevproject
 # ignore the API doc folder (auto-generated)
 doc
