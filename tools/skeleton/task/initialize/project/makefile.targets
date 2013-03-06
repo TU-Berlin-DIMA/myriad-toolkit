@@ -89,15 +89,15 @@ bin/$(MYRIAD_DGEN_NAME)-%: ../vendor/myriad-toolkit/src/script/myriad-%
 	cp $< $@ && chmod 0755 $@
 
 config/$(MYRIAD_DGEN_NAME)-frontend.template.xml: ../src/config/$(MYRIAD_DGEN_NAME)-frontend.template.xml
-	@echo 'Processing $@'
+	@echo 'Processing: $@'
 	cp $< $@
 
 config/$(MYRIAD_DGEN_NAME)-frontend.xml: ../src/config/$(MYRIAD_DGEN_NAME)-frontend.xml
-	@echo 'Processing $@'
+	@echo 'Processing: $@'
 	cp $< $@
 
 config/%.xsd: ../vendor/myriad-toolkit/src/config/%.xsd
-	@echo 'Processing $@'
+	@echo 'Processing: $@'
 	cp $< $@
 	
 config/%: ../src/config/%
@@ -105,11 +105,11 @@ config/%: ../src/config/%
 	cp -r $< $@
 	
 lib/python/%.py: ../src/python/%.py
-	@echo 'Processing $@'
+	@echo 'Processing: $@'
 	cp $< $@
 
 lib/python/vendor/%.py: ../vendor/myriad-toolkit/src/python/%.py
-	@echo 'Processing $@'
+	@echo 'Processing: $@'
 	cp $< $@
 
 CHANGELOG: ../src/resources/CHANGELOG
