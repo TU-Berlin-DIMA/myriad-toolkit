@@ -407,7 +407,7 @@ template<> inline void write(std::ostream& stream, const vector<Char>& t, bool q
         stream << '"';
     }
 
-    typename vector<Char>::const_iterator it = t.begin();
+    vector<Char>::const_iterator it = t.begin();
     while (it != t.end())
     {
         stream << (*it);
