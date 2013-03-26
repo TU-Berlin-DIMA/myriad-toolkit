@@ -987,13 +987,27 @@ class RecordTypeCompiler(SourceCompiler):
                 if field.isVectorType():
                     print >> wfile, 'inline const String& Base%s::%sEnumValue(size_t i) const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
                     print >> wfile, '{'
-                    print >> wfile, '    return _meta.%(n)s[_%(n)s[i]];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '    if (_%(n)s[i] == Myriad::nullValue<Enum>())' % {'n': field.getAttribute("name")}
+                    print >> wfile, '    {'
+                    print >> wfile, '        return Myriad::nullValue<String>();'
+                    print >> wfile, '    }'
+                    print >> wfile, '    else'
+                    print >> wfile, '    {'
+                    print >> wfile, '        return _meta.%(n)s[_%(n)s[i]];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '    }'
                     print >> wfile, '}'
                     print >> wfile, ''
                 else:
                     print >> wfile, 'inline const String& Base%s::%sEnumValue() const' % (typeNameCC, StringTransformer.us2cc(field.getAttribute("name")))
                     print >> wfile, '{'
-                    print >> wfile, '    return _meta.%(n)s[_%(n)s];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '    if (_%(n)s == Myriad::nullValue<Enum>())' % {'n': field.getAttribute("name")}
+                    print >> wfile, '    {'
+                    print >> wfile, '        return Myriad::nullValue<String>();'
+                    print >> wfile, '    }'
+                    print >> wfile, '    else'
+                    print >> wfile, '    {'
+                    print >> wfile, '        return _meta.%(n)s[_%(n)s];' % {'n': field.getAttribute("name")}
+                    print >> wfile, '    }'
                     print >> wfile, '}'
                     print >> wfile, ''
         
