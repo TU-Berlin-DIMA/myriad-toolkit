@@ -57,7 +57,7 @@ class DGen(object):
     
     log = None
     
-    VERSION = "0.2.1"
+    VERSION = "0.3.0"
 
     def __init__(self, basePath, dgenName, argv):
         '''

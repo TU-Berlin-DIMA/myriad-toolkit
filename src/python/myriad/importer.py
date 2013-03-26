@@ -46,7 +46,7 @@ class Importer(object):
     
     log = None
     
-    VERSION = "0.1.3"
+    VERSION = "0.3.0"
 
     def __init__(self, basePath, systemName, argv):
         '''
