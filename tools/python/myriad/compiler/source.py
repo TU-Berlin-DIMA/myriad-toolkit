@@ -139,6 +139,8 @@ class LiteralTransfomer(object):
             literalMatch = self._literal_pattern.match(attributeValue)
             if (literalMatch):
                 if literalMatch.group(1) is None:
+                    if literalMatch.group(2) == "NULL": # explicit case for NULL values
+                        return [ 'Myriad::nullValue<%s>()' % (attributeType) ]
                     if attributeType == "String":
                         return [ '"%s"' % (literalMatch.group(2)) ]
                     if attributeType == "Char":
@@ -147,7 +149,9 @@ class LiteralTransfomer(object):
                         return [ 'Date("%s")' % (literalMatch.group(2)) ]
                     else:
                         return [ '%s' % (literalMatch.group(2)) ]
-                else:
+                else: # explicit cast
+                    if literalMatch.group(2) == "NULL": # explicit case for NULL values
+                        return [ 'Myriad::nullValue<%s>()' % (literalMatch.group(1)[1:-1]) ]
                     if attributeType == "String":
                         return [ 'static_cast<%s>("%s")' % (literalMatch.group(1)[1:-1], literalMatch.group(2)) ]
                     if attributeType == "Char":
