@@ -347,7 +347,7 @@ template<class T> inline void write(std::ostream& stream, const T& t, bool quote
     }
     else
     {
-        stream << "NULL";
+//        stream << "NULL";
     }
 }
 
@@ -370,7 +370,7 @@ template<> inline void write<String>(std::ostream& stream, const String& t, bool
     }
     else
     {
-        stream << "NULL";
+//        stream << "NULL";
     }
 }
 
