@@ -17,13 +17,12 @@ Created on Oct 14, 2011
 
 @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
 '''
-import getpass
-import subprocess
+
 from myriad.compiler.debug import PrintVisitor #@UnusedImport
 from myriad.compiler.reader import PrototypeSpecificationReader
 from myriad.compiler.source import * #@UnusedWildImport
 from myriad.task.common import AbstractTask
-
+from subprocess import Popen, PIPE
 
 TASK_PREFIX = "compile"
 
@@ -101,49 +100,59 @@ class CompileOligosTask(AbstractTask):
         parser = super(CompileOligosTask, self).argsParser()
         
         # arguments
-        parser.add_argument("--jdbc", metavar="JDBC", dest="jdbc", type="str",
-                            help="path to the specific JDBC driver")
         parser.add_argument("--schema", metavar="SCHEMA", dest="schema", type="str",
                             help="schema pattern to be profiled")
         # options
-        parser.add_option("--prototype-file", metavar="PROTOTYPE", dest="prototype_path", type="str",
-                default=None, help="path to the generated XML prototype file (defaults to `${config-dir}/`)")
-        parser.add_option("--host", metavar="DBHOST", dest="db_host", type="str",
-                          default="localhost", help="Hostname/IP Address of the database instance (defaults to `localhost`)")
-        parser.add_option("--port", metavar="DBPORT", dest="db_port", type="str",
-                          default="60000", help="Port of the database instance (defaults to `60000`)")
-        parser.add_option("--user", metavar="DBUSER", dest="db_user", type="str",
-                          default="DB2INST1", help="Username of the database instance (defaults to `DB2INST2`)")
-        parser.add_option("--db", metavar="DBNAME", dest="db_name", type="str",
-                          default=None, help="Name of the database")
+        parser.add_option("-h", "--host", metavar="HOST", dest="db_host", type="str",
+                          default="localhost", help="hostname to use for the DB connection (defaults to `localhost`)")
+        parser.add_option("-u", "--user", metavar="USER", dest="db_user", type="str",
+                          default="DB2INST1", help="username to use for the DB connection (defaults to `DB2INST2`)")
+        parser.add_option("-p", "--password", metavar="PASS", dest="db_pass", type="str",
+                          default=None, help="password to use for the DB connection")
+        parser.add_option("-D", "--database", metavar="NAME", dest="db_name", type="str",
+                          default=None, help="database to use for the DB connection")
+        parser.add_option("-P", "--port", metavar="PORT", dest="db_port", type="int",
+                          default=60000, help="port to use for the DB connection (defaults to `60000`)")
 
         return parser
-        
-    def _fixArgs(self, args):
-        super(CompileOligosTask, self)._fixArgs(args)
-        
-        if (args.prototype_path == None):
-            args.prototype_path = "%s-prototype.xml" % (args.dgen_name)
-                    
-        if (not os.path.isabs(args.prototype_path)):
-            args.prototype_path = "%s/../../src/config/" % (args.base_path)
-            
-        args.prototype_path = os.path.realpath(args.prototype_path)
 
     def _do(self, args):
-        self._log.info("Running Oligos data profiler.")
-        projectBase = "%s/../.." % (args.base_path)
-        oligosPath  = "%s/bin/oligos.jar" % (args.base_path)
-        prototypePath = args.prototype_path
-        host = args.db_host
-        port = args.db_port
-        user = args.db_user
-        db = args.db_name
-        jdbc = args.jdbc
-        passwd = getpass.getpass("Please enter password for %s@%s:%s: " % (user, host, port))
-        oligosClassPath = "%s:%s" % (oligosPath, jdbc)
 
-        cmd = "java -cp %s:%s de.tu_berlin.dima.oligos.Oligos -h %s -p %s -u %s -pass %s -d %s -o %s -g %s '%s'" % (oligosPath, jdbc, host, port, user, passwd, db, prototypePath, args.dgen_name, args.schema)
-        subprocess.call(cmd, shell=True)
+        command = []
+        command.append('java')
+        # add optional custom java classpath
+        command.append('-cp')
+        command.append(('%s:%s/bin/oligos.jar:%s' % (os.environ['CLASSPATH'], args.base_path, args.oligos_cp)).strip(':'))
+        # add frontend class
+        command.append('de.tu_berlin.dima.oligos.Oligos')
+        # add DB connection params
+        if (args.db_user):
+            command.append('-u%s' % args.db_user)
+        if (args.db_pass):
+            command.append('-p%s' % args.db_pass)
+        if (args.db_host):
+            command.append('-h%s' % args.db_host)
+        if (args.db_name):
+            command.append('-D%s' % args.db_name)
+        if (args.db_port):
+            command.append('-P%s' % args.db_port)
+        command.append('-g%s' % args.dgen_name)
+        command.append('-o%s/../../src/config' % args.base_path)
+        # add SCHEMA argument
+        command.append('%s' % args.schema)
 
-        # TODO: invoke Oligos and redirect the output 
+        self._log.info("Running Oligos data profiler with command `%s`." % ' '.join(command))
+
+        # invoke Oligos executable and redirect the output 
+        proc = Popen(command, stdout=PIPE)
+        (out, err) = proc.communicate()
+        if (out):
+            self._log.info("Forwarding Oligos standard output:")
+            self._log.info("")
+            for line in out.split('\n'):
+                self._log.info(line)
+        if (err):
+            self._log.info("Forwarding Oligos standard error:")
+            self._log.info("")
+            for line in err.split('\n'):
+                self._log.info(line)
