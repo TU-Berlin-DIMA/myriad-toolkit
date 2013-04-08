@@ -122,7 +122,7 @@ class CompileOligosTask(AbstractTask):
         command.append('java')
         # add optional custom java classpath
         command.append('-cp')
-        command.append(('%s:%s/bin/oligos.jar:%s' % (os.environ['CLASSPATH'], args.base_path, args.oligos_cp)).strip(':'))
+        command.append(':'.join(filter(lambda x: x, ['%s/bin/oligos.jar' % args.base_path, args.oligos_cp, os.environ.get('CLASSPATH', '')])).strip(':'))
         # add frontend class
         command.append('de.tu_berlin.dima.oligos.Oligos')
         # add DB connection params
