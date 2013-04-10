@@ -1,4 +1,4 @@
-0.3.0
+0.3.0 - 2013-04-10
 
 * Refactored enum sets
 * Implemented state machine reader for MyriadEnumSet objects

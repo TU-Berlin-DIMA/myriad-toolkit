@@ -23,6 +23,7 @@ from myriad.compiler.reader import PrototypeSpecificationReader
 from myriad.compiler.source import * #@UnusedWildImport
 from myriad.task.common import AbstractTask
 from subprocess import Popen, PIPE
+from re import sub
 
 TASK_PREFIX = "compile"
 
@@ -107,8 +108,8 @@ class CompileOligosTask(AbstractTask):
                           default="localhost", help="hostname to use for the DB connection (defaults to `localhost`)")
         parser.add_option("-u", "--user", metavar="USER", dest="db_user", type="str",
                           default="DB2INST1", help="username to use for the DB connection (defaults to `DB2INST2`)")
-        parser.add_option("-p", "--password", metavar="PASS", dest="db_pass", type="str",
-                          default=None, help="password to use for the DB connection")
+        parser.add_option("-p", "--password", dest="db_pass", callback=AbstractTask.readPassword, callback_kwargs={'prompt': 'DB password: '},
+                          action="callback", help="prompt for password for the DB connection")
         parser.add_option("-D", "--database", metavar="NAME", dest="db_name", type="str",
                           default=None, help="database to use for the DB connection")
         parser.add_option("-P", "--port", metavar="PORT", dest="db_port", type="int",
@@ -141,7 +142,7 @@ class CompileOligosTask(AbstractTask):
         # add SCHEMA argument
         command.append('%s' % args.schema)
 
-        self._log.info("Running Oligos data profiler with command `%s`." % ' '.join(command))
+        self._log.info("Running Oligos data profiler with command `%s`." % ' '.join(map(lambda x: sub(r'\-p(\S+)', '-p******', x), command)))
 
         # invoke Oligos executable and redirect the output 
         proc = Popen(command, stdout=PIPE)

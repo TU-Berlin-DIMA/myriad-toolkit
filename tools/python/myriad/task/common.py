@@ -20,6 +20,7 @@ Created on Oct 14, 2011
 
 import logging
 import optparse
+import getpass
 import types
 
 import ConfigParser
@@ -199,17 +200,16 @@ class AbstractTask(object):
         return parser
     
     def execute(self, argv):
+        # parse the task arguments
         parser = self.argsParser()
-        
-        self._log.info("Parsing task arguments.")
         args = parser.parse_args(argv)[0]
-        
+
         # fix the parsed arguments
-        self._log.info("Fixing parsed values.")
         self._fixArgs(args)
-        
+
         # perform the task, throws a TaskExecutionException on error 
         try:
+            self._log.info("Running task %s." % self.qname())
             self._log.info("Executing task logic.")
             self._do(args)
             self._log.info("Task execution finished successfully.")
@@ -246,6 +246,14 @@ class AbstractTask(object):
 
     def _do(self, args):
         print args
+
+    @staticmethod
+    def readPassword(option, opt, value, parser, *args, **kwargs):
+        try:
+            password = getpass.getpass(kwargs.get('prompt', "Password: "))
+        except (getpass.GetPassWarning), e:
+            raise OptionValueError("can't read password from input")
+        setattr(parser.values, option.dest, password)
 
 
 class ParametersProcessor(object):

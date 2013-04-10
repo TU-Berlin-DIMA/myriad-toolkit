@@ -134,10 +134,7 @@ class Assistant(object):
                     self.__printUsage(sys.stderr)
                 
             elif (self.__isTaskExecute):
-                self.__log.info("Running task %s." % (self.__taskQName))
-                
                 task = None
-                
                 try:
                     task = self.currentTask()
 
