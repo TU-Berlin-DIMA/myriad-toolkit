@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<generator_prototype xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.dima.tu-berlin.de/myriad/prototype">
+
+  <!-- configurable parameters -->
+  <parameters>
+    <!-- naming conventions :                                                                   -->
+    <!--   * general:          {generator_name}.{parameter_name}                                -->
+    <!--   * sequence numbers: {generator_name}.sequence.base_cardinality                       -->
+  </parameters>
+
+  <!-- function configuration -->
+  <functions>
+    <!-- add 'function' elements here, supported probability types are:                         -->
+    <!--   * uniform_probability[T](T: x_min, T: x_max)                                         -->
+    <!--   * normal_probability[Decimal](Decimal: mean, Decimal: stddev)                        -->
+    <!--   * combined_probability[T](String: path)                                              -->
+    <!--   * conditional_combined_probability[T1;T2](String: path)                              -->
+  </functions>
+
+  <!-- enumeration types -->
+  <enum_sets>
+    <!-- add 'enum_set' types here; enum types elements have:                                   -->
+    <!--   * an identifier attribute 'key'                                                      -->
+    <!--   * a 'path' argument of type 'String'                                                 -->
+    <!--     * can be written relative to the config-dir:                                       -->
+    <!--     * ${%ENV.config-dir% + "/domains/package/subpackage/domain_name.domain"}           -->
+  </enum_sets>
+
+  <record_sequences>
+    <!--
+    <random_sequence key="type_key">
+      <record_type>
+        <!- - add fields and references here, supported types are:                              - ->
+        <!- -  * core types: Bool, Char, Decimal, Date, I16, I16u, I32, I32u, I64, I64u, String - ->
+        <!- -  * enum types: Enum, with an additional enumref='{enum_set.key}' attribute        - ->
+        <!- -  * ref. types: all record_sequence keys defined in this XML document              - ->
+        <field name='some_enum_parameter' type='Enum' enumref='enumset.key' />
+        <reference name='reference_alias' type='othertype_key' />
+      </record_type>
+      <!- - supported output_format types:                                                      - ->
+      <!- -  * csv(Char: delimiter = '|', Bool: quoted = True, field_ref[]: field)              - ->
+      <setter_chain>
+        <setter key='set_pk' type='field_setter'>
+          <argument key='field' type='field_ref' ref='customer:pk' />
+          <argument key='value' type='clustered_value_provider[I64u]'>
+            <argument key='probability' type='function_ref' ref='Pr[customer.pk]' />
+            <argument key='cardinality' type='const_range_provider'>
+              <argument key='min' type='I64u' value='0' />
+              <argument key='max' type='I64u' value='%customer.sequence.cardinality%' />
+            </argument>
+          </argument>
+        </setter>
+        <setter key='set_gender' type='field_setter'>
+          <argument key='field' type='field_ref' ref='customer:gender' />
+          <argument key='value' type='random_value_provider[Enum]'>
+            <argument key='probability' type='function_ref' ref='Pr[customer.gender]' />
+          </argument>
+        </setter>
+        <!- - add more hydrators here, supported hydrator types are: - ->
+        <!- -  * field_setter(field_ref: field, *_value_provider: value) - ->
+        <!- -  * reference_setter(field_ref: reference, *_reference_provider: value) - ->
+      </setter_chain>
+      <!- - supported cardinality estimator types are: - ->
+      <!- -  * linear_scale_estimator(I64u: base_cardinality) - ->
+      <cardinality_estimator type="linear_scale_estimator">
+        <argument key="base_cardinality" type="I64u" value="%customer.sequence.base_cardinality%" />
+      </cardinality_estimator>
+      <!- - supported sequence_iterator types: - ->
+      <!- -  * partitioned_iterator() - ->
+      <sequence_iterator type="partitioned_iterator" />
+    </random_sequence>
+    -->
+  </record_sequences>
+</generator_prototype>

@@ -1,0 +1,5 @@
+@numberofexactvals = 2
+@numberofbins = 0
+@nullprobability = 0.0
+p(X) = 0.400                     for X = { 0 } # male
+p(X) = 0.600                     for X = { 1 } # female

@@ -93,8 +93,8 @@ class InitializePrototypeTask(myriad.task.common.AbstractTask):
     def _fixArgs(self, args):
         super(InitializePrototypeTask, self)._fixArgs(args)
         
-        if args.prototype_name not in ['customer']:
-            args.prototype_name = 'customer'
+        if args.prototype_name not in ['empty', 'customer']:
+            args.prototype_name = 'empty'
 
     def _do(self, args):
         skeletonBase = "%s/tools/skeleton/task/%s/%s/%s" % (args.base_path, self.group(), self.name(), args.prototype_name)
