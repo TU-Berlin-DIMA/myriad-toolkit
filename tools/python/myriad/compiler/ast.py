@@ -289,7 +289,7 @@ class ParetoProbabilityFunctionNode(AbstractFunctionNode):
     '''
     
     # the type pattern for this class
-    __type_pattern = re.compile('^normal_probability\[(Decimal)\]$')
+    __type_pattern = re.compile('^pareto_probability\[(Decimal)\]$')
     
     def __init__(self, *args, **kwargs):
         kwargs.update(type="ParetoPrFunction")
@@ -2223,3 +2223,4 @@ class DepthFirstNodeFilter(AbstractVisitor):
         astRoot.accept(self)
         # return the filtered nodes
         return self.__filteredNodes
+
