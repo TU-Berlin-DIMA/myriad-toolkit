@@ -81,7 +81,7 @@
           <argument key='field' type='field_ref' ref='customer:pk' />
           <argument key='value' type='clustered_value_provider[I64u]'>
             <argument key='probability' type='function_ref' ref='Pr[customer.pk]' />
-            <argument key='cardinality' type='const_range_provider'>
+            <argument key='cardinality' type='const_range_provider[I64u]'>
               <argument key='min' type='I64u' value='0' />
               <argument key='max' type='I64u' value='%customer.sequence.cardinality%' />
             </argument>
@@ -127,3 +127,4 @@
     </random_sequence>
   </record_sequences>
 </generator_prototype>
+
