@@ -1027,7 +1027,7 @@ class ConstEstimatorNode(AbstractCardinalityEstimatorNode):
                ]
         
     def getConstructorArguments(self):
-        return [ 'Literal(base_cardinality)' 
+        return [ 'Literal(cardinality)' 
                ]
     
     @classmethod
