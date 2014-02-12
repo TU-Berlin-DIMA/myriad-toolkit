@@ -226,8 +226,8 @@ public:
 
     /**
      * Returns the application output type. The output type is bound to the
-     * {application.output-type} config parameter and can be either 'file' or
-     * 'socket' (default is 'file').
+     * {application.output-type} config parameter and can be one of 'file',
+     * 'socket', or 'void' (default is 'file').
      *
      * @return The \p AbstractOutputCollector type.
      */

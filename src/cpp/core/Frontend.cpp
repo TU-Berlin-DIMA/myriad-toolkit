@@ -174,11 +174,11 @@ void Frontend::defineOptions(OptionSet& options)
 	        .argument("<path>")
 	        .binding("application.output-base"));
 
-    options.addOption(Option("output-type", "t", "output collector type ('file' or 'socket[port]')")
+    options.addOption(Option("output-type", "t", "output collector type ('file', 'socket[port]', or 'void')")
             .required(false)
             .repeatable(false)
             .argument("<type>")
-            .validator(new RegExpValidator("^(file|socket\\[\\d{4,5}\\])$"))
+            .validator(new RegExpValidator("^(file|socket\\[\\d{4,5}\\]|void)$"))
             .callback(OptionCallback<Frontend> (this, &Frontend::handleOutputType)));
 
     options.addOption(Option("coordinator-host", "H", "coordinator server hostname")
@@ -218,13 +218,22 @@ void Frontend::handleOutputType(const string& name, const string& value)
     if (value.substr(0, 4) == "file")
     {
         config().setString("application.output-type", "file");
+
+        _ui.information("Output type is " + config().getString("application.output-type"));
     }
     else if (value.substr(0, 6) == "socket")
     {
         config().setString("application.output-type", "socket");
         config().setInt("application.output-port", fromString<int>(value.substr(7, value.size()-8)));
 
+        _ui.information("Output type is " + config().getString("application.output-type"));
         _ui.information("Output port is " + toString<int>(config().getInt("application.output-port")));
+    }
+    else if (value.substr(0, 6) == "void")
+    {
+        config().setString("application.output-type", "void");
+
+        _ui.information("Output type is " + config().getString("application.output-type"));
     }
 }
 
