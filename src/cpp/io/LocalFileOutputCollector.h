@@ -54,7 +54,7 @@ public:
      * \p outputPath parameter.
      */
     LocalFileOutputCollector(const Path& outputPath, const String& collectorName) :
-        AbstractOutputCollector<RecordType>(outputPath, collectorName),
+        AbstractOutputCollector<RecordType>(collectorName),
         _outputPath(outputPath),
         _isOpen(false),
         _logger(Logger::get(collectorName))
@@ -116,7 +116,7 @@ public:
     {
         if (_isOpen)
         {
-	        _logger.debug(format("Closing local file for output `%s`", _outputPath.toString()));
+	        _logger.debug(format("Closing local file for output path `%s`", _outputPath.toString()));
 
 	        AbstractOutputCollector<RecordType>::writeFooter(_outputStream);
 	        flush();
@@ -156,7 +156,7 @@ private:
     FileOutputStream _outputStream;
 
     /**
-     * A boolean flag indicating that the underlying \p _outputFile is open.
+     * A boolean flag indicating that the underlying \p _outputStream is open.
      */
     bool _isOpen;
 
