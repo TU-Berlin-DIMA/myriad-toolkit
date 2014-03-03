@@ -21,6 +21,7 @@
 #include "io/AbstractOutputCollector.h"
 #include "io/LocalFileOutputCollector.h"
 #include "io/SocketStreamOutputCollector.h"
+#include "io/VoidOutputCollector.h"
 
 #include <Poco/AutoPtr.h>
 
@@ -55,6 +56,11 @@ template<class RecordType> struct OutputCollector
         if (collectorType == "socket")
         {
             return new SocketStreamOutputCollector<RecordType>(outputPath, collectorPort, collectorName);
+        }
+        // void stream
+        if (collectorType == "void")
+        {
+            return new VoidOutputCollector<RecordType>(outputPath, collectorName);
         }
         // unknown output collector type
         throw RuntimeException("Cannot construct output collector of type `" + collectorType + "`");

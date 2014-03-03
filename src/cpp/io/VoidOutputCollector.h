@@ -15,18 +15,14 @@
  *
  */
 
-#ifndef LOCALFILEOUTPUTCOLLECTOR_H_
-#define LOCALFILEOUTPUTCOLLECTOR_H_
+#ifndef VOIDOUTPUTCOLLECTOR_H_
+#define VOIDOUTPUTCOLLECTOR_H_
 
 #include "io/AbstractOutputCollector.h"
 
-#include <Poco/File.h>
-#include <Poco/FileStream.h>
+#include <Poco/Buffer.h>
 #include <Poco/Logger.h>
-#include <Poco/NumberFormatter.h>
-#include <Poco/StreamCopier.h>
-
-using namespace Poco;
+#include <Poco/NullStream.h>
 
 namespace Myriad {
 /**
@@ -34,26 +30,21 @@ namespace Myriad {
  * @{*/
 
 /**
- * An AbstractOutputCollector subclass that writes the output into the local
- * file system.
- *
- * This output collector works with local filesystem output streams and is the
- * default one for all data generator applications.
+ * A VoidOutputCollector subclass that merely consumes the output.
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 template<typename RecordType>
-class LocalFileOutputCollector: public AbstractOutputCollector<RecordType>
+class VoidOutputCollector: public AbstractOutputCollector<RecordType>
 {
 public:
 
     /**
      * Constructor.
      *
-     * Opens an output stream in a file given by the value of the given
-     * \p outputPath parameter.
+     * Opens a null output stream.
      */
-    LocalFileOutputCollector(const Path& outputPath, const String& collectorName) :
+    VoidOutputCollector(const Path& outputPath, const String& collectorName) :
         AbstractOutputCollector<RecordType>(collectorName),
         _outputPath(outputPath),
         _isOpen(false),
@@ -64,7 +55,7 @@ public:
     /**
      * Copy constructor.
      */
-    LocalFileOutputCollector(const LocalFileOutputCollector& o) :
+    VoidOutputCollector(const VoidOutputCollector& o) :
         AbstractOutputCollector<RecordType>(o),
         _outputPath(o._outputPath),
         _isOpen(false),
@@ -72,7 +63,7 @@ public:
     {
         if (o._isOpen)
         {
-	        open();
+            open();
         }
     }
 
@@ -81,7 +72,7 @@ public:
      *
      * Closes the internal FileOutputStream instance if opened.
      */
-    virtual ~LocalFileOutputCollector()
+    virtual ~VoidOutputCollector()
     {
         close();
     }
@@ -93,39 +84,33 @@ public:
     {
         if (!_isOpen)
         {
-            _logger.debug(format("Opening local file for output path `%s`", _outputPath.toString()));
+            _logger.debug(format("Opening null output stream for output path `%s`", _outputPath.toString()));
 
-	        // make sure that the output-dir exists
-	        File outputDir(_outputPath.parent());
-            outputDir.createDirectories();
-
-	        _outputStream.open(_outputPath.toString(), std::ios::trunc | std::ios::binary);
-	        AbstractOutputCollector<RecordType>::writeHeader(_outputStream);
-	        _isOpen = true;
+            AbstractOutputCollector<RecordType>::writeHeader(_outputStream);
+            _isOpen = true;
         }
         else
         {
-	        throw LogicException(format("Can't open already opened local file at `%s`", _outputPath.toString()));
+            throw LogicException(format("Can't open null output stream for output path `%s`", _outputPath.toString()));
         }
     }
 
     /**
-     * Closes the internal FileOutputStream instance.
+     * Closes the internal NullOutputStream instance.
      */
     void close()
     {
         if (_isOpen)
         {
-	        _logger.debug(format("Closing local file for output path `%s`", _outputPath.toString()));
+            _logger.debug(format("Closing null output stream for output path `%s`", _outputPath.toString()));
 
-	        AbstractOutputCollector<RecordType>::writeFooter(_outputStream);
-	        flush();
-	        _outputStream.close();
+            AbstractOutputCollector<RecordType>::writeFooter(_outputStream);
+            flush();
         }
     }
 
     /**
-     * Flushes the internal FileOutputStream instance and resets the flush counter.
+     * Flushes the internal NullOutputStream instance and resets the flush counter.
      */
     void flush()
     {
@@ -140,20 +125,20 @@ public:
      */
     void collect(const RecordType& record)
     {
-        LocalFileOutputCollector<RecordType>::serialize(_outputStream, record);
+        VoidOutputCollector<RecordType>::serialize(_outputStream, record);
     }
 
 private:
 
     /**
-     * The path of the underlying OutputStream.
+     * The path for this collector (untied to the underlying output stream).
      */
     const Path _outputPath;
 
     /**
      * The underlying output stream.
      */
-    FileOutputStream _outputStream;
+    NullOutputStream _outputStream;
 
     /**
      * A boolean flag indicating that the underlying \p _outputStream is open.
@@ -169,4 +154,4 @@ private:
 /** @}*/// add to io group
 } // namespace Myriad
 
-#endif /* LOCALFILEOUTPUTCOLLECTOR_H_ */
+#endif /* VOIDOUTPUTCOLLECTOR_H_ */

@@ -21,10 +21,7 @@
 #include "io/AbstractOutputCollector.h"
 
 #include <Poco/Buffer.h>
-#include <Poco/DigestEngine.h>
 #include <Poco/Logger.h>
-#include <Poco/MD5Engine.h>
-#include <Poco/NumberFormatter.h>
 #include <Poco/Net/SocketAddress.h>
 #include <Poco/Net/StreamSocket.h>
 #include <Poco/Net/SocketStream.h>
@@ -37,9 +34,6 @@ namespace Myriad {
 /**
  * An AbstractOutputCollector subclass that writes the output into the local
  * file system.
- *
- * This output collector works with local filesystem output streams and is the
- * default one for all data generator applications.
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
@@ -55,7 +49,7 @@ public:
      * socket specified by the given \p outputPort.
      */
     SocketStreamOutputCollector(const Path& outputPath, const I16u outputPort, const String& collectorName) :
-        AbstractOutputCollector<RecordType>(outputPath, collectorName),
+        AbstractOutputCollector<RecordType>(collectorName),
         _outputPath(outputPath),
         _outputSocket(Poco::Net::IPAddress::IPv4),
         _outputPort(outputPort),
@@ -122,7 +116,7 @@ public:
         }
         else
         {
-	        throw LogicException(format("Can't open already opened socket for output `%s`", _outputPath.toString()));
+	        throw LogicException(format("Can't open already opened socket for output path `%s`", _outputPath.toString()));
         }
     }
 
@@ -133,7 +127,7 @@ public:
     {
         if (_isOpen)
         {
-	        _logger.debug(format("Closing socket stream for output `%s`", _outputPath.toString()));
+	        _logger.debug(format("Closing socket stream for output path `%s`", _outputPath.toString()));
 
 	        AbstractOutputCollector<RecordType>::writeFooter(_recordsBuffer);
 	        flush();
@@ -181,20 +175,6 @@ public:
             writeToOutputSocket();
         }
     }
-
-//    static I16u socketPortFromOutputPath(const Path& path)
-//    {
-//        Poco::MD5Engine md5;
-//        md5.update(path.toString());
-//        const Poco::DigestEngine::Digest& digest = md5.digest();
-//
-//        I64 hashSuffix = ((0x000000FF & static_cast<I64>(digest.at(digest.size()-4))) << 48) |
-//                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-3))) << 32) |
-//                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-2))) << 16) |
-//                         ((0x000000FF & static_cast<I64>(digest.at(digest.size()-1))) << 0 );
-//
-//        return static_cast<I16u>(42100 + ((hashSuffix % 900 < 0) ? (1000 - (hashSuffix % 900)) : (hashSuffix % 900)));
-//    }
 
 private:
 

@@ -49,14 +49,16 @@ public:
     /**
      * Constructor.
      */
-    AbstractOutputCollector(const Poco::Path& outputPath, const String& collectorName)
+    AbstractOutputCollector(const String& collectorName) :
+        _collectorName(collectorName)
     {
     }
 
     /**
      * Copy constructor.
      */
-    AbstractOutputCollector(const AbstractOutputCollector& o)
+    AbstractOutputCollector(const AbstractOutputCollector& o) :
+        _collectorName(o._collectorName)
     {
     }
 
@@ -120,6 +122,10 @@ public:
     {
         out << "abstract record #" << record.genID() << "\n";
     }
+
+private:
+
+    const String& _collectorName;
 };
 
 /** @}*/// add to io group
