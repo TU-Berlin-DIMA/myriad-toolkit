@@ -23,6 +23,8 @@
 #include <iostream>
 #include <Poco/Types.h>
 
+#include <stdio.h>
+
 using namespace Poco;
 using namespace std;
 
@@ -40,6 +42,8 @@ namespace Myriad {
  */
 class EICG : public RNG
 {
+friend class EICGTest;
+
 public:
 
 	/**
@@ -89,7 +93,7 @@ public:
 private:
 
     /**
-     * Computes x+y mod p using fast multiplication.
+     * Computes x+y mod p.
      */
     Int32 add(Int32 x, Int32 y) const;
 
@@ -99,12 +103,12 @@ private:
     Int32 mult(Int32 x, Int32 y) const;
 
     /**
-     * Computes the inverse of z mod p using the extended Euklidean algorithm.
+     * Computes the inverse of z mod p using the extended Euclidean algorithm.
      */
     Int32 inverse(Int32 z) const;
 
     /**
-     * Performes an extended Euklidean algorithm for the pair (a,b). The
+     * Performs an extended Euclidean algorithm for the pair (a,b). The
      * result is a triple (x,y, g), such that g is GCD(a,b) and (x,y) are
      * minimal with ax + by = g.
      */
@@ -133,17 +137,17 @@ inline Int32 EICG::add(Int32 x, Int32 y) const
 
 inline Int32 EICG::mult(Int32 x, Int32 y) const
 {
-    Int32 q, r, z;
-
+	Int32 q, r, z;
+    // ensure x < p and y < p
+    x %= p;
+    y %= p;
     q = p / x;
     r = p % x;
-
     z = x * (y % q) - r * (y / q);
     while (z < 0)
     {
         z += p;
     }
-
     return z;
 }
 
