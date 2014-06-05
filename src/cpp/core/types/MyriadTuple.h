@@ -43,29 +43,21 @@ public:
     /**
      * Default constructor.
      */
-    MyriadAbstractTuple()
-    {
-    }
-
-
-private:
+    MyriadAbstractTuple(){}
 
 };
 
-// all ValueTypes permitted except MyriadType
+// all ValueTypes permitted except MyriadTuple
 template<typename ValueType1, typename ValueType2>
 class MyriadTuple: public MyriadAbstractTuple
 {
 public:
+	MyriadTuple(){}
 
-	MyriadTuple()
+	MyriadTuple(ValueType1 value1, ValueType2 value2)
 	{
-
-	}
-
-	MyriadTuple(ValueType1 ValueType1, ValueType2 ValueType2)
-	{
-
+		this->first = value1;
+		this->second = value2;
 	}
 
 	ValueType1 getFirst(){
@@ -76,9 +68,46 @@ public:
 	{
 		return second;
 	}
-
+private:
 	ValueType1 first;
 	ValueType2 second;
+
+};
+
+// all ValueTypes permitted except MyriadTuple
+template<typename ValueType1, typename ValueType2, typename ValueType3>
+class MyriadTriple: public MyriadAbstractTuple
+{
+public:
+
+	MyriadTriple(){}
+
+	MyriadTriple(ValueType1 value1, ValueType2 value2, ValueType3 value3)
+	{
+		this->first = value1;
+		this->second = value2;
+		this->third = value3;
+	}
+	ValueType1 getFirst(){
+		return first;
+	}
+
+	ValueType2 getSecond()
+	{
+		return second;
+	}
+
+	ValueType3 getThird()
+	{
+		return third;
+	}
+
+private:
+
+	//MyriadTriple(const MyriadTuple& mt){}
+	ValueType1 first;
+	ValueType2 second;
+	ValueType3 third;
 };
 
 //@}
