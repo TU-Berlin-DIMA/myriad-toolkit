@@ -128,7 +128,7 @@ public:
     /**
      * Default constructor.
      */
-    MultiplicativeGroup(string name = "anonymoys") :
+    MultiplicativeGroup(string name = "anonymous") :
         _name(name), _logger(Logger::get("skgen."+name))
     {
         N = 1;
@@ -152,7 +152,7 @@ public:
      * @param cardinality The minimal number of elements in the group.
      * @param name The name of this multiplicative group instance.
      */
-    MultiplicativeGroup(I64u cardinality, string name = "anonymoys") :
+    MultiplicativeGroup(I64u cardinality, string name = "anonymous") :
         _name(name), _logger(Logger::get("skgen."+name))
     {
         configure(cardinality);

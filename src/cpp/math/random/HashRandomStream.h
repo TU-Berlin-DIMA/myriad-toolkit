@@ -291,7 +291,7 @@ private:
      */
     void adjustSeed();
     /**
-     * Computes y = a + x on the seed.
+     * Computes y = o + x on the seed.
      */
     void appendToSeed(Seed& y, const Seed& o, const Seed& x);
     /**
