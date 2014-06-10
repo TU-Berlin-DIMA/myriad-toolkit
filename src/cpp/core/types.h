@@ -20,6 +20,8 @@
 
 #include "core/types/MyriadDate.h"
 #include "core/types/MyriadEnumSet.h"
+#include "core/types/MyriadAbstractTuple.h"
+
 
 #include <Poco/Exception.h>
 #include <Poco/Types.h>

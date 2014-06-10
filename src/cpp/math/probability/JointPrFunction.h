@@ -20,7 +20,10 @@
 
 #include "core/exceptions.h"
 #include "core/types.h"
+#include "core/types/MyriadAbstractTuple.h"
 #include "math/Function.h"
+#include "math/IntervalTuple.h"
+
 
 #include <Poco/Any.h>
 #include <Poco/File.h>
@@ -30,6 +33,7 @@
 
 #include <string>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 using namespace Poco;
@@ -48,9 +52,9 @@ namespace Myriad
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
 
-// TODO: example for derivation from UnaryFunction, T = MyriadTuple, GenID = ?
+// TODO: example for derivation from UnaryFunction, T = MyriadTuple/-Triple, genID =  const I64u
 template<typename T>
-class JointPrFunction: public UnaryFunction<T, GenID>
+class JointPrFunction: public UnaryFunction<T, const I64u>
 {
 public:
 
@@ -60,21 +64,16 @@ public:
      * Merely creates a new function object, and does not execute any
      * initialization routines.
      */
-	// TODO UnivariatePrFunction constructor unused, which private variables needed?
     JointPrFunction() :
-        UnivariatePrFunction<T>(""),
-        _notNullProbability(0),
-        _activeDomain(nullValue<T>(), nullValue<T>()),
-        _numberOfValues(0),
-        _values(NULL),
-        _valueProbability(0.0),
-        _valueProbabilities(NULL),
+       // Unary<T>(""),
+        _activeDomain(NULL, NULL), //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
         _numberOfBuckets(0),
-        _buckets(0),
-        _bucketProbability(0),
         _bucketProbabilities(NULL),
-        _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+        _buckets(NULL),
+        _cardinalities(NULL),
+        _sequenceSize(0)
+        //_cumulativeProbabilites(NULL),
+        //_EPSILON(0.000001)
     {
     }
 
@@ -87,19 +86,13 @@ public:
      * @param path The location of the function configuration file.
      */
     JointPrFunction(const string& path) :
-        UnivariatePrFunction<T>(""),
-        _notNullProbability(0),
-        _activeDomain(nullValue<T>(), nullValue<T>()),
-        _numberOfValues(0),
-        _values(NULL),
-        _valueProbability(0.0),
-        _valueProbabilities(NULL),
-        _numberOfBuckets(0),
-        _buckets(0),
-        _bucketProbability(0),
-        _bucketProbabilities(NULL),
-        _cumulativeProbabilites(NULL),
-        _EPSILON(0.000001)
+    	// Unary<T>(""),
+    	 _activeDomain(NULL, NULL), //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
+    	 _numberOfBuckets(0),
+    	 _bucketProbabilities(NULL),
+    	 _buckets(NULL),
+    	 _cardinalities(NULL),
+         _sequenceSize(0)
     {
         initialize(path);
     }
@@ -107,10 +100,11 @@ public:
     /**
      * Destructor.
      */
-    virtual ~JointPrFunction()
+    // TODO: add reset function
+    /*virtual ~JointPrFunction()
     {
         reset();
-    }
+    }*/
 
     /**
      * Initialization routine.
@@ -121,13 +115,44 @@ public:
      * @param path The location of the function configuration file.
      */
     void initialize(const string& path);
+    /**
+      * Initialization routine.
+      *
+      * Initializes the function with the configuration stored in the file
+      * located at the given \p path.
+      *
+      * @param path The location of the function configuration file.
+      */
+     void initialize(const Path& path);
+
+     /**
+      * Initialization routine.
+      *
+      * Initializes the function with the configuration from the input stream
+      * given by the \p in parameter.
+      *
+      * @param in Input stream containing the function configuration.
+      */
+     void initialize(istream& in);
+
+     /**
+      * Initialization routine.
+      *
+      * Initializes the function with the configuration from the input stream
+      * given by the \p in parameter. When reading from the \p in stream, uses
+      * the \p currentLineNumber parameter to track the current line number.
+      *
+      * @param currentLineNumber A reference to the current line number.
+      * @param in Input stream containing the function configuration.
+      */
+     void initialize(istream& in, I16u& currentLineNumber);
 
     /**
      * Returns the total number of buckets of the joint histogram.
      *
      * @return size_t The total number of buckets configured for this function.
      */
-    size_t numberOfBucketsTotal() const;
+    size_t numberOfBuckets() const;
 
     /**
        * Returns the number of buckets of dimension dim.
@@ -163,37 +188,20 @@ public:
      * TODO: without random input, use GenID/position instead?
      * @see UnivariatePrFunction::sample()
      */
-    MyriadAbstractTuple sample(Decimal random) const;
+    T sample(const I64u GenID) const;
 
-    /**
-     *  not used
-     * @see UnivariatePrFunction::pdf()
-     */
-    Decimal pdf(T x) const;
-
-    /**
-     * not used
-     * @see UnivariatePrFunction::cdf()
-     */
-    Decimal cdf(T x) const;
-
-    /**
-     * not used
-     * @see UnivariatePrFunction::invcdf()
-     */
-    T invcdf(Decimal x) const;
 
 private:
 
     void reset();
+//
+//    void normalize();
 
-    void normalize();
+    I64u findIndex() const;
 
-    size_t findIndex(const Decimal y) const;
+    I64u findValue() const;
 
-    size_t findValue(const T x, bool exact = true) const;
-
-    size_t findBucket(const T x, bool exact = true) const;
+    I64u findBucket(const I64u _tupleID) const;
 
     static RegularExpression headerLine1Format;
     static RegularExpression headerLine2Format;
@@ -201,23 +209,18 @@ private:
     static RegularExpression valueLineFormat;
     static RegularExpression bucketLineFormat;
 
-    Decimal _notNullProbability;
+    // TODO: IntervalTuple generic
 
-    Interval<T> _activeDomain;
+    IntervalTuple<<MyriadTuple> > _activeDomain;
 
-    size_t _numberOfValues;
-    T* _values;
-    Decimal _valueProbability;
-    Decimal* _valueProbabilities;
+    Interval<T> _activeDomain;				// attribute domain as interval [min(_buckets), max(_buckets)]
 
-    size_t _numberOfBuckets;
-    Interval<T>* _buckets;
-    Decimal _bucketProbability;
-    Decimal* _bucketProbabilities;
-
-    Decimal* _cumulativeProbabilites;
-
-    Decimal _EPSILON;
+    size_t _numberOfBuckets;				// of multidimensional histogram
+    IntervalTuple<MyriadTuple>* _buckets; 	// buckets of joint histogram, format [((low_T1, low_Tuple2), (up_T1, up_T2))]
+    Decimal* _bucketProbabilities;			// of sequentially ordered multidimensional buckets
+    vector<I64u*> _cardinalities;    // cardinality per bucket for each dimension, format [[card_T1_Bi, card_T2_Bi]]_i, T = type, B = bucket index
+    I64u _sequenceSize; 				// total table size
+    size_t _dim;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -226,17 +229,20 @@ private:
 //@{
 
 // TODO: adjust regex to read multidimensional buckets (see set1.distribution for example format)
-template<typename T>
-RegularExpression JointPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+//template<typename T>
+//RegularExpression JointPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
 template<typename T>
 RegularExpression JointPrFunction<T>::headerLine2Format("\\W*@numberofbins\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+// TODO: allow yes/no nullprobs
+//template<typename T>
+//RegularExpression JointPrFunction<T>::headerLine3Format("\\W*@nullprobability\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W*(#(.+))?");
+// TODO: allow yes/no single values
+//template<typename T>
+//RegularExpression JointPrFunction<T>::valueLineFormat( "\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*(.+)\\W*\\}\\W*(#(.+))?");
+//RegularExpression JointPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*\\}\\W*(#(.+))?");
+// TODO: more generic, currently matches only tuples
 template<typename T>
-RegularExpression JointPrFunction<T>::headerLine3Format("\\W*@nullprobability\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W*(#(.+))?");
-template<typename T>
-RegularExpression JointPrFunction<T>::valueLineFormat( "\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*(.+)\\W*\\}\\W*(#(.+))?");
-template<typename T>
-RegularExpression JointPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*\\}\\W*(#(.+))?");
-
+RegularExpression JointPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?)\\W+for\\W+X\\W*=\\W*\\{\\W*x\\W+in\\W+\\[\\W*\\[(.+)\\W*,\\W*(.+)\\W*\\)\\W*,\\W*\\[\\W*(.+)\\W*,\\W*(.+)\\W*\\)\\W*]\\W*\\}\\W*(#(.+))?");
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -247,34 +253,26 @@ RegularExpression JointPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+
 template<typename T>
 void JointPrFunction<T>::reset()
 {
-    _notNullProbability = 0.0;
-    _valueProbability = 0.0;
-    _bucketProbability = 0.0;
-
-    if (_numberOfValues > 0 || _numberOfBuckets > 0)
-    {
-        delete[] _cumulativeProbabilites;
-    }
-
-    if (_numberOfValues > 0)
-    {
-        _numberOfValues = 0;
-        delete[] _values;
-        delete[] _valueProbabilities;
-    }
-
-    if (_numberOfBuckets > 0)
-    {
-        _numberOfBuckets = 0;
-        delete[] _buckets;
-        delete[] _bucketProbabilities;
-    }
+    _numberOfBuckets = 0;
+    delete[] _bucketProbabilities;
+    _buckets.clear();
+    _cardinalities.clear();
+    I64u _sequenceSize = 0;
+    size_t _dim = 0;
 }
 
+//// TODO: ?
+//template<typename T>
+//inline Decimal JointPrFunction<T>::operator()() const
+//{
+//    return 0;
+//}
+
+/*
 template<typename T>
 void JointPrFunction<T>::normalize()
 {
-    Decimal normalizationFactor = 1.0 / static_cast<Decimal>(_valueProbability + _bucketProbability + (1.0 - _notNullProbability));
+    Decimal normalizationFactor = 1.0 / static_cast<Decimal>(_valueProbability + _bucketProbability + (1.0 - ));
 
     _valueProbability = 0;
     _bucketProbability = 0;
@@ -296,181 +294,119 @@ void JointPrFunction<T>::normalize()
         _bucketProbability += probability;
         _cumulativeProbabilites[i+_numberOfValues] = _valueProbability + _bucketProbability;
     }
-
-    _notNullProbability = _valueProbability + _bucketProbability;
-}
+}*/
 
 template<typename T>
-inline size_t JointPrFunction<T>::findIndex(const Decimal y) const
+inline I64u JointPrFunction<T>::findIndex() const
 {
-    // we assert that the value x is in the active domain
-    int min = 0;
-    int max = _numberOfValues + _numberOfBuckets - 1;
-    int mid = 0;
-
-    // protect against invalid y
-    if (y >= 1.0)
-    {
-        return max;
-    }
-
-    // continue searching while [min, max] is not empty
-    while (max >= min)
-    {
-        // calculate the midpoint for roughly equal partition //
-        mid = (min + max) / 2;
-
-        // determine which subarray to search
-        if (_cumulativeProbabilites[mid] <  y - _EPSILON)
-        {
-	        // change min index to search upper subarray
-	        min = mid + 1;
-        }
-        else if (_cumulativeProbabilites[mid] > y + _EPSILON)
-        {
-	        // change max index to search lower subarray
-	        max = mid - 1;
-        }
-        else
-        {
-	        // key found at index mid
-	        // for all but the last position, increment the index by one to
-	        // compensate for the fact that buckets are defined as Y < y rather than Y <= y
-            return (static_cast<size_t>(mid) == _numberOfValues + _numberOfBuckets - 1) ? mid : mid+1;
-        }
-    }
-
-    if (static_cast<size_t>(mid) < _numberOfValues + _numberOfBuckets - 1 && _cumulativeProbabilites[mid] < y)
-    {
-        return mid+1;
-    }
-    else
-    {
-        return mid;
-    }
+	I64u index = 0;
+	return index;
 }
 
+
+/*
+ * Assign bucket relative position of genID within total sequence size
+ */
 template<typename T>
-inline size_t JointPrFunction<T>::findValue(const T x, bool exact) const
+inline I64u JointPrFunction<T>::findBucket(I64u tupleID) const
 {
-    // we assert that the value x is in the active domain
-    int min = 0;
-    int max = _numberOfValues - 1;
-    int mid = 0;
-
-    // continue searching while [min, max] is not empty
-    while (max >= min)
-    {
-        // calculate the midpoint for roughly equal partition
-        mid = (min + max) / 2;
-
-        // determine which subarray to search
-        if (_values[mid] <  x)
-        {
-	        // change min index to search upper subarray
-	        min = mid + 1;
-        }
-        else if (_values[mid] > x)
-        {
-	        // change max index to search lower subarray
-	        max = mid - 1;
-        }
-        else
-        {
-	        // key found at index mid
-	        return mid;
-        }
-    }
-
-    // at this point, mid is always equal to min and points to the first record higher than x
-    // what we actually want the index of the first value less than or equal to x
-    if (!exact && mid > 0)
-    {
-        if (static_cast<size_t>(mid) < _numberOfValues-2 && _values[mid+1] < x)
-        {
-	        return mid+1;
-        }
-        else if (_values[mid] < x)
-        {
-	        return mid;
-        }
-        else
-        {
-	        return mid-1;
-        }
-    }
-    else
-    {
-        return nullValue<size_t>();
-    }
+	I64u bucketID = -1;
+	Decimal s = 0;
+	for (size_t i = 0; i < _numberOfBuckets; ++i){
+		s += _bucketProbabilities[i];
+		if (ceil(_sequenceSize*s) <= tupleID){
+			bucketID = i;
+			break;
+		}
+	}
+	return bucketID;
 }
 
+/*
+ * Adjust _tupleID to lower bin edge by substracting lowest _tupleID for this bucket.
+ */
 template<typename T>
-inline size_t JointPrFunction<T>::findBucket(const T x, bool exact) const
+inline I64u JointPrFunction<T>::normalizeTupleID(I64u tupleID, size_t bucketID) const
 {
-    // we assert that the value x is in the active domain
-    int min = 0;
-    int max = _numberOfBuckets - 1;
-    int mid = 0;
-
-    // continue searching while [min, max] is not empty
-    while (max >= min)
-    {
-        // calculate the midpoint for roughly equal partition //
-        mid = (min + max) / 2;
-
-        // determine which subarray to search
-        if (_buckets[mid].max() <=  x)
-        {
-	        // change min index to search upper subarray
-	        min = mid + 1;
-        }
-        else if (_buckets[mid].min() > x)
-        {
-	        // change max index to search lower subarray
-	        max = mid - 1;
-        }
-        else
-        {
-	        // key found at index mid
-	        return mid;
-        }
-    }
-
-    // at this point, mid is always equal to min and points to the first bucket where higher than x
-    // what we actually want the index of the first bucket less than but not containing x
-    if (!exact && mid > 0)
-    {
-        if (static_cast<size_t>(mid) < _numberOfBuckets-2 && _buckets[mid+1].max() <= x)
-        {
-	        return mid+1;
-        }
-        else if (_buckets[mid].max() <= x)
-        {
-	        return mid;
-        }
-        else
-        {
-	        return mid-1;
-        }
-    }
-    else
-    {
-        return nullValue<size_t>();
-    }
+	Decimal s = 0;
+	for (size_t i = 0; i < bucketID; ++ i)
+		s += _bucketProbabilities[i];
+	I64u tupleID_left = ceil(s*_sequenceSize) + 1;
+	return tupleID-tupleID_left;
 }
 
+/*
+ * Shuffle _tupleID <- [0; _sequenceSize]
+ */
 template<typename T>
-inline Decimal JointPrFunction<T>::operator()(const T x) const
+inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID)
 {
-    return cdf(x);
+	MultiplicativeGroup mg(_sequenceSize);
+	return mg(tupleID);
 }
+
+/*
+ * Permute bucket's tupleID to larger index in [0; card(bucketID)-1]
+ */
+template<typename T>
+inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, size_t bucketID)
+{
+	I64u cardinality = 1;
+	for (size_t i = 0; i < _dim; ++i)
+		cardinality *= _cardinalities.at(bucketID)[i];
+	MultiplicativeGroup mg(cardinality);
+	return mg(tupleID);
+}
+
+/*
+ * Scalar tuple identifier is mapped to output tuple dimension-wise
+ * */
+template<typename T>
+inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
+{
+	// transform scalar index to dimension-wise indices
+	I64u compositeID[_dim];
+	I64u gamma; // cardinality of subsequent dimensions in same bucket
+	I64u rem = tupleID;
+	for (size_t i = 0; i < _dim-1; ++i){
+		gamma = 1;
+		for (size_t j = i+1; j < _dim; ++j)
+			gamma *= _cardinalities.at(bucketID)[j];
+		compositeID[i] = rem/gamma; // div rounds to floor
+		rem = rem % gamma;
+	}
+	compositeID[_dim-1] = rem;
+	// map indices to attribute values, use Interval
+
+	// create new Tuple/Triple instance
+	// if dim = 2  T = MyriadTuple(ValueType1 val1, ValueType2 val2)
+	T t = new T();
+	return t;
+}
+
 
 // TODO: directly use GenID to
 template<typename T>
-inline T JointPrFunction<T>::sample(GenID) const
+inline T JointPrFunction<T>::sample(const I64u genID) const
 {
-    return null;//invcdf(random);
+	I64u tupleID = genID;
+
+	// TODO: 1. permute tupleID <- [0;_sequenceSize-1], should be reset globally
+	//tupleID = permutetupleID(tupleID);
+
+	// 2. find bucket
+	I64u bucketID = findBucket(tupleID);
+
+	// 3. normalize to [0, _bucketProbabilities[bucketID]*_sequenceSize]
+	tupleID = normalizeTupleID(tupleID, bucketID);
+
+	// 4. permute tuple index <- [0, card(bucket)-1]
+	tupleID = permuteTupleID(tupleID, bucketID);
+
+	// 5. transform scalar tuple index into tuple of indices
+	T t = scalar2Tuple(tupleID, bucketID);
+
+    return t;
 }
 
 
@@ -480,7 +416,227 @@ void JointPrFunction<T>::initialize(const string& path)
     initialize(Path(path));
 }
 
+template<typename T>
+void CombinedPrFunction<T>::initialize(const Path& path)
+{
+    if (!path.isFile())
+    {
+        throw ConfigException(format("Cannot find file at `%s`", path.toString()));
+    }
 
+    File file(path);
+
+    if (!file.canRead())
+    {
+        throw ConfigException(format("Cannot read from file at `%s`", path.toString()));
+    }
+
+    ifstream in(file.path().c_str());
+
+    if (!in.is_open())
+    {
+        throw ConfigException(format("Cannot open file at `%s`", path.toString()));
+    }
+
+    try
+    {
+        initialize(in);
+        in.close();
+    }
+    catch(Poco::Exception& e)
+    {
+        in.close();
+        throw e;
+    }
+    catch(exception& e)
+    {
+        in.close();
+        throw e;
+    }
+    catch(...)
+    {
+        in.close();
+        throw;
+    }
+}
+
+template<typename T>
+void JointPrFunction<T>::initialize(istream& in)
+{
+    I16u currentLineNumber = 1;
+    initialize(in, currentLineNumber);
+}
+
+template<typename T>
+void JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
+{
+    enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
+
+    // reset old state
+    reset();
+
+    // reader variables
+    READ_STATE currentState = NOE; // current reader machine state
+    string currentLine; // the current line
+    I16u currentItemIndex = 0; // current item index
+    RegularExpression::MatchVec posVec; // a posVec for all regex matches
+
+    // reader finite state machine
+    while (currentState != END)
+    {
+        // the special FIN stage contains only final initialization constructs
+        // and does not a currentLine
+        if (currentState == FIN)
+        {
+        	// TODO: extract min/max from buckets AND exact _values
+	        //T min = std::min<T>(_buckets[0].min(), _values[0]);
+        	//T max = std::max<T>(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfValues-1]+1));
+
+	        _activeDomain.set(_buckets[0], _buckets[_numberOfBuckets-1]);
+
+	        currentState = END;
+	        continue;
+        }
+
+        // read next line
+        getline(in, currentLine);
+
+        // trim whitespace
+        trimInPlace(currentLine);
+
+        // check if this line is empty or contains a single comment
+        if (currentLine.empty() || currentLine.at(0) == '#')
+        {
+	        currentLineNumber++;
+	        continue; // skip this line
+        }
+
+        /*if (currentState == NOE)
+        {
+	        if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
+	        {
+		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofexactvals = ' + x", currentLineNumber, currentLine));
+	        }
+
+	        I32 numberOfValues = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+
+	        if (numberOfValues <= 0 && numberOfValues > 65536)
+	        {
+		        throw DataException("Invalid number of exact values '" + toString(numberOfValues) +  "'");
+	        }
+
+	        _numberOfValues = numberOfValues;
+	        _values = new T[numberOfValues];
+	        _valueProbabilities = new Decimal[numberOfValues];
+
+	        currentState = NOB;
+        }
+        else */
+        if (currentState == NOB)
+        {
+	        if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
+	        {
+		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofbins = ' + x", currentLineNumber, currentLine));
+	        }
+
+	        I32 numberOfBuckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+
+	        if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
+	        {
+		        throw DataException("Invalid number of buckets '" + toString(numberOfBuckets) +  "'");
+	        }
+
+	        _numberOfBuckets = numberOfBuckets; // ok
+	        _buckets = new IntervalTuple<T>[numberOfBuckets];
+	        _bucketProbabilities = new Decimal[numberOfBuckets];
+
+
+	        currentState = BLN;
+	     //   currentState = NPR;
+        }
+/*        else if (currentState == NPR)
+        {
+	        if (!in.good() || !headerLine3Format.match(currentLine, 0, posVec))
+	        {
+		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@nullprobability = ' + x", currentLineNumber, currentLine));
+	        }
+
+	        _notNullProbability = 1.0 - atof(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
+
+	        currentItemIndex = 0;
+	        currentState = (_numberOfValues > 0) ? VLN : BLN;
+        }
+        else if (currentState == VLN)
+        {
+	        if (!in.good() || !valueLineFormat.match(currentLine, 0, posVec))
+	        {
+		        throw DataException(format("line %hu: Bad value probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = {' + x + ' }'", currentLineNumber, currentLine));
+	        }
+
+	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
+	        T value = fromString<T>(currentLine.substr(posVec[3].offset, posVec[3].length));
+
+	        _values[currentItemIndex] = value;
+	        _valueProbabilities[currentItemIndex] = probability;
+//	        _valueProbability += probability;
+//	        _cumulativeProbabilites[currentItemIndex] = _valueProbability;
+
+	        currentItemIndex++;
+
+	        if (currentItemIndex >= _numberOfValues)
+	        {
+		        currentState = (_numberOfBuckets > 0) ? BLN : FIN;
+		        currentItemIndex = 0;
+	        }
+        }
+        else */
+        if (currentState == BLN)
+        {
+	        if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
+	        {
+		        throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [' + x_min + ', ' + x_max + ') }'", currentLineNumber, currentLine));
+	        }
+
+	        // TODO: rewrite T initialization
+	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
+	        T::V1 min1 = fromString<T::V1>(currentLine.substr(posVec[3].offset, posVec[3].length));
+	        T::V1 max1 = fromString<T::V1>(currentLine.substr(posVec[4].offset, posVec[4].length));
+
+	        T::V2 min2 = fromString<T::V2>(currentLine.substr(posVec[5].offset, posVec[5].length));
+	        T::V2 max2 = fromString<T::V2>(currentLine.substr(posVec[6].offset, posVec[6].length));
+
+	        T min = new T<T::V1, T::V2>(min1, min2);
+	        T max = new T<T::V1, T::V2>(max1, max2);
+
+	        _buckets[currentItemIndex].set(min, max);
+	        _bucketProbabilities[currentItemIndex] = probability;
+	        _bucketProbability += probability;
+	        _cumulativeProbabilites[currentItemIndex+_numberOfValues] = _valueProbability + _bucketProbability;
+
+	        currentItemIndex++;
+
+	        if (currentItemIndex >= _numberOfBuckets)
+	        {
+		        currentState = FIN;
+		        currentItemIndex = 0;
+	        }
+        }
+
+        currentLineNumber++;
+    }
+
+    // protect against unexpected reader state
+    if (currentState != END)
+    {
+        throw RuntimeException("Unexpected state in CombinedPrFunction reader at line " + currentLineNumber);
+    }
+
+    // check if extra normalization is required
+    if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
+    {
+        normalize();
+    }
+}
 
 template<typename T>
 inline size_t JointPrFunction<T>::numberOfBuckets() const
@@ -488,17 +644,17 @@ inline size_t JointPrFunction<T>::numberOfBuckets() const
     return _numberOfBuckets;
 }
 
-template<typename T>
-inline T JointPrFunction<T>::min()const
-{
-    return _activeDomain.min();
-}
-
-template<typename T>
-inline T JointPrFunction<T>::max() const
-{
-    return _activeDomain.max();
-}
+//template<typename Tuple>
+//inline Tuple JointPrFunction<Tuple>::min()const
+//{
+//    return _activeDomain.min();
+//}
+//
+//template<typename Tuple>
+//inline Tuple JointPrFunction<Tuple>::max() const
+//{
+//    return _activeDomain.max();
+//}
 
 
 
