@@ -39,12 +39,11 @@ namespace Myriad {
 class MyriadAbstractTuple
 {
 public:
-
     /**
      * Default constructor.
      */
     MyriadAbstractTuple(){}
-
+    virtual size_t getDim() = 0;
 };
 
 // all ValueTypes permitted except MyriadTuple
@@ -52,26 +51,39 @@ template<typename ValueType1, typename ValueType2>
 class MyriadTuple: public MyriadAbstractTuple
 {
 public:
-	MyriadTuple(){}
+	MyriadTuple(): _dim(2){}
 
 	MyriadTuple(ValueType1 value1, ValueType2 value2)
 	{
-		this->first = value1;
-		this->second = value2;
+		this->_first = value1;
+		this->_second = value2;
 	}
 
+	template<typename ValueType>
+	ValueType elementAt(size_t index){
+		switch (index) {
+		case 1: return getFirst();
+		case 2: return getSecond();
+		}
+	}
+
+	size_t getDim(){
+		return _dim;
+	}
 	ValueType1 getFirst(){
-		return first;
+		return _first;
 	}
 
 	ValueType2 getSecond()
 	{
-		return second;
+		return _second;
 	}
-private:
-	ValueType1 first;
-	ValueType2 second;
 
+private:
+
+	ValueType1 _first;
+	ValueType2 _second;
+	size_t _dim;
 };
 
 // all ValueTypes permitted except MyriadTuple
@@ -80,34 +92,49 @@ class MyriadTriple: public MyriadAbstractTuple
 {
 public:
 
-	MyriadTriple(){}
+	MyriadTriple(): _dim(3){}
 
-	MyriadTriple(ValueType1 value1, ValueType2 value2, ValueType3 value3)
+	MyriadTriple(ValueType1 value1, ValueType2 value2, ValueType3 value3) : _dim(3)
 	{
-		this->first = value1;
-		this->second = value2;
-		this->third = value3;
+		this->_first = value1;
+		this->_second = value2;
+		this->_third = value3;
 	}
 	ValueType1 getFirst(){
-		return first;
+		return _first;
 	}
 
 	ValueType2 getSecond()
 	{
-		return second;
+		return _second;
 	}
 
 	ValueType3 getThird()
 	{
-		return third;
+		return _third;
+	}
+
+	size_t getDim(){
+		return _dim;
+	}
+
+	template<typename ValueType>
+	ValueType elementAt(size_t index){
+		switch (index) {
+		case 1: return getFirst();
+		case 2: return getSecond();
+		case 3: return getThird();
+		// TODO: default: raise Exception
+		}
 	}
 
 private:
 
 	//MyriadTriple(const MyriadTuple& mt){}
-	ValueType1 first;
-	ValueType2 second;
-	ValueType3 third;
+	ValueType1 _first;
+	ValueType2 _second;
+	ValueType3 _third;
+	size_t _dim;
 };
 
 //@}
