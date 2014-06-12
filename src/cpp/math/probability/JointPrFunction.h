@@ -23,6 +23,7 @@
 #include "core/types/MyriadAbstractTuple.h"
 #include "math/Function.h"
 #include "math/IntervalTuple.h"
+#include "math/algebra/MultiplicativeGroup.h"
 
 
 #include <Poco/Any.h>
@@ -49,14 +50,16 @@ namespace Myriad
  * distinct values, a set of bucket probabilities, and a special probability for
  * the \p T domain NULL value.
  *
- * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ * @author: Marie Hoffmann <marie.hoffmann@tu-berlin.de>
  */
 
 // TODO: example for derivation from UnaryFunction, T = MyriadTuple/-Triple, genID =  const I64u
 template<typename T>
-class JointPrFunction: public UnaryFunction<T, const I64u>
+class JointPrFunction //: public UnivariatePrFunction<T>
 {
 public:
+	typedef typename T::ValueType1 V1;
+	typedef typename T::ValueType2 V2;
 
     /**
      * Default constructor.
@@ -65,13 +68,14 @@ public:
      * initialization routines.
      */
     JointPrFunction() :
-       // Unary<T>(""),
+    	//UnivariatePrFunction<T>(""),
         _activeDomain(NULL, NULL), //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
         _numberOfBuckets(0),
         _bucketProbabilities(NULL),
         _buckets(NULL),
         _cardinalities(NULL),
-        _sequenceSize(0)
+        _sampleSize(0),
+        _dim(2)
         //_cumulativeProbabilites(NULL),
         //_EPSILON(0.000001)
     {
@@ -86,13 +90,14 @@ public:
      * @param path The location of the function configuration file.
      */
     JointPrFunction(const string& path) :
-    	// Unary<T>(""),
-    	 _activeDomain(NULL, NULL), //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
-    	 _numberOfBuckets(0),
-    	 _bucketProbabilities(NULL),
-    	 _buckets(NULL),
-    	 _cardinalities(NULL),
-         _sequenceSize(0)
+    	  //UnivariatePrFunction<T>(""),
+    	 _activeDomain(nullValue<T>(), nullValue<T>())//, //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
+//    	 _numberOfBuckets(0),
+//    	 _bucketProbabilities(NULL),
+//    	 _buckets(NULL),
+//    	 _cardinalities(NULL),
+//         _sampleSize(0),
+//         _dim(2)
     {
         initialize(path);
     }
@@ -182,7 +187,7 @@ public:
     /**
      * @see UnivariatePrFunction::operator()
      */
-    Decimal operator()(const T x) const;
+  //  Decimal operator()(const T x) const;
 
     /**
      * TODO: without random input, use GenID/position instead?
@@ -203,6 +208,14 @@ private:
 
     I64u findBucket(const I64u _tupleID) const;
 
+    I64u normalizeTupleID(I64u tID, size_t bID) const;
+
+    I64u permuteTupleID(I64u tID) const;
+
+    I64u permuteTupleID(I64u tID, size_t bID) const;
+
+    T scalar2Tuple(I64u tID, I64u bID) const;
+
     static RegularExpression headerLine1Format;
     static RegularExpression headerLine2Format;
     static RegularExpression headerLine3Format;
@@ -211,16 +224,13 @@ private:
 
     // TODO: IntervalTuple generic
 
-    IntervalTuple<<MyriadTuple> > _activeDomain;
-
-    Interval<T> _activeDomain;				// attribute domain as interval [min(_buckets), max(_buckets)]
-
+    IntervalTuple<T> _activeDomain; 		// attribute domain as interval [min(_buckets), max(_buckets)]
     size_t _numberOfBuckets;				// of multidimensional histogram
-    IntervalTuple<MyriadTuple>* _buckets; 	// buckets of joint histogram, format [((low_T1, low_Tuple2), (up_T1, up_T2))]
+    IntervalTuple<T>* _buckets; 	// buckets of joint histogram, format [((low_T1, low_Tuple2), (up_T1, up_T2))]
     Decimal* _bucketProbabilities;			// of sequentially ordered multidimensional buckets
     vector<I64u*> _cardinalities;    // cardinality per bucket for each dimension, format [[card_T1_Bi, card_T2_Bi]]_i, T = type, B = bucket index
-    I64u _sequenceSize; 				// total table size
-    size_t _dim;
+    I64u _sampleSize; 				// total table size
+    size_t _dim;					// dimensionality of histogram = attribute number of composite key
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -255,17 +265,17 @@ void JointPrFunction<T>::reset()
 {
     _numberOfBuckets = 0;
     delete[] _bucketProbabilities;
-    _buckets.clear();
+    delete[] _buckets;
     _cardinalities.clear();
-    I64u _sequenceSize = 0;
-    size_t _dim = 0;
+    _sampleSize = 0;
+    _dim = 0;
 }
 
 //// TODO: ?
 //template<typename T>
-//inline Decimal JointPrFunction<T>::operator()() const
+//inline Decimal JointPrFunction<T>::operator()(const T x) const
 //{
-//    return 0;
+//    return Decimal(0);
 //}
 
 /*
@@ -314,7 +324,7 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID) const
 	Decimal s = 0;
 	for (size_t i = 0; i < _numberOfBuckets; ++i){
 		s += _bucketProbabilities[i];
-		if (ceil(_sequenceSize*s) <= tupleID){
+		if (ceil(_sampleSize*s) <= tupleID){
 			bucketID = i;
 			break;
 		}
@@ -331,17 +341,17 @@ inline I64u JointPrFunction<T>::normalizeTupleID(I64u tupleID, size_t bucketID) 
 	Decimal s = 0;
 	for (size_t i = 0; i < bucketID; ++ i)
 		s += _bucketProbabilities[i];
-	I64u tupleID_left = ceil(s*_sequenceSize) + 1;
+	I64u tupleID_left = ceil(s*_sampleSize) + 1;
 	return tupleID-tupleID_left;
 }
 
 /*
- * Shuffle _tupleID <- [0; _sequenceSize]
+ * Shuffle _tupleID <- [0; _sampleSize]
  */
 template<typename T>
-inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID)
+inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID) const
 {
-	MultiplicativeGroup mg(_sequenceSize);
+	MultiplicativeGroup mg(_sampleSize);
 	return mg(tupleID);
 }
 
@@ -349,7 +359,7 @@ inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID)
  * Permute bucket's tupleID to larger index in [0; card(bucketID)-1]
  */
 template<typename T>
-inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, size_t bucketID)
+inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, size_t bucketID) const
 {
 	I64u cardinality = 1;
 	for (size_t i = 0; i < _dim; ++i)
@@ -362,7 +372,7 @@ inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, size_t bucketID)
  * Scalar tuple identifier is mapped to output tuple dimension-wise
  * */
 template<typename T>
-inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
+inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID) const
 {
 	// transform scalar index to dimension-wise indices
 	I64u compositeID[_dim];
@@ -391,13 +401,13 @@ inline T JointPrFunction<T>::sample(const I64u genID) const
 {
 	I64u tupleID = genID;
 
-	// TODO: 1. permute tupleID <- [0;_sequenceSize-1], should be reset globally
-	//tupleID = permutetupleID(tupleID);
+	// TODO: 1. permute tupleID <- [0;_sampleSize-1], should be reset globally
+	//tupleID = permuteTupleID(tupleID);
 
 	// 2. find bucket
 	I64u bucketID = findBucket(tupleID);
 
-	// 3. normalize to [0, _bucketProbabilities[bucketID]*_sequenceSize]
+	// 3. normalize to [0, _bucketProbabilities[bucketID]*_sampleSize]
 	tupleID = normalizeTupleID(tupleID, bucketID);
 
 	// 4. permute tuple index <- [0, card(bucket)-1]
@@ -417,7 +427,7 @@ void JointPrFunction<T>::initialize(const string& path)
 }
 
 template<typename T>
-void CombinedPrFunction<T>::initialize(const Path& path)
+void JointPrFunction<T>::initialize(const Path& path)
 {
     if (!path.isFile())
     {
@@ -466,9 +476,10 @@ void JointPrFunction<T>::initialize(istream& in)
     I16u currentLineNumber = 1;
     initialize(in, currentLineNumber);
 }
-
+//template< template<class S1, class S2> class T >
 template<typename T>
-void JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
+void
+JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 {
     enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
 
@@ -488,11 +499,14 @@ void JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         // and does not a currentLine
         if (currentState == FIN)
         {
-        	// TODO: extract min/max from buckets AND exact _values
+        	// TODO: extract min/max from buckets AND exact _values and check sorted ordering
 	        //T min = std::min<T>(_buckets[0].min(), _values[0]);
         	//T max = std::max<T>(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfValues-1]+1));
 
-	        _activeDomain.set(_buckets[0], _buckets[_numberOfBuckets-1]);
+        	T min = _buckets[0].min(); // left bin edges of left most Interval
+        	T max = _buckets[_numberOfBuckets-1].max(); // right bin edges of right most Interval
+
+	        _activeDomain.set(min, max); //_buckets[_numberOfBuckets-1]);
 
 	        currentState = END;
 	        continue;
@@ -594,24 +608,24 @@ void JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         {
 	        if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
 	        {
-		        throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [' + x_min + ', ' + x_max + ') }'", currentLineNumber, currentLine));
+		        throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [min_i, max_i)_i=1..d }'", currentLineNumber, currentLine));
 	        }
 
-	        // TODO: rewrite T initialization
+	        // TODO: rewrite T initialization to fit for triples
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
-	        T::V1 min1 = fromString<T::V1>(currentLine.substr(posVec[3].offset, posVec[3].length));
-	        T::V1 max1 = fromString<T::V1>(currentLine.substr(posVec[4].offset, posVec[4].length));
+	        VType1 min1 = fromString<VType1>(currentLine.substr(posVec[3].offset, posVec[3].length));
+	        typename T::ValueType1 max1 = fromString<T::ValueType1>(currentLine.substr(posVec[4].offset, posVec[4].length));
 
-	        T::V2 min2 = fromString<T::V2>(currentLine.substr(posVec[5].offset, posVec[5].length));
-	        T::V2 max2 = fromString<T::V2>(currentLine.substr(posVec[6].offset, posVec[6].length));
+	        typename T::ValueType2 min2 = fromString<T::ValueType2>(currentLine.substr(posVec[5].offset, posVec[5].length));
+	        typename T::ValueType2 max2 = fromString<T::ValueType2>(currentLine.substr(posVec[6].offset, posVec[6].length));
 
-	        T min = new T<T::V1, T::V2>(min1, min2);
-	        T max = new T<T::V1, T::V2>(max1, max2);
+	        T min = new T(min1, min2);
+	        T max = new T(max1, max2);
 
 	        _buckets[currentItemIndex].set(min, max);
 	        _bucketProbabilities[currentItemIndex] = probability;
-	        _bucketProbability += probability;
-	        _cumulativeProbabilites[currentItemIndex+_numberOfValues] = _valueProbability + _bucketProbability;
+	    //    _bucketProbability += probability;
+	    //    _cumulativeProbabilites[currentItemIndex+_numberOfValues] = _valueProbability + _bucketProbability;
 
 	        currentItemIndex++;
 
@@ -628,14 +642,15 @@ void JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     // protect against unexpected reader state
     if (currentState != END)
     {
-        throw RuntimeException("Unexpected state in CombinedPrFunction reader at line " + currentLineNumber);
+        throw RuntimeException("Unexpected state in JointPrFunction reader at line " + currentLineNumber);
     }
 
     // check if extra normalization is required
-    if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
+    // TODO
+   /*if (std::abs(_valueProbability + _bucketProbability - _notNullProbability) >= 0.00001)
     {
         normalize();
-    }
+    }*/
 }
 
 template<typename T>

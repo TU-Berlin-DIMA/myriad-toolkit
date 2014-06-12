@@ -31,7 +31,7 @@ namespace Myriad {
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  */
-template<class MyriadTuple>
+template<class T>  // T = MyriadTuple
 class IntervalTuple // ((low_T1, low_T2), (up_T1, up_T2), prob_interval)
 {
 public:
@@ -55,8 +55,15 @@ public:
      * @param min The left bounds of the interval (inclusive).
      * @param max The right bounds of the interval (exclusive).
      */
-    IntervalTuple(const MyriadTuple& min, const MyriadTuple& max) :
+    IntervalTuple(const T& min, const T& max) :
         _min(min), _max(max)
+    {
+    }
+    /*
+     * Copy Constructor
+     * */
+    IntervalTuple(const IntervalTuple& t) :
+    	_min(t._min), _max(t._max)
     {
     }
 
@@ -66,7 +73,7 @@ public:
      * @param min The new left bound of the interval (inclusive).
      * @param max The new right bound of the interval (exclusive).
      */
-    inline void set(const MyriadTuple& min, const MyriadTuple& max)
+    inline void set(const T& min, const T& max)
     {
         _min = min;
         _max = max;
@@ -77,7 +84,7 @@ public:
      *
      * @return The interval left bound.
      */
-    inline const MyriadTuple min() const
+    inline const T min() const
     {
         return _min;
     }
@@ -87,7 +94,7 @@ public:
      *
      * @return The interval right bound.
      */
-    inline const MyriadTuple max() const
+    inline const T max() const
     {
         return _max;
     }
@@ -121,7 +128,7 @@ public:
      *
      * @return True, if <tt>min_i >= x && max_i < x for i=1..dim</tt>.
      */
-    inline const bool contains(MyriadTuple x) const
+    inline const bool contains(T x) const
     {
     	bool isContained = false;
     	for (size_t i = 0; i < x.getDim(); ++i)
@@ -135,7 +142,7 @@ public:
      * TODO
      * @param other The other against which we intersect the current one.
      */
-    inline void intersect(const IntervalTuple<MyriadTuple>& other)
+    inline void intersect(const IntervalTuple<T>& other)
     {
         if (other._min < _max && _min < other._max)
         {
@@ -155,7 +162,7 @@ public:
      *
      * Compares two intervals lexicographically by <tt>(min, max)</tt>.
      */
-    inline bool operator < (const IntervalTuple<MyriadTuple>& r) const
+    inline bool operator < (const IntervalTuple<T>& r) const
     {
         if (_min - r._min != 0)
         {
@@ -172,11 +179,11 @@ public:
      *
      * Two intervals are equall iff their \p min and \p max values are equal.
      */
-    inline bool operator == (const IntervalTuple<MyriadTuple>& r) const
+    inline bool operator == (const IntervalTuple<T>& r) const
     {
     	bool isEqual = true;
-        for (size_t i = 0; i < r.getDim(); ++i)
-        	isEqual &= _min.elementAt(i) == r._min.elementAt(i) && _max.elementAt(i) == r._max.elementAt(i);
+        for (size_t i = 0; i < r->getDim(); ++i)
+        	isEqual &= (_min.elementAt(i) == r._min.elementAt(i)) && (_max.elementAt(i) == r._max.elementAt(i));
         return isEqual;
     }
 
@@ -186,11 +193,11 @@ public:
      * Two intervals are not equall iff their \p min or \p max values are not
      * equal.
      */
-    inline bool operator != (const IntervalTuple<MyriadTuple>& r) const
+    inline bool operator != (const IntervalTuple<T>& r) const
     {
     	bool isUnequal = true;
-    	for (size_t i = 0; i < r.getDim(); ++i)
-    		isUnequal &=_min != r._min || _max != r._max;
+    	for (size_t i = 0; i < r->getDim(); ++i)
+    		isUnequal &= (_min.elementAt(i) != r._min.elementAt(i)) || (_max.elementAt(i) != r._max.elementAt(i));
     	return isUnequal;
     }
 
@@ -199,18 +206,18 @@ private:
     /**
      * The left bound of the interval (inclusive).
      */
-    MyriadTuple _min;
+    T _min;
 
     /**
      * The right bound of the interval (exclusive).
      */
-    MyriadTuple _max;
+    T _max;
 };
 
 /**
  * A 'write to ostream' specialization for the Interval template.
  */
-template<typename MyriadTuple> inline std::ostream& operator<<(std::ostream& stream, const IntervalTuple<MyriadTuple>& interval)
+template<typename T> inline std::ostream& operator<<(std::ostream& stream, const IntervalTuple<T>& interval)
 {
     stream << "[" << interval.min() << ", " << interval.max() << ")";
     return stream;

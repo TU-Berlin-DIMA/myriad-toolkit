@@ -43,7 +43,10 @@ public:
      * Default constructor.
      */
     MyriadAbstractTuple(){}
+    virtual ~MyriadAbstractTuple(){};
     virtual size_t getDim() = 0;
+   // virtual bool operator == (const MyriadAbstractTuple& t) const = 0;
+
 };
 
 // all ValueTypes permitted except MyriadTuple
@@ -51,13 +54,23 @@ template<typename ValueType1, typename ValueType2>
 class MyriadTuple: public MyriadAbstractTuple
 {
 public:
-	MyriadTuple(): _dim(2){}
+//	typename ValueType1  VType1;
+//	typename ValueType2  VType2;
 
-	MyriadTuple(ValueType1 value1, ValueType2 value2)
+	MyriadTuple(): _dim(0){}
+
+	MyriadTuple(ValueType1 value1, ValueType2 value2): _dim(2)
 	{
 		this->_first = value1;
 		this->_second = value2;
 	}
+	// copy constructor
+	MyriadTuple(const MyriadTuple& t):
+		_first(t._first),
+		_second(t._second)
+	{}
+
+	virtual ~MyriadTuple(){};
 
 	template<typename ValueType>
 	ValueType elementAt(size_t index){
@@ -78,6 +91,12 @@ public:
 	{
 		return _second;
 	}
+
+	bool operator == (const MyriadTuple& t) const
+	{
+		return (this->_first == t._first && this->_second == t._second);
+	}
+
 
 private:
 
@@ -100,6 +119,9 @@ public:
 		this->_second = value2;
 		this->_third = value3;
 	}
+
+	virtual ~MyriadTriple(){};
+
 	ValueType1 getFirst(){
 		return _first;
 	}
@@ -126,6 +148,11 @@ public:
 		case 3: return getThird();
 		// TODO: default: raise Exception
 		}
+	}
+
+	bool operator == (const MyriadTriple& t) const
+	{
+		return (this->_first == t._first && this->_second == t._second && this->_third == t._third);
 	}
 
 private:
