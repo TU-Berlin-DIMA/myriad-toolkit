@@ -54,8 +54,9 @@ template<typename ValueType1, typename ValueType2>
 class MyriadTuple: public MyriadAbstractTuple
 {
 public:
-//	typename ValueType1  VType1;
-//	typename ValueType2  VType2;
+
+	typedef ValueType1  VType1;
+	typedef ValueType2  VType2;
 
 	MyriadTuple(): _dim(0){}
 
