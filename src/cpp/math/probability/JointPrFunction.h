@@ -58,10 +58,11 @@ template<typename T>
 class JointPrFunction //: public UnivariatePrFunction<T>
 {
 public:
-	typedef typename T::ValueType1 V1;
-	typedef typename T::ValueType2 V2;
 
-    /**
+	typedef typename T::VType1 V1;
+	typedef typename T::VType2 V2;
+
+	/**
      * Default constructor.
      *
      * Merely creates a new function object, and does not execute any
@@ -69,15 +70,14 @@ public:
      */
     JointPrFunction() :
     	//UnivariatePrFunction<T>(""),
-        _activeDomain(NULL, NULL), //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
+//        _activeDomain(nullValue<T>(), nullValue<T>()), // TODO: lower, upper bin edges multidimensional Interval needed
         _numberOfBuckets(0),
-        _bucketProbabilities(NULL),
-        _buckets(NULL),
-        _cardinalities(NULL),
-        _sampleSize(0),
-        _dim(2)
-        //_cumulativeProbabilites(NULL),
-        //_EPSILON(0.000001)
+//        _bucketProbabilities(nullValue<Decimal*>()),
+////        _cardinalities(NULL),
+//        _sampleSize(0),
+        _dim(0)
+//        //_cumulativeProbabilites(NULL),
+//        //_EPSILON(0.000001)
     {
     }
 
@@ -91,14 +91,13 @@ public:
      */
     JointPrFunction(const string& path) :
     	  //UnivariatePrFunction<T>(""),
-    	 _activeDomain(nullValue<T>(), nullValue<T>())//, //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
-//    	 _numberOfBuckets(0),
-//    	 _bucketProbabilities(NULL),
-//    	 _buckets(NULL),
-//    	 _cardinalities(NULL),
-//         _sampleSize(0),
-//         _dim(2)
+//    	 _activeDomain(nullValue<T>(), nullValue<T>()),//, //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
+    	 _numberOfBuckets(0),
+//    	 _bucketProbabilities(nullValue<Decimal*>()),
+//    	 _sampleSize(0),
+    	 _dim(0)
     {
+    	cout << "JointPrFunction()" << endl;
         initialize(path);
     }
 
@@ -226,11 +225,11 @@ private:
 
     IntervalTuple<T> _activeDomain; 		// attribute domain as interval [min(_buckets), max(_buckets)]
     size_t _numberOfBuckets;				// of multidimensional histogram
-    IntervalTuple<T>* _buckets; 	// buckets of joint histogram, format [((low_T1, low_Tuple2), (up_T1, up_T2))]
-    Decimal* _bucketProbabilities;			// of sequentially ordered multidimensional buckets
-    vector<I64u*> _cardinalities;    // cardinality per bucket for each dimension, format [[card_T1_Bi, card_T2_Bi]]_i, T = type, B = bucket index
-    I64u _sampleSize; 				// total table size
-    size_t _dim;					// dimensionality of histogram = attribute number of composite key
+    vector<IntervalTuple<T> > _buckets; 	// buckets of joint histogram, format [((low_T1, low_Tuple2), (up_T1, up_T2))]
+    vector<Decimal> _bucketProbabilities;	// of sequentially ordered multidimensional buckets
+    vector<vector<I64u> > _cardinalities;    		// cardinality per bucket for each dimension, format [[card_T1_Bi, card_T2_Bi]]_i, T = type, B = bucket index
+    I64u _sampleSize; 						// total table size
+    size_t _dim;							// dimensionality of histogram = attribute number of composite key
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -239,8 +238,8 @@ private:
 //@{
 
 // TODO: adjust regex to read multidimensional buckets (see set1.distribution for example format)
-//template<typename T>
-//RegularExpression JointPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
+template<typename T>
+RegularExpression JointPrFunction<T>::headerLine1Format("\\W*@numberofexactvals\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
 template<typename T>
 RegularExpression JointPrFunction<T>::headerLine2Format("\\W*@numberofbins\\W*=\\W*([+]?[0-9]+)\\W*(#(.+))?");
 // TODO: allow yes/no nullprobs
@@ -263,12 +262,19 @@ RegularExpression JointPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+
 template<typename T>
 void JointPrFunction<T>::reset()
 {
-    _numberOfBuckets = 0;
-    delete[] _bucketProbabilities;
-    delete[] _buckets;
+	cout << "entered reset ..." << endl;
+	// _activeDomain.reset()
+	_buckets.clear();
+    _bucketProbabilities.clear();
+        //delete[] _buckets;
+    for (size_t i = 0; i < _numberOfBuckets; ++i){
+    	delete[] _cardinalities.at(i);
+    }
     _cardinalities.clear();
     _sampleSize = 0;
     _dim = 0;
+    _numberOfBuckets = 0;
+
 }
 
 //// TODO: ?
@@ -423,12 +429,14 @@ inline T JointPrFunction<T>::sample(const I64u genID) const
 template<typename T>
 void JointPrFunction<T>::initialize(const string& path)
 {
+	cout << "init1 ..." << endl;
     initialize(Path(path));
 }
 
 template<typename T>
 void JointPrFunction<T>::initialize(const Path& path)
 {
+	cout << "init2 ..." << endl;
     if (!path.isFile())
     {
         throw ConfigException(format("Cannot find file at `%s`", path.toString()));
@@ -473,6 +481,7 @@ void JointPrFunction<T>::initialize(const Path& path)
 template<typename T>
 void JointPrFunction<T>::initialize(istream& in)
 {
+	cout << "init3 ..." << endl;
     I16u currentLineNumber = 1;
     initialize(in, currentLineNumber);
 }
@@ -481,13 +490,14 @@ template<typename T>
 void
 JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 {
+	cout << "init4 ..." << endl;
     enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
 
     // reset old state
     reset();
 
     // reader variables
-    READ_STATE currentState = NOE; // current reader machine state
+    READ_STATE currentState = NOB; // current reader machine state, state: NOE (number of exact values) omitted
     string currentLine; // the current line
     I16u currentItemIndex = 0; // current item index
     RegularExpression::MatchVec posVec; // a posVec for all regex matches
@@ -495,10 +505,12 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     // reader finite state machine
     while (currentState != END)
     {
+    	cout << "current state: " << currentState << endl;
         // the special FIN stage contains only final initialization constructs
         // and does not a currentLine
         if (currentState == FIN)
         {
+        	cout << "entered state FIN" << endl;
         	// TODO: extract min/max from buckets AND exact _values and check sorted ordering
 	        //T min = std::min<T>(_buckets[0].min(), _values[0]);
         	//T max = std::max<T>(_buckets[_numberOfBuckets-1].max(), static_cast<T>(_values[_numberOfValues-1]+1));
@@ -525,7 +537,8 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 	        continue; // skip this line
         }
 
-        /*if (currentState == NOE)
+/*
+        if (currentState == NOE)
         {
 	        if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
 	        {
@@ -545,7 +558,7 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 
 	        currentState = NOB;
         }
-        else */
+        else*/
         if (currentState == NOB)
         {
 	        if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
@@ -560,10 +573,13 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 		        throw DataException("Invalid number of buckets '" + toString(numberOfBuckets) +  "'");
 	        }
 
-	        _numberOfBuckets = numberOfBuckets; // ok
-	        _buckets = new IntervalTuple<T>[numberOfBuckets];
-	        _bucketProbabilities = new Decimal[numberOfBuckets];
+	        /* initialize bin, bin probabilities, and cardinalities*/
+	        _numberOfBuckets = numberOfBuckets;
+	        for (size_t b = 0; b < numberOfBuckets; ++b) {
+	        	_buckets.push_back(new IntervalTuple<T>);
+	        	_bucketProbabilities.push_back(0.0);
 
+	        }
 
 	        currentState = BLN;
 	     //   currentState = NPR;
@@ -606,24 +622,34 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         else */
         if (currentState == BLN)
         {
+        	cout << "entered state BLN" << endl;
 	        if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
 	        {
 		        throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [min_i, max_i)_i=1..d }'", currentLineNumber, currentLine));
 	        }
 
+
+	        for (int i = 1; i < 7; ++i)
+	        	cout << currentLine.substr(posVec[1].offset, posVec[1].length) << endl;
 	        // TODO: rewrite T initialization to fit for triples
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
-	        VType1 min1 = fromString<VType1>(currentLine.substr(posVec[3].offset, posVec[3].length));
-	        typename T::ValueType1 max1 = fromString<T::ValueType1>(currentLine.substr(posVec[4].offset, posVec[4].length));
+	        V1 min1 = fromString<V1>(currentLine.substr(posVec[3].offset, posVec[3].length));
+	        V1 max1 = fromString<V1>(currentLine.substr(posVec[4].offset, posVec[4].length));
 
-	        typename T::ValueType2 min2 = fromString<T::ValueType2>(currentLine.substr(posVec[5].offset, posVec[5].length));
-	        typename T::ValueType2 max2 = fromString<T::ValueType2>(currentLine.substr(posVec[6].offset, posVec[6].length));
+	        V2 min2 = fromString<V2>(currentLine.substr(posVec[5].offset, posVec[5].length));
+	        V2 max2 = fromString<V2>(currentLine.substr(posVec[6].offset, posVec[6].length));
 
-	        T min = new T(min1, min2);
-	        T max = new T(max1, max2);
-
-	        _buckets[currentItemIndex].set(min, max);
-	        _bucketProbabilities[currentItemIndex] = probability;
+	        T min(min1, min2);
+	        T max(max1, max2);
+	        //IntervalTuple<T> interval(min, max); // set new interval as a set of lower and upper bin edges
+	        _buckets.at(currentItemIndex).set(min, max);
+	        _bucketProbabilities.at(currentItemIndex) = probability;
+	        _dim = 2; // TODO: more generic version - extract from regex
+	        for (size_t i = 0; i < _numberOfBuckets; ++i){
+	        	_cardinalities.push_back(vector<I64u>(_dim, 0));
+	        	for (size_t j = 0; j < _dim; ++j)
+	        		_cardinalities.end()[j] = _buckets.at(currentItemIndex).length(j); // interval cardinality for dim = j
+	        }
 	    //    _bucketProbability += probability;
 	    //    _cumulativeProbabilites[currentItemIndex+_numberOfValues] = _valueProbability + _bucketProbability;
 
@@ -651,6 +677,7 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     {
         normalize();
     }*/
+    cout << "Leaving initialize" << endl;
 }
 
 template<typename T>
