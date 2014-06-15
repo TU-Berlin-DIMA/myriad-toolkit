@@ -20,6 +20,7 @@
 
 
 #include <iostream>
+#include <cassert>
 
 using namespace std;
 using namespace Poco;
@@ -73,22 +74,16 @@ public:
 
 	virtual ~MyriadTuple(){};
 
-	template<typename ValueType>
-	ValueType elementAt(size_t index){
-		switch (index) {
-		case 1: return getFirst();
-		case 2: return getSecond();
-		}
-	}
+
 
 	size_t getDim(){
 		return _dim;
 	}
-	ValueType1 getFirst(){
+	ValueType1 getFirst() const {
 		return _first;
 	}
 
-	ValueType2 getSecond()
+	ValueType2 getSecond() const
 	{
 		return _second;
 	}
@@ -98,6 +93,56 @@ public:
 		return (this->_first == t._first && this->_second == t._second);
 	}
 
+	template<class ValueType>
+	void elementAt( const unsigned int index, ValueType& val) const {
+		switch (index) {
+		case 0: val = getFirst(); return;
+		case 1: val = getSecond(); return;
+		default: assert(0);
+		}
+	}
+
+	// http://stackoverflow.com/questions/13573331/error-c2783-could-not-deduce-template-arguments
+//	namespace detail {
+		template <typename ValueType> ValueType value_of( ValueType const & t ) { return t; }
+
+	//	template <typename K, typename V> V valueOf( std::pair<const K, V> const & p ) {
+		//	return p.second;
+		//}
+	//}
+	// TODO: make generic version work
+	/*template<typename ValueType>
+	ValueType diffAt(size_t index, const MyriadTuple& t) const
+	{
+		ValueType v1(this->elementAt(index));
+		ValueType v2(t.elementAt(index));
+
+		return  v1 - v2;
+	}
+	*/
+
+	double diffAt(size_t index, const MyriadTuple& t) const
+	{
+		std::cerr << "In diffAt() " << std::endl;
+
+		if( 0 == index) {
+			ValueType1 v1;
+			this->elementAt(index, v1);
+			ValueType1 v2;
+			t.elementAt(index,v2);
+
+			return  ((double) v1) - ((double) v2);
+		}
+		else {
+			ValueType1 v1;
+			this->elementAt(index, v1);
+			ValueType1 v2;
+			t.elementAt(index,v2);
+
+			return  ((double) v1) - ((double) v2);
+		}
+		return 0.0;
+	}
 
 private:
 

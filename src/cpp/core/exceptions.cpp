@@ -29,6 +29,7 @@ namespace Myriad {
 
 POCO_IMPLEMENT_EXCEPTION(ConfigException, Poco::Exception, "Error in configuration")
 POCO_IMPLEMENT_EXCEPTION(IntegerOverflowException, Poco::LogicException, "Integer overflow")
+POCO_IMPLEMENT_EXCEPTION(LogicalException, Poco::LogicException, "Logical error")
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 // type constants

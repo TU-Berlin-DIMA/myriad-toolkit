@@ -19,6 +19,7 @@
 #define INTERVALTUPLE_H_
 
 #include <iostream>
+#include <cassert>
 
 namespace Myriad {
 /**
@@ -35,6 +36,9 @@ template<class T>  // T = MyriadTuple
 class IntervalTuple // ((low_T1, low_T2), (up_T1, up_T2), prob_interval)
 {
 public:
+
+	typedef typename T::VType1 V1;
+	typedef typename T::VType2 V2;
 
     /**
      * Constructor.
@@ -120,7 +124,19 @@ public:
      */
     inline const double length(size_t d) const
     {
-        return _max.elementAt(d)-_min.elementAt(d);
+    	if( 0 == d) {
+    		return this->_max.diffAt(d, this->_min);
+    	}
+    	else if( 1 == d) {
+    		return this->_max.diffAt(d, this->_min);
+    	}
+    	else {
+    		assert( false);
+
+    	}
+       //return (double)_max.elementAt(d)-(double)_min.elementAt(d);
+
+    	return 0.0;
     }
 
     /**
