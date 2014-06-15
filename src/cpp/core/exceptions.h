@@ -40,6 +40,13 @@ POCO_DECLARE_EXCEPTION(, ConfigException, Poco::Exception)
  */
 POCO_DECLARE_EXCEPTION(, IntegerOverflowException, Poco::LogicException)
 
+/**
+ * An exception thrown when an algorithm reaches an unexpected state.
+ *
+ * @author: Marie Hoffmann <marie.hoffmann@tu-berlin.de>
+ */
+POCO_DECLARE_EXCEPTION(, LogicalException, Poco::LogicException)
+
 /** @}*/// add to core group
 }  // namespace Myriad
 
