@@ -31,6 +31,7 @@ namespace Myriad {
  * \p Domain type.
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
+ * @author2: Marie Hoffmann <marie.hoffmann@tu-berlin.de>
  */
 template<class T>  // T = MyriadTuple
 class IntervalTuple // ((low_T1, low_T2), (up_T1, up_T2), prob_interval)
@@ -105,15 +106,23 @@ public:
 
     /**
      * Get the cardinality of all dimensions of this interval, computed as <tt>prod(max_i - min_i)</tt>.
-     *
+     * TODO: more generic version
      * @return The interval length.
      */
     inline const double length() const
     {
     	double gamma = 1;
-    	for (size_t i = 0; i < _max.getDim(); ++i)
-    		gamma *= _max.elementAt(i)-_min.elementAt(i);
-        return gamma;
+    	V1 v1 = _max.getFirst() - _min.getFirst();
+    	V2 v2 = _max.getSecond() - _min.getSecond();
+
+//    	cout << "_max[0] = " << _max.getFirst() << ", _min[0] = " << _min.getFirst() << ", diff = " << v1 << endl;
+//    	cout << "_max[1] = " << _max.getSecond() << ", _min[1] = " << _min.getSecond() << ", diff = " << v2 << endl;
+//    	cout << "gamma = " << gamma*v1*v2 << endl;
+    	return gamma*v1*v2;
+    	//(_max.getFirst() - _min.getFirst)*(_max.getSecond()-_min.getSecond());
+//    	for (size_t i = 0; i < _max.getDim(); ++i)
+//    		gamma *= _max.elementAt(i)-_min.elementAt(i);
+//        return gamma;
     }
 
     /**
