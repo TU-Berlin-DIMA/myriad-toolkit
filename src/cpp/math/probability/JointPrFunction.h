@@ -37,6 +37,8 @@
 #include <vector>
 #include <limits>
 #include <math.h>
+#include <stdlib.h>
+#include <algorithm>
 
 using namespace std;
 using namespace Poco;
@@ -60,7 +62,7 @@ template<typename T>
 class JointPrFunction //: public UnivariatePrFunction<T>
 {
 public:
-	template<typename S> friend class JointPrFunctionTest;
+	template<typename S> friend class JointPrFunctionTest; // runtime exception when trying to access private functions/members
 
 	typedef typename T::VType1 V1;
 	typedef typename T::VType2 V2;
@@ -198,25 +200,27 @@ public:
      * TODO: without random input, use GenID/position instead?
      * @see UnivariatePrFunction::sample()
      */
-    T sample(const I64u GenID) const;
+    T sample(const I64u GenID);
 
-    double cdf(const I64u _binID) const;
+    double cdf(const I64u _binID);
 
-    I64u findBucket(const I64u _tupleID) const;
+    I64u findBucket(const I64u tupleID);
 
-private:
+
 
     void reset();
 //
 //    void normalize();
 
-    I64u normalizeTupleID(I64u tID, size_t bID) const;
+    I64u normalizeTupleID(I64u tID, I64u bID) ;
 
-    I64u permuteSampleID(I64u tID) const;
+    I64u permuteSampleID(I64u tID) ;
 
-    I64u permuteTupleID(I64u tID, size_t bID) const;
+    I64u permuteTupleID(I64u tID, I64u bID) ;
 
-    T scalar2Tuple(I64u tID, I64u bID) const;
+    T scalar2Tuple(I64u tID, I64u bID) ;
+
+private:
 
     static RegularExpression headerLine1Format;
     static RegularExpression headerLine2Format;
@@ -240,6 +244,7 @@ private:
     Decimal _notNullProbability;
     Decimal _bucketProbability;
     vector<Decimal> _cumulativeProbabilities;
+    vector<I64u> _rangeMap;					// TODO: initialize when xml spec given (needs sampleSize + distribution file), e.g. in init()
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -282,6 +287,7 @@ void JointPrFunction<T>::reset()
     _valueProbability = 0.0;
     _bucketProbability = 0.0;
     _cumulativeProbabilities.clear();
+    _rangeMap.clear();
     cout << "... leaving reset" << endl;
 }
 
@@ -343,112 +349,92 @@ void JointPrFunction<T>::normalize()
 // TODO: compute step function once for each node not for each tupleID
 // pre: GenID in [0.._sampleSize-1]
 template<typename T>
-inline I64u JointPrFunction<T>::findBucket(I64u tupleID) const
+inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
 {
-I64u bucketID = 0;
+//	cout << "entered findBucket " << endl;
    double eps = 100*numeric_limits<double>::epsilon();
-   // construct step function map
-   vector<I64u> rangeMap;
-   cout << "expected ranges with n = "<<_sampleSize << endl;
-   for (unsigned int i = 0; i < _numberOfBuckets; ++i){
-	   rangeMap.push_back((I64u) round(this->_cumulativeProbabilities.at(i)*_sampleSize+eps));
-	   cout << "\t" << rangeMap.back();
-   }
-   // check whether assigned ranges do not exceed bin's cardinality
-   I64 delta = 0;
-   I64 curr;
+   // construct step function map if not done previously
+   if (_rangeMap.size() == 0){
 
-   /*
-    *     rangeMap = arrayfun(@(phi) round(phi*n+eps), phi_cum)
-    % check whether assigned ranges do not exceed bin's cardinality
-    delta = 0;
-    for run = 1:numBins
-        for i = 1:numBins
-            % compute current range size
-            if i == 1
-                curr = rangeMap(i);
-            else
-                curr = rangeMap(i)-rangeMap(i-1);
-            end
-            % add difference to successor if assigned range exceeds cardinality of current bin
-            if curr-gamma(i) > 0 % exceeding!
-                delta = curr - gamma(i) %functools.reduce(lambda x,y: x*y, self._Gamma[i])
-                if i ~= numBins
-                    rangeMap(i) = rangeMap(i) - delta;
-                else  % shift upper bounds of all predecessors => bin 0 becomes enlarged
-                    rangeMap = horzcat(arrayfun(@(item) item+delta, rangeMap(1:end-1)), rangeMap(end));
-                end
-            end
-        end
-    end
-    *
-    * */
-   for (unsigned int run = 0; run < _numberOfBuckets; ++run){
-       for (unsigned int i = 0; i<_numberOfBuckets; ++i){
-           // compute current range size
-           if (i == 0)
-               curr = rangeMap.at(i);
-           else
-               curr = rangeMap.at(i)-rangeMap.at(i-1);
-           // increment successor's range if assigned range exceeds cardinality of current bin
-           delta = curr - _buckets.at(i).length();
-           if (delta > 0){ // exceeding!
-               if (i < _numberOfBuckets-1){ // correct upper bin edge and continue
-                   rangeMap.at(i) = rangeMap.at(i) - delta;
-                   cout << "\ncorrected upper limit for bin["<<i<<"] = " << rangeMap.at(i) << endl;
-               }
-               else{  // shift upper bounds of all predecessors => bin 0 becomes enlarged
-                   //rangeMap = horzcat(arrayfun(@(item) item+1, rangeMap(1:end-1)), rangeMap(end));
-            	   // TODO: test whether last right bin edge does not exceed _sample
-            	   for (unsigned int j = 0; j < _numberOfBuckets-1; ++j)
-            		   rangeMap.at(j) += delta;
-               }
-           }
-       }
+//	   cout << "expected ranges with n = "<<_sampleSize << endl;
+	   for (unsigned int i = 0; i < _numberOfBuckets; ++i){
+		   _rangeMap.push_back((I64u) round(this->_cumulativeProbabilities.at(i)*_sampleSize+eps));
+	   }
+	   // check whether assigned ranges do not exceed bin's cardinality
+	   I64 delta = 0;
+	   I64 curr;
+	   for (unsigned int run = 0; run < _numberOfBuckets; ++run){
+		   for (unsigned int i = 0; i<_numberOfBuckets; ++i){
+			   // compute current range size
+			   if (i == 0)
+				   curr = _rangeMap.at(i);
+			   else
+				   curr = _rangeMap.at(i)-_rangeMap.at(i-1);
+			   // increment successor's range if assigned range exceeds cardinality of current bin
+			   delta = curr - _buckets.at(i).length();
+			   if (delta > 0){ // exceeding!
+				   if (i < _numberOfBuckets-1){ // correct upper bin edge and continue
+					   _rangeMap.at(i) = _rangeMap.at(i) - delta;
+					  // cout << "\ncorrected upper limit for bin["<<i<<"] = " << rangeMap.at(i) << endl;
+				   }
+				   else{  // shift upper bounds of all predecessors => bin 0 becomes enlarged
+					  // TODO: test whether last right bin edge does not exceed _sampleSize
+					   for (unsigned int j = 0; j < _numberOfBuckets-1; ++j)
+						   _rangeMap.at(j) += delta;
+				   }
+			   }
+		   }
+	   }
    }
-	return bucketID;
+   vector<I64u>::iterator it = find_if (_rangeMap.begin(), _rangeMap.end(), [&tupleID](I64u i){return i>tupleID;} );
+   I64u tID = it - _rangeMap.begin();
+
+   return tID;
 }
+
 /*
  * Adjust _tupleID to lower bin edge by subtracting lowest _tupleID for this bucket.
  */
 template<typename T>
-inline I64u JointPrFunction<T>::normalizeTupleID(I64u tupleID, size_t bucketID) const
+inline I64u JointPrFunction<T>::normalizeTupleID(I64u tupleID, I64u bucketID)
 {
-	Decimal cs = 0;
-	for (size_t i = 0; i < bucketID; ++ i)
-		cs += _bucketProbabilities[i];
-	I64u tupleID_left = ceil(cs*_sampleSize);
-	tupleID -= tupleID_left;
-	if (tupleID < 0) throw LogicalException("Index error for normalization of tupleID in JointPrFunction::normalizeTupleID()");
-	return tupleID;
+	if (_rangeMap.size() == 0) // compute step function
+		findBucket(tupleID);
+	I64u tID = (bucketID == 0) ? tupleID : tupleID - _rangeMap.at(bucketID-1);
+	return tID;
 }
 
 /*
  * Shuffle _tupleID <- [0; _sampleSize]
  */
 template<typename T>
-inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID) const
+inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID)
 {
-	MultiplicativeGroup mg(_sampleSize);
-	return mg(tupleID);
+	throw ConfigException("Do not use permuteSampleID now!");
+	MultiplicativeGroup pi;
+	pi.configure(_sampleSize);
+	return pi[tupleID];
 }
 
 /*
- * Permute bucket's tupleID to larger index in [0; card(bucketID)-1]
+ * Permute bucket's tupleID to (larger) index in [0; card(bucketID)-1]
  */
 template<typename T>
-inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, size_t bucketID) const
+inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 {
-	I64u cardinality = (I64u) _buckets.at(bucketID).length();
-	MultiplicativeGroup mg(cardinality);
-	return mg(tupleID);
+	I64u gamma = (I64u) _buckets.at(bucketID).length();
+	MultiplicativeGroup gen;
+	cout << "generator configured  with gamma = " << gamma << endl;
+	gen.configure(gamma);
+	cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID] << endl;;
+	return gen(tupleID);
 }
 
 /*
  * Scalar tuple identifier is mapped to output tuple dimension-wise
  * */
 template<typename T>
-inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID) const
+inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
 {
 
 	// transform scalar index to dimension-wise indices
@@ -475,7 +461,7 @@ inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID) const
 
 // TODO: directly use GenID to
 template<typename T>
-inline T JointPrFunction<T>::sample(const I64u genID) const
+inline T JointPrFunction<T>::sample(const I64u genID)
 {
 	I64u tupleID = genID;
 
@@ -498,7 +484,7 @@ inline T JointPrFunction<T>::sample(const I64u genID) const
 }
 
 template<typename T>
-double JointPrFunction<T>::cdf(const I64u _binID) const
+double JointPrFunction<T>::cdf(const I64u _binID)
 {
 	if (0 >_binID || _binID >= _numberOfBuckets)
 		throw ConfigException("Unexpected bucketID: out of range");
