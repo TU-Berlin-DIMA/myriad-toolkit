@@ -106,7 +106,7 @@ MultiplicativeGroup::GeneratorMap initGenerators()
 }
 
 MultiplicativeGroup::GeneratorMap MultiplicativeGroup::GENERATORS(initGenerators());
-
+// TODO: hard code configuration for special cases cardinality < 5
 void MultiplicativeGroup::configure(I64u cardinality)
 {
     _logger.information(format("Configuring generator for cardinality %Lu", cardinality));
