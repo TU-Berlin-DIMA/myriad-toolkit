@@ -424,10 +424,10 @@ inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 {
 	I64u gamma = (I64u) _buckets.at(bucketID).length();
 	MultiplicativeGroup gen;
-	cout << "generator configured  with gamma = " << gamma << endl;
+	//cout << "generator configured  with gamma = " << gamma << endl;
 	gen.configure(gamma);
-	cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID] << endl;;
-	return gen(tupleID);
+	//cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID]-1 << endl;;
+	return gen[tupleID]-1;
 }
 
 /*
