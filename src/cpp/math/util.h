@@ -57,9 +57,9 @@ I64 modmult(const I64 x, const I64 y, const I64 N, const Decimal InvN);
  *
  * @author: Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
  *
- * @param x
- * @param e
- * @param N
+ * @param x		generator of group Z_N
+ * @param e		exponent, i.e. e-th element of series of exponentiations
+ * @param N		order of group, usually a prime
  * @return
  */
 I64u modexp(I64u x, I64u e, I64u N);
@@ -134,7 +134,12 @@ inline I64 modmult(const I64 x, const I64 y, const I64 N, const Decimal InvN)
 
 inline I64u modexp(I64u x, I64u e, I64u N)
 {
-    I64u y = 1ULL;
+	// hard coded case N = 3 for which no generator exists
+	if (N == 3){
+		cout << "case N == 3, return " << (e+2) % 3 << " for e = " << e << ", x = " << x << endl;
+		return (e+2) % 3;
+	}
+	I64u y = 1ULL;
     I64u a = x;
     Decimal InvN = 1.0/(Decimal) N;
 

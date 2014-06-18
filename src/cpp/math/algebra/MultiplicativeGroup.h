@@ -175,7 +175,7 @@ public:
     }
 
     /**
-     * Configure a group to have a minimum ov \p cardinality elements.
+     * Configure a group to have a minimum of \p cardinality elements.
      */
     void configure(I64u cardinality);
 
