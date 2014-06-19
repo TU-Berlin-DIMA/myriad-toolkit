@@ -130,10 +130,22 @@ public:
      *
      * @param Dimension index.
      * @return The interval length.
+     * TODO: more generic version
      */
     inline const double length(size_t d) const
     {
-    	if( 0 == d) {
+    	if (d == 0){
+    		V1 v1 = _max.getFirst() - _min.getFirst();
+    		return v1;
+    	}
+    	else if (d == 1){
+    		V2 v2 = _max.getSecond() - _min.getSecond();
+    		return v2;
+    	}
+    	else
+    		throw ConfigException("unsupported dimension index in function IntervalTuple::length");
+
+    	/*if( 0 == d) {
     		return this->_max.diffAt(d, this->_min);
     	}
     	else if( 1 == d) {
@@ -145,7 +157,7 @@ public:
     	}
        //return (double)_max.elementAt(d)-(double)_min.elementAt(d);
 
-    	return 0.0;
+    	return 0.0;*/
     }
 
     /**

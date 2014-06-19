@@ -131,14 +131,17 @@ inline I64 modmult(const I64 x, const I64 y, const I64 N, const Decimal InvN)
     return r < 0 ? r + N : r % N;
 }
 
-
+// 	FIXME skGen.configure does not terminate for 11, mod card?
 inline I64u modexp(I64u x, I64u e, I64u N)
 {
+	//cout << endl << "entered modexp with N = " << N << endl;
 	// hard coded case N = 3 for which no generator exists
-	if (N == 3){
-		cout << "case N == 3, return " << (e+2) % 3 << " for e = " << e << ", x = " << x << endl;
-		return (e+2) % 3;
+	if (N < 12){
+		//	cout << endl << "case N == " << N << ", e =  " << e << ", x = " << x << endl;
+		return (e+2) % N + 1;
 	}
+	if (N == 1)
+		return 0;
 	I64u y = 1ULL;
     I64u a = x;
     Decimal InvN = 1.0/(Decimal) N;

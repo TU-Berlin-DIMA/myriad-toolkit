@@ -110,8 +110,13 @@ MultiplicativeGroup::GeneratorMap MultiplicativeGroup::GENERATORS(initGenerators
 void MultiplicativeGroup::configure(I64u cardinality)
 {
     _logger.information(format("Configuring generator for cardinality %Lu", cardinality));
-
+    //cout << endl << "cardinality = " << cardinality << endl;
+    if (cardinality < 12){
+    	N = cardinality;
+    	return;
+    }
     N = nextPrime(cardinality);
+
 
     _logger.information(format("Closest prime for cardinality %Lu is %Lu", cardinality, N));
 

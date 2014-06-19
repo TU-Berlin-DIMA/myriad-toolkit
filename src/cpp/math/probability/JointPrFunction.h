@@ -418,39 +418,55 @@ inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID)
 
 /*
  * Permute bucket's tupleID to (larger) index in [0; card(bucketID)-1]
+ * FIXME: test range 0..p-1 or 1..p-1 of gen
  */
 template<typename T>
 inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 {
 	I64u gamma = (I64u) _buckets.at(bucketID).length();
+
 	MultiplicativeGroup gen;
-	//cout << "generator configured  with gamma = " << gamma << endl;
+	cout << "generator configured  with gamma = " << gamma << endl;
 	gen.configure(gamma);
-	//cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID]-1 << endl;;
-	return gen[tupleID]-1;
+	cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID] << " -1 = " << gen[tupleID]-1 << endl;;
+	if (gamma <4)
+			return gen[tupleID] -1;
+
+	return gen[tupleID];
 }
 
 /*
  * Scalar tuple identifier is mapped to output tuple dimension-wise
+ * TODO: works currently only for tuples of two items
  * */
 template<typename T>
 inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
 {
-
+	if (bucketID > this->numberOfBuckets()) throw LogicalException("Requested bucketID in JointPrFunction exceeds histogram size!");
 	// transform scalar index to dimension-wise indices
-	I64u compositeID[_dim];
-	I64u gamma; // cardinality of subsequent dimensions in same bucket
-	I64u rem = tupleID;
-	for (size_t i = 0; i < _dim-1; ++i){
-		gamma = 1;
-		for (size_t j = i+1; j < _dim; ++j)
-			gamma *= _buckets.at(bucketID).length(j);
-		compositeID[i] = rem/gamma; // div rounds to floor
-		rem = rem % gamma;
-	}
-	compositeID[_dim-1] = rem;
-	// map indices to attribute values, use Interval
+	cout <<"entering scalar2Tuple with tID = " << tupleID << ", bucketID = " << bucketID << endl;
+	I64 compositeID[_dim];
+	I64 gamma = 1;; // cardinality of subsequent dimensions in same bucket
+	I64 rem = tupleID;
+	cout << "\trem = " << rem << endl;
+	gamma *= _buckets.at(bucketID).length(1);
+	cout << "\tgamma = " << gamma << endl;
 
+	// position in attribute domain A_i
+	I64u pos = rem/gamma + _buckets.at(bucketID).min().getFirst() - _activeDomain.min().getFirst(); // div rounds to floor
+	cout << "rem/gamma " << rem/gamma << ", buckets[bucketID].min().getFirst() = " << _buckets.at(bucketID).min().getFirst()  <<", activeDomain.min.first = " << _activeDomain.min().getFirst()<< endl;
+	compositeID[0] = pos;
+	cout << "\tcompID[0] = " << compositeID[0] << endl;
+	rem = rem % gamma;
+	cout << "\trem = rem mod gamma = " << rem << endl;
+	//}
+	pos = rem + _buckets.at(bucketID).min().getSecond() - _activeDomain.min().getSecond();
+	compositeID[_dim-1] = pos;
+
+	cout << "\tcompID[_dim-1] = rem = " << compositeID[1]<< endl;
+
+	// map indices to attribute values, use Interval
+	//cout << "s5" << endl;
 	// create new Tuple/Triple instance
 	// if dim = 2  T = MyriadTuple(ValueType1 val1, ValueType2 val2)
 	// TODO: how to convert I64u values into Domain values?
