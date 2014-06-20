@@ -59,7 +59,7 @@ namespace Myriad
 
 // TODO: example for derivation from UnaryFunction, T = MyriadTuple/-Triple, genID =  const I64u
 template<typename T>
-class JointPrFunction //: public UnivariatePrFunction<T>
+class JointPrFunction: public AbstractFunction
 {
 public:
 	template<typename S> friend class JointPrFunctionTest; // runtime exception when trying to access private functions/members
@@ -200,7 +200,7 @@ public:
      * TODO: without random input, use GenID/position instead?
      * @see UnivariatePrFunction::sample()
      */
-    T sample(const I64u GenID);
+    T sample(const I64u GenID, const I64u sampleSize);
 
     double cdf(const I64u _binID);
 
@@ -444,26 +444,26 @@ inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
 {
 	if (bucketID > this->numberOfBuckets()) throw LogicalException("Requested bucketID in JointPrFunction exceeds histogram size!");
 	// transform scalar index to dimension-wise indices
-	cout <<"entering scalar2Tuple with tID = " << tupleID << ", bucketID = " << bucketID << endl;
+	//cout <<"entering scalar2Tuple with tID = " << tupleID << ", bucketID = " << bucketID << endl;
 	I64 compositeID[_dim];
 	I64 gamma = 1;; // cardinality of subsequent dimensions in same bucket
 	I64 rem = tupleID;
-	cout << "\trem = " << rem << endl;
+	//cout << "\trem = " << rem << endl;
 	gamma *= _buckets.at(bucketID).length(1);
-	cout << "\tgamma = " << gamma << endl;
+	//cout << "\tgamma = " << gamma << endl;
 
 	// position in attribute domain A_i
 	I64u pos = rem/gamma + _buckets.at(bucketID).min().getFirst() - _activeDomain.min().getFirst(); // div rounds to floor
-	cout << "rem/gamma " << rem/gamma << ", buckets[bucketID].min().getFirst() = " << _buckets.at(bucketID).min().getFirst()  <<", activeDomain.min.first = " << _activeDomain.min().getFirst()<< endl;
+	//cout << "rem/gamma " << rem/gamma << ", buckets[bucketID].min().getFirst() = " << _buckets.at(bucketID).min().getFirst()  <<", activeDomain.min.first = " << _activeDomain.min().getFirst()<< endl;
 	compositeID[0] = pos;
-	cout << "\tcompID[0] = " << compositeID[0] << endl;
+	//cout << "\tcompID[0] = " << compositeID[0] << endl;
 	rem = rem % gamma;
-	cout << "\trem = rem mod gamma = " << rem << endl;
+	//cout << "\trem = rem mod gamma = " << rem << endl;
 	//}
 	pos = rem + _buckets.at(bucketID).min().getSecond() - _activeDomain.min().getSecond();
 	compositeID[_dim-1] = pos;
 
-	cout << "\tcompID[_dim-1] = rem = " << compositeID[1]<< endl;
+	//cout << "\tcompID[_dim-1] = rem = " << compositeID[1]<< endl;
 
 	// map indices to attribute values, use Interval
 	//cout << "s5" << endl;
@@ -477,8 +477,10 @@ inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
 
 // TODO: directly use GenID to
 template<typename T>
-inline T JointPrFunction<T>::sample(const I64u genID)
+inline T JointPrFunction<T>::sample(const I64u genID, const I64u sampleSize)
 {
+	this->_sampleSize = sampleSize;
+
 	I64u tupleID = genID;
 
 	// TODO: 1. permute tupleID <- [0;_sampleSize-1], should be reset globally
