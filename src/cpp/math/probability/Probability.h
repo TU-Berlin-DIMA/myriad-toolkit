@@ -27,5 +27,6 @@
 #include "math/probability/CombinedPrFunction.h"
 #include "math/probability/ConditionalCombinedPrFunction.h"
 #include "math/probability/UniformPrFunction.h"
+#include "math/probability/JointPrFunction.h"
 
 #endif /* PRFUNCTION_H_ */

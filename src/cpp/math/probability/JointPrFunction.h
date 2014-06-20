@@ -73,8 +73,8 @@ public:
      * Merely creates a new function object, and does not execute any
      * initialization routines.
      */
-    JointPrFunction() :
-    	//UnivariatePrFunction<T>(""),
+    JointPrFunction(const string& name) :
+    	AbstractFunction(name),
 //        _activeDomain(nullValue<T>(), nullValue<T>()), // TODO: lower, upper bin edges multidimensional Interval needed
         _numberOfBuckets(0),
 //        _bucketProbabilities(nullValue<Decimal*>()),
@@ -95,8 +95,8 @@ public:
      *
      * @param path The location of the function configuration file.
      */
-    JointPrFunction(const string& path) :
-    	  //UnivariatePrFunction<T>(""),
+    JointPrFunction(const string& name, const string& path) :
+    	AbstractFunction(name),
 //    	 _activeDomain(nullValue<T>(), nullValue<T>()),//, //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
     	 _numberOfBuckets(0),
 //    	 _bucketProbabilities(nullValue<Decimal*>()),
@@ -690,7 +690,7 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 	        }
 
 
-	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
+	        //Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
 	        // TODO: fromString does not work for MyriadTuple
 	        // T value = fromString<T>(currentLine.substr(posVec[3].offset, posVec[3].length));
 
