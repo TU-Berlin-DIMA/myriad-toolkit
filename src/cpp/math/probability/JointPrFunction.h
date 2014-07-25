@@ -79,12 +79,12 @@ public:
         _numberOfBuckets(0),
 //        _bucketProbabilities(nullValue<Decimal*>()),
 ////        _cardinalities(NULL),
-//        _sampleSize(0),
-		_numberOfValues(0),
-		_sampleSize(8)  // <- for testing only
+        _sampleSize(8), // <- for testing only
+		_numberOfValues(0)
 //        //_cumulativeProbabilites(NULL),
 //        //_EPSILON(0.000001)
     {
+
     }
 
     /**
@@ -100,9 +100,8 @@ public:
 //    	 _activeDomain(nullValue<T>(), nullValue<T>()),//, //nullValue<MyriadTuple>(), nullValue<MyriadTuple>()), // TODO: lower, upper bin edges multidimensional Interval needed
     	 _numberOfBuckets(0),
 //    	 _bucketProbabilities(nullValue<Decimal*>()),
-//    	 _sampleSize(0),
-    	 _numberOfValues(0),
-    	 _sampleSize(8) // <- for testing only
+    	 _sampleSize(8),	// <- for testing only
+    	 _numberOfValues(0)
     {
     	cout << "JointPrFunction() with path = " << path << endl;
         initialize(path);
@@ -173,6 +172,13 @@ public:
     */
     size_t numberOfBuckets(size_t dim) const;
 
+    /**
+     * Returns histogram
+     */
+    vector<IntervalTuple<T> > getBuckets() const;
+
+    vector<Decimal> getBucketProbabilities() const;
+
 
     /**
      * Returns the left bound (inclusive) of the function active domain.
@@ -209,6 +215,8 @@ public:
 
 
     void reset();
+
+    void setSampleSize(I64u sampleSize);
 //
 //    void normalize();
 
@@ -277,7 +285,7 @@ RegularExpression JointPrFunction<T>::bucketLineFormat("\\W*p\\(X\\)\\W*=\\W*([+
 template<typename T>
 void JointPrFunction<T>::reset()
 {
-	cout << "entered reset ..." << endl;
+	//cout << "entered reset ..." << endl;
 	// _activeDomain.reset()
 	_buckets.clear();
     _bucketProbabilities.clear();
@@ -288,7 +296,12 @@ void JointPrFunction<T>::reset()
     _bucketProbability = 0.0;
     _cumulativeProbabilities.clear();
     _rangeMap.clear();
-    cout << "... leaving reset" << endl;
+    //cout << "... leaving reset" << endl;
+}
+
+template<typename T>
+inline void JointPrFunction<T>::setSampleSize(I64u sampleSize){
+	_sampleSize = sampleSize;
 }
 
 //// TODO: ?
@@ -356,9 +369,10 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
    // construct step function map if not done previously
    if (_rangeMap.size() == 0){
 
-//	   cout << "expected ranges with n = "<<_sampleSize << endl;
+	   //cout << "expected ranges with n = "<<_sampleSize << endl;
 	   for (unsigned int i = 0; i < _numberOfBuckets; ++i){
-		   _rangeMap.push_back((I64u) round(this->_cumulativeProbabilities.at(i)*_sampleSize+eps));
+		   _rangeMap.push_back((I64u) round(this->_cumulativeProbabilities.at(i)*_sampleSize));
+		//   cout << _rangeMap.back() << ", ";
 	   }
 	   // check whether assigned ranges do not exceed bin's cardinality
 	   I64 delta = 0;
@@ -389,6 +403,9 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
    vector<I64u>::iterator it = find_if (_rangeMap.begin(), _rangeMap.end(), [&tupleID](I64u i){return i>tupleID;} );
    I64u tID = it - _rangeMap.begin();
 
+//   cout << "final rangeMap = " << endl;
+//   for (unsigned int i = 0; i < _rangeMap.size(); ++i)
+//	   cout << _rangeMap.at(i) << ", ";
    return tID;
 }
 
@@ -398,9 +415,12 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
 template<typename T>
 inline I64u JointPrFunction<T>::normalizeTupleID(I64u tupleID, I64u bucketID)
 {
+	//cout << "entered normalizeTupleID with tupleID = " << tupleID << ", bucketID = " << bucketID << endl;
 	if (_rangeMap.size() == 0) // compute step function
 		findBucket(tupleID);
+	//cout << "_rangeMap.size = " << _rangeMap.size() << endl;
 	I64u tID = (bucketID == 0) ? tupleID : tupleID - _rangeMap.at(bucketID-1);
+	//cout << "leave with tID = " << tID << endl;
 	return tID;
 }
 
@@ -413,7 +433,9 @@ inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID)
 	throw ConfigException("Do not use permuteSampleID now!");
 	MultiplicativeGroup pi;
 	pi.configure(_sampleSize);
-	return pi[tupleID];
+
+	return pi[tupleID] % _sampleSize;
+
 }
 
 /*
@@ -423,17 +445,28 @@ inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID)
 template<typename T>
 inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 {
+	//cout << "entered permuteTupleID with tupleID = " << tupleID << ", bucketID = " << bucketID << endl;
 	I64u gamma = (I64u) _buckets.at(bucketID).length();
 
-	MultiplicativeGroup gen;
-	cout << "generator configured  with gamma = " << gamma << endl;
+	/*MultiplicativeGroup gen;
+	//cout << "configure generator with gamma = " << gamma << "..." << endl;
 	gen.configure(gamma);
-	cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID] << " -1 = " << gen[tupleID]-1 << endl;;
-	if (gamma <4)
-			return gen[tupleID] -1;
+	//cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID] << " -1 = " << gen[tupleID]-1 << endl;;
 
-	return gen[tupleID];
+	return gen[tupleID] % gamma;
+	*/
+
+
+	srand(0);
+	I64u nextPower = pow(2,ceil(log2(gamma)));
+//	cout << "gamma = " << gamma << ", log2(gamma) = " << log2(gamma) << ", ceil(log2(gamma)) = "<< ceil(log2(gamma)) << ", next Power = " << nextPower << endl;
+	I64u pad = rand() % nextPower;
+	//	cout << "pad = " << pad << endl;
+	I64u tID = tupleID^pad % gamma;
+	//	cout << "permuted tupleID is " << tID << endl;
+	return tID;
 }
+
 
 /*
  * Scalar tuple identifier is mapped to output tuple dimension-wise
@@ -444,32 +477,30 @@ inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
 {
 	if (bucketID > this->numberOfBuckets()) throw LogicalException("Requested bucketID in JointPrFunction exceeds histogram size!");
 	// transform scalar index to dimension-wise indices
-	//cout <<"entering scalar2Tuple with tID = " << tupleID << ", bucketID = " << bucketID << endl;
 	I64 compositeID[_dim];
 	I64 gamma = 1;; // cardinality of subsequent dimensions in same bucket
 	I64 rem = tupleID;
-	//cout << "\trem = " << rem << endl;
 	gamma *= _buckets.at(bucketID).length(1);
-	//cout << "\tgamma = " << gamma << endl;
 
 	// position in attribute domain A_i
-	I64u pos = rem/gamma + _buckets.at(bucketID).min().getFirst() - _activeDomain.min().getFirst(); // div rounds to floor
-	//cout << "rem/gamma " << rem/gamma << ", buckets[bucketID].min().getFirst() = " << _buckets.at(bucketID).min().getFirst()  <<", activeDomain.min.first = " << _activeDomain.min().getFirst()<< endl;
-	compositeID[0] = pos;
-	//cout << "\tcompID[0] = " << compositeID[0] << endl;
+	I64u pos = rem/gamma;
+	compositeID[0] = pos + _buckets.at(bucketID).min().getFirst();
 	rem = rem % gamma;
-	//cout << "\trem = rem mod gamma = " << rem << endl;
-	//}
-	pos = rem + _buckets.at(bucketID).min().getSecond() - _activeDomain.min().getSecond();
-	compositeID[_dim-1] = pos;
-
-	//cout << "\tcompID[_dim-1] = rem = " << compositeID[1]<< endl;
+	pos = rem;
+	compositeID[_dim-1] = pos+_buckets.at(bucketID).min().getSecond();
 
 	// map indices to attribute values, use Interval
-	//cout << "s5" << endl;
 	// create new Tuple/Triple instance
 	// if dim = 2  T = MyriadTuple(ValueType1 val1, ValueType2 val2)
 	// TODO: how to convert I64u values into Domain values?
+	// compute index positions within single attributes
+	I32u gamma1 = 0, gamma2 = 0;
+	for (unsigned int l = 0; l < bucketID; ++l){
+		gamma1 += _buckets.at(l).length(0);
+		gamma2 += _buckets.at(l).length(1);
+
+	}
+	//T t1(_activeDomain.min().getFirst() + gamma1 + compositeID[0], _activeDomain.min().getSecond() + gamma2 + compositeID[1]);
 	T t(compositeID[0], compositeID[1]);
 	return t;
 }
@@ -512,15 +543,13 @@ double JointPrFunction<T>::cdf(const I64u _binID)
 template<typename T>
 void JointPrFunction<T>::initialize(const string& path)
 {
-	cout << "init1 ..." << endl;
-    initialize(Path(path));
+	initialize(Path(path));
 }
 
 template<typename T>
 void JointPrFunction<T>::initialize(const Path& path)
 {
-	cout << "init2 ..." << endl;
-    if (!path.isFile())
+	if (!path.isFile())
     {
         throw ConfigException(format("Cannot find file at `%s`", path.toString()));
     }
@@ -573,8 +602,7 @@ template<typename T>
 void
 JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 {
-	cout << "init4 ..." << endl;
-    enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
+	enum READ_STATE { NOE, NOB, NPR, VLN, BLN, FIN, END };
 
     // reset old state
     reset();
@@ -588,7 +616,6 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     // reader finite state machine
     while (currentState != END)
     {
-    	cout << "current state: " << currentState << endl;
         // the special FIN stage contains only final initialization constructs
         // and does not a currentLine
         if (currentState == FIN)
@@ -601,8 +628,7 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         	T min = _buckets[0].min(); // left bin edges of left most Interval
         	T max = _buckets[_numberOfBuckets-1].max(); // right bin edges of right most Interval
 
-        	cout << "set _activeDomain" << endl;
-	        _activeDomain.set(min, max); //_buckets[_numberOfBuckets-1]);
+            _activeDomain.set(min, max); //_buckets[_numberOfBuckets-1]);
 
 	        currentState = END;
 	        continue;
@@ -618,12 +644,9 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 	        currentLineNumber++;
 	        continue; // skip this line
         }
-        //cout << "current line = " << currentLine << endl;
-
         if (currentState == NOE)
         {
-        	// cout << "entering state NOE" << endl;
-	        if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
+           if (!in.good() || !headerLine1Format.match(currentLine, 0, posVec))
 	        {
 		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofexactvals = ' + x", currentLineNumber, currentLine));
 	        }
@@ -643,20 +666,15 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 
         else if (currentState == NOB)
         {
-        	//cout << "entered NOB stmt" << endl;
-	        if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
+            if (!in.good() || !headerLine2Format.match(currentLine, 0, posVec))
 	        {
-	        	//cout << "headerLine2Format does not match" << endl;
-		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofbins = ' + x", currentLineNumber, currentLine));
+	            throw DataException(format("line %hu: Bad header line `%s`, should be: '@numberofbins = ' + x", currentLineNumber, currentLine));
 	        }
-	        //cout << "NOB1" << endl;
 	        I32 numberOfBuckets = atoi(currentLine.substr(posVec[1].offset, posVec[1].length).c_str());
-	        //cout << "numberOfBuckets = " << numberOfBuckets << endl;
 
 	        if (numberOfBuckets <= 0 && numberOfBuckets > 65536)
 	        {
-	        	//cout << "throws NOB exception" << endl;
-		        throw DataException("Invalid number of buckets '" + toString(numberOfBuckets) +  "'");
+	            throw DataException("Invalid number of buckets '" + toString(numberOfBuckets) +  "'");
 	        }
 
 	        /* TODO: initialize bin, bin probabilities */
@@ -664,12 +682,10 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 	        // TODO: more sophisticated vector initialization?
 	        for (I32u i = 0; i < _numberOfBuckets; ++i) _cumulativeProbabilities.push_back(0.0);
 	        currentState = NPR;
-	        //cout << "NOB2" << endl;
-        }
+	    }
         else if (currentState == NPR)
         {
-        	//cout << "entered state NPR" << endl;
-	        if (!in.good() || !headerLine3Format.match(currentLine, 0, posVec))
+            if (!in.good() || !headerLine3Format.match(currentLine, 0, posVec))
 	        {
 		        throw DataException(format("line %hu: Bad header line `%s`, should be: '@nullprobability = ' + x", currentLineNumber, currentLine));
 	        }
@@ -683,8 +699,7 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         else if (currentState == VLN)
         {
         	throw DataException("Entered state VLN, but exact values currently not supported!");
-        	//cout << "entered state VLN" << endl;
-	        if (!in.good() || !valueLineFormat.match(currentLine, 0, posVec))
+            if (!in.good() || !valueLineFormat.match(currentLine, 0, posVec))
 	        {
 		        throw DataException(format("line %hu: Bad value probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = {' + x + ' }'", currentLineNumber, currentLine));
 	        }
@@ -712,14 +727,12 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
         }
         else if (currentState == BLN)
         {
-        	cout << "entered state BLN" << endl;
-	        if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
+            if (!in.good() || !bucketLineFormat.match(currentLine, 0, posVec))
 	        {
 		        throw DataException(format("line %hu: Bad bucket probability line `%s`, should be: 'p(X) = ' + p_x + ' for X = { x \\in [min_i, max_i)_i=1..d }'", currentLineNumber, currentLine));
 	        }
 
-
-	        //for (int i = 1; i < 7; ++i)
+            //for (int i = 1; i < 7; ++i)
 	        //cout << currentLine.substr(posVec[1].offset, posVec[1].length) << endl;
 	        // TODO: rewrite T initialization to fit for triples
 	        Decimal probability = fromString<Decimal>(currentLine.substr(posVec[1].offset, posVec[1].length));
@@ -728,23 +741,19 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 
 	        V2 min2 = fromString<V2>(currentLine.substr(posVec[5].offset, posVec[5].length));
 	        V2 max2 = fromString<V2>(currentLine.substr(posVec[6].offset, posVec[6].length));
-	        cout << "BLN 1" << endl;
 
 	        T min(min1, min2);
 	        T max(max1, max2);
 	        IntervalTuple<T> interval(min, max); // set new interval as a set of lower and upper bin edges
-	        cout << "BLN 2" << endl;
 
 	        _buckets.push_back(interval); // .at(currentItemIndex).set(min, max);
-	        cout << "BLN 3" << endl;
+	        //cout << "init: buckets += " << "("<< min1 << ", " << max1 << ", (" << min2 << ", " << max2 << ")\n";
 	        _bucketProbabilities.push_back(probability);
 	        _dim = 2; // TODO: more generic version - extract from regex
 	        _bucketProbability += probability;
-	        cout << "BLN 4" << endl;
 
 	        _cumulativeProbabilities.at(currentItemIndex+_numberOfValues) = _valueProbability + _bucketProbability;
-	        cout << "_cdfProb [" << currentItemIndex << "] = " << _cumulativeProbabilities.at(currentItemIndex) << ", valueProb = " << _valueProbability << ", buckProb = " << _bucketProbability<< endl;
-	        cout << "BLN 5" << endl;
+	        //cout << "_cdfProb [" << currentItemIndex << "] = " << _cumulativeProbabilities.at(currentItemIndex) << ", valueProb = " << _valueProbability << ", buckProb = " << _bucketProbability<< endl;
 	        currentItemIndex++;
 
 	        if (currentItemIndex >= _numberOfBuckets)
@@ -753,7 +762,6 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
 		        currentItemIndex = 0;
 	        }
         }
-        //cout << "end while-loop" << endl;
         currentLineNumber++;
     }
 
@@ -769,7 +777,7 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     {
         normalize();
     }*/
-    cout << "Leaving initialize" << endl;
+//    cout << "Leaving initialize" << endl;
 }
 
 template<typename T>
@@ -777,6 +785,20 @@ inline size_t JointPrFunction<T>::numberOfBuckets() const
 {
     return _numberOfBuckets;
 }
+
+template<typename T>
+inline vector<IntervalTuple<T> > JointPrFunction<T>::getBuckets() const
+{
+    return _buckets;
+}
+
+template<typename T>
+inline vector<Decimal> JointPrFunction<T>::getBucketProbabilities() const
+{
+    return _bucketProbabilities;
+}
+
+
 
 // return tuple of lower bin edges
 template<typename T>
