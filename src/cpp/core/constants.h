@@ -45,6 +45,11 @@ struct Constant
     static const String APP_VERSION;
 };
 
+/**
+ *  Random number generated new in C++1
+ */
+enum GENERATOR {DEFAULT_RANDOM_ENGINE, KNUTH_B, MINSTD_RAND, MINSTD_RAND0, MT19937, MT19937_64, RANLUX24, RANLUX48};
+
 /** @}*/// add to core group
 }  // namespace Myriad
 
