@@ -18,6 +18,7 @@
 #ifndef JOINTPRFUNCTION_H_
 #define JOINTPRFUNCTION_H_
 
+#include "core/constants.h"
 #include "core/exceptions.h"
 #include "core/types.h"
 #include "core/types/MyriadAbstractTuple.h"
@@ -39,9 +40,11 @@
 #include <math.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <random>
 
 using namespace std;
 using namespace Poco;
+
 
 namespace Myriad
 {
@@ -80,7 +83,8 @@ public:
 //        _bucketProbabilities(nullValue<Decimal*>()),
 ////        _cardinalities(NULL),
         _sampleSize(8), // <- for testing only
-		_numberOfValues(0)
+		_numberOfValues(0),
+		_generator(MT19937_64)
 //        //_cumulativeProbabilites(NULL),
 //        //_EPSILON(0.000001)
     {
@@ -101,10 +105,10 @@ public:
     	 _numberOfBuckets(0),
 //    	 _bucketProbabilities(nullValue<Decimal*>()),
     	 _sampleSize(8),	// <- for testing only
-    	 _numberOfValues(0)
+    	 _numberOfValues(0),
+ 		_generator(MT19937_64)
     {
-    	cout << "JointPrFunction() with path = " << path << endl;
-        initialize(path);
+    	initialize(path);
     }
 
     /**
@@ -228,6 +232,8 @@ public:
 
     T scalar2Tuple(I64u tID, I64u bID) ;
 
+    void setGenerator(GENERATOR generator) ;
+
 private:
 
     static RegularExpression headerLine1Format;
@@ -253,6 +259,7 @@ private:
     Decimal _bucketProbability;
     vector<Decimal> _cumulativeProbabilities;
     vector<I64u> _rangeMap;					// TODO: initialize when xml spec given (needs sampleSize + distribution file), e.g. in init()
+    GENERATOR _generator;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -457,14 +464,73 @@ inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 	*/
 
 
-	srand(0);
-	I64u nextPower = pow(2,ceil(log2(gamma)));
+	//srand(0);
+	//I64u nextPower = pow(2,ceil(log2(gamma)));
 //	cout << "gamma = " << gamma << ", log2(gamma) = " << log2(gamma) << ", ceil(log2(gamma)) = "<< ceil(log2(gamma)) << ", next Power = " << nextPower << endl;
-	I64u pad = rand() % nextPower;
-	//	cout << "pad = " << pad << endl;
-	I64u tID = tupleID^pad % gamma;
-	//	cout << "permuted tupleID is " << tID << endl;
-	return tID;
+	//I64u pad = rand() % nextPower;
+
+	// default_random_engine, knuth_b, minstd_rand, minstd_rand0, mt19937, mt19937_64, ranlux24, ranlux48
+	int seed = 0, pad = 0;
+	I64u tID;
+	uniform_int_distribution<int> distribution(0,gamma-1);
+
+	switch(this->_generator){
+		case DEFAULT_RANDOM_ENGINE:
+		{
+			default_random_engine g(seed);
+			return tupleID^distribution(g);
+		}
+		break;
+		case KNUTH_B:
+		{
+			knuth_b g(seed);
+			return tupleID^distribution(g);
+		}
+		break;
+		case 2:
+		{
+			minstd_rand g(seed);
+			return tupleID^distribution(g);
+
+		}
+		break;
+		case 3:
+		{
+			minstd_rand0 g(seed);
+			return tupleID^distribution(g);
+		}
+			break;
+		case 4:
+		{
+			mt19937 g(seed);
+			return tupleID^distribution(g);
+		}
+			break;
+		case 5:
+		{
+			mt19937_64 g(seed);
+			return tupleID^distribution(g);
+		}
+			break;
+		case 6:
+		{
+			ranlux24 g(seed);
+			return tupleID^distribution(g);
+		}
+			break;
+		case 7:
+		{
+			ranlux48 g(seed);
+			return tupleID^distribution(g);
+		}
+			break;
+		default:
+			break;
+
+	}
+
+	//I64u tID = tupleID^pad; // % gamma;
+	return 0;//tID;
 }
 
 
@@ -503,6 +569,12 @@ inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
 	//T t1(_activeDomain.min().getFirst() + gamma1 + compositeID[0], _activeDomain.min().getSecond() + gamma2 + compositeID[1]);
 	T t(compositeID[0], compositeID[1]);
 	return t;
+}
+
+//
+template<typename T>
+void JointPrFunction<T>::setGenerator(GENERATOR generator){
+	this->_generator = generator;
 }
 
 
