@@ -45,7 +45,6 @@
 using namespace std;
 using namespace Poco;
 
-
 namespace Myriad
 {
 /**
@@ -88,7 +87,6 @@ public:
 //        //_cumulativeProbabilites(NULL),
 //        //_EPSILON(0.000001)
     {
-
     }
 
     /**
@@ -410,9 +408,6 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
    vector<I64u>::iterator it = find_if (_rangeMap.begin(), _rangeMap.end(), [&tupleID](I64u i){return i>tupleID;} );
    I64u tID = it - _rangeMap.begin();
 
-//   cout << "final rangeMap = " << endl;
-//   for (unsigned int i = 0; i < _rangeMap.size(); ++i)
-//	   cout << _rangeMap.at(i) << ", ";
    return tID;
 }
 
@@ -422,12 +417,9 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
 template<typename T>
 inline I64u JointPrFunction<T>::normalizeTupleID(I64u tupleID, I64u bucketID)
 {
-	//cout << "entered normalizeTupleID with tupleID = " << tupleID << ", bucketID = " << bucketID << endl;
 	if (_rangeMap.size() == 0) // compute step function
 		findBucket(tupleID);
-	//cout << "_rangeMap.size = " << _rangeMap.size() << endl;
 	I64u tID = (bucketID == 0) ? tupleID : tupleID - _rangeMap.at(bucketID-1);
-	//cout << "leave with tID = " << tID << endl;
 	return tID;
 }
 
@@ -452,7 +444,6 @@ inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID)
 template<typename T>
 inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 {
-	//cout << "entered permuteTupleID with tupleID = " << tupleID << ", bucketID = " << bucketID << endl;
 	I64u gamma = (I64u) _buckets.at(bucketID).length();
 
 	/*MultiplicativeGroup gen;
@@ -532,7 +523,6 @@ inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 	//I64u tID = tupleID^pad; // % gamma;
 	return 0;//tID;
 }
-
 
 /*
  * Scalar tuple identifier is mapped to output tuple dimension-wise
