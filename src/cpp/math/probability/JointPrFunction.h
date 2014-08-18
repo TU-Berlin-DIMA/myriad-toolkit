@@ -38,6 +38,8 @@
 #include <vector>
 #include <limits>
 #include <math.h>
+//#include <cmath>
+
 #include <stdlib.h>
 #include <algorithm>
 #include <random>
@@ -212,6 +214,10 @@ public:
 
     double cdf(const I64u _binID);
 
+    /*
+     * Assign unique tuple identifier to a bin with edges adjusted to specified domainSize
+     * max(tupleID) = domainSize-1
+     * */
     I64u findBucket(const I64u tupleID);
 
 
@@ -224,9 +230,9 @@ public:
 
     I64u normalizeTupleID(I64u tID, I64u bID) ;
 
-    I64u permuteSampleID(I64u tID) ;
+   // I64u permuteSampleID(I64u tID) ;
 
-    I64u permuteTupleID(I64u tID, I64u bID) ;
+    I64u permuteTupleID(I64u tID, I64u bID);
 
     T scalar2Tuple(I64u tID, I64u bID) ;
 
@@ -369,16 +375,12 @@ void JointPrFunction<T>::normalize()
 template<typename T>
 inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
 {
-//	cout << "entered findBucket " << endl;
    double eps = 100*numeric_limits<double>::epsilon();
    // construct step function map if not done previously
    if (_rangeMap.size() == 0){
+	   for (unsigned int i = 0; i < _numberOfBuckets; ++i)
+		   _rangeMap.push_back((I64u) round(this->_cumulativeProbabilities.at(i)*this->_sampleSize));
 
-	   //cout << "expected ranges with n = "<<_sampleSize << endl;
-	   for (unsigned int i = 0; i < _numberOfBuckets; ++i){
-		   _rangeMap.push_back((I64u) round(this->_cumulativeProbabilities.at(i)*_sampleSize));
-		//   cout << _rangeMap.back() << ", ";
-	   }
 	   // check whether assigned ranges do not exceed bin's cardinality
 	   I64 delta = 0;
 	   I64 curr;
@@ -394,7 +396,6 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
 			   if (delta > 0){ // exceeding!
 				   if (i < _numberOfBuckets-1){ // correct upper bin edge and continue
 					   _rangeMap.at(i) = _rangeMap.at(i) - delta;
-					  // cout << "\ncorrected upper limit for bin["<<i<<"] = " << rangeMap.at(i) << endl;
 				   }
 				   else{  // shift upper bounds of all predecessors => bin 0 becomes enlarged
 					  // TODO: test whether last right bin edge does not exceed _sampleSize
@@ -423,19 +424,6 @@ inline I64u JointPrFunction<T>::normalizeTupleID(I64u tupleID, I64u bucketID)
 	return tID;
 }
 
-/*
- * Shuffle _tupleID <- [0; _sampleSize]
- */
-template<typename T>
-inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID)
-{
-	throw ConfigException("Do not use permuteSampleID now!");
-	MultiplicativeGroup pi;
-	pi.configure(_sampleSize);
-
-	return pi[tupleID] % _sampleSize;
-
-}
 
 /*
  * Permute bucket's tupleID to (larger) index in [0; card(bucketID)-1]
@@ -444,84 +432,79 @@ inline I64u JointPrFunction<T>::permuteSampleID(I64u tupleID)
 template<typename T>
 inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 {
-	I64u gamma = (I64u) _buckets.at(bucketID).length();
+	I64u gamma = this->_buckets.at(bucketID).length();
 
-	/*MultiplicativeGroup gen;
-	//cout << "configure generator with gamma = " << gamma << "..." << endl;
-	gen.configure(gamma);
-	//cout << "permuted tupleID(" << tupleID << ") = " << gen[tupleID] << " -1 = " << gen[tupleID]-1 << endl;;
-
-	return gen[tupleID] % gamma;
-	*/
-
-
-	//srand(0);
-	//I64u nextPower = pow(2,ceil(log2(gamma)));
+	I64u nextPower = pow(2,ceil(log2(gamma)));
 //	cout << "gamma = " << gamma << ", log2(gamma) = " << log2(gamma) << ", ceil(log2(gamma)) = "<< ceil(log2(gamma)) << ", next Power = " << nextPower << endl;
 	//I64u pad = rand() % nextPower;
 
 	// default_random_engine, knuth_b, minstd_rand, minstd_rand0, mt19937, mt19937_64, ranlux24, ranlux48
-	int seed = 0, pad = 0;
+	int seed = 0; // 0 as seed bad for mt
 	I64u tID;
-	uniform_int_distribution<int> distribution(0,gamma-1);
+	uniform_int_distribution<int> distribution(0,nextPower-1);
 
 	switch(this->_generator){
 		case DEFAULT_RANDOM_ENGINE:
 		{
 			default_random_engine g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
 		}
 		break;
 		case KNUTH_B:
 		{
 			knuth_b g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
 		}
 		break;
-		case 2:
+		case MINSTD_RAND:
 		{
 			minstd_rand g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
 
 		}
 		break;
-		case 3:
+		case MINSTD_RAND0:
 		{
 			minstd_rand0 g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
 		}
 			break;
-		case 4:
+		case MT19937:
 		{
 			mt19937 g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
 		}
 			break;
-		case 5:
+		case MT19937_64:
 		{
 			mt19937_64 g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
 		}
 			break;
-		case 6:
+		case RANLUX24:
 		{
 			ranlux24 g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
 		}
 			break;
-		case 7:
+		case RANLUX48:
 		{
 			ranlux48 g(seed);
-			return tupleID^distribution(g);
+			tID = tupleID^distribution(g);
+		}
+			break;
+		case RAND:{
+			srand(1);
+			I64u pad = rand();
+			pad %= nextPower;
+			tID =  tupleID^pad;
 		}
 			break;
 		default:
 			break;
 
 	}
-
-	//I64u tID = tupleID^pad; // % gamma;
-	return 0;//tID;
+	return tID % gamma;
 }
 
 /*
@@ -534,7 +517,7 @@ inline T JointPrFunction<T>::scalar2Tuple(I64u tupleID, I64u bucketID)
 	if (bucketID > this->numberOfBuckets()) throw LogicalException("Requested bucketID in JointPrFunction exceeds histogram size!");
 	// transform scalar index to dimension-wise indices
 	I64 compositeID[_dim];
-	I64 gamma = 1;; // cardinality of subsequent dimensions in same bucket
+	I64 gamma = 1; // cardinality of subsequent dimensions in same bucket
 	I64 rem = tupleID;
 	gamma *= _buckets.at(bucketID).length(1);
 
@@ -575,23 +558,18 @@ inline T JointPrFunction<T>::sample(const I64u genID, const I64u sampleSize)
 	this->_sampleSize = sampleSize;
 
 	I64u tupleID = genID;
-
-	// TODO: 1. permute tupleID <- [0;_sampleSize-1], should be reset globally
+	// 1. permute tupleID <- [0;pow(2,floor(log2(_sampleSize)))-1]
 	//tupleID = permuteTupleID(tupleID);
-
 	// 2. find bucket
 	I64u bucketID = findBucket(tupleID);
-
 	// 3. normalize to [0, _bucketProbabilities[bucketID]*_sampleSize]
 	tupleID = normalizeTupleID(tupleID, bucketID);
-
 	// 4. permute tuple index <- [0, card(bucket)-1]
 	tupleID = permuteTupleID(tupleID, bucketID);
 
 	// 5. transform scalar tuple index into tuple of indices
 	T t = scalar2Tuple(tupleID, bucketID);
-
-    return t;
+	return t;
 }
 
 template<typename T>
