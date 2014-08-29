@@ -225,14 +225,12 @@ public:
     void reset();
 
     void setSampleSize(I64u sampleSize);
-//
-//    void normalize();
 
     I64u normalizeTupleID(I64u tID, I64u bID) ;
 
-   // I64u permuteSampleID(I64u tID) ;
-
     I64u permuteTupleID(I64u tID, I64u bID);
+
+    I64u permuteSampleID(I64u sampleID);
 
     T scalar2Tuple(I64u tID, I64u bID) ;
 
@@ -405,11 +403,13 @@ inline I64u JointPrFunction<T>::findBucket(I64u tupleID)
 			   }
 		   }
 	   }
-   }
-   vector<I64u>::iterator it = find_if (_rangeMap.begin(), _rangeMap.end(), [&tupleID](I64u i){return i>tupleID;} );
-   I64u tID = it - _rangeMap.begin();
+	}
 
-   return tID;
+   // larger computational time for backmost tuple ids, use something else hash/modulo/linked lists/...
+   vector<I64u>::iterator it = find_if (_rangeMap.begin(), _rangeMap.end(), [&tupleID](I64u i){return i>tupleID;} );
+   I64u bID = it - _rangeMap.begin();
+
+   return bID;
 }
 
 /*
@@ -433,15 +433,15 @@ template<typename T>
 inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 {
 	I64u gamma = this->_buckets.at(bucketID).length();
-
 	I64u nextPower = pow(2,ceil(log2(gamma)));
 //	cout << "gamma = " << gamma << ", log2(gamma) = " << log2(gamma) << ", ceil(log2(gamma)) = "<< ceil(log2(gamma)) << ", next Power = " << nextPower << endl;
 	//I64u pad = rand() % nextPower;
 
 	// default_random_engine, knuth_b, minstd_rand, minstd_rand0, mt19937, mt19937_64, ranlux24, ranlux48
-	int seed = 0; // 0 as seed bad for mt
+	srand(1);
+	I64u seed = rand(); // 0 as seed bad for mt
 	I64u tID;
-	uniform_int_distribution<int> distribution(0,nextPower-1);
+	uniform_int_distribution<I64u> distribution(0,nextPower-1);
 
 	switch(this->_generator){
 		case DEFAULT_RANDOM_ENGINE:
@@ -500,12 +500,44 @@ inline I64u JointPrFunction<T>::permuteTupleID(I64u tupleID, I64u bucketID)
 			tID =  tupleID^pad;
 		}
 			break;
+		case IDENT:{
+			tID = tupleID;
+		}
+			break;
 		default:
 			break;
 
 	}
 	return tID % gamma;
 }
+
+/**
+ * Permute GenID in [1..sampleSize] using Mersenne-Twister to generate a pad for Xoring.
+ * If sampleSize is not a power of 2, computing modulo is only a hack and might produce duplicates.
+ *
+ */
+template<typename T>
+inline I64u JointPrFunction<T>::permuteSampleID(I64u sampleID)
+{
+	//cout << "permuteSampleID 1 with sampleID: " << sampleID << endl;
+	I64u nextPower = pow(2,ceil(log2(this->_sampleSize)));
+	//cout << "permuteSampleID 2" << endl;
+	srand(2);
+	I64u seed = rand(); // 0 as seed bad for mt
+	//cout << "permuteSampleID 3 with nextPower: " << nextPower << endl;
+	uniform_int_distribution<I64u> distribution(0,nextPower-1);
+	//cout << "permuteSampleID 4" << endl;
+	mt19937 g(seed);
+	//cout << "permuteSampleID 5" << endl;
+	I64u pad = distribution(g);
+	//cout << "permuteSampleID 6" << endl;
+	I64u sID = (sampleID^pad);
+	//cout << "permuteSampleID 7" << endl;
+	sID %= this->_sampleSize;
+	//cout << "permuteSampleID 8" << endl;
+	return sID;
+}
+
 
 /*
  * Scalar tuple identifier is mapped to output tuple dimension-wise
@@ -555,20 +587,24 @@ void JointPrFunction<T>::setGenerator(GENERATOR generator){
 template<typename T>
 inline T JointPrFunction<T>::sample(const I64u genID, const I64u sampleSize)
 {
+	//cout << "sample 1" << endl;
 	this->_sampleSize = sampleSize;
-
-	I64u tupleID = genID;
+	//cout << "sample 2" << endl;
 	// 1. permute tupleID <- [0;pow(2,floor(log2(_sampleSize)))-1]
-	//tupleID = permuteTupleID(tupleID);
+	I64u tupleID = permuteSampleID(genID);
 	// 2. find bucket
+	//cout << "sample 3" << endl;
 	I64u bucketID = findBucket(tupleID);
 	// 3. normalize to [0, _bucketProbabilities[bucketID]*_sampleSize]
+	//cout << "sample 4" << endl;
 	tupleID = normalizeTupleID(tupleID, bucketID);
 	// 4. permute tuple index <- [0, card(bucket)-1]
+	//cout << "sample 5" << endl;
 	tupleID = permuteTupleID(tupleID, bucketID);
-
 	// 5. transform scalar tuple index into tuple of indices
+	//cout << "sample 6" << endl;
 	T t = scalar2Tuple(tupleID, bucketID);
+	//cout << "sample 7" << endl;
 	return t;
 }
 
