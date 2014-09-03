@@ -190,7 +190,7 @@ Decimal UniformPrFunction<T>::cdf(T x) const
 template<typename T>
 T UniformPrFunction<T>::invcdf(Decimal y) const
 {
-    return _xMin + y * _size;
+    return _xMin + ceil(y * _size - 1);
 }
 
 template<typename T>
