@@ -183,14 +183,23 @@ Decimal UniformPrFunction<T>::cdf(T x) const
     }
     else
     {
-        return (x - _xMin) * _xPDF;
+        return (x - _xMin + 1) / _size;
     }
 }
 
 template<typename T>
 T UniformPrFunction<T>::invcdf(Decimal y) const
 {
-    return _xMin + ceil(y * _size - 1);
+    // TODO check if 0 < y <= 1 ?
+    if (y <= _xPDF) {
+        return _xMin;
+    } else if (y > (_size - 1) * _xPDF) {
+        return _xMax - 1;
+    } else {
+        T val1 = _xMin + ceil(y * _size) - 1;
+        T val2 = _xMin + ceil(y * _size) - 2;
+        return ( cdf(val2) >= y ) ? val2 : val1;
+    }
 }
 
 template<typename T>
