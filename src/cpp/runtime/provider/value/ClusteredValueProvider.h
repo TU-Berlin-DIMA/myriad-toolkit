@@ -59,10 +59,9 @@ public:
     virtual const ValueType operator()(const AutoPtr<CxtRecordType>& cxtRecordPtr, RandomStream& random)
     {
         Interval<I64u> currentRange = _rangeProvider(cxtRecordPtr);
-        I64u currentRangeLength = currentRange.length();
         Decimal currentRangeLengthDecimal = currentRange.length();
-
-        return static_cast<ValueType>(_prFunction.sample(((cxtRecordPtr->genID() - currentRange.min()) % currentRangeLength)/currentRangeLengthDecimal));
+        Decimal cumFreq = (cxtRecordPtr->genID() + 1) / currentRangeLengthDecimal;
+        return static_cast<ValueType>(_prFunction.sample(cumFreq));
     }
 
 private:
