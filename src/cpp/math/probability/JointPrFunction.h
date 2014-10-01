@@ -844,7 +844,7 @@ JointPrFunction<T>::initialize(istream& in, I16u& currentLineNumber)
     // protect against unexpected reader state
     if (currentState != END)
     {
-        throw RuntimeException("Unexpected state in JointPrFunction reader at line " + currentLineNumber);
+        throw RuntimeException(format("Unexpected state in JointPrFunction reader at line %d", currentLineNumber));
     }
 
     // check if extra normalization is required

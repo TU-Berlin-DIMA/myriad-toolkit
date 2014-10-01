@@ -394,7 +394,7 @@ void ConditionalCombinedPrFunction<T1, T2>::initialize(istream& in)
     // protect against unexpected reader state
     if (currentState != END)
     {
-        throw RuntimeException("Unexpected state in ConditionalCombinedPrFunction reader at line " + currentLineNumber);
+        throw RuntimeException(format("Unexpected state in ConditionalCombinedPrFunction reader at line %d",  currentLineNumber));
     }
 }
 

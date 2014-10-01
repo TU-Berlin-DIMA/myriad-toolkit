@@ -186,7 +186,7 @@ void MyriadEnumSet::initialize(istream& in, size_t& currentLineNumber)
     // protect against unexpected reader state
     if (currentState != END)
     {
-        throw RuntimeException("Unexpected state in CombinedPrFunction reader at line " + currentLineNumber);
+        throw RuntimeException(format("Unexpected state in CombinedPrFunction reader at line %d", currentLineNumber));
     }
 }
 
