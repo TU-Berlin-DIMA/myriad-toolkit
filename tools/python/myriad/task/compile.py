@@ -104,6 +104,8 @@ class CompileOligosTask(AbstractTask):
         parser.add_argument("--schema", metavar="SCHEMA", dest="schema", type="str",
                             help="schema pattern to be profiled")
         # options
+        parser.add_option("-j", "--jdbc", metavar="Driver Vendor", dest="jdbc_vendor", type="str",
+                          default=None, help="Vendor of the jdbc driver (db2 or oracle)")
         parser.add_option("-h", "--host", metavar="HOST", dest="db_host", type="str",
                           default="localhost", help="hostname to use for the DB connection (defaults to `localhost`)")
         parser.add_option("-u", "--user", metavar="USER", dest="db_user", type="str",
@@ -137,6 +139,8 @@ class CompileOligosTask(AbstractTask):
             command.append('-D%s' % args.db_name)
         if (args.db_port):
             command.append('-P%s' % args.db_port)
+        if (args.jdbc_vendor):
+            command.append('-j%s' % args.jdbc_vendor)
         command.append('-g%s' % args.dgen_name)
         command.append('-o%s/../../src/config' % args.base_path)
         # add SCHEMA argument
