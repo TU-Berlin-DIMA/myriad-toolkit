@@ -642,7 +642,43 @@ inline Decimal CombinedPrFunction<T>::operator()(const T x) const
 template<typename T>
 inline T CombinedPrFunction<T>::sample(Decimal random) const
 {
-    return invcdf(random);
+    Decimal eps = numeric_limits<Decimal>::epsilon();
+    // check if there is an exact value
+    for (size_t i = 0; i < _numberOfValues; i++) {
+        if (random <= _cumulativeProbabilites[i] + eps) {
+            if (i > 0) {
+                std::cout << _cumulativeProbabilites[i - 1] << " < " << random << " <= " << _cumulativeProbabilites[i] << std::endl;
+            } else {
+                std::cout << 0 << " < " << random << " <= " << _cumulativeProbabilites[i] << std::endl;
+            }
+            return _values[i];
+        }
+    }
+    // no exact value, now find the bucket and sample from the bucket
+    for (size_t i = 0; i < _numberOfBuckets; i++) {
+        size_t cumProbIndex = _numberOfValues + i;
+        if (random <= _cumulativeProbabilites[cumProbIndex] + eps) {
+            const Interval<T>& b = _buckets[i];
+            Decimal cdfBefore = i > 0 ? _cumulativeProbabilites[cumProbIndex] : 0;
+
+            Decimal z = ((random - cdfBefore) / _bucketProbabilities[i]) * b.length();
+
+            T x = static_cast<T>(b.min() + static_cast<I32u>(z));
+
+            if ((z - static_cast<I32u>(z) >= 0.999999))
+            {
+                x++;
+            }
+
+            // FIXME: a quick and dirty hack to protect against out of range behavior, needs rewrite
+            if (x >= b.max())
+            {
+                x--;
+            }
+
+            return x;
+        }
+    }
 }
 
 template<typename T>
