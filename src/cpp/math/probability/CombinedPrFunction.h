@@ -646,11 +646,6 @@ inline T CombinedPrFunction<T>::sample(Decimal random) const
     // check if there is an exact value
     for (size_t i = 0; i < _numberOfValues; i++) {
         if (random <= _cumulativeProbabilites[i] + eps) {
-            if (i > 0) {
-                std::cout << _cumulativeProbabilites[i - 1] << " < " << random << " <= " << _cumulativeProbabilites[i] << std::endl;
-            } else {
-                std::cout << 0 << " < " << random << " <= " << _cumulativeProbabilites[i] << std::endl;
-            }
             return _values[i];
         }
     }
