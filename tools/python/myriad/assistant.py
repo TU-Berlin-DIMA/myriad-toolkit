@@ -67,7 +67,7 @@ class Assistant(object):
     __log = None
     
     # assistant version
-    VERSION = "0.3.0"
+    VERSION = "0.3.1"
     
     def __init__(self, basePath, fileName, argv):
         '''
